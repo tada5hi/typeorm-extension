@@ -1,4 +1,4 @@
-[![npm version](https://badge.fury.io/js/typeorm-ext.svg)](https://badge.fury.io/js/typeorm-ext)
+[![npm version](https://badge.fury.io/js/typeorm-extension.svg)](https://badge.fury.io/js/typeorm-extension)
 
 # Typeorm Extension 🚀
 This is a library to
