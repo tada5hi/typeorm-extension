@@ -1,9 +1,11 @@
 import {Brackets, SelectQueryBuilder} from "typeorm";
-import {snakeCase} from 'change-case';
+import {changeStringCase, StringCaseOption} from "./utils";
+import {transformAllowedFields} from "./fields";
 
 function transformRequestFilters(
     rawFilters: unknown,
-    allowedFilters: Record<string, any>
+    allowedFilters: Record<string, any>,
+    options: RequestFilterOptions
 ): Record<string, string> {
     let filters: Record<string, any> = {};
 
@@ -31,70 +33,56 @@ function transformRequestFilters(
             continue;
         }
 
-        const newKey : string = snakeCase(key);
+        const allowedKey : string = changeStringCase(key, options.changeRequestFieldCase);
 
-        if(!allowedFilters.hasOwnProperty(newKey)) {
+        if(!allowedFilters.hasOwnProperty(allowedKey)) {
             continue;
         }
 
-        result[newKey] = filters[key];
+        result[allowedFilters[allowedKey]] = filters[key];
     }
 
     return result;
 }
 
-export function transformAllowedFilters(
-    rawFields: string[] | Record<string, any>
-): Record<string, string> {
-    const fields: Record<string, string> = {};
-
-    const allowedFiltersPrototype: string = Object.prototype.toString.call(rawFields as any);
-    switch (allowedFiltersPrototype) {
-        case '[object Array]':
-            const tempStrArr : string[] = rawFields as string[];
-            for (let i = 0; i < tempStrArr.length; i++) {
-                const newKey : string = snakeCase(tempStrArr[i]);
-                fields[newKey] = newKey;
-            }
-            break;
-        case '[object Object]':
-            rawFields = (rawFields as Record<string, any>);
-            for(const key in rawFields) {
-                if(!rawFields.hasOwnProperty(key)) continue;
-
-                const newKey : string = snakeCase(key);
-
-                fields[newKey] = rawFields[key];
-            }
-            break;
-    }
-
-    return fields;
+export type RequestFilterOptions = {
+    changeRequestFieldCase?: StringCaseOption | undefined
 }
 
 export function applyRequestFilter(
     query: SelectQueryBuilder<any>,
-    rawRequestFilters: unknown,
-    rawAllowedFilters: string[] | Record<string, any>
+    requestFilters: unknown,
+    rawAllowedFilters: string[] | Record<string, any>,
+    partialOptions?: Partial<RequestFilterOptions>
 ) {
-    const allowedFilters: Record<string, any> = transformAllowedFilters(rawAllowedFilters);
-    const requestFilters : Record<string, any> = transformRequestFilters(rawRequestFilters, allowedFilters);
+    partialOptions = partialOptions ?? {};
 
-    const requestedFilterLength: number = Object.keys(requestFilters).length;
+    const options : RequestFilterOptions = {
+        changeRequestFieldCase: partialOptions.changeRequestFieldCase
+    };
+
+    const allowedFilters: Record<string, string> = transformAllowedFields(rawAllowedFilters);
+    const filters : Record<string, string> = transformRequestFilters(
+        requestFilters,
+        allowedFilters,
+        options
+    );
+
+    const requestedFilterLength: number = Object.keys(filters).length;
     if (requestedFilterLength === 0) {
         return query;
     }
 
     return query.andWhere(new Brackets(qb => {
         let run = 0;
-        for (const key in requestFilters) {
-            if (!requestFilters.hasOwnProperty(key) || !allowedFilters.hasOwnProperty(key)) {
+        for (const key in filters) {
+            if (!filters.hasOwnProperty(key) || !allowedFilters.hasOwnProperty(key)) {
                 continue;
             }
 
             run++;
 
-            let value : string = requestFilters[key];
+            let value : string = filters[key];
 
             const paramKey = 'filter-' + allowedFilters[key] + '-' + run;
             const whereKind : 'where' | 'andWhere' = run === 1 ? 'where' : 'andWhere';

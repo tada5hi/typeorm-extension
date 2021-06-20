@@ -1,6 +1,10 @@
 import {SelectQueryBuilder} from "typeorm";
 
-export function applyRequestPagination(query: SelectQueryBuilder<any>, rawRequestPagination: unknown, maxLimit?: number) {
+export function applyRequestPagination(
+    query: SelectQueryBuilder<any>,
+    rawRequestPagination: unknown,
+    maxLimit?: number
+) {
     const pagination: {
         limit?: number,
         offset?: number

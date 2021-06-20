@@ -1,7 +1,12 @@
 import {SelectQueryBuilder} from "typeorm";
-import {snakeCase} from "change-case";
+import {hasOwnProperty} from "../utils";
+import {changeStringCase, StringCaseOption} from "./utils";
 
-function transformRequestFields(raw: unknown, allowedFilters: Record<string, string[]>): Record<string, string[]> {
+function transformRequestFields(
+    raw: unknown,
+    allowedFields: Record<string, string[]>,
+    options: RequestFieldOptions
+): Record<string, string[]> {
     const prototype: string = Object.prototype.toString.call(raw as any);
     if (prototype !== '[object Object]') {
         return {};
@@ -23,48 +28,110 @@ function transformRequestFields(raw: unknown, allowedFilters: Record<string, str
         }
 
         let fields : string[] = domainPrototype === '[object String]' ? domains[key].split(',') : domains[key];
-
-        if (!allowedFilters.hasOwnProperty(key)) {
-            continue;
-        }
+        const allowedFieldsKey = hasOwnProperty(options.aliasMapping, key) ?
+            options.aliasMapping[key] :
+            options.requestDefaultKey;
 
         fields = fields
-            .map(field => snakeCase(field))
-            .filter(x => allowedFilters[key].includes(x));
+            .map(field => changeStringCase(field, options.changeRequestFieldCase))
+            .filter(field => allowedFields[allowedFieldsKey].includes(field));
 
-        result[key] = fields;
+        if(fields.length > 0) {
+            result[allowedFieldsKey] = fields;
+        }
     }
 
     return result;
 }
 
-export function applyRequestFields(
-    query: SelectQueryBuilder<any>,
-    alias: string,
-    fields: unknown,
-    allowedFields: Record<string, string[]> | string[]
+function transformAllowedDomainFields(
+    data: Record<string, string[]> | string[],
+    options: RequestFieldOptions
 ) {
-    const allowed : Record<string, string[]> = {};
+    let allowedFields : Record<string, string[]> = {};
 
-    if(Array.isArray(allowedFields)) {
-        allowed[alias] = allowedFields.map(allowedField => snakeCase(allowedField));
+    if(Array.isArray(data)) {
+        allowedFields[options.requestDefaultKey] = data;
     } else {
-        for(const key in allowedFields) {
-            if(!allowedFields.hasOwnProperty(key)) continue;
-
-            allowed[key] = allowedFields[key].map(allowedField => snakeCase(allowedField));
-        }
+        allowedFields = data;
     }
 
-    const domains: Record<string, string[]> = transformRequestFields(fields, allowed);
+    return allowedFields;
+}
+
+export type RequestFieldOptions = {
+    changeRequestFieldCase?: StringCaseOption | undefined,
+    requestDefaultKey: string,
+    aliasMapping: Record<string, string>
+}
+
+/**
+ * Apply fields for specific entity.
+ * aliasMapping is a mapping from request domain/entity key to query domain/entity key.
+ *
+ * @param query
+ * @param requestFields
+ * @param allowedFields
+ * @param partialOptions
+ */
+export function applyRequestFields(
+    query: SelectQueryBuilder<any>,
+    requestFields: unknown,
+    allowedFields: Record<string, string[]> | string[],
+    partialOptions?: Partial<RequestFieldOptions>
+) {
+    partialOptions = partialOptions ?? {};
+
+    const options : RequestFieldOptions = {
+        changeRequestFieldCase: partialOptions.changeRequestFieldCase,
+        requestDefaultKey: partialOptions.requestDefaultKey ?? '__DEFAULT__',
+        aliasMapping: partialOptions.aliasMapping ?? {}
+    }
+
+    allowedFields = transformAllowedDomainFields(allowedFields, options);
+
+    const domains: Record<string, string[]> = transformRequestFields(
+        requestFields,
+        allowedFields,
+        options
+    );
 
     for (const key in domains) {
         if (!domains.hasOwnProperty(key)) continue;
 
         for(let i=0; i<domains[key].length; i++) {
-            query.addSelect(key+'.'+domains[key][i]);
+            query.addSelect((key === options.requestDefaultKey ? '' : key+'.')+domains[key][i]);
         }
     }
 
     return query;
+}
+
+/**
+ * Transform allowed fields in array or object representation to object representation.
+ *
+ * {field1: 'field1', ...} => {field1: 'field1', ...}
+ * ['field1', 'field2'] => {field1: 'field1', field2: 'field2'}
+ *
+ * @param rawFields
+ */
+export function transformAllowedFields(
+    rawFields: string[] | Record<string, string>
+): Record<string, string> {
+    let fields: Record<string, string> = {};
+
+    const allowedFiltersPrototype: string = Object.prototype.toString.call(rawFields as any);
+    switch (allowedFiltersPrototype) {
+        case '[object Array]':
+            const tempStrArr: string[] = rawFields as string[];
+            for (let i = 0; i < tempStrArr.length; i++) {
+                fields[tempStrArr[i]] = tempStrArr[i];
+            }
+            break;
+        case '[object Object]':
+            fields = (rawFields as Record<string, string>);
+            break;
+    }
+
+    return fields;
 }

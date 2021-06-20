@@ -1,12 +1,17 @@
 import {SelectQueryBuilder} from "typeorm";
-import {transformAllowedFilters} from "./filter";
+import {transformAllowedFields} from "./fields";
+import {changeStringCase, StringCaseOption} from "./utils";
 
-function transformRequestFields(raw: unknown, allowed: Record<string, any>): Record<string, string> {
-    let fields: unknown[] = [];
+function transformRequestIncludes(
+    raw: unknown,
+    allowed: Record<string, any>,
+    options: RequestIncludeOptions
+): string[] {
+    let fields: string[] = [];
 
     const prototype: string = Object.prototype.toString.call(raw);
     if (prototype !== '[object Array]' && prototype !== '[object String]') {
-        return {};
+        return [];
     }
 
     if (prototype === '[object String]') {
@@ -14,36 +19,56 @@ function transformRequestFields(raw: unknown, allowed: Record<string, any>): Rec
     }
 
     if (prototype === '[object Array]') {
-        fields = <string[]>raw;
+        fields = (raw as any[]).filter(el => typeof el === 'string');
     }
 
-    const result: Record<string, string> = {};
+    const result : string[] = []
 
     for (let i = 0; i < fields.length; i++) {
         if (typeof fields[i] !== 'string') {
             delete fields[i];
         }
 
-        const stripped: string = (<string>fields[i]).trim();
+        const allowedKey: string = changeStringCase(
+            (fields[i] as string).trim() ,
+            options.changeRequestFieldCase
+        );
 
-        if (stripped.length === 0 || !allowed.hasOwnProperty(stripped)) {
+        if (allowedKey.length === 0 || !allowed.hasOwnProperty(allowedKey)) {
             delete fields[i];
         } else {
-            result[stripped] = allowed[stripped];
+            result.push(allowed[allowedKey]);
         }
     }
 
     return result;
 }
 
-export function applyRequestIncludes(query: SelectQueryBuilder<any>, alias: string, include: unknown, allowedIncludes: string[] | Record<string, any>) {
-    const allowedFields: Record<string, any> = transformAllowedFilters(allowedIncludes);
-    const requestIncludes: Record<string, string> = transformRequestFields(include, allowedFields);
+export type RequestIncludeOptions = {
+    changeRequestFieldCase?: StringCaseOption | undefined
+}
 
-    for (const key in requestIncludes) {
-        if (!requestIncludes.hasOwnProperty(key)) continue;
+export function applyRequestIncludes(
+    query: SelectQueryBuilder<any>,
+    queryAlias: string,
+    include: unknown,
+    allowedIncludes: string[] | Record<string, any>,
+    partialOptions?: Partial<RequestIncludeOptions>
+) {
+    partialOptions = partialOptions ?? {}
+    const options : RequestIncludeOptions = {
+        changeRequestFieldCase: partialOptions.changeRequestFieldCase
+    }
 
-        query.leftJoinAndSelect(alias + '.' + requestIncludes[key], requestIncludes[key]);
+    const allowedFields: Record<string, string> = transformAllowedFields(allowedIncludes);
+    const requestIncludes: string[] = transformRequestIncludes(
+        include,
+        allowedFields,
+        options
+    );
+
+    for (let i=0; i<requestIncludes.length; i++) {
+        query.leftJoinAndSelect(queryAlias + '.' + requestIncludes[i], requestIncludes[i]);
     }
 
     return query;
