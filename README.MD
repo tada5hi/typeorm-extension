@@ -166,7 +166,10 @@ export async function getUsers(req: Request, res: Response) {
     });
 
     // Only allow to select fields id, name for query alias 'user'
-    applyRequestFields(query, 'user', fields, ['id', 'name'])
+    applyRequestFields(query, fields,
+        {user: ['id', 'name']},
+        {aliasMapping: {user: 'user'}
+    });
 
     const [entities, total] = await query.getManyAndCount();
 
