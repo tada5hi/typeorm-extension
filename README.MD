@@ -3,8 +3,9 @@
 # Typeorm Extension 🚀
 This is a library to
 - `create` or `drop` the default database.
-- execute a full database setup (f.E create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)`.
 - extend the typeorm query for a given `QueryBuilder` with `filters, includes, pagination and fields` (json-api spec).
+- execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)`.
+
 
 **Table of Contents**
 
@@ -27,6 +28,7 @@ following typeorm drivers:
 * MySQL
 * Oracle
 * Postgres
+* SQLite
 
 ## Usage
 ### Create/Drop Database
@@ -139,7 +141,7 @@ import {
  *     meta: {
  *        total: 1,
  *        limit: 20,
- *         offset: 0
+ *        offset: 0
  *    }
  * }
  * @param req

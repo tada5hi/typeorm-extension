@@ -13,11 +13,29 @@ import {createOracleDatabase, dropOracleDatabase} from "./driver/oracle";
 import {createMsSQLDatabase, dropMsSQLDatabase} from "./driver/mssql";
 import {SimpleConnectionOptions} from "../connection";
 import {buildSimpleConnectionOptions} from "../connection/utils";
+import {createSQLiteDatabase, dropSQLiteDatabase} from "./driver/sqlite";
+import {NotSupportedDriver} from "./error";
 
+export * from './error';
+
+/**
+ * Create database for specified driver in ConnectionOptions.
+ *
+ * @throws NotSupportedDriver
+ *
+ * @param connectionOptions
+ */
 export async function createDatabase(connectionOptions: ConnectionOptions) {
     return await createOrDropDatabase(connectionOptions, 'create');
 }
 
+/**
+ * Drop database for specified driver in ConnectionOptions.
+ *
+ * @throws NotSupportedDriver
+ *
+ * @param connectionOptions
+ */
 export async function dropDatabase(connectionOptions: ConnectionOptions) {
     return await createOrDropDatabase(connectionOptions, 'drop');
 }
@@ -37,11 +55,15 @@ async function createOrDropDatabase(
 
     const isCreateOperation : boolean = action === 'create';
 
-    if(driver instanceof SqliteDriver) {
-        return;
-    }
-
     const simpleConnectionOptions : SimpleConnectionOptions = buildSimpleConnectionOptions(connectionOptions);
+
+    if(driver instanceof SqliteDriver) {
+        if(isCreateOperation) {
+            return await createSQLiteDatabase(driver, simpleConnectionOptions);
+        } else {
+            return await dropSQLiteDatabase(driver, simpleConnectionOptions);
+        }
+    }
 
     if(driver instanceof MysqlDriver) {
         if(isCreateOperation) {
@@ -74,4 +96,6 @@ async function createOrDropDatabase(
             return await dropMsSQLDatabase(driver, simpleConnectionOptions);
         }
     }
+
+    throw new NotSupportedDriver(connectionOptions.type);
 }

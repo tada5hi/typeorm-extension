@@ -1,0 +1,11 @@
+!dist/**
+!doc/**
+.travis.yml
+/.vscode
+coverage
+.DS_Store 
+.nyc_output
+tsconfig.json
+tsfmt.json
+tslint.json
+test
