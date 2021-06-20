@@ -1,6 +1,6 @@
 {
   "name": "typeorm-extension",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "",
   "author": {
     "name": "Peter Placzek",
@@ -23,7 +23,7 @@
     "jsonapi"
   ],
   "bin": {
-    "typeorm-extension": "dist/cli.js"
+    "typeorm-extension": "dist/cli/index.js"
   },
   "license": "MIT",
   "devDependencies": {

@@ -131,7 +131,7 @@ import {
  * Get many users.
  *
  * Request example
- * - url: /users?page[limit]=10&page[offset]=0&include=profile&filter[id]=1&fields[user]=id,name
+ * - url: /users?page[limit]=10&page[offset]=0&include[user]=profile&filter[id]=1&fields[user]=id,name
  *
  * Return Example:
  * {
@@ -159,12 +159,13 @@ export async function getUsers(req: Request, res: Response) {
     // only allow returning 20 items at max
     const pagination = applyRequestPagination(query, page, 20);
 
-    // only allow tow include profile relation, by key profile (property key)
+    // only allow tow include profile relation, by key profile (property key),
+    // relative to query entity alias 'user'
     applyRequestIncludes(query, 'user', include, {
         profile: 'profile'
     });
 
-    // Only allow to select fields id, name
+    // Only allow to select fields id, name for query alias 'user'
     applyRequestFields(query, 'user', fields, ['id', 'name'])
 
     const [entities, total] = await query.getManyAndCount();

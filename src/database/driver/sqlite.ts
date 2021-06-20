@@ -18,7 +18,7 @@ export async function createSQLiteDatabase(
                   reject(err);
               }
 
-              resolve();
+              resolve(true);
           })
     }));
 }
@@ -41,10 +41,10 @@ export async function dropSQLiteDatabase(
                     reject(err);
                 }
 
-                resolve();
+                resolve(true);
             })
 
-            resolve();
+            resolve(true);
         });
     }));
 }
