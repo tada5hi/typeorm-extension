@@ -81,7 +81,6 @@ you may want to use them with ts-node as well with the build (`dist`) variant.
 Therefore, you can build the ConnectionOptions with the build in function `buildConnectionOptions`.
 
 ```typescript
-import {ConnectionOptions} from 'typeorm';
 import {craeteDatabase, dropDatabase, buildConnectionOptions} from "typeorm-extension";
 
 (async () => {

@@ -1,4 +1,4 @@
-import {Connection, ConnectionOptions, getConnectionOptions} from "typeorm";
+import {Connection, ConnectionOptions, ConnectionOptionsReader} from "typeorm";
 
 import {DriverFactory} from "typeorm/driver/DriverFactory";
 import {MysqlDriver} from "typeorm/driver/mysql/MysqlDriver";
@@ -49,7 +49,14 @@ async function createOrDropDatabase(
     options?: CustomOptions,
     connectionOptions?: ConnectionOptions
 ) {
-    connectionOptions = connectionOptions ?? await getConnectionOptions();
+    if(typeof connectionOptions === 'undefined') {
+        const connectionOptionReader = new ConnectionOptionsReader({
+            root: process.cwd()
+        });
+
+        connectionOptions = await connectionOptionReader.get('default');
+    }
+
     const fakeConnection : Connection = {
         options: {
             type: connectionOptions.type
