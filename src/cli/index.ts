@@ -4,8 +4,6 @@ import yargs from 'yargs';
 
 import {DatabaseSetupCommand} from './commands';
 
-export * from './commands';
-
 // tslint:disable-next-line:no-unused-expression
 yargs
     .usage("Usage: $0 <command> [options]")

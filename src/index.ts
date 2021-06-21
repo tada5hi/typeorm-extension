@@ -1,5 +1,5 @@
 export * from './api';
-export * from './cli';
+export * from './cli/commands';
 export * from './connection';
 export * from './database';
 export * from './seeder';
