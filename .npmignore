@@ -2,8 +2,9 @@
 !doc/**
 .travis.yml
 /.vscode
+.idea
 coverage
-.DS_Store 
+.DS_Store
 .nyc_output
 tsconfig.json
 tsfmt.json

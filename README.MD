@@ -2,7 +2,7 @@
 
 # Typeorm Extension 🚀
 This is a library to
-- `create` or `drop` the default database.
+- `create` or `drop` the database specified for the typeorm connection.
 - extend the typeorm query for a given `QueryBuilder` with `filters, includes, pagination and fields` (json-api spec).
 - execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)`.
 
@@ -51,6 +51,13 @@ import {createDatabase, dropDatabase} from "typeorm-extension";
     await dropDatabase(connectionOptions);
 })();
 ```
+You can also `create` the database if it doesn't exist or only `drop` it if it exists.
+
+```typescript
+await createDatabase(connectionOptions, {ifNotExist: true});
+await dropDatabase(connectionOptions, {ifExist: true});
+```
+
 If you have defined `entites` or `subscribers` by environment variables or with another typeorm configuration option,
 you may want to use them with ts-node as well with the build (`dist`) variant.
 Therefore, you can build the ConnectionOptions with the build in function `buildConnectionOptions`.
