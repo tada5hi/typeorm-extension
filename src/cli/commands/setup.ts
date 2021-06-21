@@ -70,10 +70,10 @@ export class DatabaseSetupCommand implements CommandModule {
         try {
             switch (args.database) {
                 case "create":
-                    await createDatabase(connectionOptions);
+                    await createDatabase({ifNotExist: true}, connectionOptions);
                     break;
                 case "drop":
-                    await dropDatabase(connectionOptions);
+                    await dropDatabase({ifExist: true}, connectionOptions);
                     if(exitProcess) {
                         process.exit(0);
                     } else {
