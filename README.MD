@@ -58,6 +58,14 @@ await createDatabase(connectionOptions, {ifNotExist: true});
 await dropDatabase(connectionOptions, {ifExist: true});
 ```
 
+In addition, you can also specify the `charset` and `characterSet` as second parameter to the `createDatabase()` function
+or parse it from the extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
+F.e
+- postgres
+  `createDatabase(connectionOptions, {ifNotExist: true, characterSet: "UTF8"});`
+- mysql
+  `createDatabase(connectionOptions, {ifNotExist: true, charset: "utf8mb4_general_ci", characterSet: "utf8mb4"});`
+
 If you have defined `entites` or `subscribers` by environment variables or with another typeorm configuration option,
 you may want to use them with ts-node as well with the build (`dist`) variant.
 Therefore, you can build the ConnectionOptions with the build in function `buildConnectionOptions`.
