@@ -2,6 +2,7 @@ import {PostgresDriver} from "typeorm/driver/postgres/PostgresDriver";
 
 import {SimpleConnectionOptions} from "../../connection";
 import {CustomOptions} from "../type";
+import {hasOwnProperty} from "../../utils";
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver,
@@ -56,11 +57,16 @@ export async function createPostgresDatabase(
     const connection = await createSimplePostgresConnection(driver, connectionOptions);
 
     if(customOptions.ifNotExist) {
-        const hasDatabaseQuery: string = `SELECT * FROM pg_database WHERE datname='${connectionOptions.database}';`;
-        const hasDatabaseResult = await executeSimplePostgresQuery(connection, hasDatabaseQuery, false);
-        const hasDatabase = !!(hasDatabaseResult as []).length;
-        if(hasDatabase) {
-            return;
+        const existQuery: string = `SELECT * FROM pg_database WHERE lower(datname) = lower('${connectionOptions.database}');`;
+        const existResult = await executeSimplePostgresQuery(connection, existQuery, false);
+
+        if(
+            typeof existResult === 'object' &&
+            hasOwnProperty(existResult, 'rows') &&
+            Array.isArray(existResult.rows) &&
+            existResult.rows.length > 0
+        ) {
+            return Promise.resolve();
         }
     }
 
