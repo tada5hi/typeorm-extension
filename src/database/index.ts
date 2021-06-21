@@ -1,4 +1,4 @@
-import {Connection, ConnectionOptions, ConnectionOptionsReader} from "typeorm";
+import {Connection, ConnectionOptions} from "typeorm";
 
 import {DriverFactory} from "typeorm/driver/DriverFactory";
 import {MysqlDriver} from "typeorm/driver/mysql/MysqlDriver";
@@ -11,7 +11,7 @@ import {createMySQLDatabase, dropMySQLDatabase} from "./driver/mysql";
 import {createPostgresDatabase, dropPostgresDatabase} from "./driver/postgres";
 import {createOracleDatabase, dropOracleDatabase} from "./driver/oracle";
 import {createMsSQLDatabase, dropMsSQLDatabase} from "./driver/mssql";
-import {SimpleConnectionOptions} from "../connection";
+import {buildConnectionOptions, SimpleConnectionOptions} from "../connection";
 import {buildSimpleConnectionOptions} from "../connection/utils";
 import {createSQLiteDatabase, dropSQLiteDatabase} from "./driver/sqlite";
 import {NotSupportedDriver} from "./error";
@@ -50,11 +50,7 @@ async function createOrDropDatabase(
     connectionOptions?: ConnectionOptions
 ) {
     if(typeof connectionOptions === 'undefined') {
-        const connectionOptionReader = new ConnectionOptionsReader({
-            root: process.cwd()
-        });
-
-        connectionOptions = await connectionOptionReader.get('default');
+        connectionOptions = await buildConnectionOptions();
     }
 
     const fakeConnection : Connection = {

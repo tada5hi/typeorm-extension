@@ -84,11 +84,12 @@ Therefore, you can build the ConnectionOptions with the build in function `build
 import {craeteDatabase, dropDatabase, buildConnectionOptions} from "typeorm-extension";
 
 (async () => {
+    const connectionOptions = await buildConnectionOptions();
     // Create database
-    await createDatabase({ifNotExist: true});
+    await createDatabase({ifNotExist: true}, connectionOptions);
 
     // Drop Database
-    await dropDatabase({ifNotExist: true});
+    await dropDatabase({ifExist: true}, connectionOptions);
 })();
 ```
 If you have specified the path pattern for the entities like:
