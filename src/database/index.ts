@@ -15,7 +15,7 @@ import {SimpleConnectionOptions} from "../connection";
 import {buildSimpleConnectionOptions} from "../connection/utils";
 import {createSQLiteDatabase, dropSQLiteDatabase} from "./driver/sqlite";
 import {NotSupportedDriver} from "./error";
-import {AdditionalConnectionOptions, ConnectionWithAdditionalOptions, CustomOptions} from "./type";
+import {ConnectionWithAdditionalOptions, CustomOptions} from "./type";
 
 export * from './error';
 export * from './type';
@@ -28,7 +28,7 @@ export * from './type';
  * @param connectionOptions
  * @param options
  */
-export async function createDatabase(connectionOptions: ConnectionOptions, options?: AdditionalConnectionOptions) {
+export async function createDatabase(connectionOptions: ConnectionOptions, options?: CustomOptions) {
     return await createOrDropDatabase(connectionOptions, 'create', options);
 }
 
@@ -40,7 +40,7 @@ export async function createDatabase(connectionOptions: ConnectionOptions, optio
  * @param connectionOptions
  * @param options
  */
-export async function dropDatabase(connectionOptions: ConnectionOptions, options?: AdditionalConnectionOptions) {
+export async function dropDatabase(connectionOptions: ConnectionOptions, options?: CustomOptions) {
     return await createOrDropDatabase(connectionOptions, 'drop', options);
 }
 
