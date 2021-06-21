@@ -61,7 +61,9 @@ async function createOrDropDatabase(
     const isCreateOperation : boolean = action === 'create';
 
     const simpleConnectionOptions : SimpleConnectionOptions = buildSimpleConnectionOptions(connectionOptions);
-    const customOptions : CustomOptions = buildCustomOptions(connectionOptions);
+
+    options = options ?? {};
+    const customOptions : CustomOptions = extendCustomOptions(options, connectionOptions);
 
     if(driver instanceof SqliteDriver) {
         if(isCreateOperation) {
@@ -106,9 +108,10 @@ async function createOrDropDatabase(
     throw new NotSupportedDriver(connectionOptions.type);
 }
 
-export function buildCustomOptions(connectionOptions: ConnectionWithAdditionalOptions) {
-    const options : CustomOptions = {};
-
+export function extendCustomOptions(
+    options: CustomOptions,
+    connectionOptions: ConnectionWithAdditionalOptions
+) {
     if(typeof connectionOptions?.charset === 'string') {
         options.charset = (connectionOptions as ConnectionWithAdditionalOptions).charset;
     }
