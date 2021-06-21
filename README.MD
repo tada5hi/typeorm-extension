@@ -75,14 +75,17 @@ if the function is not called within the ts-node runtime environment.
 
 The same logic applies to the `seeds` and `factories` path(s) of the `typeorm-seeding` library.
 
-### API
-To use the API we first declare two entities with a simple relation between them:
+### Request Utils
+For explanation proposes of the request utils,
+two simple entities with a simple relation between them are declared to demonstrate their usage:
+
 ```typescript
 import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
-    OneToOne
+    OneToOne,
+    JoinColumn
 } from "typeorm";
 
 @Entity()
@@ -111,11 +114,15 @@ export class Profile {
 
     @Column({type: 'varchar', length: 255, default: null, nullable: true})
     cover: string;
+
+    @OneToOne(() => User)
+    @JoinColumn()
+    user: User;
 }
 ```
 
-When you use express or another library, you can use the API functions like
-demonstrated in the following:
+When you use express or another library, you can use the request utils accordingly to the
+following code snippet:
 
 ```typescript
 import {getRepository} from "typeorm";
