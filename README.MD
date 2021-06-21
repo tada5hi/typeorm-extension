@@ -34,8 +34,7 @@ following typeorm drivers:
 ### Create/Drop Database
 
 To `create` or `drop` the default database of the typeorm connection,
-you can simply create the `ConnectionOptions` for the Connection,
-like described in the following example:
+you can manually create the `ConnectionOptions` for the Connection, or let it be generated automatically:
 
 ```typescript
 import {ConnectionOptions, getConnectionOptions} from 'typeorm';
@@ -44,30 +43,37 @@ import {createDatabase, dropDatabase} from "typeorm-extension";
 (async () => {
     const connectionOptions: ConnectionOptions = await getConnectionOptions();
 
-    // Create database
-    await createDatabase(connectionOptions);
+    // Create database with connection specification
+    await createDatabase(undefined, connectionOptions);
 
-    // Drop Database
-    await dropDatabase(connectionOptions);
+    // or without manually specification
+    await createDatabase({ifNotExist: true});
+
+
+    // Drop Database with connection specification
+    await dropDatabase(undefined, connectionOptions);
+
+    // or without manually specification
+    await dropDatabase({ifExist: true});
 })();
 ```
 You can also `create` the database if it doesn't exist or only `drop` it if it exists.
 
 ```typescript
-await createDatabase(connectionOptions, {ifNotExist: true});
-await dropDatabase(connectionOptions, {ifExist: true});
+await createDatabase({ifNotExist: true});
+await dropDatabase({ifExist: true});
 ```
 
-In addition, you can also specify the `charset` and `characterSet` as second parameter to the `createDatabase()` function
+You can also specify the `charset` and `characterSet` as property of the first parameter of the `createDatabase()` function
 or parse it from the extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
 F.e
 - postgres
   ```typescript
-   await createDatabase(connectionOptions, {ifNotExist: true, characterSet: "UTF8"});
+   await createDatabase({ifNotExist: true, characterSet: "UTF8"});
   ```
 - mysql
   ```typescript
-  await createDatabase(connectionOptions, {ifNotExist: true, charset: "utf8mb4_general_ci", characterSet: "utf8mb4"});
+  await createDatabase({ifNotExist: true, charset: "utf8mb4_general_ci", characterSet: "utf8mb4"});
   ```
 
 If you have defined `entites` or `subscribers` by environment variables or with another typeorm configuration option,
@@ -79,13 +85,11 @@ import {ConnectionOptions} from 'typeorm';
 import {craeteDatabase, dropDatabase, buildConnectionOptions} from "typeorm-extension";
 
 (async () => {
-    const connectionOptions: ConnectionOptions = await buildConnectionOptions();
-
     // Create database
-    await createDatabase(connectionOptions);
+    await createDatabase({ifNotExist: true});
 
     // Drop Database
-    await dropDatabase(connectionOptions);
+    await dropDatabase({ifNotExist: true});
 })();
 ```
 If you have specified the path pattern for the entities like:

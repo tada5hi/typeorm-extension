@@ -1,4 +1,4 @@
-import {Connection, ConnectionOptions} from "typeorm";
+import {Connection, ConnectionOptions, getConnectionOptions} from "typeorm";
 
 import {DriverFactory} from "typeorm/driver/DriverFactory";
 import {MysqlDriver} from "typeorm/driver/mysql/MysqlDriver";
@@ -28,8 +28,8 @@ export * from './type';
  * @param connectionOptions
  * @param options
  */
-export async function createDatabase(connectionOptions: ConnectionOptions, options?: CustomOptions) {
-    return await createOrDropDatabase(connectionOptions, 'create', options);
+export async function createDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions) {
+    return await createOrDropDatabase('create', options, connectionOptions);
 }
 
 /**
@@ -40,15 +40,16 @@ export async function createDatabase(connectionOptions: ConnectionOptions, optio
  * @param connectionOptions
  * @param options
  */
-export async function dropDatabase(connectionOptions: ConnectionOptions, options?: CustomOptions) {
-    return await createOrDropDatabase(connectionOptions, 'drop', options);
+export async function dropDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions) {
+    return await createOrDropDatabase('drop', options, connectionOptions);
 }
 
 async function createOrDropDatabase(
-    connectionOptions: ConnectionOptions,
     action: 'create' | 'drop',
     options?: CustomOptions,
+    connectionOptions?: ConnectionOptions
 ) {
+    connectionOptions = connectionOptions ?? await getConnectionOptions();
     const fakeConnection : Connection = {
         options: {
             type: connectionOptions.type
