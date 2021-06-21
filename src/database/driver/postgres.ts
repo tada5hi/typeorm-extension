@@ -1,5 +1,7 @@
 import {PostgresDriver} from "typeorm/driver/postgres/PostgresDriver";
+
 import {SimpleConnectionOptions} from "../../connection";
+import {CustomOptions} from "../type";
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver,
@@ -49,11 +51,11 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 export async function createPostgresDatabase(
     driver: PostgresDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifNotExist?: boolean
+    customOptions: CustomOptions
 ) {
     const connection = await createSimplePostgresConnection(driver, connectionOptions);
 
-    if(ifNotExist) {
+    if(customOptions.ifNotExist) {
         const hasDatabaseQuery: string = `SELECT * FROM pg_database WHERE datname='${connectionOptions.database}';`;
         const hasDatabaseResult = await executeSimplePostgresQuery(connection, hasDatabaseQuery, false);
         const hasDatabase = !!(hasDatabaseResult as []).length;
@@ -65,7 +67,10 @@ export async function createPostgresDatabase(
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresQueryRunner.ts#L326
      */
-    const query = `CREATE DATABASE "${connectionOptions.database}"`;
+    let query = `CREATE DATABASE "${connectionOptions.database}"`;
+    if(typeof customOptions.characterSet === 'string') {
+        query += ` WITH ENCODING '${customOptions.characterSet}'`;
+    }
 
     return await executeSimplePostgresQuery(connection, query);
 }
@@ -73,13 +78,13 @@ export async function createPostgresDatabase(
 export async function dropPostgresDatabase(
     driver: PostgresDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifExist?: boolean
+    customOptions: CustomOptions
 ) {
     const connection = await createSimplePostgresConnection(driver, connectionOptions);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresQueryRunner.ts#L343
      */
-    const query = ifExist ? `DROP DATABASE IF EXISTS "${connectionOptions.database}"` : `DROP DATABASE "${connectionOptions.database}"`;
+    const query = customOptions.ifExist ? `DROP DATABASE IF EXISTS "${connectionOptions.database}"` : `DROP DATABASE "${connectionOptions.database}"`;
 
     return await executeSimplePostgresQuery(connection, query);
 }

@@ -1,5 +1,7 @@
 import {SqlServerDriver} from "typeorm/driver/sqlserver/SqlServerDriver";
+
 import {SimpleConnectionOptions} from "../../connection";
+import {CustomOptions} from "../type";
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
@@ -26,15 +28,19 @@ export async function createSimpleMsSQLConnection(
 export async function createMsSQLDatabase(
     driver: SqlServerDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifNotExist?: boolean
+    customOptions: CustomOptions
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L416
      */
-    const query = ifNotExist ?
+    let query = customOptions.ifNotExist ?
         `IF DB_ID('${connectionOptions.database}') IS NULL CREATE DATABASE "${connectionOptions.database}"` :
         `CREATE DATABASE "${connectionOptions.database}"`;
+
+    if(typeof customOptions.characterSet === 'string') {
+        query += ` CHARACTER SET ${customOptions.characterSet}`;
+    }
 
     return await connection.query(query);
 }
@@ -42,13 +48,13 @@ export async function createMsSQLDatabase(
 export async function dropMsSQLDatabase(
     driver: SqlServerDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifExist?: boolean
+    customOptions: CustomOptions
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L425
      */
-    const query = ifExist ?
+    const query = customOptions.ifExist ?
         `IF DB_ID('${connectionOptions.database}') IS NOT NULL DROP DATABASE "${connectionOptions.database}"` :
         `DROP DATABASE "${connectionOptions.database}"`;
 

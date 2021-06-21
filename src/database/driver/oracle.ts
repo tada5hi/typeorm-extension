@@ -1,5 +1,6 @@
 import {OracleDriver} from "typeorm/driver/oracle/OracleDriver";
 import {SimpleConnectionOptions} from "../../connection";
+import {CustomOptions} from "../type";
 
 export function createSimpleOracleConnection(
     driver: OracleDriver,
@@ -17,7 +18,7 @@ export function createSimpleOracleConnection(
 export async function createOracleDatabase(
     driver: OracleDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifNotExist?: boolean
+    customOptions: CustomOptions
 ) {
     const connection = createSimpleOracleConnection(driver, connectionOptions);
     /**
@@ -31,7 +32,7 @@ export async function createOracleDatabase(
 export async function dropOracleDatabase(
     driver: OracleDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifExist?: boolean
+    customOptions: CustomOptions
 ) {
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295

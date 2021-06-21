@@ -15,8 +15,10 @@ import {SimpleConnectionOptions} from "../connection";
 import {buildSimpleConnectionOptions} from "../connection/utils";
 import {createSQLiteDatabase, dropSQLiteDatabase} from "./driver/sqlite";
 import {NotSupportedDriver} from "./error";
+import {AdditionalConnectionOptions, ConnectionWithAdditionalOptions, CustomOptions} from "./type";
 
 export * from './error';
+export * from './type';
 
 /**
  * Create database for specified driver in ConnectionOptions.
@@ -24,9 +26,10 @@ export * from './error';
  * @throws NotSupportedDriver
  *
  * @param connectionOptions
+ * @param options
  */
-export async function createDatabase(connectionOptions: ConnectionOptions) {
-    return await createOrDropDatabase(connectionOptions, 'create');
+export async function createDatabase(connectionOptions: ConnectionOptions, options?: AdditionalConnectionOptions) {
+    return await createOrDropDatabase(connectionOptions, 'create', options);
 }
 
 /**
@@ -35,14 +38,16 @@ export async function createDatabase(connectionOptions: ConnectionOptions) {
  * @throws NotSupportedDriver
  *
  * @param connectionOptions
+ * @param options
  */
-export async function dropDatabase(connectionOptions: ConnectionOptions) {
-    return await createOrDropDatabase(connectionOptions, 'drop');
+export async function dropDatabase(connectionOptions: ConnectionOptions, options?: AdditionalConnectionOptions) {
+    return await createOrDropDatabase(connectionOptions, 'drop', options);
 }
 
 async function createOrDropDatabase(
     connectionOptions: ConnectionOptions,
-    action: 'create' | 'drop'
+    action: 'create' | 'drop',
+    options?: CustomOptions,
 ) {
     const fakeConnection : Connection = {
         options: {
@@ -56,46 +61,69 @@ async function createOrDropDatabase(
     const isCreateOperation : boolean = action === 'create';
 
     const simpleConnectionOptions : SimpleConnectionOptions = buildSimpleConnectionOptions(connectionOptions);
+    const customOptions : CustomOptions = buildCustomOptions(connectionOptions);
 
     if(driver instanceof SqliteDriver) {
         if(isCreateOperation) {
-            return await createSQLiteDatabase(driver, simpleConnectionOptions);
+            return await createSQLiteDatabase(driver, simpleConnectionOptions, customOptions);
         } else {
-            return await dropSQLiteDatabase(driver, simpleConnectionOptions);
+            return await dropSQLiteDatabase(driver, simpleConnectionOptions, customOptions);
         }
     }
 
     if(driver instanceof MysqlDriver) {
         if(isCreateOperation) {
-            return await createMySQLDatabase(driver, simpleConnectionOptions);
+            return await createMySQLDatabase(driver, simpleConnectionOptions, customOptions);
         } else {
-            return await dropMySQLDatabase(driver, simpleConnectionOptions);
+            return await dropMySQLDatabase(driver, simpleConnectionOptions, customOptions);
         }
     }
 
     if(driver instanceof PostgresDriver) {
         if(isCreateOperation) {
-            return await createPostgresDatabase(driver, simpleConnectionOptions);
+            return await createPostgresDatabase(driver, simpleConnectionOptions, customOptions);
         } else {
-            return await dropPostgresDatabase(driver, simpleConnectionOptions);
+            return await dropPostgresDatabase(driver, simpleConnectionOptions, customOptions);
         }
     }
 
     if(driver instanceof OracleDriver) {
         if(isCreateOperation) {
-            return await createOracleDatabase(driver, simpleConnectionOptions);
+            return await createOracleDatabase(driver, simpleConnectionOptions, customOptions);
         } else {
-            return await dropOracleDatabase(driver, simpleConnectionOptions);
+            return await dropOracleDatabase(driver, simpleConnectionOptions, customOptions);
         }
     }
 
     if(driver instanceof SqlServerDriver) {
         if(isCreateOperation) {
-            return await createMsSQLDatabase(driver, simpleConnectionOptions);
+            return await createMsSQLDatabase(driver, simpleConnectionOptions, customOptions);
         } else {
-            return await dropMsSQLDatabase(driver, simpleConnectionOptions);
+            return await dropMsSQLDatabase(driver, simpleConnectionOptions, customOptions);
         }
     }
 
     throw new NotSupportedDriver(connectionOptions.type);
+}
+
+export function buildCustomOptions(connectionOptions: ConnectionWithAdditionalOptions) {
+    const options : CustomOptions = {};
+
+    if(typeof connectionOptions?.charset === 'string') {
+        options.charset = (connectionOptions as ConnectionWithAdditionalOptions).charset;
+    }
+
+    if(typeof connectionOptions?.characterSet === 'string') {
+        options.characterSet = (connectionOptions as ConnectionWithAdditionalOptions).characterSet;
+    }
+
+    if(typeof connectionOptions?.extra?.charset === 'string') {
+        options.charset = connectionOptions.extra.charset;
+    }
+
+    if(typeof connectionOptions?.extra?.characterSet === 'string') {
+        options.characterSet = connectionOptions.extra.characterSet;
+    }
+
+    return options;
 }

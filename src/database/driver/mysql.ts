@@ -1,5 +1,7 @@
 import {MysqlDriver} from "typeorm/driver/mysql/MysqlDriver";
+
 import {SimpleConnectionOptions} from "../../connection";
+import {CustomOptions} from "../type";
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
@@ -43,14 +45,29 @@ export async function executeSimpleMysqlQuery(connection: any, query: string) {
 export async function createMySQLDatabase(
     driver: MysqlDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifNotExist?: boolean
+    customOptions: CustomOptions
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L297
      */
-    let query = ifNotExist ? `CREATE DATABASE IF NOT EXISTS \`${connectionOptions.database}\`` : `CREATE DATABASE \`${connectionOptions.database}\``;
-    query += ` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`;
+    let query = customOptions.ifNotExist ? `CREATE DATABASE IF NOT EXISTS \`${connectionOptions.database}\`` : `CREATE DATABASE \`${connectionOptions.database}\``;
+    if(typeof customOptions.charset === 'string') {
+        const charset : string = customOptions.charset;
+        let characterSet : string | undefined = customOptions.characterSet;
+
+        if(typeof characterSet === 'undefined') {
+            if(charset.toLowerCase().startsWith('utf8mb4')) {
+                characterSet = 'utf8mb4';
+            } else if(charset.toLowerCase().startsWith('utf8')) {
+                characterSet = 'utf8';
+            }
+        }
+
+        if(typeof characterSet === 'string') {
+            query += ` CHARACTER SET ${characterSet} COLLATE ${charset}`;
+        }
+    }
 
     return await executeSimpleMysqlQuery(connection, query);
 }
@@ -58,14 +75,14 @@ export async function createMySQLDatabase(
 export async function dropMySQLDatabase(
     driver: MysqlDriver,
     connectionOptions: SimpleConnectionOptions,
-    ifExist?: boolean
+    customOptions: CustomOptions
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);
 
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L306
      */
-    const query = ifExist ? `DROP DATABASE IF EXISTS \`${connectionOptions.database}\`` : `DROP DATABASE \`${connectionOptions.database}\``;
+    const query = customOptions.ifExist ? `DROP DATABASE IF EXISTS \`${connectionOptions.database}\`` : `DROP DATABASE \`${connectionOptions.database}\``;
 
     return await executeSimpleMysqlQuery(connection, query);
 }
