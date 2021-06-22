@@ -1,5 +1,5 @@
 import {Brackets, SelectQueryBuilder} from "typeorm";
-import {changeStringCase, StringCaseOption} from "./utils";
+import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
 import {transformAllowedFields} from "./fields";
 
 function transformRequestFilters(
@@ -33,7 +33,7 @@ function transformRequestFilters(
             continue;
         }
 
-        const allowedKey : string = changeStringCase(key, options.changeRequestFieldCase);
+        const allowedKey : string = changeStringCase(key, options.changeRequestKeyCase);
 
         if(!allowedFilters.hasOwnProperty(allowedKey)) {
             continue;
@@ -46,7 +46,7 @@ function transformRequestFilters(
 }
 
 export type RequestFilterOptions = {
-    changeRequestFieldCase?: StringCaseOption | undefined
+    changeRequestKeyCase?: StringCaseOption | undefined
 }
 
 export function applyRequestFilter(
@@ -58,7 +58,7 @@ export function applyRequestFilter(
     partialOptions = partialOptions ?? {};
 
     const options : RequestFilterOptions = {
-        changeRequestFieldCase: partialOptions.changeRequestFieldCase
+        changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase()
     };
 
     const allowedFilters: Record<string, string> = transformAllowedFields(rawAllowedFilters);

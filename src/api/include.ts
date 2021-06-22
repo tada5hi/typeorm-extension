@@ -1,6 +1,6 @@
 import {SelectQueryBuilder} from "typeorm";
 import {transformAllowedFields} from "./fields";
-import {changeStringCase, StringCaseOption} from "./utils";
+import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
 
 function transformRequestIncludes(
     raw: unknown,
@@ -31,7 +31,7 @@ function transformRequestIncludes(
 
         const allowedKey: string = changeStringCase(
             (fields[i] as string).trim() ,
-            options.changeRequestFieldCase
+            options.changeRequestKeyCase
         );
 
         if (allowedKey.length === 0 || !allowed.hasOwnProperty(allowedKey)) {
@@ -45,7 +45,7 @@ function transformRequestIncludes(
 }
 
 export type RequestIncludeOptions = {
-    changeRequestFieldCase?: StringCaseOption | undefined
+    changeRequestKeyCase?: StringCaseOption | undefined
 }
 
 export function applyRequestIncludes(
@@ -57,7 +57,7 @@ export function applyRequestIncludes(
 ) {
     partialOptions = partialOptions ?? {}
     const options : RequestIncludeOptions = {
-        changeRequestFieldCase: partialOptions.changeRequestFieldCase
+        changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase()
     }
 
     const allowedFields: Record<string, string> = transformAllowedFields(allowedIncludes);

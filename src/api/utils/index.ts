@@ -21,3 +21,13 @@ export function changeStringCase(
             return capitalCase(str);
     }
 }
+
+let requestKeyCase : StringCaseOption | undefined;
+
+export function setDefaultRequestKeyCase(strCase?: StringCaseOption) {
+    requestKeyCase = strCase;
+}
+
+export function getDefaultRequestKeyCase() : StringCaseOption | undefined {
+    return requestKeyCase;
+}

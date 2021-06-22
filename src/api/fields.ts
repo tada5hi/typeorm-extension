@@ -1,6 +1,6 @@
 import {SelectQueryBuilder} from "typeorm";
 import {hasOwnProperty} from "../utils";
-import {changeStringCase, StringCaseOption} from "./utils";
+import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
 
 function transformRequestFields(
     raw: unknown,
@@ -33,7 +33,7 @@ function transformRequestFields(
             options.requestDefaultKey;
 
         fields = fields
-            .map(field => changeStringCase(field, options.changeRequestFieldCase))
+            .map(field => changeStringCase(field, options.changeRequestKeyCase))
             .filter(field => allowedFields[allowedFieldsKey].includes(field));
 
         if(fields.length > 0) {
@@ -60,7 +60,7 @@ function transformAllowedDomainFields(
 }
 
 export type RequestFieldOptions = {
-    changeRequestFieldCase?: StringCaseOption | undefined,
+    changeRequestKeyCase?: StringCaseOption | undefined,
     requestDefaultKey: string,
     aliasMapping: Record<string, string>
 }
@@ -83,7 +83,7 @@ export function applyRequestFields(
     partialOptions = partialOptions ?? {};
 
     const options : RequestFieldOptions = {
-        changeRequestFieldCase: partialOptions.changeRequestFieldCase,
+        changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase(),
         requestDefaultKey: partialOptions.requestDefaultKey ?? '__DEFAULT__',
         aliasMapping: partialOptions.aliasMapping ?? {}
     }
