@@ -10,3 +10,4 @@ tsconfig.json
 tsfmt.json
 tslint.json
 test
+src

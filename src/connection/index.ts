@@ -1,25 +1,27 @@
 import {ConnectionOptions, ConnectionOptionsReader} from "typeorm";
 import path from 'path';
-import {getCompilerOptions, isTsNodeRuntimeEnvironment, setConnectionOptionsForSeeder} from "../index";
-import {ConnectionWithSeedingOptions} from "./options";
+import {
+    ConnectionWithSeederOptions,
+    getCompilerOptions,
+    hasOwnProperty,
+    isTsNodeRuntimeEnvironment
+} from "../index";
 
 export {
-    SimpleConnectionOptions,
-    ConnectionWithSeedingOptions,
-    SeedingOptions
+    SimpleConnectionOptions
 } from "./options";
 
 export async function buildConnectionOptions(
     name : string = 'default',
     config: string = 'ormconfig',
     isUsedByCommand: boolean = false
-) :  Promise<ConnectionWithSeedingOptions> {
+) :  Promise<ConnectionWithSeederOptions> {
     const connectionOptionsReader = new ConnectionOptionsReader({
         root: process.cwd(),
         configName: config
     });
 
-    const connectionOptions : ConnectionWithSeedingOptions = await connectionOptionsReader.get(name);
+    const connectionOptions : ConnectionWithSeederOptions = await connectionOptionsReader.get(name);
 
     if (isUsedByCommand) {
         Object.assign(connectionOptions, {
@@ -32,22 +34,28 @@ export async function buildConnectionOptions(
     }
 
     if (!connectionOptions.factories) {
-        connectionOptions.factories = [process.env.TYPEORM_SEEDING_FACTORIES || 'src/database/factories/**/*{.ts,.js}']
+        connectionOptions.factories = [
+            process.env.TYPEORM_SEEDING_FACTORIES ||
+            'src/database/factories/**/*{.ts,.js}'
+        ]
     }
     if (!connectionOptions.seeds) {
-        connectionOptions.seeds = [process.env.TYPEORM_SEEDING_SEEDS || 'src/database/seeds/**/*{.ts,.js}']
+        connectionOptions.seeds = [
+            process.env.TYPEORM_SEEDS ||
+            process.env.TYPEORM_SEEDING_SEEDS ||
+            'src/database/seeds/**/*{.ts,.js}'
+        ]
     }
 
     modifyConnectionOptionsForRuntimeEnvironment(connectionOptions);
-    setConnectionOptionsForSeeder(connectionOptions);
 
     return connectionOptions;
 }
 
 export function modifyConnectionOptionsForRuntimeEnvironment(
-    connectionOptions: ConnectionWithSeedingOptions,
+    connectionOptions: ConnectionWithSeederOptions,
 ) {
-    const keys : Extract<keyof ConnectionWithSeedingOptions, 'entities' | 'subscribers' | 'seeds' | 'factories'>[] = [
+    const keys : Extract<keyof ConnectionWithSeederOptions, 'entities' | 'subscribers' | 'seeds' | 'factories'>[] = [
         'entities',
         'subscribers',
         'seeds',
@@ -61,11 +69,17 @@ export function modifyConnectionOptionsForRuntimeEnvironment(
     return connectionOptions;
 }
 
-export function modifyConnectionOptionForRuntimeEnvironment(
-    connectionOptions: ConnectionWithSeedingOptions,
-    key: keyof ConnectionWithSeedingOptions,
+export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<string, any>>(
+    options: T,
+    key: keyof ConnectionWithSeederOptions,
     compilerSrcDirectory?: string
-) {
+) : T {
+    if(!hasOwnProperty(options, key)) {
+        return options;
+    }
+
+    let value = options[key];
+
     switch (key) {
         case "entities":
         case "subscribers":
@@ -82,29 +96,29 @@ export function modifyConnectionOptionForRuntimeEnvironment(
 
                 const outDir : string = tsCompilerOptions.outDir ?? 'dist';
 
-                if(Array.isArray(connectionOptions[key])) {
-                    for(let i=0; i<connectionOptions[key].length; i++) {
-                        const value = connectionOptions[key][i];
-                        if(typeof value !== 'string') {
+                if(Array.isArray(value)) {
+                    for(let i=0; i<value.length; i++) {
+                        const str = value[i];
+                        if(typeof str !== 'string') {
                             continue;
                         }
 
-                        connectionOptions[key][i] = value
+                        value[i] = str
                             .replace(inDir, outDir)
                             .replace('.ts', '.js');
                     }
                 } else {
-                    if(typeof connectionOptions[key] === 'string') {
-                        Object.assign(connectionOptions, {
-                            [key]: (connectionOptions[key] as unknown as string)
-                                .replace(inDir, outDir)
-                                .replace('.ts', '.js')
-                        });
+                    if(typeof value === 'string') {
+                        value = value.replace(inDir, outDir)
+                            .replace('.ts', '.js')
                     }
                 }
             }
             break;
     }
 
-    return connectionOptions;
+    return {
+        ...options,
+        [key]: value
+    };
 }

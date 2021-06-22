@@ -1,5 +1,3 @@
-import {ConnectionOptions} from "typeorm";
-
 export type SimpleConnectionOptions = {
     database?: string,
     host?: string,
@@ -11,9 +9,3 @@ export type SimpleConnectionOptions = {
     url?: string
 }
 
-export type SeedingOptions = {
-    seeds?: string[],
-    factories?: string[]
-}
-
-export type ConnectionWithSeedingOptions = ConnectionOptions & SeedingOptions;

@@ -2,7 +2,6 @@ import {Arguments, CommandModule, Argv} from "yargs";
 
 import {
     buildConnectionOptions,
-    runDatabaseSeeds,
 } from "../../index";
 
 import {ConnectionOptions, createConnection} from "typeorm";
@@ -14,7 +13,7 @@ interface DatabaseSetupArguments extends Arguments {
     config: 'ormconfig' | string,
     database: 'create' | 'drop' | 'none',
     migration: 'run' | 'revert',
-    seed: 'run' | 'none'
+    synchronize: 'yes' | 'no'
 }
 
 export class DatabaseSetupCommand implements CommandModule {
@@ -51,11 +50,11 @@ export class DatabaseSetupCommand implements CommandModule {
                 describe: "Runs all pending migrations.",
                 choices: ["run", "revert", "none"]
             })
-            .option("seed", {
+            .option("synchronize", {
                 alias: "s",
-                default: "run",
-                describe: "Create initial database sets.",
-                choices: ["run", "none"]
+                default: "yes",
+                describe: "Creates database schema for all entities registered in this connection.",
+                choices: ["yes", "no"]
             })
 
     }
@@ -103,7 +102,10 @@ export class DatabaseSetupCommand implements CommandModule {
 
             const connection = await createConnection(connectionOptions);
 
-            if(args.database === 'create') {
+            if(
+                args.database === 'create' ||
+                args.synchronize
+            ) {
                 await connection.synchronize(false);
             }
 
@@ -113,6 +115,7 @@ export class DatabaseSetupCommand implements CommandModule {
                     break;
                 case "revert":
                     await connection.undoLastMigration(options);
+                    await connection.close();
                     if(exitProcess) {
                         process.exit(0);
                     } else {
@@ -121,11 +124,7 @@ export class DatabaseSetupCommand implements CommandModule {
                     break;
             }
 
-            switch (args.seed) {
-                case "run":
-                    await runDatabaseSeeds(connection, connectionOptions);
-                    break;
-            }
+            await connection.close();
 
             if(exitProcess) {
                 process.exit(0);
