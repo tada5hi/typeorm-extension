@@ -1,11 +1,11 @@
 {
     "name": "typeorm-extension",
-    "version": "0.1.9",
+    "version": "0.2.0",
     "description": "",
     "author": {
         "name": "Peter Placzek",
         "email": "tadashi@animesu.net",
-        "url": "https:/github.com/Tada5hi"
+        "url": "https:/github.com/tada5hi"
     },
     "repository": {
         "type": "git",
