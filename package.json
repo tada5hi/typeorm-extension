@@ -1,7 +1,7 @@
 {
     "name": "typeorm-extension",
-    "version": "0.2.2",
-    "description": "",
+    "version": "0.2.3",
+    "description": "Typeorm extension to create/drop database, simple seeding data sets, ...",
     "author": {
         "name": "Peter Placzek",
         "email": "tadashi@animesu.net",
@@ -18,9 +18,13 @@
     "keywords": [
         "database",
         "create",
+        "drop",
         "api",
         "json-api",
-        "jsonapi"
+        "jsonapi",
+        "seeder",
+        "seeding",
+        "cli"
     ],
     "bin": {
         "typeorm-extension": "dist/cli/index.js"

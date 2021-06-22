@@ -2,13 +2,16 @@
 import 'reflect-metadata';
 import yargs from 'yargs';
 
-import {DatabaseSetupCommand} from './commands';
+import {
+    DatabaseCreateCommand,
+    DatabaseDropCommand
+} from "./commands";
 
-// tslint:disable-next-line:no-unused-expression
 yargs
     .usage("Usage: $0 <command> [options]")
     .demandCommand(1)
-    .command(new DatabaseSetupCommand())
+    .command(new DatabaseCreateCommand())
+    .command(new DatabaseDropCommand())
     .strict()
     .alias("v", "version")
     .help("h")
