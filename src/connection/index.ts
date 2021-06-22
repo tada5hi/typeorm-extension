@@ -6,24 +6,26 @@ import {
     hasOwnProperty,
     isTsNodeRuntimeEnvironment
 } from "../index";
+import {ConnectionBuilderOptions} from "./type";
 
 export {
     SimpleConnectionOptions
 } from "./options";
+export * from './type';
 
 export async function buildConnectionOptions(
-    name : string = 'default',
-    config: string = 'ormconfig',
-    isUsedByCommand: boolean = false
+    options?: ConnectionBuilderOptions
 ) :  Promise<ConnectionWithSeederOptions> {
+    options = options ?? {};
+
     const connectionOptionsReader = new ConnectionOptionsReader({
-        root: process.cwd(),
-        configName: config
+        root: options.root ?? process.cwd(),
+        configName: options.configName ?? 'ormconfig'
     });
 
-    const connectionOptions : ConnectionWithSeederOptions = await connectionOptionsReader.get(name);
+    const connectionOptions : ConnectionWithSeederOptions = await connectionOptionsReader.get(options.name ?? 'default');
 
-    if (isUsedByCommand) {
+    if (options.buildForCommand) {
         Object.assign(connectionOptions, {
             subscribers: [],
             synchronize: false,

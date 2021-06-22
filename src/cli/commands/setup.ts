@@ -60,11 +60,11 @@ export class DatabaseSetupCommand implements CommandModule {
     }
 
     async handler(args: DatabaseSetupArguments, exitProcess: boolean = true) {
-        const connectionOptions : ConnectionOptions = await buildConnectionOptions(
-            args.connection,
-            args.config as string,
-            true
-        );
+        const connectionOptions : ConnectionOptions = await buildConnectionOptions({
+            name: args.connection,
+            configName: args.config,
+            buildForCommand: true
+        });
 
         try {
             switch (args.database) {
