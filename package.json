@@ -15,7 +15,7 @@
     "scripts": {
         "build": "tsc",
         "test": "cross-env NODE_ENV=test jest --config ./test/jest.config.js",
-        "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage --coverageReporters=text-lcov --coverageReporters=text --coverageDirectory=test/coverage/jest"
+        "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage --coverageReporters=text-lcov --coverageReporters=text --coverageDirectory=./test/coverage"
     },
     "keywords": [
         "database",
