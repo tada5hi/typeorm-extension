@@ -1,4 +1,5 @@
 [![npm version](https://badge.fury.io/js/typeorm-extension.svg)](https://badge.fury.io/js/typeorm-extension)
+[![Build Status](https://travis-ci.com/Tada5hi/typeorm-extension.svg?branch=master)](https://travis-ci.com/Tada5hi/typeorm-extension)
 
 # Typeorm Extension 🚀
 This is a library to
