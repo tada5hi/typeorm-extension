@@ -50,7 +50,8 @@ export async function runSeeder(
             case 2:
                 // support typeorm-seeding library
                 try {
-                    const typeormSeeding = await import('typeorm-seeding');
+                    const typeOrmSeedingLibrary : string = 'typeorm-seeding';
+                    const typeormSeeding = await import(typeOrmSeedingLibrary);
                     await (clazz.run as any)(typeormSeeding.factory, connection);
                 } catch (e) {
                     await (clazz.run as any)(undefined, connection);
