@@ -13,7 +13,7 @@
     },
     "main": "dist/index.js",
     "scripts": {
-        "build": "tsc -d"
+        "build": "tsc"
     },
     "keywords": [
         "database",
