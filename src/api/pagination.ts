@@ -1,14 +1,15 @@
 import {SelectQueryBuilder} from "typeorm";
 
+type PaginationResult = {
+    limit?: number,
+    offset?: number
+}
 export function applyRequestPagination(
     query: SelectQueryBuilder<any>,
     rawRequestPagination: unknown,
     maxLimit?: number
-) {
-    const pagination: {
-        limit?: number,
-        offset?: number
-    } = {};
+) : PaginationResult {
+    const pagination: PaginationResult = {};
 
     const prototype: string = Object.prototype.toString.call(rawRequestPagination as any);
     if (prototype === '[object Object]') {
@@ -34,11 +35,24 @@ export function applyRequestPagination(
     }
 
     if (typeof maxLimit !== 'undefined') {
-        if (typeof pagination.limit === 'undefined' || pagination.limit > maxLimit) {
+        if (
+            typeof pagination.limit === 'undefined' ||
+            pagination.limit > maxLimit
+        ) {
+            pagination.limit = maxLimit;
+        } else {
             pagination.limit = maxLimit;
         }
     }
 
+    if(
+        typeof pagination.limit !== 'undefined' &&
+        typeof pagination.offset === 'undefined'
+    ) {
+        pagination.offset = 0;
+    }
+
+    /* istanbul ignore next */
     if (typeof pagination.limit !== 'undefined') {
         query.take(pagination.limit);
 
@@ -47,6 +61,7 @@ export function applyRequestPagination(
         }
     }
 
+    /* istanbul ignore next */
     if (typeof pagination.offset !== 'undefined') {
         query.skip(pagination.offset);
     }

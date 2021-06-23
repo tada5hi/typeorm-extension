@@ -6,7 +6,7 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "lib": [
-            "ESNext"
+            "ESNext",
         ],
         "module": "commonjs",
         "newLine": "LF",
@@ -16,7 +16,7 @@
         "noImplicitThis": false,
         "noUnusedParameters": false,
         "noUnusedLocals": true,
-        "outDir": "dist",
+        "outDir": "output",
         "sourceMap": true,
         "strictNullChecks": false,
         "target": "es5"

@@ -13,7 +13,9 @@
     },
     "main": "dist/index.js",
     "scripts": {
-        "build": "tsc"
+        "build": "tsc",
+        "test": "cross-env NODE_ENV=test jest --config ./test/jest.config.js",
+        "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage --coverageReporters=text-lcov --coverageReporters=text --coverageDirectory=test/coverage/jest"
     },
     "keywords": [
         "database",
@@ -39,8 +41,11 @@
     "devDependencies": {
         "@types/change-case": "^2.3.1",
         "@types/glob": "^7.1.3",
+        "@types/jest": "^26.0.23",
         "@types/node": "^15.12.4",
         "@types/yargs": "^17.0.0",
+        "jest": "^27.0.5",
+        "ts-jest": "^27.0.3",
         "ts-node": "^10.0.0",
         "tslint": "^6.1.3",
         "typescript": "^4.3.4"

@@ -2,18 +2,39 @@ import {SelectQueryBuilder} from "typeorm";
 import {hasOwnProperty} from "../utils";
 import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
 
-function transformRequestFields(
+export const ALTERNATIVE_DEFAULT_DOMAIN_KEY: string = '__DEFAULT';
+
+export function transformRequestFields(
     raw: unknown,
     allowedFields: Record<string, string[]>,
     options: RequestFieldOptions
 ): Record<string, string[]> {
+    options = options ?? {};
+    options.aliasMapping = options.aliasMapping ?? {};
+    options.requestDefaultKey = options.requestDefaultKey ?? ALTERNATIVE_DEFAULT_DOMAIN_KEY;
+    options.changeRequestKeyCase = options.changeRequestKeyCase ?? getDefaultRequestKeyCase();
+
     const prototype: string = Object.prototype.toString.call(raw as any);
-    if (prototype !== '[object Object]') {
+    if (
+        prototype !== '[object Object]' &&
+        prototype !== '[object Array]' &&
+        prototype !== '[object String]'
+    ) {
         return {};
+    }
+
+    if(prototype === '[object String]') {
+        raw = {[options.requestDefaultKey]: (raw as string).split(',')};
+    }
+
+    if(prototype === '[object Array]') {
+        raw = {[options.requestDefaultKey]: raw};
     }
 
     const domains: Record<string, any> = raw as Record<string, any>;
     const result : Record<string, string[]> = {};
+
+    const allowedFieldsKeys : string[] = Object.keys(allowedFields);
 
     for (const key in domains) {
         if (!domains.hasOwnProperty(key)) {
@@ -28,13 +49,21 @@ function transformRequestFields(
         }
 
         let fields : string[] = domainPrototype === '[object String]' ? domains[key].split(',') : domains[key];
-        const allowedFieldsKey = hasOwnProperty(options.aliasMapping, key) ?
+        let allowedFieldsKey = hasOwnProperty(options.aliasMapping, key) ?
             options.aliasMapping[key] :
             options.requestDefaultKey;
 
+
+        if(
+            allowedFieldsKey === options.requestDefaultKey &&
+            allowedFieldsKeys.length === 1
+        ) {
+            allowedFieldsKey = allowedFieldsKeys[0];
+        }
+
         fields = fields
             .map(field => changeStringCase(field, options.changeRequestKeyCase))
-            .filter(field => allowedFields[allowedFieldsKey].includes(field));
+            .filter(field => hasOwnProperty(allowedFields, allowedFieldsKey) && allowedFields[allowedFieldsKey].includes(field));
 
         if(fields.length > 0) {
             result[allowedFieldsKey] = fields;
@@ -44,10 +73,14 @@ function transformRequestFields(
     return result;
 }
 
-function transformAllowedDomainFields(
+export function transformAllowedDomainFields(
     data: Record<string, string[]> | string[],
-    options: RequestFieldOptions
+    options?: RequestFieldOptions
 ) {
+    options = options ?? {
+        requestDefaultKey: ALTERNATIVE_DEFAULT_DOMAIN_KEY
+    };
+
     let allowedFields : Record<string, string[]> = {};
 
     if(Array.isArray(data)) {
@@ -61,8 +94,8 @@ function transformAllowedDomainFields(
 
 export type RequestFieldOptions = {
     changeRequestKeyCase?: StringCaseOption | undefined,
-    requestDefaultKey: string,
-    aliasMapping: Record<string, string>
+    aliasMapping?: Record<string, string>
+    requestDefaultKey?: string,
 }
 
 /**
@@ -84,7 +117,7 @@ export function applyRequestFields(
 
     const options : RequestFieldOptions = {
         changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase(),
-        requestDefaultKey: partialOptions.requestDefaultKey ?? '__DEFAULT__',
+        requestDefaultKey: partialOptions.requestDefaultKey ?? ALTERNATIVE_DEFAULT_DOMAIN_KEY,
         aliasMapping: partialOptions.aliasMapping ?? {}
     }
 
@@ -100,22 +133,23 @@ export function applyRequestFields(
         if (!domains.hasOwnProperty(key)) continue;
 
         for(let i=0; i<domains[key].length; i++) {
+            /* istanbul ignore next */
             query.addSelect((key === options.requestDefaultKey ? '' : key+'.')+domains[key][i]);
         }
     }
 
-    return query;
+    return domains;
 }
 
 /**
- * Transform allowed fields in array or object representation to object representation.
+ * Transform alias mapping fields in array or object representation to object representation.
  *
  * {field1: 'field1', ...} => {field1: 'field1', ...}
  * ['field1', 'field2'] => {field1: 'field1', field2: 'field2'}
  *
  * @param rawFields
  */
-export function transformAllowedFields(
+export function transformAliasMappingFields(
     rawFields: string[] | Record<string, string>
 ): Record<string, string> {
     let fields: Record<string, string> = {};

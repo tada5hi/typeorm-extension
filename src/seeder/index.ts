@@ -1,7 +1,7 @@
 import {Connection} from "typeorm";
 
 import {ConnectionWithSeederOptions, SeederConstructor, SeederOptions} from "./type";
-import {importSeed, loadFiles} from "./utils";
+import {createDefaultSeederOptions, importSeed, loadFiles} from "./utils";
 import {modifyConnectionOptionForRuntimeEnvironment} from "../connection";
 
 export * from './utils';
@@ -11,14 +11,8 @@ async function prepareSeeder(
     options?: SeederOptions
 ) : Promise<SeederConstructor[]> {
     options = options ?? {};
-    if (!options.seeds) {
-        options.seeds = [
-            process.env.TYPEORM_SEEDS ||
-            process.env.TYPEORM_SEEDING_SEEDS ||
-            'src/database/seeds/**/*{.ts,.js}'
-        ]
-    }
 
+    options = createDefaultSeederOptions(options);
     options = modifyConnectionOptionForRuntimeEnvironment(options, 'seeds');
 
     const seedPaths : string[] = loadFiles(options.seeds);
@@ -49,6 +43,7 @@ export async function runSeeder(
         switch (argLength) {
             case 2:
                 // support typeorm-seeding library
+                /* istanbul ignore next */
                 try {
                     const typeOrmSeedingLibrary : string = 'typeorm-seeding';
                     const typeormSeeding = await import(typeOrmSeedingLibrary);

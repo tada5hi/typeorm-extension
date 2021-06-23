@@ -1,9 +1,17 @@
 import {SelectQueryBuilder} from "typeorm";
 
+/* istanbul ignore next */
 export const existsQuery = <T>(builder: SelectQueryBuilder<T>, inverse: boolean = false) => (inverse ? 'not ' : '') + `exists (${builder.getQuery()})`;
 
 export * from './utils';
-export * from './filter';
-export * from './include';
+export {
+    applyRequestFilter,
+    applyRequestFilters
+} from './filters';
+export {
+    applyRequestIncludes
+} from './includes';
 export * from './pagination';
-export * from './fields';
+export {
+    applyRequestFields
+} from './fields';

@@ -1,21 +1,27 @@
 import {SelectQueryBuilder} from "typeorm";
-import {transformAllowedFields} from "./fields";
+import {transformAliasMappingFields} from "./fields";
 import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
 
-function transformRequestIncludes(
+export function transformRequestIncludes(
     raw: unknown,
-    allowed: Record<string, any>,
-    options: RequestIncludeOptions
+    aliasMappingIncludes: Record<string, any>,
+    options?: RequestIncludeOptions
 ): string[] {
+    options = options ?? {};
+    options.changeRequestKeyCase = options.changeRequestKeyCase ?? getDefaultRequestKeyCase();
+
     let fields: string[] = [];
 
     const prototype: string = Object.prototype.toString.call(raw);
-    if (prototype !== '[object Array]' && prototype !== '[object String]') {
+    if (
+        prototype !== '[object Array]' &&
+        prototype !== '[object String]'
+    ) {
         return [];
     }
 
     if (prototype === '[object String]') {
-        fields = (<string>raw).split(',');
+        fields = (raw as string).split(',');
     }
 
     if (prototype === '[object Array]') {
@@ -25,19 +31,15 @@ function transformRequestIncludes(
     const result : string[] = []
 
     for (let i = 0; i < fields.length; i++) {
-        if (typeof fields[i] !== 'string') {
-            delete fields[i];
-        }
-
         const allowedKey: string = changeStringCase(
             (fields[i] as string).trim() ,
             options.changeRequestKeyCase
         );
 
-        if (allowedKey.length === 0 || !allowed.hasOwnProperty(allowedKey)) {
+        if (allowedKey.length === 0 || !aliasMappingIncludes.hasOwnProperty(allowedKey)) {
             delete fields[i];
         } else {
-            result.push(allowed[allowedKey]);
+            result.push(aliasMappingIncludes[allowedKey]);
         }
     }
 
@@ -52,7 +54,7 @@ export function applyRequestIncludes(
     query: SelectQueryBuilder<any>,
     queryAlias: string,
     include: unknown,
-    allowedIncludes: string[] | Record<string, any>,
+    aliasMappingIncludes: string[] | Record<string, any>,
     partialOptions?: Partial<RequestIncludeOptions>
 ) {
     partialOptions = partialOptions ?? {}
@@ -60,7 +62,7 @@ export function applyRequestIncludes(
         changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase()
     }
 
-    const allowedFields: Record<string, string> = transformAllowedFields(allowedIncludes);
+    const allowedFields: Record<string, string> = transformAliasMappingFields(aliasMappingIncludes);
     const requestIncludes: string[] = transformRequestIncludes(
         include,
         allowedFields,
@@ -68,8 +70,9 @@ export function applyRequestIncludes(
     );
 
     for (let i=0; i<requestIncludes.length; i++) {
+        /* istanbul ignore next */
         query.leftJoinAndSelect(queryAlias + '.' + requestIncludes[i], requestIncludes[i]);
     }
 
-    return query;
+    return requestIncludes;
 }

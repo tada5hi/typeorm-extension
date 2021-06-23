@@ -1,4 +1,4 @@
-import {camelCase, snakeCase, pascalCase, capitalCase} from 'change-case';
+import {camelCase, capitalCase, pascalCase, snakeCase} from 'change-case';
 
 export type StringCaseOption = 'camelCase' | 'snakeCase' | 'pascalCase' | 'capitalCase';
 
@@ -20,6 +20,8 @@ export function changeStringCase(
         case "capitalCase":
             return capitalCase(str);
     }
+
+    return str;
 }
 
 let requestKeyCase : StringCaseOption | undefined;
@@ -31,3 +33,4 @@ export function setDefaultRequestKeyCase(strCase?: StringCaseOption) {
 export function getDefaultRequestKeyCase() : StringCaseOption | undefined {
     return requestKeyCase;
 }
+
