@@ -29,6 +29,7 @@ following typeorm drivers:
 * MySQL
 * Oracle
 * Postgres
+* CockroachDB
 * SQLite
 
 ## Usage

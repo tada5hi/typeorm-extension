@@ -16,6 +16,8 @@ import {buildSimpleConnectionOptions} from "../connection/utils";
 import {createSQLiteDatabase, dropSQLiteDatabase} from "./driver/sqlite";
 import {NotSupportedDriver} from "./error";
 import {ConnectionWithAdditionalOptions, CustomOptions} from "./type";
+import {CockroachDriver} from "typeorm/driver/cockroachdb/CockroachDriver";
+import {createCockroachDBDatabase, dropCockroachDBDatabase} from "./driver/cockroachdb";
 
 export * from './error';
 export * from './type';
@@ -90,6 +92,14 @@ async function createOrDropDatabase(
             return await createPostgresDatabase(driver, simpleConnectionOptions, customOptions);
         } else {
             return await dropPostgresDatabase(driver, simpleConnectionOptions, customOptions);
+        }
+    }
+
+    if(driver instanceof CockroachDriver) {
+        if(isCreateOperation) {
+            return await createCockroachDBDatabase(driver, simpleConnectionOptions, customOptions);
+        } else {
+            return await dropCockroachDBDatabase(driver, simpleConnectionOptions, customOptions);
         }
     }
 
