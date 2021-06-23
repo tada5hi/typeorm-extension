@@ -1,6 +1,6 @@
 [![npm version](https://badge.fury.io/js/typeorm-extension.svg)](https://badge.fury.io/js/typeorm-extension)
 [![Build Status](https://travis-ci.com/Tada5hi/typeorm-extension.svg?branch=master)](https://travis-ci.com/Tada5hi/typeorm-extension)
-
+[![Coverage Status](https://coveralls.io/repos/github/Tada5hi/typeorm-extension/badge.svg?branch=master)](https://coveralls.io/github/Tada5hi/typeorm-extension?branch=master)
 # Typeorm Extension 🚀
 This is a library to
 - `create` or `drop` the database specified for the typeorm connection.
