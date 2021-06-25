@@ -33,10 +33,37 @@ following typeorm drivers:
 * SQLite
 
 ## Usage
+
+### CLI
+
+You can use the following commands in the terminal:
+- `typeorm-extension db:create` to create the database
+- `typeorm-extension db:drop` to drop the database
+
+Alternative you can set the full command path to the package.json and run it f.e. with ts-node.
+
+```
+"scripts": {
+  ...
+  "db:create": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:create",
+  "db:drop": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:drop",
+  ...
+}
+```
+
+#### CLI Options
+
+| Option                 | Default         | Description                                                                 |
+| ---------------------- | --------------- | --------------------------------------------------------------------------- |
+| `--connection` or `-c` | `default`       | Name of the typeorm connection. Required if there are multiple connections. |
+| `--config` or `-f`     | `ormconfig.js`  | Name to the typeorm config file.                                            |
+| `--root` or `-r`       | `process.cwd()` | Path to the typeorm config file.                                            |
+| `--synchronize` or `-s`| `yes`           | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`. |
+
 ### Create/Drop Database
 
-To `create` or `drop` the default database of the typeorm connection,
-you can manually create the `ConnectionOptions` for the Connection, or let it be generated automatically:
+Alternative to the CLI variant, you can `create` or `drop` the specified/default database through your own code base.
+Therefore you can create the `ConnectionOptions` for the Connection by yourself, or let it be parsed automatically:
 
 ```typescript
 import {ConnectionOptions, getConnectionOptions} from 'typeorm';
@@ -66,7 +93,7 @@ await createDatabase({ifNotExist: true});
 await dropDatabase({ifExist: true});
 ```
 
-You can also specify the `charset` and `characterSet` as property of the first parameter of the `createDatabase()` function
+In addition, you can also specify the `charset` and `characterSet` as property of the first parameter of the `createDatabase()` function
 or parse it from the extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
 F.e
 - postgres

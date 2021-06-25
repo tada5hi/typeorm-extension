@@ -4,6 +4,7 @@ import {buildConnectionOptions} from "../../../connection";
 import {createDatabase} from "../../../database";
 
 export interface DatabaseCreateArguments extends Arguments {
+    root: string,
     connection: 'default' | string,
     config: 'ormconfig' | string,
     synchronize: 'yes' | 'no'
@@ -15,6 +16,11 @@ export class DatabaseCreateCommand implements CommandModule {
 
     builder(args: Argv) {
         return args
+            .option('root', {
+                alias: 'r',
+                default: process.cwd(),
+                describe: 'Path to your typeorm config file',
+            })
             .option("connection", {
                 alias: "c",
                 default: "default",
@@ -37,7 +43,8 @@ export class DatabaseCreateCommand implements CommandModule {
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
             name: args.connection,
             configName: args.config,
-            buildForCommand: true
+            root: args.root,
+            buildForCommand: true,
         });
 
         await createDatabase({

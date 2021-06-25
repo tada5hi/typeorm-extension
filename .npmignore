@@ -11,3 +11,4 @@ tsfmt.json
 tslint.json
 test
 src
+.coveralls.yml

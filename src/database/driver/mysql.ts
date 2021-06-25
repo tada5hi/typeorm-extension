@@ -28,10 +28,10 @@ export async function createSimpleMySQLConnection(
     return await createConnection(option);
 }
 
-export async function executeSimpleMysqlQuery(connection: any, query: string) {
+export async function executeSimpleMysqlQuery(connection: any, query: string, endConnection: boolean = true) {
     return new Promise(((resolve, reject) => {
         connection.query(query, (queryErr: any, queryResult: any) => {
-            connection.end();
+            if(endConnection) connection.end();
 
             if (queryErr) {
                 reject(queryErr);
@@ -84,5 +84,8 @@ export async function dropMySQLDatabase(
      */
     const query = customOptions.ifExist ? `DROP DATABASE IF EXISTS \`${connectionOptions.database}\`` : `DROP DATABASE \`${connectionOptions.database}\``;
 
-    return await executeSimpleMysqlQuery(connection, query);
+    await executeSimpleMysqlQuery(connection, `SET FOREIGN_KEY_CHECKS=0;`, false);
+    const result = await executeSimpleMysqlQuery(connection, query, false);
+    await executeSimpleMysqlQuery(connection, `SET FOREIGN_KEY_CHECKS=1;`);
+    return result;
 }

@@ -4,6 +4,7 @@ import {buildConnectionOptions} from "../../../connection";
 import {dropDatabase} from "../../../database";
 
 export interface DatabaseDropArguments extends Arguments {
+    root: string,
     connection: 'default' | string,
     config: 'ormconfig' | string,
 }
@@ -14,6 +15,11 @@ export class DatabaseDropCommand implements CommandModule {
 
     builder(args: Argv) {
         return args
+            .option('root', {
+                alias: 'r',
+                default: process.cwd(),
+                describe: 'Path to your typeorm config file',
+            })
             .option("connection", {
                 alias: "c",
                 default: "default",
@@ -29,6 +35,7 @@ export class DatabaseDropCommand implements CommandModule {
     async handler(args: DatabaseDropArguments, exitProcess: boolean = true) {
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
             name: args.connection,
+            root: args.root,
             configName: args.config,
             buildForCommand: true
         });

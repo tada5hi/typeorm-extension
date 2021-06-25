@@ -8,6 +8,7 @@ import {
 } from "./commands";
 
 yargs
+    .scriptName("typeorm-extension")
     .usage("Usage: $0 <command> [options]")
     .demandCommand(1)
     .command(new DatabaseCreateCommand())
