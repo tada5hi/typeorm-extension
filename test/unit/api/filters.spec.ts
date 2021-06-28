@@ -1,6 +1,6 @@
 import {applyRequestFilter, applyRequestFilters} from "../../../src";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
-import {transformRequestFilters} from "../../../src/api/filters";
+import {QueryStatement, transformRequestFilters} from "../../../src/api/filters";
 
 describe('src/api/filters.ts', () => {
     it('should transform request filters', () => {
@@ -29,17 +29,23 @@ describe('src/api/filters.ts', () => {
     it('should apply request filters', () => {
         const queryBuilder = new FakeSelectQueryBuilder();
 
-        let appliedRequestFilters = applyRequestFilters(queryBuilder, {id: 1}, ['id']);
-        expect(appliedRequestFilters).toEqual({id: 1});
+        let queryStatements = applyRequestFilters(queryBuilder, {id: 1}, ['id']);
+        expect(queryStatements).toEqual([
+            {type: 'where', query: 'id = :filter-id-1', bindings: {'filter-id-1': 1}}
+        ] as QueryStatement[]);
 
-        appliedRequestFilters = applyRequestFilters(queryBuilder, {idAlias: 1}, {idAlias: 'id'});
-        expect(appliedRequestFilters).toEqual({id: 1});
+        queryStatements = applyRequestFilters(queryBuilder, {idAlias: 1}, {idAlias: 'id'});
+        expect(queryStatements).toEqual([
+            {type: 'where', query: 'id = :filter-id-1', bindings: {'filter-id-1': 1}}
+        ] as QueryStatement[]);
 
         // check alias function
-        appliedRequestFilters = applyRequestFilter(queryBuilder, {id: 1}, ['id']);
-        expect(appliedRequestFilters).toEqual({id: 1});
+        queryStatements = applyRequestFilter(queryBuilder, {id: 1}, ['id']);
+        expect(queryStatements).toEqual([
+            {type: 'where', query: 'id = :filter-id-1', bindings: {'filter-id-1': 1}}
+        ] as QueryStatement[]);
 
-        appliedRequestFilters = applyRequestFilter(queryBuilder, {}, {name: 'name'});
-        expect(appliedRequestFilters).toEqual({});
+        queryStatements = applyRequestFilter(queryBuilder, {}, {name: 'name'});
+        expect(queryStatements).toEqual([] as QueryStatement[]);
     });
 });

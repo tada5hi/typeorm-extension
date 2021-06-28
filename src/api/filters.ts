@@ -61,15 +61,21 @@ export type RequestFilterOptions = {
     changeRequestKeyCase?: StringCaseOption | undefined
 };
 
+export type QueryStatement = {
+    type: 'where' | 'andWhere',
+    query: string,
+    bindings: Record<string, any>
+};
+
 /**
  * Backwards compatibility.
  */
 export function applyRequestFilter(
-    query: SelectQueryBuilder<any>,
+    query: SelectQueryBuilder<any> | undefined,
     rawRequestFilters: unknown,
     aliasMappingFilters: string[] | Record<string, any>,
     partialOptions?: Partial<RequestFilterOptions>
-) {
+) : QueryStatement[]  {
     return applyRequestFilters(
         query,
         rawRequestFilters,
@@ -79,11 +85,11 @@ export function applyRequestFilter(
 }
 
 export function applyRequestFilters(
-    query: SelectQueryBuilder<any>,
+    query: SelectQueryBuilder<any> | undefined,
     rawRequestFilters: unknown,
     aliasMappingFilters: string[] | Record<string, any>,
     partialOptions?: Partial<RequestFilterOptions>
-) : Record<string, string> {
+) : QueryStatement[] {
     partialOptions = partialOptions ?? {};
 
     const options : RequestFilterOptions = {
@@ -102,83 +108,93 @@ export function applyRequestFilters(
 
     const requestedFilterLength: number = Object.keys(requestFilters).length;
     if (requestedFilterLength === 0) {
-        return requestFilters;
+        return [];
     }
 
+    const queryStatements : QueryStatement[] = [];
+
     /* istanbul ignore next */
-    query.andWhere(new Brackets(qb => {
-        let run = 0;
-        for (const key in requestFilters) {
-            if (!requestFilters.hasOwnProperty(key)) {
-                continue;
-            }
+    let run = 0;
+    for (const key in requestFilters) {
+        if (!requestFilters.hasOwnProperty(key)) {
+            continue;
+        }
 
-            run++;
+        run++;
 
-            let value : string | boolean | number = requestFilters[key];
+        let value : string | boolean | number = requestFilters[key];
 
-            const paramKey = 'filter-' + allowedFilters[key] + '-' + run;
-            const whereKind : 'where' | 'andWhere' = run === 1 ? 'where' : 'andWhere';
+        const paramKey = 'filter-' + key + '-' + run;
+        const whereKind : QueryStatement['type'] = run === 1 ? 'where' : 'andWhere';
 
-            const queryString : string[] = [
-                allowedFilters[key]
-            ];
+        const queryString : string[] = [
+            key
+        ];
 
-            let isInOperator : boolean = false;
+        let isInOperator : boolean = false;
 
-            if(typeof value === 'string') {
-                const isUnequalPrefix = value.charAt(0) === '!' && value.charAt(1) === '=';
-                if (isUnequalPrefix) value = value.slice(2);
+        if(typeof value === 'string') {
+            const isUnequalPrefix = value.charAt(0) === '!' && value.charAt(1) === '=';
+            if (isUnequalPrefix) value = value.slice(2);
 
-                const isLikeOperator = value.charAt(0) === '~';
-                if (isLikeOperator) value = value.slice(1);
+            const isLikeOperator = value.charAt(0) === '~';
+            if (isLikeOperator) value = value.slice(1);
 
-                isInOperator = value.includes(',');
+            isInOperator = value.includes(',');
 
-                const isEqualOperator = !isLikeOperator && !isInOperator;
+            const isEqualOperator = !isLikeOperator && !isInOperator;
 
-                if (isEqualOperator) {
-                    if (isUnequalPrefix) {
-                        queryString.push("!=");
-                    } else {
-                        queryString.push("=");
-                    }
+            if (isEqualOperator) {
+                if (isUnequalPrefix) {
+                    queryString.push("!=");
                 } else {
-                    if (isUnequalPrefix) {
-                        queryString.push('NOT');
-                    }
-
-                    if (isLikeOperator) {
-                        queryString.push('LIKE');
-                    } else {
-                        queryString.push('IN');
-                    }
+                    queryString.push("=");
+                }
+            } else {
+                if (isUnequalPrefix) {
+                    queryString.push('NOT');
                 }
 
                 if (isLikeOperator) {
-                    value += '%';
-                }
-
-                if (isInOperator) {
-                    queryString.push('(:' + paramKey + ')');
+                    queryString.push('LIKE');
                 } else {
-                    queryString.push(':' + paramKey);
+                    queryString.push('IN');
                 }
-            } else {
-                isInOperator = false;
-                queryString.push("=");
-                queryString.push(':' + paramKey);
             }
 
-            qb[whereKind](queryString.join(" "), {[paramKey]: isInOperator ? value.split(',') : value});
+            if (isLikeOperator) {
+                value += '%';
+            }
+
+            if (isInOperator) {
+                queryString.push('(:' + paramKey + ')');
+            } else {
+                queryString.push(':' + paramKey);
+            }
+        } else {
+            isInOperator = false;
+            queryString.push("=");
+            queryString.push(':' + paramKey);
         }
 
-        if(run === 0) {
-            qb.where("true = true");
-        }
+        queryStatements.push({
+            type: whereKind,
+            query: queryString.join(" "),
+            bindings: {[paramKey]: isInOperator ? value.split(',') : value}
+        });
+    }
 
-        return qb;
-    }));
+    if(typeof query === 'undefined') {
+        return queryStatements;
+    }
 
-    return requestFilters;
+    if(queryStatements.length > 0) {
+        query.andWhere(new Brackets(qb => {
+            for (let i = 0; i < queryStatements.length; i++) {
+                qb[queryStatements[i].type](queryStatements[i].query, queryStatements[i].bindings);
+            }
+        }));
+    }
+
+    return queryStatements;
 }
