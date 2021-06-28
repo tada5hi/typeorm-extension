@@ -134,24 +134,16 @@ export function applyRequestFilters(
         let isInOperator : boolean = false;
 
         if(typeof value === 'string') {
-            const isUnequalPrefix = value.charAt(0) === '!' && value.charAt(1) === '=';
-            if (isUnequalPrefix) value = value.slice(2);
+            const isNegationPrefix = value.charAt(0) === '!';
+            if (isNegationPrefix) value = value.slice(1);
 
             const isLikeOperator = value.charAt(0) === '~';
             if (isLikeOperator) value = value.slice(1);
 
             isInOperator = value.includes(',');
 
-            const isEqualOperator = !isLikeOperator && !isInOperator;
-
-            if (isEqualOperator) {
-                if (isUnequalPrefix) {
-                    queryString.push("!=");
-                } else {
-                    queryString.push("=");
-                }
-            } else {
-                if (isUnequalPrefix) {
+            if(isInOperator || isLikeOperator) {
+                if (isNegationPrefix) {
                     queryString.push('NOT');
                 }
 
@@ -160,6 +152,12 @@ export function applyRequestFilters(
                 } else {
                     queryString.push('IN');
                 }
+            } else {
+                if (isNegationPrefix) {
+                    queryString.push("!=");
+                } else {
+                    queryString.push("=");
+                }
             }
 
             if (isLikeOperator) {
@@ -167,7 +165,7 @@ export function applyRequestFilters(
             }
 
             if (isInOperator) {
-                queryString.push('(:' + paramKey + ')');
+                queryString.push('(:...' + paramKey + ')');
             } else {
                 queryString.push(':' + paramKey);
             }
