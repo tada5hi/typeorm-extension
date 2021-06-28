@@ -16,7 +16,7 @@ describe('src/api/pagination.ts', () => {
         appliedPagination = applyRequestPagination(query, {limit: 50}, 50);
         expect(appliedPagination).toEqual({offset: 0, limit: 50});
 
-        appliedPagination = applyRequestPagination(query, {offset: 20, limit: 50}, 50);
-        expect(appliedPagination).toEqual({offset: 20, limit: 50});
+        appliedPagination = applyRequestPagination(query, {offset: 20, limit: 20}, 50);
+        expect(appliedPagination).toEqual({offset: 20, limit: 20});
     })
 });

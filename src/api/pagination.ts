@@ -40,8 +40,6 @@ export function applyRequestPagination(
             pagination.limit > maxLimit
         ) {
             pagination.limit = maxLimit;
-        } else {
-            pagination.limit = maxLimit;
         }
     }
 
