@@ -1,6 +1,7 @@
 import {Brackets, SelectQueryBuilder} from "typeorm";
 import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
 import {transformAliasMappingFields} from "./fields";
+import {snakeCase} from "change-case";
 
 export function transformRequestFilters(
     rawFilters: unknown,
@@ -116,6 +117,7 @@ export function applyRequestFilters(
     /* istanbul ignore next */
     let run = 0;
     for (const key in requestFilters) {
+        /* istanbul ignore next */
         if (!requestFilters.hasOwnProperty(key)) {
             continue;
         }
@@ -124,7 +126,8 @@ export function applyRequestFilters(
 
         let value : string | boolean | number = requestFilters[key];
 
-        const paramKey = 'filter-' + key + '-' + run;
+        /* istanbul ignore next */
+        const paramKey = 'filter_' + snakeCase(key) + '_' + run;
         const whereKind : QueryStatement['type'] = run === 1 ? 'where' : 'andWhere';
 
         const queryString : string[] = [
@@ -186,6 +189,7 @@ export function applyRequestFilters(
         return queryStatements;
     }
 
+    /* istanbul ignore next */
     if(queryStatements.length > 0) {
         query.andWhere(new Brackets(qb => {
             for (let i = 0; i < queryStatements.length; i++) {
