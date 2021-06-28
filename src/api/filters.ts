@@ -59,7 +59,7 @@ export function transformRequestFilters(
 
 export type RequestFilterOptions = {
     changeRequestKeyCase?: StringCaseOption | undefined
-}
+};
 
 /**
  * Backwards compatibility.
@@ -90,7 +90,10 @@ export function applyRequestFilters(
         changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase()
     };
 
-    const allowedFilters: Record<string, string> = transformAliasMappingFields(aliasMappingFilters);
+    const allowedFilters: Record<string, string> = transformAliasMappingFields(aliasMappingFilters, {
+        changeRequestKeyCase: options.changeRequestKeyCase
+    });
+
     const requestFilters : Record<string, string> = transformRequestFilters(
         rawRequestFilters,
         allowedFilters,

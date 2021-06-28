@@ -96,7 +96,7 @@ export type RequestFieldOptions = {
     changeRequestKeyCase?: StringCaseOption | undefined,
     aliasMapping?: Record<string, string>
     requestDefaultKey?: string,
-}
+};
 
 /**
  * Apply fields for specific entity.
@@ -119,7 +119,7 @@ export function applyRequestFields(
         changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase(),
         requestDefaultKey: partialOptions.requestDefaultKey ?? ALTERNATIVE_DEFAULT_DOMAIN_KEY,
         aliasMapping: partialOptions.aliasMapping ?? {}
-    }
+    };
 
     allowedFields = transformAllowedDomainFields(allowedFields, options);
 
@@ -141,6 +141,9 @@ export function applyRequestFields(
     return domains;
 }
 
+export type AliasMappingFieldsOptions = {
+    changeRequestKeyCase?: StringCaseOption | undefined
+};
 /**
  * Transform alias mapping fields in array or object representation to object representation.
  *
@@ -148,22 +151,35 @@ export function applyRequestFields(
  * ['field1', 'field2'] => {field1: 'field1', field2: 'field2'}
  *
  * @param rawFields
+ * @param options
  */
 export function transformAliasMappingFields(
-    rawFields: string[] | Record<string, string>
+    rawFields: string[] | Record<string, string>,
+    options?: AliasMappingFieldsOptions
 ): Record<string, string> {
-    let fields: Record<string, string> = {};
+    options = options ?? {};
+    options = {
+        changeRequestKeyCase: options.changeRequestKeyCase ?? getDefaultRequestKeyCase()
+    };
+
+    const fields: Record<string, string> = {};
 
     const allowedFiltersPrototype: string = Object.prototype.toString.call(rawFields as any);
     switch (allowedFiltersPrototype) {
         case '[object Array]':
             const tempStrArr: string[] = rawFields as string[];
             for (let i = 0; i < tempStrArr.length; i++) {
-                fields[tempStrArr[i]] = tempStrArr[i];
+                const key : string = changeStringCase(tempStrArr[i], options.changeRequestKeyCase);
+                fields[key] = tempStrArr[i];
             }
             break;
         case '[object Object]':
-            fields = (rawFields as Record<string, string>);
+            const temp : Record<string, any> = (rawFields as Record<string, string>);
+            for(const tempKey in temp) {
+                const key : string = changeStringCase(tempKey, options.changeRequestKeyCase);
+
+                fields[key] = temp[tempKey];
+            }
             break;
     }
 

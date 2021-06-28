@@ -28,7 +28,7 @@ export function transformRequestIncludes(
         fields = (raw as any[]).filter(el => typeof el === 'string');
     }
 
-    const result : string[] = []
+    const result : string[] = [];
 
     for (let i = 0; i < fields.length; i++) {
         const allowedKey: string = changeStringCase(
@@ -48,7 +48,7 @@ export function transformRequestIncludes(
 
 export type RequestIncludeOptions = {
     changeRequestKeyCase?: StringCaseOption | undefined
-}
+};
 
 export function applyRequestIncludes(
     query: SelectQueryBuilder<any>,
@@ -57,12 +57,14 @@ export function applyRequestIncludes(
     aliasMappingIncludes: string[] | Record<string, any>,
     partialOptions?: Partial<RequestIncludeOptions>
 ) {
-    partialOptions = partialOptions ?? {}
+    partialOptions = partialOptions ?? {};
     const options : RequestIncludeOptions = {
         changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase()
-    }
+    };
 
-    const allowedFields: Record<string, string> = transformAliasMappingFields(aliasMappingIncludes);
+    const allowedFields: Record<string, string> = transformAliasMappingFields(aliasMappingIncludes, {
+        changeRequestKeyCase: options.changeRequestKeyCase
+    });
     const requestIncludes: string[] = transformRequestIncludes(
         include,
         allowedFields,
