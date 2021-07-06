@@ -36,4 +36,4 @@ jobs:
               uses: codecov/codecov-action@v1
               with:
                   token: ${{ secrets.codecov }}
-                  file: ./reports/coverage/*.json
+                  file: ./writable/coverage/*.json
