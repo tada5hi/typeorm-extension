@@ -1,6 +1,6 @@
 [![npm version](https://badge.fury.io/js/typeorm-extension.svg)](https://badge.fury.io/js/typeorm-extension)
 [![Build Status](https://travis-ci.com/Tada5hi/typeorm-extension.svg?branch=master)](https://travis-ci.com/Tada5hi/typeorm-extension)
-[![Coverage Status](https://coveralls.io/repos/github/Tada5hi/typeorm-extension/badge.svg?branch=master)](https://coveralls.io/github/Tada5hi/typeorm-extension?branch=master)
+[![codecov](https://codecov.io/gh/Tada5hi/typeorm-extension/branch/master/graph/badge.svg?token=4KNSG8L13V)](https://codecov.io/gh/Tada5hi/typeorm-extension)
 [![Master Workflow](https://github.com/Tada5hi/typeorm-extension/workflows/main/badge.svg)](https://github.com/Tada5hi/typeorm-extension)
 [![Known Vulnerabilities](https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json)](https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json)
 # Typeorm Extension 🚀

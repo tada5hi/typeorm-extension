@@ -13,7 +13,7 @@
     },
     "main": "dist/index.js",
     "scripts": {
-        "build": "rmf -rf ./dist && tsc",
+        "build": "rm -rf ./dist && tsc",
         "test": "cross-env NODE_ENV=test jest --config ./test/jest.config.js",
         "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage --coverageReporters=text-lcov --coverageReporters=text --coverageDirectory=./test/coverage"
     },
