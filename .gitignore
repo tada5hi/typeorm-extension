@@ -9,4 +9,3 @@ coverage
 npm-debug.log*
 .idea
 reports
-package-lock.json

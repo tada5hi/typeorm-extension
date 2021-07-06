@@ -2,6 +2,7 @@
 !doc/**
 .travis.yml
 /.vscode
+.github
 .idea
 coverage
 .DS_Store

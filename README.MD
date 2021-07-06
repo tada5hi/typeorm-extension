@@ -1,12 +1,13 @@
 [![npm version](https://badge.fury.io/js/typeorm-extension.svg)](https://badge.fury.io/js/typeorm-extension)
 [![Build Status](https://travis-ci.com/Tada5hi/typeorm-extension.svg?branch=master)](https://travis-ci.com/Tada5hi/typeorm-extension)
 [![Coverage Status](https://coveralls.io/repos/github/Tada5hi/typeorm-extension/badge.svg?branch=master)](https://coveralls.io/github/Tada5hi/typeorm-extension?branch=master)
+[![Master Workflow](https://github.com/Tada5hi/typeorm-extension/workflows/main/badge.svg)](https://github.com/Tada5hi/typeorm-extension)
+[![Known Vulnerabilities](https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json)](https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json)
 # Typeorm Extension 🚀
 This is a library to
 - `create` or `drop` the database specified for the typeorm connection.
-- extend the typeorm query for a given `QueryBuilder` with `filters, includes, pagination and fields` (json-api spec).
 - execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)`.
-
+- validate and parse request `filters, includes, pagination and fields` and assign them directly to the `QueryBuilder` (json-api spec).
 
 **Table of Contents**
 
