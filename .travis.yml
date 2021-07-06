@@ -1,6 +1,0 @@
-language: node_js
-node_js:
-    - '15'
-script: npm run build && npm run test:coverage | coveralls
-notifications:
-    webhooks: https://coveralls.io/webhook
