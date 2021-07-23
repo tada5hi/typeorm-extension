@@ -53,7 +53,7 @@ export class DatabaseCreateCommand implements CommandModule {
 
         try {
             const connection = await createConnection(connectionOptions);
-            if (args.synchronize) {
+            if (args.synchronize === "yes") {
                 await connection.synchronize(false);
             }
 
