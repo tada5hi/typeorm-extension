@@ -4,9 +4,9 @@ import {buildConnectionOptions} from "../../../connection";
 import {dropDatabase} from "../../../database";
 
 export interface DatabaseDropArguments extends Arguments {
-    root: string,
-    connection: 'default' | string,
-    config: 'ormconfig' | string,
+    root: string;
+    connection: 'default' | string;
+    config: 'ormconfig' | string;
 }
 
 export class DatabaseDropCommand implements CommandModule {
@@ -29,7 +29,7 @@ export class DatabaseDropCommand implements CommandModule {
                 alias: "f",
                 default: "ormconfig",
                 describe: "Name of the file with connection configuration."
-            })
+            });
     }
 
     async handler(args: DatabaseDropArguments, exitProcess: boolean = true) {

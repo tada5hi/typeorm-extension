@@ -17,7 +17,7 @@ export async function createSimpleMsSQLConnection(
             password: connectionOptions.password,
             server: connectionOptions.host,
             port: connectionOptions.port ?? 1433
-        }
+        };
     }
 
     await driver.mssql.connect(option);

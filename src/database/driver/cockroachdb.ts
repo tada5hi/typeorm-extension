@@ -57,7 +57,7 @@ export async function createCockroachDBDatabase(
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/cockroachdb/CockroachQueryRunner.ts#L347
      */
-    let query = `CREATE DATABASE ${customOptions.ifNotExist ? "IF NOT EXISTS " : ""} "${connectionOptions.database}"`;
+    const query = `CREATE DATABASE ${customOptions.ifNotExist ? "IF NOT EXISTS " : ""} "${connectionOptions.database}"`;
 
     return await executeSimpleCockroachDBQuery(connection, query);
 }

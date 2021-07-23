@@ -4,10 +4,10 @@ import {buildConnectionOptions} from "../../../connection";
 import {createDatabase} from "../../../database";
 
 export interface DatabaseCreateArguments extends Arguments {
-    root: string,
-    connection: 'default' | string,
-    config: 'ormconfig' | string,
-    synchronize: 'yes' | 'no'
+    root: string;
+    connection: 'default' | string;
+    config: 'ormconfig' | string;
+    synchronize: 'yes' | 'no';
 }
 
 export class DatabaseCreateCommand implements CommandModule {
@@ -36,7 +36,7 @@ export class DatabaseCreateCommand implements CommandModule {
                 default: "yes",
                 describe: "Create database schema for all entities.",
                 choices: ["yes", "no"]
-            })
+            });
     }
 
     async handler(args: DatabaseCreateArguments, exitProcess: boolean = true) {
@@ -51,11 +51,17 @@ export class DatabaseCreateCommand implements CommandModule {
             ifNotExist: true
         }, connectionOptions);
 
+        if (args.synchronize !== "yes") {
+            if(exitProcess) {
+                process.exit(0);
+            }
+
+            return;
+        }
+
         try {
             const connection = await createConnection(connectionOptions);
-            if (args.synchronize === "yes") {
-                await connection.synchronize(false);
-            }
+            await connection.synchronize(false);
 
             if (exitProcess) {
                 await connection.close();
