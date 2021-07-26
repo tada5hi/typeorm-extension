@@ -23,13 +23,12 @@ npm install typeorm-extension --save
 
 ### Limitations
 
-At the moment you can only `create` and `drop` for the
-following typeorm drivers:
+At the moment you can only `create` and `drop` a database for one of the following typeorm drivers:
+* CockroachDB
 * MSSQL
 * MySQL
 * Oracle
 * Postgres
-* CockroachDB
 * SQLite
 
 ## Usage
@@ -40,7 +39,7 @@ You can use the following commands in the terminal:
 - `typeorm-extension db:create` to create the database
 - `typeorm-extension db:drop` to drop the database
 
-Alternative you can set the full command path to the package.json and run it f.e. with ts-node.
+Alternatively, you can set the full command path in the package.json file and run it f.e. with ts-node.
 
 ```
 "scripts": {
@@ -59,11 +58,13 @@ Alternative you can set the full command path to the package.json and run it f.e
 | `--config` or `-f`     | `ormconfig.js`  | Name to the typeorm config file.                                            |
 | `--root` or `-r`       | `process.cwd()` | Path to the typeorm config file.                                            |
 | `--synchronize` or `-s`| `yes`           | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`. |
-| `--initialDatabase`    | `undefined`     | Specify the initial database to connect to. This is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name.|
-### Create/Drop Database
+| `--initialDatabase`    | `undefined`     | Specify the initial database to connect to. This option is only available for the create command and is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name.|
 
-Alternative to the CLI variant, you can `create` or `drop` the specified/default database through your own code base.
-Therefore you can create the `ConnectionOptions` for the Connection by yourself, or let it be parsed automatically:
+### Runtime
+
+#### Create/Drop Database
+As an alternative to the CLI variant, you can `create` or `drop` the specified/default database through your own code base.
+Therefore, you can create the `ConnectionOptions` for the Connection manually, or let it be created automatically:
 
 ```typescript
 import {ConnectionOptions, getConnectionOptions} from 'typeorm';
@@ -86,7 +87,7 @@ import {createDatabase, dropDatabase} from "typeorm-extension";
     await dropDatabase({ifExist: true});
 })();
 ```
-You can also `create` the database if it doesn't exist or only `drop` it if it exists.
+You can also `create` the database only if it doesn't exist or only `drop` it if it exists.
 
 ```typescript
 await createDatabase({ifNotExist: true});
@@ -125,9 +126,9 @@ If you have specified the path pattern for the entities like:
 `src/database/entities.ts`, the function will rewrite it to `dist/database/entities.js`,
 if the function is not called within the ts-node runtime environment.
 
-The same logic applies to the `seeds` and `factories` path(s) of the `typeorm-seeding` library.
+The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seeding` library.
 
-#### Type- & Function-Declarations
+**Type- & Function-Declarations**
 ```typescript
 declare type CustomOptions = {
     ifNotExist?: boolean,
@@ -145,7 +146,7 @@ declare function dropDatabase(options?: CustomOptions, connectionOptions?: Conne
 
 ```
 
-### Request Utils
+#### Request Utils
 For explanation proposes of the request utils,
 two simple entities with a simple relation between them are declared to demonstrate their usage:
 
@@ -261,8 +262,4 @@ export async function getUsers(req: Request, res: Response) {
     });
 }
 ```
-
-### Command Line Interface
-
-todo
 
