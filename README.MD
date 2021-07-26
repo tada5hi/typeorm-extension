@@ -59,7 +59,7 @@ Alternative you can set the full command path to the package.json and run it f.e
 | `--config` or `-f`     | `ormconfig.js`  | Name to the typeorm config file.                                            |
 | `--root` or `-r`       | `process.cwd()` | Path to the typeorm config file.                                            |
 | `--synchronize` or `-s`| `yes`           | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`. |
-
+| `--initialDatabase`    | `undefined`     | Specify the initial database to connect to. This is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name.|
 ### Create/Drop Database
 
 Alternative to the CLI variant, you can `create` or `drop` the specified/default database through your own code base.
@@ -126,6 +126,24 @@ If you have specified the path pattern for the entities like:
 if the function is not called within the ts-node runtime environment.
 
 The same logic applies to the `seeds` and `factories` path(s) of the `typeorm-seeding` library.
+
+#### Type- & Function-Declarations
+```typescript
+declare type CustomOptions = {
+    ifNotExist?: boolean,
+    ifExist?: boolean,
+    charset?: string,
+    characterSet?: string,
+    initialDatabase?: string
+};
+```
+```typescript
+
+declare function createDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions): Promise<any>;
+
+declare function dropDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions): Promise<any>;
+
+```
 
 ### Request Utils
 For explanation proposes of the request utils,

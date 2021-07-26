@@ -33,13 +33,13 @@ export function buildSimpleConnectionOptions(connectionOptions: ConnectionOption
         port: driverOptions.port,
         ssl: driverOptions.ssl,
         url: driverOptions.url
-    }
+    };
 }
 
 type CompilerOptions = {
     srcDirectory?: string,
     distDirectory?: string,
-}
+};
 
 export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<string, any>>(
     options: T,
@@ -87,7 +87,7 @@ export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<str
                 } else {
                     if (typeof value === 'string') {
                         value = value.replace(srcDir, outDir)
-                            .replace('.ts', '.js')
+                            .replace('.ts', '.js');
                     }
                 }
             }

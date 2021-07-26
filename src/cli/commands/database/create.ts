@@ -1,13 +1,14 @@
 import {Arguments, Argv, CommandModule} from "yargs";
 import {ConnectionOptions, createConnection} from "typeorm";
 import {buildConnectionOptions} from "../../../connection";
-import {createDatabase} from "../../../database";
+import {createDatabase, CustomOptions} from "../../../database";
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
     connection: 'default' | string;
     config: 'ormconfig' | string;
-    synchronize: 'yes' | 'no';
+    synchronize: string;
+    initialDatabase?: unknown;
 }
 
 export class DatabaseCreateCommand implements CommandModule {
@@ -36,6 +37,9 @@ export class DatabaseCreateCommand implements CommandModule {
                 default: "yes",
                 describe: "Create database schema for all entities.",
                 choices: ["yes", "no"]
+            })
+            .option('initialDatabase', {
+                describe: "Specify the initial database to connect to."
             });
     }
 
@@ -47,9 +51,18 @@ export class DatabaseCreateCommand implements CommandModule {
             buildForCommand: true,
         });
 
-        await createDatabase({
+        const customOptions : CustomOptions = {
             ifNotExist: true
-        }, connectionOptions);
+        };
+
+        if(
+            typeof args.initialDatabase === 'string' &&
+            args.initialDatabase !== ""
+        ) {
+            customOptions.initialDatabase = args.initialDatabase;
+        }
+
+        await createDatabase(customOptions, connectionOptions);
 
         if (args.synchronize !== "yes") {
             if(exitProcess) {

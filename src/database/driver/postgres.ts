@@ -6,7 +6,8 @@ import {hasOwnProperty} from "../../utils";
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver,
-    connectionOptions: SimpleConnectionOptions
+    connectionOptions: SimpleConnectionOptions,
+    customOptions: CustomOptions
 ) {
     /**
      * pg library
@@ -24,6 +25,10 @@ export async function createSimplePostgresConnection(
             password: connectionOptions.password,
             ssl: connectionOptions.ssl
         };
+
+        if(typeof customOptions.initialDatabase === 'string') {
+            options.database = customOptions.initialDatabase;
+        }
     }
 
     const client = new Client(options);
@@ -54,7 +59,7 @@ export async function createPostgresDatabase(
     connectionOptions: SimpleConnectionOptions,
     customOptions: CustomOptions
 ) {
-    const connection = await createSimplePostgresConnection(driver, connectionOptions);
+    const connection = await createSimplePostgresConnection(driver, connectionOptions, customOptions);
 
     if(customOptions.ifNotExist) {
         const existQuery: string = `SELECT * FROM pg_database WHERE lower(datname) = lower('${connectionOptions.database}');`;
@@ -86,7 +91,7 @@ export async function dropPostgresDatabase(
     connectionOptions: SimpleConnectionOptions,
     customOptions: CustomOptions
 ) {
-    const connection = await createSimplePostgresConnection(driver, connectionOptions);
+    const connection = await createSimplePostgresConnection(driver, connectionOptions, customOptions);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresQueryRunner.ts#L343
      */

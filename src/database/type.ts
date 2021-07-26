@@ -4,7 +4,8 @@ export type CustomOptions = {
     ifNotExist?: boolean,
     ifExist?: boolean,
     charset?: string,
-    characterSet?: string
+    characterSet?: string,
+    initialDatabase?: string
 };
 
 export type AdditionalConnectionOptions = {
