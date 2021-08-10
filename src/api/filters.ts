@@ -76,7 +76,7 @@ export function transformFilters(
 
         if(typeof value === 'string') {
             value = (value as string).trim();
-            const stripped : string = (value as string).replaceAll(',', '');
+            const stripped : string = (value as string).replace('/,/g', '');
 
             if (stripped.length === 0) {
                 continue;
