@@ -32,7 +32,9 @@ export class DatabaseDropCommand implements CommandModule {
             });
     }
 
-    async handler(args: DatabaseDropArguments, exitProcess: boolean = true) {
+    async handler(raw: Arguments, exitProcess: boolean = true) {
+        const args : DatabaseDropArguments = raw as DatabaseDropArguments;
+
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
             name: args.connection,
             root: args.root,

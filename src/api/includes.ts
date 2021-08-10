@@ -1,18 +1,100 @@
 import {SelectQueryBuilder} from "typeorm";
-import {transformAliasMappingFields} from "./fields";
-import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
+import minimatch from 'minimatch';
 
-export function transformRequestIncludes(
-    raw: unknown,
-    aliasMappingIncludes: Record<string, any>,
-    options?: RequestIncludeOptions
-): string[] {
-    options = options ?? {};
-    options.changeRequestKeyCase = options.changeRequestKeyCase ?? getDefaultRequestKeyCase();
+import {
+    buildAliasMapping,
+    changeStringCase,
+    getDefaultStringCase,
+    StringCaseVariant
+} from "./utils";
 
-    let fields: string[] = [];
+// --------------------------------------------------
 
-    const prototype: string = Object.prototype.toString.call(raw);
+export type IncludeTransformed = {
+    property: string,
+    alias: string
+};
+export type IncludesTransformed = IncludeTransformed[];
+
+export type IncludesOptions = {
+    aliasMapping?: Record<string, string>,
+    allowed?: string[],
+    queryAlias?: string,
+    stringCase?: StringCaseVariant,
+    includeParents?: boolean | string[] | string
+};
+
+// --------------------------------------------------
+
+function includeParents(
+    data: string[],
+    options: IncludesOptions
+) : string[] {
+    const ret : string[] = [];
+
+    for(let i=0; i<data.length; i++) {
+        const parts: string[] = data[i].split('.');
+
+        let value: string = changeStringCase(parts.shift(), options.stringCase);
+        /* istanbul ignore next */
+        if (options.aliasMapping.hasOwnProperty(value)) {
+            value = options.aliasMapping[value];
+        }
+
+        if(ret.indexOf(value) === -1) {
+            ret.push(value);
+        }
+
+        while (parts.length > 0) {
+            const postValue: string = changeStringCase(parts.shift(), options.stringCase);
+            value += '.' + postValue;
+            /* istanbul ignore next */
+            if (options.aliasMapping.hasOwnProperty(value)) {
+                value = options.aliasMapping[value];
+            }
+
+            if(ret.indexOf(value) === -1) {
+                ret.push(value);
+            }
+        }
+    }
+
+    return ret;
+}
+
+export function transformIncludes(
+    data: unknown,
+    options?: IncludesOptions
+): IncludesTransformed {
+    options ??= {};
+
+    // If it is an empty array nothing is allowed
+    if(
+        Array.isArray(options.allowed) &&
+        options.allowed.length === 0
+    ) {
+        return [];
+    }
+
+    if(options.aliasMapping) {
+        options.aliasMapping = buildAliasMapping(options.aliasMapping, {
+            keyCase: options.stringCase,
+            keyDepthCharacter: '.'
+        });
+    } else {
+        options.aliasMapping = {};
+    }
+
+    if(options.allowed) {
+        options.allowed = includeParents(options.allowed, {aliasMapping: {}, stringCase: options.stringCase});
+    }
+
+    options.stringCase ??= getDefaultStringCase();
+    options.includeParents ??= true;
+
+    let items: string[] = [];
+
+    const prototype: string = Object.prototype.toString.call(data);
     if (
         prototype !== '[object Array]' &&
         prototype !== '[object String]'
@@ -21,60 +103,90 @@ export function transformRequestIncludes(
     }
 
     if (prototype === '[object String]') {
-        fields = (raw as string).split(',');
+        items = (data as string).split(',');
     }
 
     if (prototype === '[object Array]') {
-        fields = (raw as any[]).filter(el => typeof el === 'string');
+        items = (data as any[]).filter(el => typeof el === 'string');
     }
 
-    const result : string[] = [];
+    if(items.length === 0) {
+        return [];
+    }
 
-    for (let i = 0; i < fields.length; i++) {
-        const allowedKey: string = changeStringCase(
-            (fields[i] as string).trim() ,
-            options.changeRequestKeyCase
-        );
+    items = items
+        .map(item => {
+            item = changeStringCase(item, options.stringCase, {depthCharacter: '.'});
 
-        if (allowedKey.length === 0 || !aliasMappingIncludes.hasOwnProperty(allowedKey)) {
-            delete fields[i];
+            if (options.aliasMapping.hasOwnProperty(item)) {
+                item = options.aliasMapping[item];
+            }
+
+            return item;
+        })
+        .filter(item => typeof options.allowed === 'undefined' || options.allowed.indexOf(item) !== -1);
+
+    if(options.includeParents) {
+        if(Array.isArray(options.includeParents)) {
+            const parentIncludes = items.filter(item => item.includes('.') && (options.includeParents as string[]).filter(parent => minimatch(item, parent)).length > 0);
+            items.unshift(...includeParents(parentIncludes, options));
         } else {
-            result.push(aliasMappingIncludes[allowedKey]);
+            items = includeParents(items, options);
         }
     }
 
-    return result;
+    items = Array.from(new Set(items));
+
+    return items
+        .map(relation => {
+            return {
+                property: relation.includes('.') ? relation : (options.queryAlias ? options.queryAlias + '.' + relation : relation),
+                alias: relation.split('.').pop()
+            };
+        });
 }
 
-export type RequestIncludeOptions = {
-    changeRequestKeyCase?: StringCaseOption | undefined
-};
-
-export function applyRequestIncludes(
-    query: SelectQueryBuilder<any>,
-    queryAlias: string,
-    include: unknown,
-    aliasMappingIncludes: string[] | Record<string, any>,
-    partialOptions?: Partial<RequestIncludeOptions>
-) {
-    partialOptions = partialOptions ?? {};
-    const options : RequestIncludeOptions = {
-        changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase()
-    };
-
-    const allowedFields: Record<string, string> = transformAliasMappingFields(aliasMappingIncludes, {
-        changeRequestKeyCase: options.changeRequestKeyCase
-    });
-    const requestIncludes: string[] = transformRequestIncludes(
-        include,
-        allowedFields,
-        options
-    );
-
-    for (let i=0; i<requestIncludes.length; i++) {
+export function applyIncludesTransformed<T>(
+    query: SelectQueryBuilder<T>,
+    data: IncludesTransformed
+) : IncludesTransformed {
+    for (let i=0; i<data.length; i++) {
         /* istanbul ignore next */
-        query.leftJoinAndSelect(queryAlias + '.' + requestIncludes[i], requestIncludes[i]);
+        query.leftJoinAndSelect(data[i].property, data[i].alias);
     }
 
-    return requestIncludes;
+    return data;
+}
+
+/**
+ * Apply raw include data on query.
+ *
+ * @param query
+ * @param data
+ * @param options
+ */
+export function applyIncludes<T>(
+    query: SelectQueryBuilder<T>,
+    data: unknown,
+    options?: IncludesOptions
+) : IncludesTransformed {
+    return applyIncludesTransformed(query, transformIncludes(data, options));
+}
+
+// --------------------------------------------------
+
+/**
+ * @deprecated
+ * @param query
+ * @param data
+ * @param allowed
+ * @param options
+ */
+export function applyRequestIncludes(
+    query: SelectQueryBuilder<any>,
+    data: unknown,
+    allowed: string[],
+    options?: IncludesOptions
+) : IncludesTransformed {
+    return applyIncludes(query, data, {...options, allowed: allowed});
 }
