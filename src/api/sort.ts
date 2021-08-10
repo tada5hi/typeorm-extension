@@ -1,12 +1,14 @@
 import {SelectQueryBuilder} from "typeorm";
+import {IncludesTransformed} from "./includes";
 import {buildAliasMapping} from "./utils";
 import {changeStringCase, getDefaultStringCase, StringCaseVariant} from "./utils";
 
 // --------------------------------------------------
 
-export type RequestSortOptions = {
+export type SortOptions = {
     aliasMapping?: Record<string, string>,
-    allowed?: string[],
+    allowed?: string[] | string[][],
+    includes?: IncludesTransformed,
     queryAlias?: string,
     stringCase?: StringCaseVariant
 };
@@ -16,14 +18,22 @@ export type SortTransformed = Record<string, SortDirection>;
 
 // --------------------------------------------------
 
+function isMultiDimensionalArray(arr: unknown) : arr is unknown[][] {
+    if(!Array.isArray(arr)) {
+        return false;
+    }
+
+    return arr.length > 0 && Array.isArray(arr[0]);
+}
+
 /**
- * Tranform sort data to appreciate data format.
+ * Transform sort data to appreciate data format.
  * @param data
  * @param options
  */
 export function transformSort(
     data: unknown,
-    options?: RequestSortOptions
+    options?: SortOptions
 ) : SortTransformed {
     options = options ?? {};
 
@@ -58,7 +68,7 @@ export function transformSort(
     }
 
     if(prototype === '[object Array]') {
-        parts = (data as any[]).filter(item => typeof item === 'string');
+        parts = (data as string[]).filter(item => typeof item === 'string');
     }
 
     if(prototype === '[object Object]') {
@@ -66,9 +76,10 @@ export function transformSort(
         for(const key in ob) {
             /* istanbul ignore next */
             if (
+                !ob.hasOwnProperty(key) ||
                 typeof key !== 'string' ||
-                typeof ob[key] !== 'string' ||
-                !ob.hasOwnProperty(key)
+                typeof ob[key] !== 'string'
+
             ) continue;
 
             const fieldPrefix = ob[key].toLowerCase() === 'desc' ? '-' : '';
@@ -84,24 +95,60 @@ export function transformSort(
             parts[i] = parts[i].substr(1);
         }
 
-        let key: string = changeStringCase(parts[i], options.stringCase);
+        let key: string = changeStringCase(parts[i], options.stringCase, {depthCharacter: '.'});
 
         if (options.aliasMapping.hasOwnProperty(key)) {
             key = options.aliasMapping[key];
         }
 
+        const alias : string | undefined = key.includes('.') ? key.split('.').slice(0, -1).join('.') : options.queryAlias;
+
+        // is not default domain && includes are defined?
+        if(
+            typeof options.includes !== 'undefined' &&
+            alias !== options.queryAlias
+        ) {
+            const includesMatched = options.includes.filter(include => include.property === alias);
+            if(includesMatched.length === 0) {
+                continue;
+            }
+        }
+
+        const keyWithAlias : string = options.queryAlias && !key.includes('.') ? options.queryAlias + '.' + key : key;
+
         if(
             typeof options.allowed !== 'undefined' &&
-            options.allowed.indexOf(key) === -1
+            !isMultiDimensionalArray(options.allowed) &&
+            options.allowed.indexOf(key) === -1 &&
+            options.allowed.indexOf(keyWithAlias) === -1
         ) {
             continue;
         }
 
-        if(options.queryAlias) {
-            key = options.queryAlias + '.' + key;
+        items[keyWithAlias] = direction;
+    }
+
+    if(isMultiDimensionalArray(options.allowed)) {
+        outerLoop:
+        for(let i=0; i<options.allowed.length; i++) {
+            const temp : SortTransformed = {};
+
+            for(let j=0; j<options.allowed[i].length; j++) {
+                const keyWithAlias : string = options.allowed[i][j];
+                const key : string = keyWithAlias.includes('.') ? keyWithAlias.split('.').pop() : keyWithAlias;
+
+                if(items.hasOwnProperty(key) || items.hasOwnProperty(keyWithAlias)) {
+                    temp[keyWithAlias] = items.hasOwnProperty(key) ? items[key] : items[keyWithAlias];
+                } else {
+                    continue outerLoop;
+                }
+            }
+
+            return temp;
         }
 
-        items[key] = direction;
+        // if we get no match, the sort data is invalid.
+        return {};
     }
 
     return items;
@@ -121,7 +168,7 @@ export function applySortTransformed<T>(query: SelectQueryBuilder<T>, sort: Sort
 export function applySort<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: RequestSortOptions
+    options?: SortOptions
 ) : SelectQueryBuilder<T> {
     return applySortTransformed(query, transformSort(data, options));
 }

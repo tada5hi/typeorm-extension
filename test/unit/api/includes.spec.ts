@@ -74,10 +74,18 @@ describe('src/api/includes.ts', () => {
         expect(allowedIncludes).toEqual([{property: 'profile', alias: 'profile'}]);
 
         // nested data with alias
-        allowedIncludes = transformIncludes(['profile.photos', 'profile.abc'], {allowed: ['profile.photos'], queryAlias: 'user'});
+        allowedIncludes = transformIncludes(['profile.photos', 'profile.photos.abc', 'profile.abc'], {allowed: ['profile.photos'], queryAlias: 'user'});
         expect(allowedIncludes).toEqual([
             {property: 'user.profile', alias: 'profile'},
             {property: 'profile.photos', alias: 'photos'}
+        ]);
+
+        // nested data with alias
+        allowedIncludes = transformIncludes(['profile.photos', 'profile.photos.abc', 'profile.abc'], {allowed: ['profile.photos**'], queryAlias: 'user'});
+        expect(allowedIncludes).toEqual([
+            {property: 'user.profile', alias: 'profile'},
+            {property: 'profile.photos', alias: 'photos'},
+            {property: 'photos.abc', alias: 'abc'}
         ]);
 
         // null data

@@ -28,8 +28,15 @@ export {
 export {
     transformPagination,
     applyPaginationTransformed,
-    applyPagination
+    applyPagination,
+    applyRequestPagination
 } from './pagination';
+
+export {
+    transformSort,
+    applySortTransformed,
+    applySort
+} from './sort';
 
 export {
     setDefaultStringCase,

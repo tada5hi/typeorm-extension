@@ -20,6 +20,7 @@ module.exports = {
     collectCoverageFrom: [
         'src/**/*.{ts,tsx,js,jsx}',
         '!src/**/*.d.ts',
+        '!src/api/index.ts',
         '!src/api/utils/**/*.{ts,js}',
         '!src/cli/**/*.{ts,js}',
         '!src/database/**/*.{ts,js}',
@@ -28,10 +29,10 @@ module.exports = {
     ],
     coverageThreshold: {
         global: {
-            branches: 59,
-            functions: 77,
-            lines: 73,
-            statements: 74
+            branches: 90,
+            functions: 90,
+            lines: 90,
+            statements: 90
         }
     },
     rootDir: '../'

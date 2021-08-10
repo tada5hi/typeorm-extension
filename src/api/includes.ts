@@ -37,7 +37,10 @@ function includeParents(
 
         let value: string = changeStringCase(parts.shift(), options.stringCase);
         /* istanbul ignore next */
-        if (options.aliasMapping.hasOwnProperty(value)) {
+        if (
+            options.aliasMapping &&
+            options.aliasMapping.hasOwnProperty(value)
+        ) {
             value = options.aliasMapping[value];
         }
 
@@ -49,7 +52,10 @@ function includeParents(
             const postValue: string = changeStringCase(parts.shift(), options.stringCase);
             value += '.' + postValue;
             /* istanbul ignore next */
-            if (options.aliasMapping.hasOwnProperty(value)) {
+            if (
+                options.aliasMapping &&
+                options.aliasMapping.hasOwnProperty(value)
+            ) {
                 value = options.aliasMapping[value];
             }
 
@@ -83,10 +89,6 @@ export function transformIncludes(
         });
     } else {
         options.aliasMapping = {};
-    }
-
-    if(options.allowed) {
-        options.allowed = includeParents(options.allowed, {aliasMapping: {}, stringCase: options.stringCase});
     }
 
     options.stringCase ??= getDefaultStringCase();
@@ -123,8 +125,20 @@ export function transformIncludes(
             }
 
             return item;
-        })
-        .filter(item => typeof options.allowed === 'undefined' || options.allowed.indexOf(item) !== -1);
+        });
+
+    if(options.allowed) {
+        items = items
+            .filter(item => {
+                for(let i=0; i<options.allowed.length; i++) {
+                    if(minimatch(item, options.allowed[i])) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+    }
 
     if(options.includeParents) {
         if(Array.isArray(options.includeParents)) {
@@ -140,7 +154,7 @@ export function transformIncludes(
     return items
         .map(relation => {
             return {
-                property: relation.includes('.') ? relation : (options.queryAlias ? options.queryAlias + '.' + relation : relation),
+                property: relation.includes('.') ? relation.split('.').slice(-2).join('.') : (options.queryAlias ? options.queryAlias + '.' + relation : relation),
                 alias: relation.split('.').pop()
             };
         });
