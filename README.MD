@@ -251,15 +251,15 @@ and [applySort](#applysort) function go to the [query functions](#functions---qu
 
 Create database.
 
-####Example
+#### Example
 
-**Status**
+**`Status`**
 ```typescript
 // Only create database if it does not exists.
 await createDatabase({ifNotExist: true});
 ```
 
-**Charset**
+**`Charset`**
 
 You can also specify the `charset` and `characterSet` as property of the `CustomOptions` parameter
 or parse it as extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
@@ -273,7 +273,7 @@ F.e
   await createDatabase({ifNotExist: true, charset: "utf8mb4_general_ci", characterSet: "utf8mb4"});
   ```
 
-**ConnectionOptions**
+**`ConnectionOptions`**
 
 If you have defined `entites` or `subscribers` by environment variables or with another typeorm configuration option,
 you may want to use them with ts-node as well with the build (`dist`) variant.
@@ -311,9 +311,10 @@ The function returns a promise with query results provided by underlying db driv
 
 ▸ `function` **dropDatabase**(`options?: CustomOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
 
-Create database.
+Drop database.
 
-**`example`**
+#### Example
+**`Simple`**
 ```typescript
 // Only drop database if it does exists.
 await dropDatabase({ifExist: true});
@@ -340,7 +341,8 @@ The function returns a promise with query results provided by underlying db driv
 
 Transform relations passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed relations.
 
-**`example`**
+#### Example
+**`Simple`**
 
 ```typescript
 // Only drop database if it does exists.
@@ -382,7 +384,8 @@ The function returns an array of objects. Each object has the properties `proper
 
 Transform sort fields passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields to sort.
 
-**`example`**
+#### Example
+**`Simple`**
 
 ```typescript
 // Only drop database if it does exists.
@@ -425,7 +428,7 @@ The function returns an objects. Each key-value pair represents a field and the 
 Transform fields of the main entity and optional of included relations passed in as `Record<string, string[]>` or `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields.
 
 #### Example
-**`simple`**
+**`Simple`**
 
 ```typescript
 // Only drop database if it does exists.
@@ -468,7 +471,7 @@ The function returns an objects. Each key-value pair represents the query alias 
 Transform filters of the main entity and optional of included relations passed in as `Record<string, unknown>` and apply them to the `SelectQueryBuilder`, in case they match the allowed filters.
 
 #### Example
-**`simple`**
+**`Simple`**
 
 ```typescript
 // Only drop database if it does exists.
@@ -511,7 +514,7 @@ The function returns an array of objects. Each object has the properties `type`,
 Transform pagination data passed in as `{limit?: number, offset?: number}` and apply it to the `SelectQueryBuilder`.
 
 #### Example
-**`simple`**
+**`Simple`**
 
 ```typescript
 // Only drop database if it does exists.
