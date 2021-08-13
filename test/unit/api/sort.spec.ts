@@ -108,7 +108,7 @@ describe('src/api/sort.ts', () => {
 
         // with deep nested include
         transformed = transformSort(['id', 'user_roles.role.id', 'user_roles.user.id'], options);
-        expect(transformed).toEqual({'id': 'ASC', 'user_roles.role.id': 'ASC'});
+        expect(transformed).toEqual({'id': 'ASC', 'role.id': 'ASC'});
     });
 
     it('should apply sort transformed', () => {

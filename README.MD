@@ -6,13 +6,28 @@
 This is a library to
 - `create` or `drop` the database specified for the typeorm connection.
 - execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)`.
-- validate and parse request `filters, includes, pagination and fields` and assign them directly to the `QueryBuilder` (json-api spec).
+- validate, transform & apply `filter[s], include[s], pagination and fields` to the `QueryBuilder` (JSON:API specification).
 
 **Table of Contents**
 
 - [Installation](#installation)
 - [Limitations](#limitations)
 - [Usage](#usage)
+    - [CLI](#cli)
+    - [Runtime](#runtime)
+        - [Database](#database)
+        - [Query](#query)
+- Functions
+    - [Database](#functions---database)
+        - [createDatabase](#createdatabase)
+        - [dropDatabase](#dropdatabase)
+    - [Query](#functions---query)
+        - [applyFields](#applyfields)
+        - [applyFilters](#applyfilters)
+        - [applyIncludes](#applyincludes)
+        - [applyPagination](#applypagination)
+        - [applySort](#applysort)
+
 
 
 ## Installation
@@ -21,7 +36,7 @@ This is a library to
 npm install typeorm-extension --save
 ```
 
-### Limitations
+## Limitations
 
 At the moment you can only `create` and `drop` a database for one of the following typeorm drivers:
 * CockroachDB
@@ -62,10 +77,11 @@ Alternatively, you can set the full command path in the package.json file and ru
 
 ### Runtime
 
-#### Create/Drop Database
+#### Database
 As an alternative to the CLI variant, you can `create` or `drop` the specified/default database through your own code base.
 Therefore, you can create the `ConnectionOptions` for the Connection manually, or let it be created automatically:
 
+**General**
 ```typescript
 import {ConnectionOptions, getConnectionOptions} from 'typeorm';
 import {createDatabase, dropDatabase} from "typeorm-extension";
@@ -87,67 +103,11 @@ import {createDatabase, dropDatabase} from "typeorm-extension";
     await dropDatabase({ifExist: true});
 })();
 ```
-You can also `create` the database only if it doesn't exist or only `drop` it if it exists.
 
-```typescript
-await createDatabase({ifNotExist: true});
-await dropDatabase({ifExist: true});
-```
+To get a better overview and understanding about the [createDatabase](#createdatabase) and the [dropDatabase](#dropdatabase) function go to the [database functions](#functions---database) section and read more about it.
 
-In addition, you can also specify the `charset` and `characterSet` as property of the first parameter of the `createDatabase()` function
-or parse it from the extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
-F.e
-- postgres
-  ```typescript
-   await createDatabase({ifNotExist: true, characterSet: "UTF8"});
-  ```
-- mysql
-  ```typescript
-  await createDatabase({ifNotExist: true, charset: "utf8mb4_general_ci", characterSet: "utf8mb4"});
-  ```
-
-If you have defined `entites` or `subscribers` by environment variables or with another typeorm configuration option,
-you may want to use them with ts-node as well with the build (`dist`) variant.
-Therefore, you can build the ConnectionOptions with the build in function `buildConnectionOptions`.
-
-```typescript
-import {craeteDatabase, dropDatabase, buildConnectionOptions} from "typeorm-extension";
-
-(async () => {
-    const connectionOptions = await buildConnectionOptions();
-    // Create database
-    await createDatabase({ifNotExist: true}, connectionOptions);
-
-    // Drop Database
-    await dropDatabase({ifExist: true}, connectionOptions);
-})();
-```
-If you have specified the path pattern for the entities like:
-`src/database/entities.ts`, the function will rewrite it to `dist/database/entities.js`,
-if the function is not called within the ts-node runtime environment.
-
-The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seeding` library.
-
-**Type- & Function-Declarations**
-```typescript
-declare type CustomOptions = {
-    ifNotExist?: boolean,
-    ifExist?: boolean,
-    charset?: string,
-    characterSet?: string,
-    initialDatabase?: string
-};
-```
-```typescript
-
-declare function createDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions): Promise<any>;
-
-declare function dropDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions): Promise<any>;
-
-```
-
-#### Request Utils
-For explanation proposes of the request utils,
+#### Query
+For explanation proposes of the query utils,
 two simple entities with a simple relation between them are declared to demonstrate their usage:
 
 ```typescript
@@ -192,24 +152,25 @@ export class Profile {
 }
 ```
 
-When you use express or another library, you can use the request utils accordingly to the
+When you use express or another library, you can use the API utils accordingly to the
 following code snippet:
 
 ```typescript
 import {getRepository} from "typeorm";
 import {Request, Response} from 'express';
 import {
-    applyRequestFilter,
-    applyRequestIncludes,
-    applyRequestPagination,
-    applyRequestFields
+    applyFields,
+    applyFilter,
+    applyIncludes,
+    applyPagination,
+    applySort
 } from "typeorm-extension";
 
 /**
  * Get many users.
  *
  * Request example
- * - url: /users?page[limit]=10&page[offset]=0&include[user]=profile&filter[id]=1&fields[user]=id,name
+ * - url: /users?page[limit]=10&page[offset]=0&include=profile&filter[id]=1&fields[user]=id,name
  *
  * Return Example:
  * {
@@ -226,28 +187,44 @@ import {
  * @param res
  */
 export async function getUsers(req: Request, res: Response) {
-    const {include, page, fields, filter} = req.query;
+    const {fields, filter, include, page, sort} = req.query;
 
     const repository = getRepository(User);
     const query = repository.createQueryBuilder('user');
 
+    // -----------------------------------------------------
+
+    const includes = applyIncludes(query, include, {
+        queryAlias: 'user',
+        allowed: ['profile']
+    });
+
+    applySort(query, sort, {
+        queryAlias: 'user',
+        allowed: ['id', 'name', 'profile.id'],
+        // profile.id can only be used as sorting key, if the relation 'profile' is included.
+        includes: includes
+    });
+
+    applyFields(query, fields, {
+        queryAlias: 'user',
+        allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
+        // porfile fields can only be included, if the relation 'profile' is included.
+        includes: includes
+    })
+
     // only allow filtering users by id & name
-    applyRequestFilter(query, filter, ['id','name']);
-
-    // only allow returning 20 items at max
-    const pagination = applyRequestPagination(query, page, 20);
-
-    // only allow tow include profile relation, by key profile (property key),
-    // relative to query entity alias 'user'
-    applyRequestIncludes(query, 'user', include, {
-        profile: 'profile'
+    applyFilters(query, filter, {
+        queryAlias: 'user',
+        allowed: ['id', 'name', 'profile.id'],
+        // porfile.id can only be used as a filter, if the relation 'profile' is included.
+        includes: includes
     });
 
-    // Only allow to select fields id, name for query alias 'user'
-    applyRequestFields(query, fields,
-        {user: ['id', 'name']},
-        {aliasMapping: {user: 'user'}
-    });
+    // only allow to select 20 items at maximum.
+    const pagination = applyPagination(query, page, {maxLimit: 20});
+
+    // -----------------------------------------------------
 
     const [entities, total] = await query.getManyAndCount();
 
@@ -262,4 +239,326 @@ export async function getUsers(req: Request, res: Response) {
     });
 }
 ```
+To get a better overview and understanding about the [applyFields](#applyfields), [applyFilters](#applyfilters), [applyIncludes](#applyincludes), [applyPagination](#applypagination)
+and [applySort](#applysort) function go to the [query functions](#functions---query) section and read more about it.
 
+
+## Functions - Database
+
+### createDatabase
+
+▸ `function` **createDatabase**(`options?: CustomOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
+
+Create database.
+
+####Example
+
+**Status**
+```typescript
+// Only create database if it does not exists.
+await createDatabase({ifNotExist: true});
+```
+
+**Charset**
+
+You can also specify the `charset` and `characterSet` as property of the `CustomOptions` parameter
+or parse it as extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
+F.e
+- postgres
+  ```typescript
+   await createDatabase({ifNotExist: true, characterSet: "UTF8"});
+  ```
+- mysql
+  ```typescript
+  await createDatabase({ifNotExist: true, charset: "utf8mb4_general_ci", characterSet: "utf8mb4"});
+  ```
+
+**ConnectionOptions**
+
+If you have defined `entites` or `subscribers` by environment variables or with another typeorm configuration option,
+you may want to use them with ts-node as well with the build (`dist`) variant.
+Therefore, you can build the ConnectionOptions with the build in function `buildConnectionOptions`.
+
+```typescript
+import {craeteDatabase, dropDatabase, buildConnectionOptions} from "typeorm-extension";
+
+(async () => {
+    const connectionOptions = await buildConnectionOptions();
+    // Create database
+    await createDatabase({ifNotExist: true}, connectionOptions);
+})();
+```
+If you have specified the path pattern for the entities like:
+`src/database/entities.ts`, the function will rewrite it to `dist/database/entities.js`,
+in case the function is not called within the ts-node runtime environment.
+
+The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seeding` library.
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `options` | `CustomOptions` | Specify custom options like charset, coalition & conditions. |
+| `connectionOptions` | `ConnectionOptions` | Pass typeorm connection options object. |
+
+#### Returns
+
+`Promise`<`unknown`>
+
+The function returns a promise with query results provided by underlying db driver.
+
+### dropDatabase
+
+▸ `function` **dropDatabase**(`options?: CustomOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
+
+Create database.
+
+**`example`**
+```typescript
+// Only drop database if it does exists.
+await dropDatabase({ifExist: true});
+```
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `options` | `CustomOptions` | Specify custom options like charset, coalition & conditions. |
+| `connectionOptions` | `ConnectionOptions` | Pass typeorm connection options object. |
+
+#### Returns
+
+`Promise`<`unknown`>
+
+The function returns a promise with query results provided by underlying db driver.
+
+## Functions - Query
+
+### applyIncludes
+
+▸ `function` **applyIncludes**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
+
+Transform relations passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed relations.
+
+**`example`**
+
+```typescript
+// Only drop database if it does exists.
+import {applyIncludes} from "typeorm-extension";
+
+const includes = applyIncludes(query, ['roles'], {
+    allowed: ['roles', 'photos'],
+    queryAlias: 'user'
+});
+
+console.log(includes);
+// [{property: 'user.roles', alias: 'roles'}]
+```
+
+#### Type parameters
+
+| Name | Description |
+| :------ | :------ |
+| `T` | Typeorm entity type
+
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
+| `data` | `unknown` | Relations in raw format. F.e `['roles']` or `roles` |
+| `options` | `IncludesOptions` | Options for the relations to include.
+
+#### Returns
+
+`IncludesTransformed`
+
+The function returns an array of objects. Each object has the properties `property` and `alias`.
+
+### applySort
+
+▸ `function` **applySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
+
+Transform sort fields passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields to sort.
+
+**`example`**
+
+```typescript
+// Only drop database if it does exists.
+import {applySort} from "typeorm-extension";
+
+const sort = applySort(query, ['-name'], {
+    allowed: ['id', 'name'],
+    queryAlias: 'user'
+});
+
+console.log(sort);
+// {'user.name': 'DESC'}
+```
+
+#### Type parameters
+
+| Name | Description |
+| :------ | :------ |
+| `T` | Typeorm entity type
+
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
+| `data` | `unknown` | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order.  |
+| `options` | `SortOptions` | Options for the sorting strategy.
+
+#### Returns
+
+`SortTransformed`
+
+The function returns an objects. Each key-value pair represents a field and the corresponding sorting direction.
+
+### applyFields
+
+▸ `function` **applyFields**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsOptions`): `FieldsTransformed`
+
+Transform fields of the main entity and optional of included relations passed in as `Record<string, string[]>` or `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields.
+
+#### Example
+**`simple`**
+
+```typescript
+// Only drop database if it does exists.
+import {applyFields} from "typeorm-extension";
+
+const fields = applyFields(query, ['name'], {
+    allowed: ['id', 'name'],
+    queryAlias: 'user'
+});
+
+console.log(fields);
+// {'user': ['name']}
+```
+
+#### Type parameters
+
+| Name | Description |
+| :------ | :------ |
+| `T` | Typeorm entity type
+
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
+| `data` | `unknown` | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
+| `options` | `FieldsOptions` | Options for the fields to select.
+
+#### Returns
+
+`SortTransformed`
+
+The function returns an objects. Each key-value pair represents the query alias and the corresponding fields.
+
+### applyFilters
+
+▸ `function` **applyFilters**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FiltersOptions`): `FiltersTransformed`
+
+Transform filters of the main entity and optional of included relations passed in as `Record<string, unknown>` and apply them to the `SelectQueryBuilder`, in case they match the allowed filters.
+
+#### Example
+**`simple`**
+
+```typescript
+// Only drop database if it does exists.
+import {applyFilters} from "typeorm-extension";
+
+const filters = applyFilters(query, {id: 1}, {
+    allowed: ['id', 'name'],
+    queryAlias: 'user'
+});
+
+console.log(filters);
+// [{type: 'where', query: 'user.id = :filter_id_1', bindings: {'filter_id_1': 1}}]
+```
+
+#### Type parameters
+
+| Name | Description |
+| :------ | :------ |
+| `T` | Typeorm entity type
+
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
+| `data` | `unknown` | Fields in raw format. F.e `{id: 1}`. |
+| `options` | `FiltersOptions` | Options for the fields to select.
+
+#### Returns
+
+`FiltersTransformed`
+
+The function returns an array of objects. Each object has the properties `type`, `query` and `bindings`.
+
+### applyPagination
+
+▸ `function` **applyPagination**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationOptions`): `PaginationTransformed`
+
+Transform pagination data passed in as `{limit?: number, offset?: number}` and apply it to the `SelectQueryBuilder`.
+
+#### Example
+**`simple`**
+
+```typescript
+// Only drop database if it does exists.
+import {applyPagination} from "typeorm-extension";
+
+const pagination = applyPagination(query, {limit: 100}, {
+    maxLimit: 50
+});
+
+console.log(pagination);
+// {limit: 50}
+```
+
+#### Type parameters
+
+| Name | Description |
+| :------ | :------ |
+| `T` | Typeorm entity type
+
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
+| `data` | `unknown` | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
+| `options` | `PaginationOptions` | Options for the pagination to select.
+
+#### Returns
+
+`PaginationTransformed`
+
+The function returns an object. The object might have the properties `limit` and `offset`.
+
+## Types
+
+### Types - Database
+
+#### CustomOptions
+```typescript
+type CustomOptions = {
+    ifNotExist?: boolean,
+    ifExist?: boolean,
+    charset?: string,
+    characterSet?: string,
+    initialDatabase?: string
+};
+```
+
+### Types - Query

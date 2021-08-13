@@ -12,6 +12,9 @@ export type FieldsOptions = {
     allowed?: Record<string, string[]> | string[],
     includes?: IncludesTransformed,
     queryAlias?: string,
+    /**
+     * @deprecated
+     */
     stringCase?: StringCaseVariant | undefined,
 
 };

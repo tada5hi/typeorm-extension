@@ -40,10 +40,17 @@ export function changeStringCase(
 
 let stringCase: StringCaseVariant | undefined;
 
+/**
+ * @deprecated
+ * @param variant
+ */
 export function setDefaultStringCase(variant?: StringCaseVariant) {
     stringCase = variant;
 }
 
+/**
+ * @deprecated
+ */
 export function getDefaultStringCase(): StringCaseVariant | undefined {
     return stringCase;
 }

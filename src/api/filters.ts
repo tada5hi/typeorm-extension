@@ -1,13 +1,20 @@
 import {Brackets, SelectQueryBuilder} from "typeorm";
 import {snakeCase} from "change-case";
-import {buildAliasMapping} from "./utils";
+import {IncludesTransformed} from "./includes";
+import {buildAliasMapping, buildFieldWithQueryAlias, isFieldAllowedByIncludes} from "./utils";
 import {changeStringCase, getDefaultStringCase, StringCaseVariant} from "./utils";
+import {FieldDetails, getFieldDetails} from "./utils/field";
 
 // --------------------------------------------------
 
 export type FiltersOptions = {
     aliasMapping?: Record<string, string>,
     allowed?: string[],
+    includes?: IncludesTransformed,
+    queryAlias?: string,
+    /**
+     * @deprecated
+     */
     stringCase?: StringCaseVariant
 };
 
@@ -33,7 +40,8 @@ function buildOptions(options?: FiltersOptions) : FiltersOptions {
         options.aliasMapping = {};
     }
 
-    options.stringCase = options.stringCase ?? getDefaultStringCase();
+    options.includes ??= [];
+    options.stringCase ??= getDefaultStringCase();
 
     return options;
 }
@@ -42,6 +50,16 @@ export function transformFilters(
     data: unknown,
     options?: FiltersOptions
 ) : FiltersTransformed {
+    options = options ?? {};
+
+    // If it is an empty array nothing is allowed
+    if(
+        typeof options.allowed !== 'undefined' &&
+        Object.keys(options.allowed).length === 0
+    ) {
+        return [];
+    }
+
     const prototype: string = Object.prototype.toString.call(data);
     /* istanbul ignore next */
     if (prototype !== '[object Object]') {
@@ -89,17 +107,22 @@ export function transformFilters(
             key = options.aliasMapping[key];
         }
 
+        const fieldDetails : FieldDetails = getFieldDetails(key);
+        if(!isFieldAllowedByIncludes(fieldDetails, options.includes, {queryAlias: options.queryAlias})) {
+            continue;
+        }
+
+        const keyWithQueryAlias : string = buildFieldWithQueryAlias(fieldDetails, options.queryAlias);
+
         if(
-            Array.isArray(options.allowed) &&
-            (
-                options.allowed.length === 0 ||
-                options.allowed.indexOf(key) === -1
-            )
+            typeof options.allowed !== 'undefined' &&
+            options.allowed.indexOf(key) === -1 &&
+            options.allowed.indexOf(keyWithQueryAlias) === -1
         ) {
             continue;
         }
 
-        temp[key] = value as string | boolean | number;
+        temp[keyWithQueryAlias] = value as string | boolean | number;
     }
 
     const items : FiltersTransformed = [];

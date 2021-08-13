@@ -20,6 +20,9 @@ export type IncludesOptions = {
     aliasMapping?: Record<string, string>,
     allowed?: string[],
     queryAlias?: string,
+    /**
+     * @deprecated
+     */
     stringCase?: StringCaseVariant,
     includeParents?: boolean | string[] | string
 };

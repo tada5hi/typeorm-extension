@@ -1,7 +1,8 @@
 import {SelectQueryBuilder} from "typeorm";
 import {IncludesTransformed} from "./includes";
-import {buildAliasMapping} from "./utils";
+import {buildAliasMapping, buildFieldWithQueryAlias, isFieldAllowedByIncludes} from "./utils";
 import {changeStringCase, getDefaultStringCase, StringCaseVariant} from "./utils";
+import {FieldDetails, getFieldDetails} from "./utils/field";
 
 // --------------------------------------------------
 
@@ -10,6 +11,9 @@ export type SortOptions = {
     allowed?: string[] | string[][],
     includes?: IncludesTransformed,
     queryAlias?: string,
+    /**
+     * @deprecated
+     */
     stringCase?: StringCaseVariant
 };
 
@@ -101,31 +105,23 @@ export function transformSort(
             key = options.aliasMapping[key];
         }
 
-        const alias : string | undefined = key.includes('.') ? key.split('.').slice(0, -1).join('.') : options.queryAlias;
-
-        // is not default domain && includes are defined?
-        if(
-            typeof options.includes !== 'undefined' &&
-            alias !== options.queryAlias
-        ) {
-            const includesMatched = options.includes.filter(include => include.property === alias);
-            if(includesMatched.length === 0) {
-                continue;
-            }
+        const fieldDetails : FieldDetails = getFieldDetails(key);
+        if(!isFieldAllowedByIncludes(fieldDetails, options.includes, {queryAlias: options.queryAlias})) {
+            continue;
         }
 
-        const keyWithAlias : string = options.queryAlias && !key.includes('.') ? options.queryAlias + '.' + key : key;
+        const keyWithQueryAlias : string = buildFieldWithQueryAlias(fieldDetails, options.queryAlias);
 
         if(
             typeof options.allowed !== 'undefined' &&
             !isMultiDimensionalArray(options.allowed) &&
             options.allowed.indexOf(key) === -1 &&
-            options.allowed.indexOf(keyWithAlias) === -1
+            options.allowed.indexOf(keyWithQueryAlias) === -1
         ) {
             continue;
         }
 
-        items[keyWithAlias] = direction;
+        items[keyWithQueryAlias] = direction;
     }
 
     if(isMultiDimensionalArray(options.allowed)) {
