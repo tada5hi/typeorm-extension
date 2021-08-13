@@ -1,134 +1,147 @@
 import {Brackets, SelectQueryBuilder} from "typeorm";
-import {changeStringCase, getDefaultRequestKeyCase, StringCaseOption} from "./utils";
-import {transformAliasMappingFields} from "./fields";
 import {snakeCase} from "change-case";
+import {IncludesTransformed} from "./includes";
+import {buildAliasMapping, buildFieldWithQueryAlias, isFieldAllowedByIncludes} from "./utils";
+import {changeStringCase, getDefaultStringCase, StringCaseVariant} from "./utils";
+import {FieldDetails, getFieldDetails} from "./utils/field";
 
-export function transformRequestFilters(
-    rawFilters: unknown,
-    aliasMappingFields: Record<string, any>,
-    options?: RequestFilterOptions
-): Record<string, string> {
-    options = options ?? {};
-    options.changeRequestKeyCase = options.changeRequestKeyCase ?? getDefaultRequestKeyCase();
+// --------------------------------------------------
 
-    let filters: Record<string, any> = {};
+export type FiltersOptions = {
+    aliasMapping?: Record<string, string>,
+    allowed?: string[],
+    includes?: IncludesTransformed,
+    queryAlias?: string,
+    /**
+     * @deprecated
+     */
+    stringCase?: StringCaseVariant
+};
 
-    const prototype: string = Object.prototype.toString.call(rawFilters as any);
-    /* istanbul ignore next */
-    if (prototype !== '[object Object]') {
-        return filters;
+export type FilterTransformed = {
+    type: 'where' | 'andWhere',
+    query: string,
+    bindings: Record<string, any>
+};
+
+export type FiltersTransformed = FilterTransformed[];
+
+// --------------------------------------------------
+
+function buildOptions(options?: FiltersOptions) : FiltersOptions {
+    options ??= {};
+
+    if(options.aliasMapping) {
+        options.aliasMapping = buildAliasMapping(options.aliasMapping, {
+            keyCase: options.stringCase,
+            keyDepthCharacter: '.'
+        });
+    } else {
+        options.aliasMapping = {};
     }
 
-    filters = rawFilters;
+    options.includes ??= [];
+    options.stringCase ??= getDefaultStringCase();
 
-    const result : Record<string, any> = {};
+    return options;
+}
 
-    for (const key in filters) {
+export function transformFilters(
+    data: unknown,
+    options?: FiltersOptions
+) : FiltersTransformed {
+    options = options ?? {};
+
+    // If it is an empty array nothing is allowed
+    if(
+        typeof options.allowed !== 'undefined' &&
+        Object.keys(options.allowed).length === 0
+    ) {
+        return [];
+    }
+
+    const prototype: string = Object.prototype.toString.call(data);
+    /* istanbul ignore next */
+    if (prototype !== '[object Object]') {
+        return [];
+    }
+
+    const length : number = Object.keys(data as Record<string, any>).length;
+    if(length === 0) {
+        return [];
+    }
+
+    options = buildOptions(options);
+
+    const temp : Record<string, string | boolean | number> = {};
+
+    // transform to appreciate data format & validate input
+    for (let key in (data as Record<string, any>)) {
         /* istanbul ignore next */
-        if (!filters.hasOwnProperty(key)) {
+        if (!data.hasOwnProperty(key)) {
             continue;
         }
 
+        let value : unknown = (data as Record<string, any>)[key];
+
         if (
-            typeof filters[key] !== 'string' &&
-            typeof filters[key] !== 'number' &&
-            typeof filters[key] !== 'boolean'
+            typeof value !== 'string' &&
+            typeof value !== 'number' &&
+            typeof value !== 'boolean'
         ) {
             continue;
         }
 
-        let stripped = filters[key];
-        if(typeof filters[key] === 'string') {
-            stripped = filters[key].replace(',', '').trim();
+        if(typeof value === 'string') {
+            value = (value as string).trim();
+            const stripped : string = (value as string).replace('/,/g', '');
 
             if (stripped.length === 0) {
                 continue;
             }
         }
 
-        const allowedKey : string = changeStringCase(key, options.changeRequestKeyCase);
+        key = changeStringCase(key, options.stringCase);
 
-        if(!aliasMappingFields.hasOwnProperty(allowedKey)) {
+        if(options.aliasMapping.hasOwnProperty(key)) {
+            key = options.aliasMapping[key];
+        }
+
+        const fieldDetails : FieldDetails = getFieldDetails(key);
+        if(!isFieldAllowedByIncludes(fieldDetails, options.includes, {queryAlias: options.queryAlias})) {
             continue;
         }
 
-        result[aliasMappingFields[allowedKey]] = filters[key];
+        const keyWithQueryAlias : string = buildFieldWithQueryAlias(fieldDetails, options.queryAlias);
+
+        if(
+            typeof options.allowed !== 'undefined' &&
+            options.allowed.indexOf(key) === -1 &&
+            options.allowed.indexOf(keyWithQueryAlias) === -1
+        ) {
+            continue;
+        }
+
+        temp[keyWithQueryAlias] = value as string | boolean | number;
     }
 
-    return result;
-}
-
-export type RequestFilterOptions = {
-    changeRequestKeyCase?: StringCaseOption | undefined
-};
-
-export type QueryStatement = {
-    type: 'where' | 'andWhere',
-    query: string,
-    bindings: Record<string, any>
-};
-
-/**
- * Backwards compatibility.
- */
-export function applyRequestFilter(
-    query: SelectQueryBuilder<any> | undefined,
-    rawRequestFilters: unknown,
-    aliasMappingFilters: string[] | Record<string, any>,
-    partialOptions?: Partial<RequestFilterOptions>
-) : QueryStatement[]  {
-    return applyRequestFilters(
-        query,
-        rawRequestFilters,
-        aliasMappingFilters,
-        partialOptions
-    );
-}
-
-export function applyRequestFilters(
-    query: SelectQueryBuilder<any> | undefined,
-    rawRequestFilters: unknown,
-    aliasMappingFilters: string[] | Record<string, any>,
-    partialOptions?: Partial<RequestFilterOptions>
-) : QueryStatement[] {
-    partialOptions = partialOptions ?? {};
-
-    const options : RequestFilterOptions = {
-        changeRequestKeyCase: partialOptions.changeRequestKeyCase ?? getDefaultRequestKeyCase()
-    };
-
-    const allowedFilters: Record<string, string> = transformAliasMappingFields(aliasMappingFilters, {
-        changeRequestKeyCase: options.changeRequestKeyCase
-    });
-
-    const requestFilters : Record<string, string> = transformRequestFilters(
-        rawRequestFilters,
-        allowedFilters,
-        options
-    );
-
-    const requestedFilterLength: number = Object.keys(requestFilters).length;
-    if (requestedFilterLength === 0) {
-        return [];
-    }
-
-    const queryStatements : QueryStatement[] = [];
+    const items : FiltersTransformed = [];
 
     /* istanbul ignore next */
     let run = 0;
-    for (const key in requestFilters) {
+    for (const key in temp) {
         /* istanbul ignore next */
-        if (!requestFilters.hasOwnProperty(key)) {
+        if (!temp.hasOwnProperty(key)) {
             continue;
         }
 
         run++;
 
-        let value : string | boolean | number = requestFilters[key];
+        let value : string | boolean | number = temp[key];
 
         /* istanbul ignore next */
         const paramKey = 'filter_' + snakeCase(key) + '_' + run;
-        const whereKind : QueryStatement['type'] = run === 1 ? 'where' : 'andWhere';
+        const whereKind : FilterTransformed['type'] = run === 1 ? 'where' : 'andWhere';
 
         const queryString : string[] = [
             key
@@ -178,25 +191,81 @@ export function applyRequestFilters(
             queryString.push(':' + paramKey);
         }
 
-        queryStatements.push({
+        items.push({
             type: whereKind,
             query: queryString.join(" "),
-            bindings: {[paramKey]: isInOperator ? value.split(',') : value}
+            bindings: {[paramKey]: isInOperator ? (value as string).split(',') : value}
         });
     }
 
-    if(typeof query === 'undefined') {
-        return queryStatements;
-    }
+    return items;
+}
 
+export function applyFiltersTransformed<T>(
+    query: SelectQueryBuilder<T>,
+    data: FiltersTransformed,
+) {
     /* istanbul ignore next */
-    if(queryStatements.length > 0) {
+    if(data.length > 0) {
         query.andWhere(new Brackets(qb => {
-            for (let i = 0; i < queryStatements.length; i++) {
-                qb[queryStatements[i].type](queryStatements[i].query, queryStatements[i].bindings);
+            for (let i = 0; i < data.length; i++) {
+                qb[data[i].type](data[i].query, data[i].bindings);
             }
         }));
     }
 
-    return queryStatements;
+    return data;
+}
+
+/**
+ * Apply raw filter data on query.
+ *
+ * @param query
+ * @param data
+ * @param options
+ */
+export function applyFilters<T>(
+    query: SelectQueryBuilder<T>,
+    data: unknown,
+    options?: FiltersOptions
+) : FiltersTransformed {
+    return applyFiltersTransformed(query, transformFilters(data, options));
+}
+
+// --------------------------------------------------
+
+/**
+ * @deprecated
+ */
+export function applyRequestFilter(
+    query: SelectQueryBuilder<any> | undefined,
+    data: unknown,
+    aliasMapping: Record<string, string>,
+    options?: FiltersOptions
+) : FiltersTransformed  {
+    return applyRequestFilters(
+        query,
+        data,
+        aliasMapping,
+        options
+    );
+}
+
+/**
+ * @deprecated
+ * @param query
+ * @param data
+ * @param aliasMapping
+ * @param options
+ */
+export function applyRequestFilters(
+    query: SelectQueryBuilder<any> | undefined,
+    data: unknown,
+    aliasMapping: Record<string, string>,
+    options?: Partial<FiltersOptions>
+) : FiltersTransformed {
+    return applyFiltersTransformed(query, transformFilters(
+        data,
+        {...options, aliasMapping: aliasMapping}
+    ));
 }

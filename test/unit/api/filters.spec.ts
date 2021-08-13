@@ -1,100 +1,131 @@
-import {applyRequestFilter, applyRequestFilters} from "../../../src";
+import {applyRequestFilter, applyRequestFilters, transformIncludes} from "../../../src";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
-import {QueryStatement, transformRequestFilters} from "../../../src/api/filters";
+import {applyFilters, FiltersOptions, FiltersTransformed, transformFilters} from "../../../src/api/filters";
 
 describe('src/api/filters.ts', () => {
     it('should transform request filters', () => {
-        let allowedFilters = transformRequestFilters({id: 1}, {id: 'id'});
-        expect(allowedFilters).toEqual({id: 1});
+        // filter id
+        let allowedFilters = transformFilters({id: 1});
+        expect(allowedFilters).toEqual([{type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}}]  as FiltersTransformed);
 
-        allowedFilters = transformRequestFilters({aliasId: 1}, {aliasId: 'id'});
-        expect(allowedFilters).toEqual({id: 1});
+        // filter none
+        allowedFilters = transformFilters({id: 1}, {allowed: []});
+        expect(allowedFilters).toEqual([]  as FiltersTransformed);
 
-        allowedFilters = transformRequestFilters({name: 'tada5hi'}, {name: 'name'});
-        expect(allowedFilters).toEqual({name: 'tada5hi'});
+        // filter with alias
+        allowedFilters = transformFilters({aliasId: 1}, {aliasMapping: {aliasId: 'id'}, allowed: ['id']});
+        expect(allowedFilters).toEqual([{type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}}] as FiltersTransformed);
 
-        allowedFilters = transformRequestFilters({name: ''}, {name: 'name'});
-        expect(allowedFilters).toEqual({});
+        // filter with query alias
+        allowedFilters = transformFilters({id: 1}, {queryAlias: 'user', allowed: ['id']});
+        expect(allowedFilters).toEqual([{type: 'where', query: 'user.id = :filter_user_id_1', bindings: {'filter_user_id_1': 1}}] as FiltersTransformed);
 
-        allowedFilters = transformRequestFilters({name: null}, {name: 'name'});
-        expect(allowedFilters).toEqual({});
+        // filter allowed
+        allowedFilters = transformFilters({name: 'tada5hi'}, {allowed: ['name']});
+        expect(allowedFilters).toEqual( [{type: 'where', query: 'name = :filter_name_1', bindings: {'filter_name_1': 'tada5hi'}}] as FiltersTransformed);
 
-        allowedFilters = transformRequestFilters({id: 1}, {name: 'name'});
-        expect(allowedFilters).toEqual({});
+        // filter data with el empty value
+        allowedFilters = transformFilters({name: ''}, {allowed: ['name']});
+        expect(allowedFilters).toEqual([] as FiltersTransformed);
 
-        allowedFilters = transformRequestFilters({}, {name: 'name'});
-        expect(allowedFilters).toEqual({});
-    })
+        // filter data with el null value
+        allowedFilters = transformFilters({name: null}, {allowed: ['name']});
+        expect(allowedFilters).toEqual([] as FiltersTransformed);
 
-    it('should apply request filters', () => {
-        const queryBuilder = new FakeSelectQueryBuilder();
+        // filter wrong allowed
+        allowedFilters = transformFilters({id: 1}, {allowed: ['name']});
+        expect(allowedFilters).toEqual([] as FiltersTransformed);
 
+        // filter empty data
+        allowedFilters = transformFilters({}, {allowed: ['name']});
+        expect(allowedFilters).toEqual([] as FiltersTransformed);
+    });
 
-        let queryStatements = applyRequestFilters(queryBuilder, {id: 1}, ['id']);
-        expect(queryStatements).toEqual([
-            {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}}
-        ] as QueryStatement[]);
-
-        queryStatements = applyRequestFilters(queryBuilder, {idAlias: 1}, {idAlias: 'id'});
-        expect(queryStatements).toEqual([
-            {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}}
-        ] as QueryStatement[]);
-
+    it('should transform filters with different operators', () => {
         // equal operator
-        queryStatements = applyRequestFilters(queryBuilder, {id: '1'}, ['id']);
-        expect(queryStatements).toEqual([
+        let data = transformFilters({id: '1'}, {allowed: ['id']});
+        expect(data).toEqual([
             {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': '1'}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
 
         // negation with equal operator
-        queryStatements = applyRequestFilters(queryBuilder, {id: '!1'}, ['id']);
-        expect(queryStatements).toEqual([
+        data = transformFilters({id: '!1'}, {allowed: ['id']});
+        expect(data).toEqual([
             {type: 'where', query: 'id != :filter_id_1', bindings: {'filter_id_1': '1'}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
 
         // in operator
-        queryStatements = applyRequestFilters(queryBuilder, {id: '1,2,3'}, ['id']);
-        expect(queryStatements).toEqual([
+        data = transformFilters({id: '1,2,3'}, {allowed: ['id']});
+        expect(data).toEqual([
             {type: 'where', query: 'id IN (:...filter_id_1)', bindings: {'filter_id_1': ["1","2","3"]}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
 
         // negation with in operator
-        queryStatements = applyRequestFilters(queryBuilder, {id: '!1,2,3'}, ['id']);
-        expect(queryStatements).toEqual([
+        data = transformFilters({id: '!1,2,3'}, {allowed: ['id']});
+        expect(data).toEqual([
             {type: 'where', query: 'id NOT IN (:...filter_id_1)', bindings: {'filter_id_1': ["1","2","3"]}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
 
         // like operator
-        queryStatements = applyRequestFilters(queryBuilder, {name: '~name'}, ['name']);
-        expect(queryStatements).toEqual([
+        data = transformFilters({name: '~name'}, {allowed: ['name']});
+        expect(data).toEqual([
             {type: 'where', query: 'name LIKE :filter_name_1', bindings: {'filter_name_1': 'name%'}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
 
         // negation with like operator
-        queryStatements = applyRequestFilters(queryBuilder, {name: '!~name'}, ['name']);
-        expect(queryStatements).toEqual([
+        data = transformFilters({name: '!~name'}, {allowed: ['name']});
+        expect(data).toEqual([
             {type: 'where', query: 'name NOT LIKE :filter_name_1', bindings: {'filter_name_1': 'name%'}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
+    });
 
-        // check alias function
-        queryStatements = applyRequestFilter(queryBuilder, {id: 1}, ['id']);
-        expect(queryStatements).toEqual([
+    it('should transform filters with includes', () => {
+        const includes = transformIncludes(['profile', 'user_roles.role']);
+
+        const options : FiltersOptions = {
+            allowed: ['id', 'profile.id', 'role.id'],
+            includes: includes,
+        };
+
+        // simple
+        let transformed = transformFilters({id: 1, 'profile.id': 2}, options);
+        expect(transformed).toEqual([
+            {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}},
+            {type: 'andWhere', query: 'profile.id = :filter_profile_id_2', bindings: {'filter_profile_id_2': 2}}
+        ] as FiltersTransformed);
+
+        // with include & query alias
+        transformed = transformFilters({id: 1, 'profile.id': 2}, {...options, queryAlias: 'user'});
+        expect(transformed).toEqual([
+            {type: 'where', query: 'user.id = :filter_user_id_1', bindings: {'filter_user_id_1': 1}},
+            {type: 'andWhere', query: 'profile.id = :filter_profile_id_2', bindings: {'filter_profile_id_2': 2}}
+        ] as FiltersTransformed);
+
+        // with deep nested include
+        transformed = transformFilters({id: 1, 'role.id': 2}, options);
+        expect(transformed).toEqual([
+            {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}},
+            {type: 'andWhere', query: 'role.id = :filter_role_id_2', bindings: {'filter_role_id_2': 2}}
+        ] as FiltersTransformed);
+    });
+
+    it('should apply filters', () => {
+        const queryBuilder = new FakeSelectQueryBuilder();
+
+        let data = applyFilters(queryBuilder, {id: 1}, {allowed: ['id']});
+        expect(data).toEqual([
             {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
 
-        // check undefined query
-        queryStatements = applyRequestFilter(undefined, {id: 1}, ['id']);
-        expect(queryStatements).toEqual([
+        // backward test
+        data = applyRequestFilters(queryBuilder, {id: 1}, {id: 'id'}, {allowed: ['id']});
+        expect(data).toEqual([
             {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}}
-        ] as QueryStatement[]);
+        ] as FiltersTransformed);
 
-        // check changeRequestKeyCase
-        queryStatements = applyRequestFilter(undefined, {profileId: 1}, ['profile_id'], {changeRequestKeyCase: "snakeCase"});
-        expect(queryStatements).toEqual([
-            {type: 'where', query: 'profile_id = :filter_profile_id_1', bindings: {'filter_profile_id_1': 1}}
-        ] as QueryStatement[]);
-
-        queryStatements = applyRequestFilter(queryBuilder, {}, {name: 'name'});
-        expect(queryStatements).toEqual([] as QueryStatement[]);
+        data = applyRequestFilter(queryBuilder, {id: 1}, {id: 'id'}, {allowed: ['id']});
+        expect(data).toEqual([
+            {type: 'where', query: 'id = :filter_id_1', bindings: {'filter_id_1': 1}}
+        ] as FiltersTransformed);
     });
 });

@@ -43,7 +43,9 @@ export class DatabaseCreateCommand implements CommandModule {
             });
     }
 
-    async handler(args: DatabaseCreateArguments, exitProcess: boolean = true) {
+    async handler(raw: Arguments, exitProcess: boolean = true) {
+        const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
+
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
             name: args.connection,
             configName: args.config,
