@@ -12,6 +12,7 @@ export type FiltersOptions = {
     allowed?: string[],
     includes?: IncludesTransformed,
     queryAlias?: string,
+    queryBindingKeyFn?: (key: string) => string,
     /**
      * @deprecated
      */
@@ -140,7 +141,7 @@ export function transformFilters(
         let value : string | boolean | number = temp[key];
 
         /* istanbul ignore next */
-        const paramKey = 'filter_' + snakeCase(key) + '_' + run;
+        const paramKey : string = typeof options.queryBindingKeyFn === 'function' ? options.queryBindingKeyFn(key) : 'filter_' + snakeCase(key);
         const whereKind : FilterTransformed['type'] = run === 1 ? 'where' : 'andWhere';
 
         const queryString : string[] = [

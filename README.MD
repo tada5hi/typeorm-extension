@@ -160,7 +160,7 @@ import {getRepository} from "typeorm";
 import {Request, Response} from 'express';
 import {
     applyFields,
-    applyFilter,
+    applyFilters,
     applyIncludes,
     applyPagination,
     applySort
@@ -335,92 +335,6 @@ The function returns a promise with query results provided by underlying db driv
 
 ## Functions - Query
 
-### applyIncludes
-
-▸ `function` **applyIncludes**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
-
-Transform relations passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed relations.
-
-#### Example
-**`Simple`**
-
-```typescript
-// Only drop database if it does exists.
-import {applyIncludes} from "typeorm-extension";
-
-const includes = applyIncludes(query, ['roles'], {
-    allowed: ['roles', 'photos'],
-    queryAlias: 'user'
-});
-
-console.log(includes);
-// [{property: 'user.roles', alias: 'roles'}]
-```
-
-#### Type parameters
-
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type
-
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
-| `data` | `unknown` | Relations in raw format. F.e `['roles']` or `roles` |
-| `options` | `IncludesOptions` | Options for the relations to include.
-
-#### Returns
-
-`IncludesTransformed`
-
-The function returns an array of objects. Each object has the properties `property` and `alias`.
-
-### applySort
-
-▸ `function` **applySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
-
-Transform sort fields passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields to sort.
-
-#### Example
-**`Simple`**
-
-```typescript
-// Only drop database if it does exists.
-import {applySort} from "typeorm-extension";
-
-const sort = applySort(query, ['-name'], {
-    allowed: ['id', 'name'],
-    queryAlias: 'user'
-});
-
-console.log(sort);
-// {'user.name': 'DESC'}
-```
-
-#### Type parameters
-
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type
-
-
-#### Parameters
-
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
-| `data` | `unknown` | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order.  |
-| `options` | `SortOptions` | Options for the sorting strategy.
-
-#### Returns
-
-`SortTransformed`
-
-The function returns an objects. Each key-value pair represents a field and the corresponding sorting direction.
-
 ### applyFields
 
 ▸ `function` **applyFields**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsOptions`): `FieldsTransformed`
@@ -460,7 +374,7 @@ console.log(fields);
 
 #### Returns
 
-`SortTransformed`
+`FieldsTransformed`
 
 The function returns an objects. Each key-value pair represents the query alias and the corresponding fields.
 
@@ -507,6 +421,50 @@ console.log(filters);
 
 The function returns an array of objects. Each object has the properties `type`, `query` and `bindings`.
 
+
+### applyIncludes
+
+▸ `function` **applyIncludes**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
+
+Transform relations passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed relations.
+
+#### Example
+**`Simple`**
+
+```typescript
+// Only drop database if it does exists.
+import {applyIncludes} from "typeorm-extension";
+
+const includes = applyIncludes(query, ['roles'], {
+    allowed: ['roles', 'photos'],
+    queryAlias: 'user'
+});
+
+console.log(includes);
+// [{property: 'user.roles', alias: 'roles'}]
+```
+
+#### Type parameters
+
+| Name | Description |
+| :------ | :------ |
+| `T` | Typeorm entity type
+
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
+| `data` | `unknown` | Relations in raw format. F.e `['roles']` or `roles` |
+| `options` | `IncludesOptions` | Options for the relations to include.
+
+#### Returns
+
+`IncludesTransformed`
+
+The function returns an array of objects. Each object has the properties `property` and `alias`.
+
 ### applyPagination
 
 ▸ `function` **applyPagination**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationOptions`): `PaginationTransformed`
@@ -548,6 +506,49 @@ console.log(pagination);
 `PaginationTransformed`
 
 The function returns an object. The object might have the properties `limit` and `offset`.
+
+### applySort
+
+▸ `function` **applySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
+
+Transform sort fields passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields to sort.
+
+#### Example
+**`Simple`**
+
+```typescript
+// Only drop database if it does exists.
+import {applySort} from "typeorm-extension";
+
+const sort = applySort(query, ['-name'], {
+    allowed: ['id', 'name'],
+    queryAlias: 'user'
+});
+
+console.log(sort);
+// {'user.name': 'DESC'}
+```
+
+#### Type parameters
+
+| Name | Description |
+| :------ | :------ |
+| `T` | Typeorm entity type
+
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
+| `data` | `unknown` | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order.  |
+| `options` | `SortOptions` | Options for the sorting strategy.
+
+#### Returns
+
+`SortTransformed`
+
+The function returns an objects. Each key-value pair represents a field and the corresponding sorting direction.
 
 ## Types
 
