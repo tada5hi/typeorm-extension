@@ -397,7 +397,7 @@ const filters = applyFilters(query, {id: 1}, {
 });
 
 console.log(filters);
-// [{type: 'where', query: 'user.id = :filter_id_1', bindings: {'filter_id_1': 1}}]
+// [{type: 'where', query: 'user.id = :filter_id', bindings: {'filter_id': 1}}]
 ```
 
 #### Type parameters
@@ -557,12 +557,60 @@ The function returns an objects. Each key-value pair represents a field and the 
 #### CustomOptions
 ```typescript
 type CustomOptions = {
-    ifNotExist?: boolean,
-    ifExist?: boolean,
-    charset?: string,
     characterSet?: string,
+    charset?: string,
+    ifExist?: boolean,
+    ifNotExist?: boolean,
     initialDatabase?: string
 };
 ```
 
 ### Types - Query
+
+#### FieldsOptions
+```typescript
+type FieldsOptions = {
+    aliasMapping?: Record<string, string>,
+    allowed?: Record<string, string[]> | string[],
+    includes?: IncludesTransformed,
+    queryAlias?: string
+};
+```
+
+#### FiltersOptions
+```typescript
+export type FiltersOptions = {
+    aliasMapping?: Record<string, string>,
+    allowed?: string[],
+    includes?: IncludesTransformed,
+    queryAlias?: string,
+    queryBindingKeyFn?: (key: string) => string
+};
+```
+
+#### IncludesOptions
+```typescript
+type IncludesOptions = {
+    aliasMapping?: Record<string, string>,
+    allowed?: string[],
+    includeParents?: boolean | string[] | string
+    queryAlias?: string,
+};
+```
+
+#### PaginationOptions
+```typescript
+type PaginationOptions = {
+    maxLimit?: number
+};
+```
+
+#### SortOptions
+```typescript
+type SortOptions = {
+    aliasMapping?: Record<string, string>,
+    allowed?: string[] | string[][],
+    includes?: IncludesTransformed,
+    queryAlias?: string
+};
+```

@@ -1,10 +1,10 @@
 import {ConnectionOptions} from "typeorm";
 
 export type CustomOptions = {
-    ifNotExist?: boolean,
-    ifExist?: boolean,
-    charset?: string,
     characterSet?: string,
+    charset?: string,
+    ifExist?: boolean,
+    ifNotExist?: boolean,
     initialDatabase?: string
 };
 

@@ -19,12 +19,12 @@ export type IncludesTransformed = IncludeTransformed[];
 export type IncludesOptions = {
     aliasMapping?: Record<string, string>,
     allowed?: string[],
+    includeParents?: boolean | string[] | string,
     queryAlias?: string,
     /**
      * @deprecated
      */
-    stringCase?: StringCaseVariant,
-    includeParents?: boolean | string[] | string
+    stringCase?: StringCaseVariant
 };
 
 // --------------------------------------------------
