@@ -1,7 +1,7 @@
 import {
     DEFAULT_ALIAS_ID,
     buildDomainFields,
-    transformFields, FieldsOptions, applyFields, applyRequestFields
+    transformFields, FieldsOptions, applyFields, applyRequestFields, FieldsTransformed
 } from "../../../src/api/fields";
 import {transformIncludes} from "../../../src/api/includes";
 import {buildAliasMapping} from "../../../src/api/utils";
@@ -24,50 +24,56 @@ describe('src/api/fields.ts', () => {
 
     it('should transform fields', () => {
         const options : FieldsOptions = {
-            allowed: {
-                [DEFAULT_ALIAS_ID]: ['id', 'name']
-            }
+            allowed: ['id', 'name']
         };
 
         // fields undefined
         let data = transformFields(undefined, options);
-        expect(data).toEqual({});
+        expect(data).toEqual([]);
 
         // fields as array
         data = transformFields(['id'], options);
-        expect(data).toEqual({[DEFAULT_ALIAS_ID]: ['id']});
+        expect(data).toEqual([{fields: ['id']}] as FieldsTransformed);
 
         // fields as string
         data = transformFields('id', options);
-        expect(data).toEqual({[DEFAULT_ALIAS_ID]: ['id']});
+        expect(data).toEqual([{fields: ['id']}] as FieldsTransformed);
 
         // multiple fields but only one valid field
         data = transformFields(['id', 'avatar'], options);
-        expect(data).toEqual({[DEFAULT_ALIAS_ID]: ['id']});
+        expect(data).toEqual([{fields: ['id']}] as FieldsTransformed);
+
+        // field as string and append fields
+        data = transformFields('+id', options);
+        expect(data).toEqual([{fields: ['id'], addFields: true}] as FieldsTransformed);
+
+        // fields as string and append fields
+        data = transformFields('id,+name', options);
+        expect(data).toEqual([{fields: ['id', 'name'], addFields: true}] as FieldsTransformed);
 
         // empty allowed -> allows nothing
         data = transformFields('id', {...options, allowed: []});
-        expect(data).toEqual({});
+        expect(data).toEqual([] as FieldsTransformed);
 
         // undefined allowed -> allows everything
         data = transformFields('id', {...options, allowed: undefined});
-        expect(data).toEqual({[DEFAULT_ALIAS_ID]: ['id']});
+        expect(data).toEqual([{fields: ['id']}] as FieldsTransformed);
 
         // field not allowed
         data = transformFields('avatar', options);
-        expect(data).toEqual({});
+        expect(data).toEqual([] as FieldsTransformed);
 
         // field with invalid value
         data = transformFields({id: null}, options);
-        expect(data).toEqual({});
+        expect(data).toEqual([] as FieldsTransformed);
 
         // if only one domain is given, try to parse request field to single domain.
         data = transformFields( ['id'], {allowed: {domain: ['id']}});
-        expect(data).toEqual({domain: ['id']});
+        expect(data).toEqual([{fields: ['id'], alias: 'domain'}] as FieldsTransformed);
 
         // if multiple possibilities are available for request field, than parse to none
         data = transformFields( ['id'], {allowed: {domain: ['id'], domain2: ['id']}});
-        expect(data).toEqual({});
+        expect(data).toEqual([] as FieldsTransformed);
     });
 
     it('should transform fields with includes', () => {
@@ -75,11 +81,11 @@ describe('src/api/fields.ts', () => {
 
         // simple domain match
         let data = transformFields( {profile: ['id']}, {allowed: {profile: ['id']}, includes: includes});
-        expect(data).toEqual({profile: ['id']});
+        expect(data).toEqual([{fields: ['id'], alias: 'profile'}] as FieldsTransformed);
 
         // only single domain match
         data = transformFields( {profile: ['id'], permissions: ['id']}, {allowed: {profile: ['id'], permissions: ['id']}, includes: includes});
-        expect(data).toEqual({profile: ['id']});
+        expect(data).toEqual([{fields: ['id'], alias: 'profile'}] as FieldsTransformed);
     });
 
     it('should apply fields', () => {
@@ -87,12 +93,12 @@ describe('src/api/fields.ts', () => {
 
         let appliedRequestFields = applyFields(queryBuilder, [], {});
         expect(appliedRequestFields).toBeDefined();
-        expect(appliedRequestFields).toEqual({});
+        expect(appliedRequestFields).toEqual([] as FieldsTransformed);
 
         // backwards compatibility
         appliedRequestFields = applyRequestFields(queryBuilder, [], {});
         expect(appliedRequestFields).toBeDefined();
-        expect(appliedRequestFields).toEqual({});
+        expect(appliedRequestFields).toEqual([] as FieldsTransformed);
     });
 
     it('should transform allowed fields', () => {

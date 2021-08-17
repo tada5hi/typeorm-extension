@@ -30,10 +30,4 @@ jobs:
               run: |
                 npm ci
                 npm run build
-                npm run test:coverage
-
-            - name: Upload Code coverage report
-              uses: codecov/codecov-action@v2.0.2
-              with:
-                  token: ${{ secrets.codecov }}
-                  file: ./writable/coverage/*.json
+                npm run test

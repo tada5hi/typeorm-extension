@@ -16,10 +16,15 @@ export type FieldsOptions = {
      * @deprecated
      */
     stringCase?: StringCaseVariant | undefined,
-
 };
 
-export type FieldsTransformed = Record<string, string[]>;
+export type AliasFields = {
+    addFields?: boolean,
+    alias?: string,
+    fields: string[]
+};
+
+export type FieldsTransformed = AliasFields[];
 
 // --------------------------------------------------
 
@@ -51,7 +56,7 @@ export function transformFields(
         typeof options.allowed !== 'undefined' &&
         Object.keys(options.allowed).length === 0
     ) {
-        return {};
+        return [];
     }
 
     options.aliasMapping ??= {};
@@ -70,21 +75,21 @@ export function transformFields(
         prototype !== '[object Array]' &&
         prototype !== '[object String]'
     ) {
-        return {};
+        return [];
     }
 
     if(prototype === '[object String]') {
-        data = {[options.queryAlias]: (data as string).split(',')};
+        data = {[options.queryAlias]: data};
     }
 
     if(prototype === '[object Array]') {
         data = {[options.queryAlias]: data};
     }
 
-    const domainFields : FieldsTransformed = {};
+    const transformed : FieldsTransformed = [];
 
     for (const key in (data as Record<string, string[]>)) {
-        if (!data.hasOwnProperty(key)) {
+        if (!data.hasOwnProperty(key) || typeof key !== 'string') {
             continue;
         }
 
@@ -107,8 +112,20 @@ export function transformFields(
 
         /* istanbul ignore next */
         if(valuePrototype === '[object Array]') {
-            fields = (value as unknown[]).filter(val => typeof val === 'string') as string[];
+            fields = (value as unknown[])
+                .filter(val => typeof val === 'string') as string[];
         }
+
+        let fieldsAppend : boolean | undefined;
+        for(let i=0; i<fields.length; i++) {
+            if(fields[i].substr(0, 1) === '+') {
+                fieldsAppend = true;
+
+                fields[i] = fields[i].substr(1);
+            }
+        }
+
+        if(fields.length === 0) continue;
 
         const allowedDomains : string[] = typeof allowedDomainFields !== 'undefined' ? Object.keys(allowedDomainFields) : [];
         const targetKey : string = allowedDomains.length === 1 ? allowedDomains[0] : key;
@@ -143,25 +160,46 @@ export function transformFields(
             });
 
         if(fields.length > 0) {
-            domainFields[targetKey] = fields;
+            const item : AliasFields = {
+                fields: fields
+            };
+
+            if(targetKey !== DEFAULT_ALIAS_ID) {
+                item.alias = targetKey;
+            }
+
+            if(typeof fieldsAppend !== 'undefined') {
+                item.addFields = fieldsAppend;
+            }
+
+            transformed.push(item);
         }
     }
 
-    return domainFields;
+    return transformed;
 }
 
 export function applyFieldsTransformed<T>(
     query: SelectQueryBuilder<T>,
     data: FieldsTransformed
 ) {
-    for (const key in data) {
-        /* istanbul ignore next */
-        if (!data.hasOwnProperty(key)) continue;
+    if(data.length === 0) {
+        return data;
+    }
+
+    for (let i=0; i<data.length; i++) {
 
         /* istanbul ignore next */
-        const prefix : string = key === DEFAULT_ALIAS_ID ? '' : key + '.';
+        const prefix : string = data[i].alias ? data[i].alias + '.' : '';
+
         /* istanbul ignore next */
-        data[key].map(item => query.addSelect(prefix+item));
+        data[i].fields.map(item => {
+            if(data[i].addFields) {
+                query.addSelect(prefix + item);
+            } else {
+                query.select(prefix + item);
+            }
+        });
     }
 
     return data;

@@ -3,7 +3,7 @@ import {snakeCase} from "change-case";
 import {IncludesTransformed} from "./includes";
 import {buildAliasMapping, buildFieldWithQueryAlias, isFieldAllowedByIncludes} from "./utils";
 import {changeStringCase, getDefaultStringCase, StringCaseVariant} from "./utils";
-import {FieldDetails, getFieldDetails} from "./utils/field";
+import {FieldDetails, getFieldDetails} from "./utils";
 
 // --------------------------------------------------
 
@@ -20,9 +20,8 @@ export type FiltersOptions = {
 };
 
 export type FilterTransformed = {
-    type: 'where' | 'andWhere',
-    query: string,
-    bindings: Record<string, any>
+    statement: string,
+    binding: Record<string, any>
 };
 
 export type FiltersTransformed = FilterTransformed[];
@@ -129,20 +128,16 @@ export function transformFilters(
     const items : FiltersTransformed = [];
 
     /* istanbul ignore next */
-    let run = 0;
     for (const key in temp) {
         /* istanbul ignore next */
         if (!temp.hasOwnProperty(key)) {
             continue;
         }
 
-        run++;
-
         let value : string | boolean | number = temp[key];
 
         /* istanbul ignore next */
         const paramKey : string = typeof options.queryBindingKeyFn === 'function' ? options.queryBindingKeyFn(key) : 'filter_' + snakeCase(key);
-        const whereKind : FilterTransformed['type'] = run === 1 ? 'where' : 'andWhere';
 
         const queryString : string[] = [
             key
@@ -193,9 +188,8 @@ export function transformFilters(
         }
 
         items.push({
-            type: whereKind,
-            query: queryString.join(" "),
-            bindings: {[paramKey]: isInOperator ? (value as string).split(',') : value}
+            statement: queryString.join(" "),
+            binding: {[paramKey]: isInOperator ? (value as string).split(',') : value}
         });
     }
 
@@ -206,14 +200,20 @@ export function applyFiltersTransformed<T>(
     query: SelectQueryBuilder<T>,
     data: FiltersTransformed,
 ) {
-    /* istanbul ignore next */
-    if(data.length > 0) {
-        query.andWhere(new Brackets(qb => {
-            for (let i = 0; i < data.length; i++) {
-                qb[data[i].type](data[i].query, data[i].bindings);
-            }
-        }));
+    if(data.length === 0) {
+        return data;
     }
+
+    /* istanbul ignore next */
+    query.andWhere(new Brackets(qb => {
+        for (let i = 0; i < data.length; i++) {
+            if(i === 0) {
+                qb.where(data[i].statement, data[i].binding);
+            } else {
+                qb.andWhere(data[i].statement, data[i].binding);
+            }
+        }
+    }));
 
     return data;
 }

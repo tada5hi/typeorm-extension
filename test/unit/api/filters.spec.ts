@@ -6,7 +6,7 @@ describe('src/api/filters.ts', () => {
     it('should transform request filters', () => {
         // filter id
         let allowedFilters = transformFilters({id: 1});
-        expect(allowedFilters).toEqual([{type: 'where', query: 'id = :filter_id', bindings: {'filter_id': 1}}]  as FiltersTransformed);
+        expect(allowedFilters).toEqual([{statement: 'id = :filter_id', binding: {'filter_id': 1}}]  as FiltersTransformed);
 
         // filter none
         allowedFilters = transformFilters({id: 1}, {allowed: []});
@@ -14,19 +14,19 @@ describe('src/api/filters.ts', () => {
 
         // filter with alias
         allowedFilters = transformFilters({aliasId: 1}, {aliasMapping: {aliasId: 'id'}, allowed: ['id']});
-        expect(allowedFilters).toEqual([{type: 'where', query: 'id = :filter_id', bindings: {'filter_id': 1}}] as FiltersTransformed);
+        expect(allowedFilters).toEqual([{statement: 'id = :filter_id', binding: {'filter_id': 1}}] as FiltersTransformed);
 
         // filter with custom queryBindingKey
         allowedFilters = transformFilters({id: 1}, {allowed: ['id'], queryBindingKeyFn: key => key});
-        expect(allowedFilters).toEqual([{type: 'where', query: 'id = :id', bindings: {'id': 1}}] as FiltersTransformed);
+        expect(allowedFilters).toEqual([{statement: 'id = :id', binding: {'id': 1}}] as FiltersTransformed);
 
         // filter with query alias
         allowedFilters = transformFilters({id: 1}, {queryAlias: 'user', allowed: ['id']});
-        expect(allowedFilters).toEqual([{type: 'where', query: 'user.id = :filter_user_id', bindings: {'filter_user_id': 1}}] as FiltersTransformed);
+        expect(allowedFilters).toEqual([{statement: 'user.id = :filter_user_id', binding: {'filter_user_id': 1}}] as FiltersTransformed);
 
         // filter allowed
         allowedFilters = transformFilters({name: 'tada5hi'}, {allowed: ['name']});
-        expect(allowedFilters).toEqual( [{type: 'where', query: 'name = :filter_name', bindings: {'filter_name': 'tada5hi'}}] as FiltersTransformed);
+        expect(allowedFilters).toEqual( [{statement: 'name = :filter_name', binding: {'filter_name': 'tada5hi'}}] as FiltersTransformed);
 
         // filter data with el empty value
         allowedFilters = transformFilters({name: ''}, {allowed: ['name']});
@@ -49,37 +49,37 @@ describe('src/api/filters.ts', () => {
         // equal operator
         let data = transformFilters({id: '1'}, {allowed: ['id']});
         expect(data).toEqual([
-            {type: 'where', query: 'id = :filter_id', bindings: {'filter_id': '1'}}
+            {statement: 'id = :filter_id', binding: {'filter_id': '1'}}
         ] as FiltersTransformed);
 
         // negation with equal operator
         data = transformFilters({id: '!1'}, {allowed: ['id']});
         expect(data).toEqual([
-            {type: 'where', query: 'id != :filter_id', bindings: {'filter_id': '1'}}
+            {statement: 'id != :filter_id', binding: {'filter_id': '1'}}
         ] as FiltersTransformed);
 
         // in operator
         data = transformFilters({id: '1,2,3'}, {allowed: ['id']});
         expect(data).toEqual([
-            {type: 'where', query: 'id IN (:...filter_id)', bindings: {'filter_id': ["1","2","3"]}}
+            {statement: 'id IN (:...filter_id)', binding: {'filter_id': ["1","2","3"]}}
         ] as FiltersTransformed);
 
         // negation with in operator
         data = transformFilters({id: '!1,2,3'}, {allowed: ['id']});
         expect(data).toEqual([
-            {type: 'where', query: 'id NOT IN (:...filter_id)', bindings: {'filter_id': ["1","2","3"]}}
+            {statement: 'id NOT IN (:...filter_id)', binding: {'filter_id': ["1","2","3"]}}
         ] as FiltersTransformed);
 
         // like operator
         data = transformFilters({name: '~name'}, {allowed: ['name']});
         expect(data).toEqual([
-            {type: 'where', query: 'name LIKE :filter_name', bindings: {'filter_name': 'name%'}}
+            {statement: 'name LIKE :filter_name', binding: {'filter_name': 'name%'}}
         ] as FiltersTransformed);
 
         // negation with like operator
         data = transformFilters({name: '!~name'}, {allowed: ['name']});
         expect(data).toEqual([
-            {type: 'where', query: 'name NOT LIKE :filter_name', bindings: {'filter_name': 'name%'}}
+            {statement: 'name NOT LIKE :filter_name', binding: {'filter_name': 'name%'}}
         ] as FiltersTransformed);
     });
 
@@ -94,22 +94,22 @@ describe('src/api/filters.ts', () => {
         // simple
         let transformed = transformFilters({id: 1, 'profile.id': 2}, options);
         expect(transformed).toEqual([
-            {type: 'where', query: 'id = :filter_id', bindings: {'filter_id': 1}},
-            {type: 'andWhere', query: 'profile.id = :filter_profile_id', bindings: {'filter_profile_id': 2}}
+            {statement: 'id = :filter_id', binding: {'filter_id': 1}},
+            {statement: 'profile.id = :filter_profile_id', binding: {'filter_profile_id': 2}}
         ] as FiltersTransformed);
 
         // with include & query alias
         transformed = transformFilters({id: 1, 'profile.id': 2}, {...options, queryAlias: 'user'});
         expect(transformed).toEqual([
-            {type: 'where', query: 'user.id = :filter_user_id', bindings: {'filter_user_id': 1}},
-            {type: 'andWhere', query: 'profile.id = :filter_profile_id', bindings: {'filter_profile_id': 2}}
+            {statement: 'user.id = :filter_user_id', binding: {'filter_user_id': 1}},
+            {statement: 'profile.id = :filter_profile_id', binding: {'filter_profile_id': 2}}
         ] as FiltersTransformed);
 
         // with deep nested include
         transformed = transformFilters({id: 1, 'role.id': 2}, options);
         expect(transformed).toEqual([
-            {type: 'where', query: 'id = :filter_id', bindings: {'filter_id': 1}},
-            {type: 'andWhere', query: 'role.id = :filter_role_id', bindings: {'filter_role_id': 2}}
+            {statement: 'id = :filter_id', binding: {'filter_id': 1}},
+            {statement: 'role.id = :filter_role_id', binding: {'filter_role_id': 2}}
         ] as FiltersTransformed);
     });
 
@@ -118,18 +118,18 @@ describe('src/api/filters.ts', () => {
 
         let data = applyFilters(queryBuilder, {id: 1}, {allowed: ['id']});
         expect(data).toEqual([
-            {type: 'where', query: 'id = :filter_id', bindings: {'filter_id': 1}}
+            {statement: 'id = :filter_id', binding: {'filter_id': 1}}
         ] as FiltersTransformed);
 
         // backward test
         data = applyRequestFilters(queryBuilder, {id: 1}, {id: 'id'}, {allowed: ['id']});
         expect(data).toEqual([
-            {type: 'where', query: 'id = :filter_id', bindings: {'filter_id': 1}}
+            {statement: 'id = :filter_id', binding: {'filter_id': 1}}
         ] as FiltersTransformed);
 
         data = applyRequestFilter(queryBuilder, {id: 1}, {id: 'id'}, {allowed: ['id']});
         expect(data).toEqual([
-            {type: 'where', query: 'id = :filter_id', bindings: {'filter_id': 1}}
+            {statement: 'id = :filter_id', binding: {'filter_id': 1}}
         ] as FiltersTransformed);
     });
 });

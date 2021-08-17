@@ -107,7 +107,7 @@ import {createDatabase, dropDatabase} from "typeorm-extension";
 To get a better overview and understanding about the [createDatabase](#createdatabase) and the [dropDatabase](#dropdatabase) function go to the [database functions](#functions---database) section and read more about it.
 
 #### Query
-For explanation proposes of the query utils,
+For explanation proposes of the statement utils,
 two simple entities with a simple relation between them are declared to demonstrate their usage:
 
 ```typescript
@@ -187,26 +187,26 @@ import {
  * @param res
  */
 export async function getUsers(req: Request, res: Response) {
-    const {fields, filter, include, page, sort} = req.query;
+    const {fields, filter, include, page, sort} = req.statement;
 
     const repository = getRepository(User);
-    const query = repository.createQueryBuilder('user');
+    const statement = repository.createQueryBuilder('user');
 
     // -----------------------------------------------------
 
-    const includes = applyIncludes(query, include, {
+    const includes = applyIncludes(statement, include, {
         queryAlias: 'user',
         allowed: ['profile']
     });
 
-    applySort(query, sort, {
+    applySort(statement, sort, {
         queryAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // profile.id can only be used as sorting key, if the relation 'profile' is included.
         includes: includes
     });
 
-    applyFields(query, fields, {
+    applyFields(statement, fields, {
         queryAlias: 'user',
         allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         // porfile fields can only be included, if the relation 'profile' is included.
@@ -214,7 +214,7 @@ export async function getUsers(req: Request, res: Response) {
     })
 
     // only allow filtering users by id & name
-    applyFilters(query, filter, {
+    applyFilters(statement, filter, {
         queryAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // porfile.id can only be used as a filter, if the relation 'profile' is included.
@@ -222,11 +222,11 @@ export async function getUsers(req: Request, res: Response) {
     });
 
     // only allow to select 20 items at maximum.
-    const pagination = applyPagination(query, page, {maxLimit: 20});
+    const pagination = applyPagination(statement, page, {maxLimit: 20});
 
     // -----------------------------------------------------
 
-    const [entities, total] = await query.getManyAndCount();
+    const [entities, total] = await statement.getManyAndCount();
 
     return res.json({
         data: {
@@ -240,7 +240,7 @@ export async function getUsers(req: Request, res: Response) {
 }
 ```
 To get a better overview and understanding about the [applyFields](#applyfields), [applyFilters](#applyfilters), [applyIncludes](#applyincludes), [applyPagination](#applypagination)
-and [applySort](#applysort) function go to the [query functions](#functions---query) section and read more about it.
+and [applySort](#applysort) function go to the [statement functions](#functions---query) section and read more about it.
 
 
 ## Functions - Database
@@ -305,7 +305,7 @@ The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seedin
 
 `Promise`<`unknown`>
 
-The function returns a promise with query results provided by underlying db driver.
+The function returns a promise with statement results provided by underlying db driver.
 
 ### dropDatabase
 
@@ -331,13 +331,13 @@ await dropDatabase({ifExist: true});
 
 `Promise`<`unknown`>
 
-The function returns a promise with query results provided by underlying db driver.
+The function returns a promise with statement results provided by underlying db driver.
 
 ## Functions - Query
 
 ### applyFields
 
-▸ `function` **applyFields**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsOptions`): `FieldsTransformed`
+▸ `function` **applyFields**<`T`>(`statement: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsOptions`): `FieldsTransformed`
 
 Transform fields of the main entity and optional of included relations passed in as `Record<string, string[]>` or `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields.
 
@@ -348,13 +348,13 @@ Transform fields of the main entity and optional of included relations passed in
 // Only drop database if it does exists.
 import {applyFields} from "typeorm-extension";
 
-const fields = applyFields(query, ['name'], {
+const fields = applyFields(statement, ['name'], {
     allowed: ['id', 'name'],
     queryAlias: 'user'
 });
 
 console.log(fields);
-// {'user': ['name']}
+// [{alias: 'user', fields: ['name']}]
 ```
 
 #### Type parameters
@@ -376,11 +376,11 @@ console.log(fields);
 
 `FieldsTransformed`
 
-The function returns an objects. Each key-value pair represents the query alias and the corresponding fields.
+The function returns an array of objects. Each object has the properties `fields` and optional `alias` and `addFields`.
 
 ### applyFilters
 
-▸ `function` **applyFilters**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FiltersOptions`): `FiltersTransformed`
+▸ `function` **applyFilters**<`T`>(`statement: SelectQueryBuilder<T>`, `data: unknown`, `options?: FiltersOptions`): `FiltersTransformed`
 
 Transform filters of the main entity and optional of included relations passed in as `Record<string, unknown>` and apply them to the `SelectQueryBuilder`, in case they match the allowed filters.
 
@@ -391,13 +391,13 @@ Transform filters of the main entity and optional of included relations passed i
 // Only drop database if it does exists.
 import {applyFilters} from "typeorm-extension";
 
-const filters = applyFilters(query, {id: 1}, {
+const filters = applyFilters(statement, {id: 1}, {
     allowed: ['id', 'name'],
     queryAlias: 'user'
 });
 
 console.log(filters);
-// [{type: 'where', query: 'user.id = :filter_id', bindings: {'filter_id': 1}}]
+// [{statement: 'user.id = :filter_id', binding: {'filter_id': 1}}]
 ```
 
 #### Type parameters
@@ -419,12 +419,12 @@ console.log(filters);
 
 `FiltersTransformed`
 
-The function returns an array of objects. Each object has the properties `type`, `query` and `bindings`.
+The function returns an array of objects. Each object has the properties `statement` and `binding`.
 
 
 ### applyIncludes
 
-▸ `function` **applyIncludes**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
+▸ `function` **applyIncludes**<`T`>(`statement: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
 
 Transform relations passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed relations.
 
@@ -435,7 +435,7 @@ Transform relations passed in as `string`, `string[]` and apply them to the `Sel
 // Only drop database if it does exists.
 import {applyIncludes} from "typeorm-extension";
 
-const includes = applyIncludes(query, ['roles'], {
+const includes = applyIncludes(statement, ['roles'], {
     allowed: ['roles', 'photos'],
     queryAlias: 'user'
 });
@@ -467,7 +467,7 @@ The function returns an array of objects. Each object has the properties `proper
 
 ### applyPagination
 
-▸ `function` **applyPagination**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationOptions`): `PaginationTransformed`
+▸ `function` **applyPagination**<`T`>(`statement: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationOptions`): `PaginationTransformed`
 
 Transform pagination data passed in as `{limit?: number, offset?: number}` and apply it to the `SelectQueryBuilder`.
 
@@ -478,7 +478,7 @@ Transform pagination data passed in as `{limit?: number, offset?: number}` and a
 // Only drop database if it does exists.
 import {applyPagination} from "typeorm-extension";
 
-const pagination = applyPagination(query, {limit: 100}, {
+const pagination = applyPagination(statement, {limit: 100}, {
     maxLimit: 50
 });
 
@@ -509,7 +509,7 @@ The function returns an object. The object might have the properties `limit` and
 
 ### applySort
 
-▸ `function` **applySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
+▸ `function` **applySort**<`T`>(`statement: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
 
 Transform sort fields passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields to sort.
 
@@ -520,7 +520,7 @@ Transform sort fields passed in as `string`, `string[]` and apply them to the `S
 // Only drop database if it does exists.
 import {applySort} from "typeorm-extension";
 
-const sort = applySort(query, ['-name'], {
+const sort = applySort(statement, ['-name'], {
     allowed: ['id', 'name'],
     queryAlias: 'user'
 });
