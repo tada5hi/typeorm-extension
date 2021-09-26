@@ -27,7 +27,13 @@ This is a library to
         - [applyIncludes](#applyincludes)
         - [applyPagination](#applypagination)
         - [applySort](#applysort)
-
+- Types
+    - [FieldsOptions](#fieldsoptions)
+    - [FiltersOptions](#filtersoptions)
+    - [IncludesTransformed](#includestransformed)
+    - [IncludeOptions](#includesoptions)
+    - [PaginationOptions](#paginationoptions)
+    - [SortOptions](#sortoptions)
 
 
 ## Installation
@@ -588,7 +594,17 @@ export type FiltersOptions = {
 };
 ```
 
-#### IncludesOptions
+#### IncludesTransformed
+
+```typescript
+export type IncludeTransformed = {
+    property: string,
+    alias: string
+};
+export type IncludesTransformed = IncludeTransformed[];
+```
+
+##### IncludesOptions
 ```typescript
 type IncludesOptions = {
     aliasMapping?: Record<string, string>,

@@ -30,7 +30,7 @@ export function isTsNodeRuntimeEnvironment() {
 const compilerOptions: Record<string, CompilerOptions | Error | undefined> = {};
 
 /* istanbul ignore next */
-export async function getCompilerOptions(directory?: string) {
+export async function getCompilerOptions(directory?: string) : Promise<CompilerOptions | undefined> {
     let fileDirectoryPath : string = directory ?? process.cwd();
     fileDirectoryPath = path.isAbsolute(fileDirectoryPath) ?
         fileDirectoryPath :
@@ -41,7 +41,7 @@ export async function getCompilerOptions(directory?: string) {
             throw compilerOptions[fileDirectoryPath];
         }
 
-        return compilerOptions[fileDirectoryPath];
+        return compilerOptions[fileDirectoryPath] as CompilerOptions;
     }
 
     const filePath: string = fileDirectoryPath.includes('.json') ?
@@ -61,5 +61,5 @@ export async function getCompilerOptions(directory?: string) {
         throw e;
     }
 
-    return compilerOptions[fileDirectoryPath];
+    return compilerOptions[fileDirectoryPath] as CompilerOptions;
 }

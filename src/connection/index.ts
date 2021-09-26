@@ -46,7 +46,7 @@ export async function buildConnectionOptions(
     }
 
     modifyConnectionOptionsForRuntimeEnvironment(connectionOptions, {
-        distDirectory
+        distDirectory: distDirectory
     });
 
     return connectionOptions;
