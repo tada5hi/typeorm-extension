@@ -56,7 +56,9 @@ export async function getCompilerOptions(directory?: string) : Promise<CompilerO
             convertCompilerOptionsFromJson(tsConfig.compilerOptions, process.cwd()).options :
             {};
     } catch (e) {
-        compilerOptions[fileDirectoryPath] = e;
+        if(e instanceof Error) {
+            compilerOptions[fileDirectoryPath] = e;
+        }
 
         throw e;
     }
