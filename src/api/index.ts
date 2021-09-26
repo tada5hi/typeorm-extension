@@ -1,7 +1,9 @@
 import {SelectQueryBuilder} from "typeorm";
 
 /* istanbul ignore next */
-export const existsQuery = <T>(builder: SelectQueryBuilder<T>, inverse: boolean = false) => (inverse ? 'not ' : '') + `exists (${builder.getQuery()})`;
+export function existsQuery<T>(builder: SelectQueryBuilder<T>, inverse: boolean = false) {
+    return (inverse ? 'not ' : '') + `exists (${builder.getQuery()})`;
+}
 
 export {
     transformFields,

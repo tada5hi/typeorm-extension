@@ -27,7 +27,7 @@ export function isTsNodeRuntimeEnvironment() {
     return isTsNode;
 }
 
-let compilerOptions: Record<string, CompilerOptions | undefined> = {};
+const compilerOptions: Record<string, CompilerOptions | Error | undefined> = {};
 
 /* istanbul ignore next */
 export async function getCompilerOptions(directory?: string) {
