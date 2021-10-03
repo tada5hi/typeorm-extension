@@ -4,12 +4,12 @@ import fs from 'fs';
 import {SqliteDriver} from "typeorm/driver/sqlite/SqliteDriver";
 
 import {SimpleConnectionOptions} from "../../connection";
-import {CustomOptions} from "../type";
+import {DatabaseOperationOptions} from "../type";
 
 export async function createSQLiteDatabase(
     driver: SqliteDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const filePath : string = path.isAbsolute(connectionOptions.database) ? connectionOptions.database : path.join(process.cwd(), connectionOptions.database);
     const directoryPath : string = path.dirname(filePath);
@@ -28,7 +28,7 @@ export async function createSQLiteDatabase(
 export async function dropSQLiteDatabase(
     driver: SqliteDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const filePath : string = path.isAbsolute(connectionOptions.database) ? connectionOptions.database : path.join(process.cwd(), connectionOptions.database);
 

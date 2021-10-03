@@ -1,6 +1,6 @@
 import {CockroachDriver} from "typeorm/driver/cockroachdb/CockroachDriver";
 import {SimpleConnectionOptions} from "../../connection";
-import {CustomOptions} from "../type";
+import {DatabaseOperationOptions} from "../type";
 
 export async function createSimpleCockroachDBConnection(
     driver: CockroachDriver,
@@ -50,7 +50,7 @@ export async function executeSimpleCockroachDBQuery(connection: any, query: stri
 export async function createCockroachDBDatabase(
     driver: CockroachDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimpleCockroachDBConnection(driver, connectionOptions);
 
@@ -65,7 +65,7 @@ export async function createCockroachDBDatabase(
 export async function dropCockroachDBDatabase(
     driver: CockroachDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimpleCockroachDBConnection(driver, connectionOptions);
     /**

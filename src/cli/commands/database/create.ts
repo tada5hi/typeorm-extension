@@ -1,7 +1,7 @@
 import {Arguments, Argv, CommandModule} from "yargs";
 import {ConnectionOptions, createConnection} from "typeorm";
 import {buildConnectionOptions} from "../../../connection";
-import {createDatabase, CustomOptions} from "../../../database";
+import {createDatabase, DatabaseOperationOptions} from "../../../database";
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
@@ -53,7 +53,7 @@ export class DatabaseCreateCommand implements CommandModule {
             buildForCommand: true,
         });
 
-        const customOptions : CustomOptions = {
+        const operationOptions : DatabaseOperationOptions = {
             ifNotExist: true
         };
 
@@ -61,10 +61,10 @@ export class DatabaseCreateCommand implements CommandModule {
             typeof args.initialDatabase === 'string' &&
             args.initialDatabase !== ""
         ) {
-            customOptions.initialDatabase = args.initialDatabase;
+            operationOptions.initialDatabase = args.initialDatabase;
         }
 
-        await createDatabase(customOptions, connectionOptions);
+        await createDatabase(operationOptions, connectionOptions);
 
         if (args.synchronize !== "yes") {
             if(exitProcess) {

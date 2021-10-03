@@ -1,13 +1,13 @@
 import {PostgresDriver} from "typeorm/driver/postgres/PostgresDriver";
 
 import {SimpleConnectionOptions} from "../../connection";
-import {CustomOptions} from "../type";
+import {DatabaseOperationOptions} from "../type";
 import {hasOwnProperty} from "../../utils";
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     /**
      * pg library
@@ -57,7 +57,7 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 export async function createPostgresDatabase(
     driver: PostgresDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimplePostgresConnection(driver, connectionOptions, customOptions);
 
@@ -89,7 +89,7 @@ export async function createPostgresDatabase(
 export async function dropPostgresDatabase(
     driver: PostgresDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimplePostgresConnection(driver, connectionOptions, customOptions);
     /**

@@ -1,6 +1,6 @@
 import {ConnectionOptions} from "typeorm";
 
-export type CustomOptions = {
+export type DatabaseOperationOptions = {
     characterSet?: string,
     charset?: string,
     ifExist?: boolean,
@@ -8,10 +8,10 @@ export type CustomOptions = {
     initialDatabase?: string
 };
 
-export type AdditionalConnectionOptions = {
+export type ConnectionAdditionalOptions = {
     // in case of mysql it is equal to collation
     charset?: string,
     characterSet?: string,
-}
+};
 
-export type ConnectionWithAdditionalOptions = ConnectionOptions & AdditionalConnectionOptions;
+export type ConnectionWithAdditionalOptions = ConnectionOptions & ConnectionAdditionalOptions;

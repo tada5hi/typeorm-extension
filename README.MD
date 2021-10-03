@@ -4,7 +4,7 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json)](https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json)
 # Typeorm Extension 🚀
 This is a library to
-- `create` or `drop` the (default-) database 🔥 for a defined typeorm connection.
+- `create` or `drop` the (default-) database 🔥 of a defined typeorm connection.
 - execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)` ⚡.
 - validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values to the `QueryBuilder` ( extended **JSON:API** specification).
 
@@ -18,21 +18,14 @@ This is a library to
         - [Database](#database)
         - [Query](#query)
 - [Functions](#functions)
-    - Database
-        - [createDatabase](#createdatabase)
-        - [dropDatabase](#dropdatabase)
-    - Query
-        - [applyParsedQuery]()
-        - [applyQuery]()
-        - [applyQueryFields](#applyqueryfields)
-        - [applyQueryFilters](#applyqueryfilters)
-        - [applyQueryRelations](#applyqueryrelations)
-        - [applyQueryPagination](#applyquerypagination)
-        - [applyQuerySort](#applyquerysort)
+    - [createDatabase](#createdatabase)
+    - [dropDatabase](#dropdatabase)
+    - [applyParsedQuery]()
+    - [applyParsedQuery{Fields,Filters,Relations,Pagination,Sort}]()
+    - [applyQuery]()
+    - [applyQuery{Fields,Filters,Relations,Pagination,Sort}]()
 - [Types](#types)
-  - Database
-    - [CustomOptions](#customoptions)
-  - [Query](#query-types)
+  - [DatabaseOperationOptions]()
 
 ## Installation
 
@@ -258,7 +251,7 @@ export async function getUsers(req: Request, res: Response) {
 
 ### createDatabase
 
-▸ `function` **createDatabase**(`options?: CustomOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
+▸ `function` **createDatabase**(`options?: DatabaseOperationOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
 
 Create database.
 
@@ -272,7 +265,7 @@ await createDatabase({ifNotExist: true});
 
 **`Charset`**
 
-You can also specify the `charset` and `characterSet` as property of the `CustomOptions` parameter
+You can also specify the `charset` and `characterSet` as property of the `DatabaseOperationOptions` parameter
 or parse it as extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
 F.e
 - postgres
@@ -309,7 +302,7 @@ The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seedin
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `options` | `CustomOptions` | Specify custom options like charset, coalition & conditions. |
+| `options` | `DatabaseOperationOptions` | Specify custom options like charset, coalition & conditions. |
 | `connectionOptions` | `ConnectionOptions` | Pass typeorm connection options object. |
 
 #### Returns
@@ -320,7 +313,7 @@ The function returns a promise with query results provided by underlying db driv
 
 ### dropDatabase
 
-▸ `function` **dropDatabase**(`options?: CustomOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
+▸ `function` **dropDatabase**(`options?: DatabaseOperationOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
 
 Drop database.
 
@@ -335,7 +328,7 @@ await dropDatabase({ifExist: true});
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `options` | `CustomOptions` | Specify custom options like charset, coalition & conditions. |
+| `options` | `DatabaseOperationOptions` | Specify custom options like charset, coalition & conditions. |
 | `connectionOptions` | `ConnectionOptions` | Pass typeorm connection options object. |
 
 #### Returns
@@ -563,9 +556,9 @@ The function returns an objects. Each key-value pair represents a field and the 
 
 ## Types
 
-### CustomOptions
+### DatabaseOperationOptions
 ```typescript
-type CustomOptions = {
+type DatabaseOperationOptions = {
     characterSet?: string,
     charset?: string,
     ifExist?: boolean,

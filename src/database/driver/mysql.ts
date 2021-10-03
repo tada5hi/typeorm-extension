@@ -1,7 +1,7 @@
 import {MysqlDriver} from "typeorm/driver/mysql/MysqlDriver";
 
 import {SimpleConnectionOptions} from "../../connection";
-import {CustomOptions} from "../type";
+import {DatabaseOperationOptions} from "../type";
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
@@ -45,7 +45,7 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 export async function createMySQLDatabase(
     driver: MysqlDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);
     /**
@@ -75,7 +75,7 @@ export async function createMySQLDatabase(
 export async function dropMySQLDatabase(
     driver: MysqlDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);
 

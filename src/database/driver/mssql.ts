@@ -1,7 +1,7 @@
 import {SqlServerDriver} from "typeorm/driver/sqlserver/SqlServerDriver";
 
 import {SimpleConnectionOptions} from "../../connection";
-import {CustomOptions} from "../type";
+import {DatabaseOperationOptions} from "../type";
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
@@ -28,7 +28,7 @@ export async function createSimpleMsSQLConnection(
 export async function createMsSQLDatabase(
     driver: SqlServerDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
     /**
@@ -48,7 +48,7 @@ export async function createMsSQLDatabase(
 export async function dropMsSQLDatabase(
     driver: SqlServerDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: CustomOptions
+    customOptions: DatabaseOperationOptions
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
     /**

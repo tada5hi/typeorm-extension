@@ -15,7 +15,7 @@ import {buildConnectionOptions, SimpleConnectionOptions} from "../connection";
 import {buildSimpleConnectionOptions} from "../connection/utils";
 import {createSQLiteDatabase, dropSQLiteDatabase} from "./driver/sqlite";
 import {NotSupportedDriver} from "./error";
-import {ConnectionWithAdditionalOptions, CustomOptions} from "./type";
+import {ConnectionWithAdditionalOptions, DatabaseOperationOptions} from "./type";
 import {CockroachDriver} from "typeorm/driver/cockroachdb/CockroachDriver";
 import {createCockroachDBDatabase, dropCockroachDBDatabase} from "./driver/cockroachdb";
 
@@ -30,7 +30,7 @@ export * from './type';
  * @param connectionOptions
  * @param options
  */
-export async function createDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions) {
+export async function createDatabase(options?: DatabaseOperationOptions, connectionOptions?: ConnectionOptions) {
     return await createOrDropDatabase('create', options, connectionOptions);
 }
 
@@ -42,13 +42,13 @@ export async function createDatabase(options?: CustomOptions, connectionOptions?
  * @param connectionOptions
  * @param options
  */
-export async function dropDatabase(options?: CustomOptions, connectionOptions?: ConnectionOptions) {
+export async function dropDatabase(options?: DatabaseOperationOptions, connectionOptions?: ConnectionOptions) {
     return await createOrDropDatabase('drop', options, connectionOptions);
 }
 
 async function createOrDropDatabase(
     action: 'create' | 'drop',
-    options?: CustomOptions,
+    options?: DatabaseOperationOptions,
     connectionOptions?: ConnectionOptions
 ) {
     if(typeof connectionOptions === 'undefined') {
@@ -69,7 +69,7 @@ async function createOrDropDatabase(
     const simpleConnectionOptions : SimpleConnectionOptions = buildSimpleConnectionOptions(connectionOptions);
 
     options = options ?? {};
-    const customOptions : CustomOptions = extendCustomOptions(options, connectionOptions);
+    const customOptions : DatabaseOperationOptions = extendCustomOptions(options, connectionOptions);
 
     if(driver instanceof SqliteDriver) {
         if(isCreateOperation) {
@@ -123,7 +123,7 @@ async function createOrDropDatabase(
 }
 
 export function extendCustomOptions(
-    options: CustomOptions,
+    options: DatabaseOperationOptions,
     connectionOptions: ConnectionWithAdditionalOptions
 ) {
     if(typeof connectionOptions?.charset === 'string') {
