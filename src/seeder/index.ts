@@ -27,6 +27,7 @@ export async function runSeeder(
     if(typeof seederOptions === 'undefined') {
         seederOptions = {};
 
+        // tslint:disable-next-line:no-shadowed-variable
         const {seeds} = connection.options as ConnectionWithSeederOptions;
 
         if(typeof seeds !== 'undefined') {
@@ -35,7 +36,6 @@ export async function runSeeder(
     }
 
     const seeds = await prepareSeeder(seederOptions);
-
     for (const seed of seeds) {
         const clazz = new seed();
 

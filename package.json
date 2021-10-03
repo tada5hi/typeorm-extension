@@ -33,6 +33,7 @@
     },
     "license": "MIT",
     "dependencies": {
+        "@trapi/query": "^1.2.1",
         "change-case": "^4.1.2",
         "glob": "^7.1.7",
         "minimatch": "^3.0.4",

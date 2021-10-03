@@ -4,9 +4,9 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json)](https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json)
 # Typeorm Extension 🚀
 This is a library to
-- `create` or `drop` the database specified for the typeorm connection.
-- execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)`.
-- validate, transform & apply `filter[s], include[s], pagination and fields` to the `QueryBuilder` (JSON:API specification).
+- `create` or `drop` the (default-) database 🔥 for a defined typeorm connection.
+- execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)` ⚡.
+- validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values to the `QueryBuilder` ( extended **JSON:API** specification).
 
 **Table of Contents**
 
@@ -17,24 +17,22 @@ This is a library to
     - [Runtime](#runtime)
         - [Database](#database)
         - [Query](#query)
-- Functions
-    - [Database](#functions---database)
+- [Functions](#functions)
+    - Database
         - [createDatabase](#createdatabase)
         - [dropDatabase](#dropdatabase)
-    - [Query](#functions---query)
-        - [applyFields](#applyfields)
-        - [applyFilters](#applyfilters)
-        - [applyIncludes](#applyincludes)
-        - [applyPagination](#applypagination)
-        - [applySort](#applysort)
-- Types
-    - [FieldsOptions](#fieldsoptions)
-    - [FiltersOptions](#filtersoptions)
-    - [IncludesTransformed](#includestransformed)
-    - [IncludeOptions](#includesoptions)
-    - [PaginationOptions](#paginationoptions)
-    - [SortOptions](#sortoptions)
-
+    - Query
+        - [applyParsedQuery]()
+        - [applyQuery]()
+        - [applyQueryFields](#applyqueryfields)
+        - [applyQueryFilters](#applyqueryfilters)
+        - [applyQueryRelations](#applyqueryrelations)
+        - [applyQueryPagination](#applyquerypagination)
+        - [applyQuerySort](#applyquerysort)
+- [Types](#types)
+  - Database
+    - [CustomOptions](#customoptions)
+  - [Query](#query-types)
 
 ## Installation
 
@@ -110,9 +108,16 @@ import {createDatabase, dropDatabase} from "typeorm-extension";
 })();
 ```
 
-To get a better overview and understanding about the [createDatabase](#createdatabase) and the [dropDatabase](#dropdatabase) function go to the [database functions](#functions---database) section and read more about it.
+To get a better overview and understanding about the [createDatabase](#createdatabase) and the [dropDatabase](#dropdatabase) function go to the [functions](#functions) section and read more about it.
 
 #### Query
+To build & parse (+validate) query parameter (fields, filter, ...) values, this library uses [@trapi/query](https://www.npmjs.com/package/@trapi/query) under the hood.
+The main functions and types are also exposed by this library.
+
+To understand the full syntax to build an acceptable URL query string, which can be parsed check out the `README.md` of the [@trapi/query](https://www.npmjs.com/package/@trapi/query) library.
+
+---
+
 For explanation proposes of the query utils,
 two simple entities with a simple relation between them are declared to demonstrate their usage:
 
@@ -158,6 +163,9 @@ export class Profile {
 }
 ```
 
+In the following example [typeorm](https://www.npmjs.com/package/typeorm) is used for object-relational mapping (ORM)
+and [express](https://www.npmjs.com/package/express) to handle requests.
+
 When you use express or another library, you can use the API utils accordingly to the
 following code snippet:
 
@@ -165,11 +173,11 @@ following code snippet:
 import {getRepository} from "typeorm";
 import {Request, Response} from 'express';
 import {
-    applyFields,
-    applyFilters,
-    applyIncludes,
-    applyPagination,
-    applySort
+    applyQueryFields,
+    applyQueryFilters,
+    applyQueryRelations,
+    applyQueryPagination,
+    applyQuerySort
 } from "typeorm-extension";
 
 /**
@@ -200,35 +208,35 @@ export async function getUsers(req: Request, res: Response) {
 
     // -----------------------------------------------------
 
-    const includes = applyIncludes(query, include, {
+    const relationsParsed = applyQueryRelations(query, include, {
         queryAlias: 'user',
         allowed: ['profile']
     });
 
-    applySort(query, sort, {
+    applyQuerySort(query, sort, {
         queryAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // profile.id can only be used as sorting key, if the relation 'profile' is included.
-        includes: includes
+        relations: relationsParsed
     });
 
-    applyFields(query, fields, {
+    applyQueryFields(query, fields, {
         queryAlias: 'user',
         allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         // porfile fields can only be included, if the relation 'profile' is included.
-        includes: includes
+        relations: relationsParsed
     })
 
     // only allow filtering users by id & name
-    applyFilters(query, filter, {
+    applyQueryFilters(query, filter, {
         queryAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // porfile.id can only be used as a filter, if the relation 'profile' is included.
-        includes: includes
+        relations: relationsParsed
     });
 
     // only allow to select 20 items at maximum.
-    const pagination = applyPagination(query, page, {maxLimit: 20});
+    const pagination = applyQueryPagination(query, page, {maxLimit: 20});
 
     // -----------------------------------------------------
 
@@ -245,11 +253,8 @@ export async function getUsers(req: Request, res: Response) {
     });
 }
 ```
-To get a better overview and understanding about the [applyFields](#applyfields), [applyFilters](#applyfilters), [applyIncludes](#applyincludes), [applyPagination](#applypagination)
-and [applySort](#applysort) function go to the [query functions](#functions---query) section and read more about it.
 
-
-## Functions - Database
+## Functions
 
 ### createDatabase
 
@@ -341,9 +346,9 @@ The function returns a promise with query results provided by underlying db driv
 
 ## Functions - Query
 
-### applyFields
+### applyQueryFields
 
-▸ `function` **applyFields**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsOptions`): `FieldsTransformed`
+▸ `function` **applyQueryFields**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsOptions`): `FieldsTransformed`
 
 Transform fields of the main entity and optional of included relations passed in as `Record<string, string[]>` or `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields.
 
@@ -352,9 +357,9 @@ Transform fields of the main entity and optional of included relations passed in
 
 ```typescript
 // Only drop database if it does exists.
-import {applyFields} from "typeorm-extension";
+import {applyQueryFields} from "typeorm-extension";
 
-const fields = applyFields(query, ['name'], {
+const fields = applyQueryFields(query, ['name'], {
     allowed: ['id', 'name'],
     queryAlias: 'user'
 });
@@ -384,9 +389,9 @@ console.log(fields);
 
 The function returns an array of objects. Each object has the properties `fields` and optional `alias` and `addFields`.
 
-### applyFilters
+### applyQueryFilters
 
-▸ `function` **applyFilters**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FiltersOptions`): `FiltersTransformed`
+▸ `function` **applyQueryFilters**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FiltersOptions`): `FiltersTransformed`
 
 Transform filters of the main entity and optional of included relations passed in as `Record<string, unknown>` and apply them to the `SelectQueryBuilder`, in case they match the allowed filters.
 
@@ -395,9 +400,9 @@ Transform filters of the main entity and optional of included relations passed i
 
 ```typescript
 // Only drop database if it does exists.
-import {applyFilters} from "typeorm-extension";
+import {applyQueryFilters} from "typeorm-extension";
 
-const filters = applyFilters(query, {id: 1}, {
+const filters = applyQueryFilters(query, {id: 1}, {
     allowed: ['id', 'name'],
     queryAlias: 'user'
 });
@@ -428,9 +433,9 @@ console.log(filters);
 The function returns an array of objects. Each object has the properties `statement` and `binding`.
 
 
-### applyIncludes
+### applyQueryRelations
 
-▸ `function` **applyIncludes**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
+▸ `function` **applyQueryRelations**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
 
 Transform relations passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed relations.
 
@@ -439,9 +444,9 @@ Transform relations passed in as `string`, `string[]` and apply them to the `Sel
 
 ```typescript
 // Only drop database if it does exists.
-import {applyIncludes} from "typeorm-extension";
+import {applyQueryRelations} from "typeorm-extension";
 
-const includes = applyIncludes(query, ['roles'], {
+const includes = applyQueryRelations(query, ['roles'], {
     allowed: ['roles', 'photos'],
     queryAlias: 'user'
 });
@@ -471,9 +476,9 @@ console.log(includes);
 
 The function returns an array of objects. Each object has the properties `property` and `alias`.
 
-### applyPagination
+### applyQueryPagination
 
-▸ `function` **applyPagination**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationOptions`): `PaginationTransformed`
+▸ `function` **applyQueryPagination**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationOptions`): `PaginationTransformed`
 
 Transform pagination data passed in as `{limit?: number, offset?: number}` and apply it to the `SelectQueryBuilder`.
 
@@ -482,9 +487,9 @@ Transform pagination data passed in as `{limit?: number, offset?: number}` and a
 
 ```typescript
 // Only drop database if it does exists.
-import {applyPagination} from "typeorm-extension";
+import {applyQueryPagination} from "typeorm-extension";
 
-const pagination = applyPagination(query, {limit: 100}, {
+const pagination = applyQueryPagination(query, {limit: 100}, {
     maxLimit: 50
 });
 
@@ -513,9 +518,9 @@ console.log(pagination);
 
 The function returns an object. The object might have the properties `limit` and `offset`.
 
-### applySort
+### applyQuerySort
 
-▸ `function` **applySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
+▸ `function` **applyQuerySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
 
 Transform sort fields passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields to sort.
 
@@ -524,9 +529,9 @@ Transform sort fields passed in as `string`, `string[]` and apply them to the `S
 
 ```typescript
 // Only drop database if it does exists.
-import {applySort} from "typeorm-extension";
+import {applyQuerySort} from "typeorm-extension";
 
-const sort = applySort(query, ['-name'], {
+const sort = applyQuerySort(query, ['-name'], {
     allowed: ['id', 'name'],
     queryAlias: 'user'
 });
@@ -558,9 +563,7 @@ The function returns an objects. Each key-value pair represents a field and the 
 
 ## Types
 
-### Types - Database
-
-#### CustomOptions
+### CustomOptions
 ```typescript
 type CustomOptions = {
     characterSet?: string,
@@ -571,62 +574,8 @@ type CustomOptions = {
 };
 ```
 
-### Types - Query
+### Query Types
 
-#### FieldsOptions
-```typescript
-type FieldsOptions = {
-    aliasMapping?: Record<string, string>,
-    allowed?: Record<string, string[]> | string[],
-    includes?: IncludesTransformed,
-    queryAlias?: string
-};
-```
-
-#### FiltersOptions
-```typescript
-export type FiltersOptions = {
-    aliasMapping?: Record<string, string>,
-    allowed?: string[],
-    includes?: IncludesTransformed,
-    queryAlias?: string,
-    queryBindingKeyFn?: (key: string) => string
-};
-```
-
-#### IncludesTransformed
-
-```typescript
-export type IncludeTransformed = {
-    property: string,
-    alias: string
-};
-export type IncludesTransformed = IncludeTransformed[];
-```
-
-##### IncludesOptions
-```typescript
-type IncludesOptions = {
-    aliasMapping?: Record<string, string>,
-    allowed?: string[],
-    includeParents?: boolean | string[] | string
-    queryAlias?: string,
-};
-```
-
-#### PaginationOptions
-```typescript
-type PaginationOptions = {
-    maxLimit?: number
-};
-```
-
-#### SortOptions
-```typescript
-type SortOptions = {
-    aliasMapping?: Record<string, string>,
-    allowed?: string[] | string[][],
-    includes?: IncludesTransformed,
-    queryAlias?: string
-};
-```
+To understand the structure of the parsed query parameter values or to know which values can be passed as (i.e. `buildQuery`, `parseQuery`, ...) function argument,
+check out the [Types](https://www.npmjs.com/package/@trapi/query#types) and [Functions](https://www.npmjs.com/package/@trapi/query#functions) section
+of the README.md file of the [@trapi/query](https://www.npmjs.com/package/@trapi/query) library.

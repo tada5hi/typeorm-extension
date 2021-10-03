@@ -1,4 +1,4 @@
-import {IncludesTransformed} from "../includes";
+import {IncludesTransformed} from "../relations";
 import {FieldDetails, getFieldDetails} from "./field";
 
 export function isFieldAllowedByIncludes(

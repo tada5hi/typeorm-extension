@@ -9,6 +9,6 @@ export type SeederConstructor = new () => Seeder;
 export type SeederOptions = {
     seeds?: string[],
     factories?: string[]
-}
+};
 
 export type ConnectionWithSeederOptions = ConnectionOptions & SeederOptions;

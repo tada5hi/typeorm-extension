@@ -1,22 +1,10 @@
+import {FiltersParsed, FiltersParsedElement, FiltersParseOptions, parseFilters} from "@trapi/query";
 import {Brackets, SelectQueryBuilder} from "typeorm";
-import {snakeCase} from "change-case";
-import {IncludesTransformed} from "./includes";
-import {buildAliasMapping, buildFieldWithQueryAlias, isFieldAllowedByIncludes} from "./utils";
-import {changeStringCase, getDefaultStringCase, StringCaseVariant} from "./utils";
-import {FieldDetails, getFieldDetails} from "./utils";
 
 // --------------------------------------------------
 
-export type FiltersOptions = {
-    aliasMapping?: Record<string, string>,
-    allowed?: string[],
-    includes?: IncludesTransformed,
-    queryAlias?: string,
-    queryBindingKeyFn?: (key: string) => string,
-    /**
-     * @deprecated
-     */
-    stringCase?: StringCaseVariant
+export type FiltersTransformOptions = {
+    bindingKeyFn?: (key: string) => string,
 };
 
 export type FilterTransformed = {
@@ -28,174 +16,82 @@ export type FiltersTransformed = FilterTransformed[];
 
 // --------------------------------------------------
 
-function buildOptions(options?: FiltersOptions) : FiltersOptions {
-    options ??= {};
-
-    if(options.aliasMapping) {
-        options.aliasMapping = buildAliasMapping(options.aliasMapping, {
-            keyCase: options.stringCase,
-            keyDepthCharacter: '.'
-        });
-    } else {
-        options.aliasMapping = {};
-    }
-
-    options.includes ??= [];
-    options.stringCase ??= getDefaultStringCase();
-
-    return options;
-}
-
-export function transformFilters(
-    data: unknown,
-    options?: FiltersOptions
+export function transformParsedFilters(
+    data: FiltersParsed,
+    options?: FiltersTransformOptions
 ) : FiltersTransformed {
-    options = options ?? {};
-
-    // If it is an empty array nothing is allowed
-    if(
-        typeof options.allowed !== 'undefined' &&
-        Object.keys(options.allowed).length === 0
-    ) {
-        return [];
-    }
-
-    const prototype: string = Object.prototype.toString.call(data);
-    /* istanbul ignore next */
-    if (prototype !== '[object Object]') {
-        return [];
-    }
-
-    const length : number = Object.keys(data as Record<string, any>).length;
-    if(length === 0) {
-        return [];
-    }
-
-    options = buildOptions(options);
-
-    const temp : Record<string, string | boolean | number> = {};
-
-    // transform to appreciate data format & validate input
-    for (let key in (data as Record<string, any>)) {
-        /* istanbul ignore next */
-        if (!data.hasOwnProperty(key)) {
-            continue;
-        }
-
-        let value : unknown = (data as Record<string, any>)[key];
-
-        if (
-            typeof value !== 'string' &&
-            typeof value !== 'number' &&
-            typeof value !== 'boolean'
-        ) {
-            continue;
-        }
-
-        if(typeof value === 'string') {
-            value = (value as string).trim();
-            const stripped : string = (value as string).replace('/,/g', '');
-
-            if (stripped.length === 0) {
-                continue;
-            }
-        }
-
-        key = changeStringCase(key, options.stringCase);
-
-        if(options.aliasMapping.hasOwnProperty(key)) {
-            key = options.aliasMapping[key];
-        }
-
-        const fieldDetails : FieldDetails = getFieldDetails(key);
-        if(!isFieldAllowedByIncludes(fieldDetails, options.includes, {queryAlias: options.queryAlias})) {
-            continue;
-        }
-
-        const keyWithQueryAlias : string = buildFieldWithQueryAlias(fieldDetails, options.queryAlias);
-
-        if(
-            typeof options.allowed !== 'undefined' &&
-            options.allowed.indexOf(key) === -1 &&
-            options.allowed.indexOf(keyWithQueryAlias) === -1
-        ) {
-            continue;
-        }
-
-        temp[keyWithQueryAlias] = value as string | boolean | number;
-    }
+    options ??= {};
 
     const items : FiltersTransformed = [];
 
-    /* istanbul ignore next */
-    for (const key in temp) {
-        /* istanbul ignore next */
-        if (!temp.hasOwnProperty(key)) {
-            continue;
+    for (const key in data) {
+        const fullKey : string = (!!data[key].alias ? `${data[key].alias}.` : '') + data[key].key;
+
+        let bindingKey : string | undefined = typeof options.bindingKeyFn === 'function' ? options.bindingKeyFn(data[key].key) : undefined;
+        if(typeof bindingKey === 'undefined') {
+            bindingKey = `filter_${fullKey.replace('.', '_')}`;
         }
 
-        let value : string | boolean | number = temp[key];
-
-        /* istanbul ignore next */
-        const paramKey : string = typeof options.queryBindingKeyFn === 'function' ? options.queryBindingKeyFn(key) : 'filter_' + snakeCase(key);
-
-        const queryString : string[] = [
-            key
+        const queryParts : string[] = [
+            fullKey
         ];
 
-        let isInOperator : boolean = false;
+        let value = data[key].value;
 
-        if(typeof value === 'string') {
-            const isNegationPrefix = value.charAt(0) === '!';
-            if (isNegationPrefix) value = value.slice(1);
+        const filter : FiltersParsedElement = data[key];
+        filter.operator ??= {};
 
-            const isLikeOperator = value.charAt(0) === '~';
-            if (isLikeOperator) value = value.slice(1);
-
-            isInOperator = value.includes(',');
-
-            if(isInOperator || isLikeOperator) {
-                if (isNegationPrefix) {
-                    queryString.push('NOT');
-                }
-
-                if (isLikeOperator) {
-                    queryString.push('LIKE');
-                } else {
-                    queryString.push('IN');
-                }
-            } else {
-                if (isNegationPrefix) {
-                    queryString.push("!=");
-                } else {
-                    queryString.push("=");
-                }
-            }
-
-            if (isLikeOperator) {
-                value += '%';
-            }
-
-            if (isInOperator) {
-                queryString.push('(:...' + paramKey + ')');
-            } else {
-                queryString.push(':' + paramKey);
-            }
-        } else {
-            isInOperator = false;
-            queryString.push("=");
-            queryString.push(':' + paramKey);
+        if(
+            (
+                typeof value === 'string' ||
+                typeof value === 'number'
+            ) &&
+            filter.operator.like
+        ) {
+            value += '%';
         }
 
+        if(filter.operator.in || filter.operator.like) {
+            if(filter.operator.negation) {
+                queryParts.push('NOT');
+            }
+
+            if(filter.operator.like) {
+                queryParts.push('LIKE');
+            } else if(filter.operator.in) {
+                queryParts.push('IN');
+            }
+        } else {
+            if(filter.operator.negation) {
+                queryParts.push('!=');
+            } else {
+                queryParts.push("=");
+            }
+        }
+
+        if (filter.operator.in) {
+            queryParts.push('(:...' + bindingKey + ')');
+        } else {
+            queryParts.push(':' + bindingKey);
+        }
+
+
+
         items.push({
-            statement: queryString.join(" "),
-            binding: {[paramKey]: isInOperator ? (value as string).split(',') : value}
+            statement: queryParts.join(" "),
+            binding: {[bindingKey]: value}
         });
     }
 
     return items;
 }
 
+/**
+ * Apply transformed filter[s] parameter data on the db query.
+ *
+ * @param query
+ * @param data
+ */
 export function applyFiltersTransformed<T>(
     query: SelectQueryBuilder<T>,
     data: FiltersTransformed,
@@ -219,54 +115,44 @@ export function applyFiltersTransformed<T>(
 }
 
 /**
- * Apply raw filter data on query.
+ * Apply parsed filter[s] parameter data on the db query.
  *
  * @param query
  * @param data
  * @param options
  */
-export function applyFilters<T>(
+export function applyParsedQueryFilters<T>(
     query: SelectQueryBuilder<T>,
-    data: unknown,
-    options?: FiltersOptions
+    data: FiltersParsed,
+    options?: FiltersTransformOptions
 ) : FiltersTransformed {
-    return applyFiltersTransformed(query, transformFilters(data, options));
+    return applyFiltersTransformed(query, transformParsedFilters(data, options));
 }
 
 // --------------------------------------------------
 
 /**
- * @deprecated
- */
-export function applyRequestFilter(
-    query: SelectQueryBuilder<any> | undefined,
-    data: unknown,
-    aliasMapping: Record<string, string>,
-    options?: FiltersOptions
-) : FiltersTransformed  {
-    return applyRequestFilters(
-        query,
-        data,
-        aliasMapping,
-        options
-    );
-}
-
-/**
- * @deprecated
+ * Apply raw filter[s] parameter data on the db query.
+ *
  * @param query
  * @param data
- * @param aliasMapping
  * @param options
  */
-export function applyRequestFilters(
+export function applyQueryFilter(
     query: SelectQueryBuilder<any> | undefined,
     data: unknown,
-    aliasMapping: Record<string, string>,
-    options?: Partial<FiltersOptions>
-) : FiltersTransformed {
-    return applyFiltersTransformed(query, transformFilters(
-        data,
-        {...options, aliasMapping: aliasMapping}
-    ));
+    options?: {
+        parse?: FiltersParseOptions,
+        transform?: FiltersTransformOptions
+    }
+) : FiltersTransformed  {
+    options ??= {};
+    options.parse ??= {};
+    options.transform ??= {};
+
+    return applyParsedQueryFilters(
+        query,
+        parseFilters(data, options.parse),
+        options.transform
+    );
 }
