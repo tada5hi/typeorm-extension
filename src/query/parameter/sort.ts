@@ -1,4 +1,4 @@
-import {parseSort, SortDirection, SortParsed, SortParseOptions} from "@trapi/query";
+import {parseQuerySort, SortDirection, SortParseOutput, SortParseOptions} from "@trapi/query";
 import {SelectQueryBuilder} from "typeorm";
 
 // --------------------------------------------------
@@ -11,8 +11,8 @@ import {SelectQueryBuilder} from "typeorm";
  */
 export function applyParsedQuerySort<T>(
     query: SelectQueryBuilder<T>,
-    data: SortParsed
-) : SortParsed {
+    data: SortParseOutput
+) : SortParseOutput {
     if(data.length === 0) {
         return data;
     }
@@ -20,7 +20,7 @@ export function applyParsedQuerySort<T>(
     const sort : Record<string, SortDirection> = {};
 
     for(let i=0; i<data.length; i++) {
-        const prefix : string = (data[i].alias ? data[i].alias + '.' : '');
+        const prefix : string = data[i].alias ? data[i].alias + '.' : '';
         const key : string = `${prefix}${data[i].key}`;
 
         sort[key] = data[i].value;
@@ -42,8 +42,8 @@ export function applyQuerySort<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
     options?: SortParseOptions
-) : SortParsed {
-    return applyParsedQuerySort(query, parseSort(data, options));
+) : SortParseOutput {
+    return applyParsedQuerySort(query, parseQuerySort(data, options));
 }
 
 

@@ -1,4 +1,10 @@
-import {FieldOperator, FieldsParsed, FieldsParseOptions, parseFields} from "@trapi/query";
+import {
+    FieldOperator,
+    FieldsParseOutput,
+    FieldsParseOptions,
+    parseQueryFields
+} from "@trapi/query";
+
 import {SelectQueryBuilder} from "typeorm";
 
 /**
@@ -7,16 +13,16 @@ import {SelectQueryBuilder} from "typeorm";
  * @param query
  * @param data
  */
+/* istanbul ignore next */
 export function applyParsedQueryFields<T>(
     query: SelectQueryBuilder<T>,
-    data: FieldsParsed
+    data: FieldsParseOutput
 ) {
     if(data.length === 0) {
         return data;
     }
-
     for (let i=0; i<data.length; i++) {
-        /* istanbul ignore next */
+
         const prefix : string = (data[i].alias ? data[i].alias + '.' : '');
         const key : string = `${prefix}${data[i].key}`;
 
@@ -47,7 +53,7 @@ export function applyQueryFields<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
     options?: FieldsParseOptions
-) : FieldsParsed {
-    return applyParsedQueryFields(query, parseFields(data, options));
+) : FieldsParseOutput {
+    return applyParsedQueryFields(query, parseQueryFields(data, options));
 }
 

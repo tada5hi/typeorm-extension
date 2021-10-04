@@ -1,4 +1,4 @@
-import {parseRelations, RelationsParsed, RelationsParseOptions} from "@trapi/query";
+import {parseQueryRelations, RelationsParseOutput, RelationsParseOptions} from "@trapi/query";
 import {SelectQueryBuilder} from "typeorm";
 
 /**
@@ -9,8 +9,8 @@ import {SelectQueryBuilder} from "typeorm";
  */
 export function applyParsedQueryRelations<T>(
     query: SelectQueryBuilder<T>,
-    data: RelationsParsed
-) : RelationsParsed {
+    data: RelationsParseOutput
+) : RelationsParseOutput {
     for (let i=0; i<data.length; i++) {
         /* istanbul ignore next */
         query.leftJoinAndSelect(data[i].key, data[i].value);
@@ -30,6 +30,6 @@ export function applyQueryRelations<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
     options?: RelationsParseOptions
-) : RelationsParsed {
-    return applyParsedQueryRelations(query, parseRelations(data, options));
+) : RelationsParseOutput {
+    return applyParsedQueryRelations(query, parseQueryRelations(data, options));
 }

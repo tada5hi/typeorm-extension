@@ -19,6 +19,7 @@ import {ConnectionWithAdditionalOptions, DatabaseOperationOptions} from "./type"
 import {CockroachDriver} from "typeorm/driver/cockroachdb/CockroachDriver";
 import {createCockroachDBDatabase, dropCockroachDBDatabase} from "./driver/cockroachdb";
 
+export * from './query';
 export * from './error';
 export * from './type';
 

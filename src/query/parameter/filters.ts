@@ -1,4 +1,10 @@
-import {FiltersParsed, FiltersParsedElement, FiltersParseOptions, parseFilters} from "@trapi/query";
+import {
+    FiltersParseOutput,
+    FiltersParseOutputElement,
+    FiltersParseOptions,
+    parseQueryFilters
+} from "@trapi/query";
+
 import {Brackets, SelectQueryBuilder} from "typeorm";
 
 // --------------------------------------------------
@@ -7,22 +13,22 @@ export type FiltersTransformOptions = {
     bindingKeyFn?: (key: string) => string,
 };
 
-export type FilterTransformed = {
+export type FilterTransformOutputElement = {
     statement: string,
     binding: Record<string, any>
 };
 
-export type FiltersTransformed = FilterTransformed[];
+export type FiltersTransformOutput = FilterTransformOutputElement[];
 
 // --------------------------------------------------
 
 export function transformParsedFilters(
-    data: FiltersParsed,
+    data: FiltersParseOutput,
     options?: FiltersTransformOptions
-) : FiltersTransformed {
+) : FiltersTransformOutput {
     options ??= {};
 
-    const items : FiltersTransformed = [];
+    const items : FiltersTransformOutput = [];
 
     for (const key in data) {
         const fullKey : string = (!!data[key].alias ? `${data[key].alias}.` : '') + data[key].key;
@@ -38,7 +44,7 @@ export function transformParsedFilters(
 
         let value = data[key].value;
 
-        const filter : FiltersParsedElement = data[key];
+        const filter : FiltersParseOutputElement = data[key];
         filter.operator ??= {};
 
         if(
@@ -94,8 +100,8 @@ export function transformParsedFilters(
  */
 export function applyFiltersTransformed<T>(
     query: SelectQueryBuilder<T>,
-    data: FiltersTransformed,
-) {
+    data: FiltersTransformOutput,
+) : FiltersTransformOutput {
     if(data.length === 0) {
         return data;
     }
@@ -121,11 +127,11 @@ export function applyFiltersTransformed<T>(
  * @param data
  * @param options
  */
-export function applyParsedQueryFilters<T>(
+export function applyQueryFiltersParseOutput<T>(
     query: SelectQueryBuilder<T>,
-    data: FiltersParsed,
+    data: FiltersParseOutput,
     options?: FiltersTransformOptions
-) : FiltersTransformed {
+) : FiltersTransformOutput {
     return applyFiltersTransformed(query, transformParsedFilters(data, options));
 }
 
@@ -138,21 +144,21 @@ export function applyParsedQueryFilters<T>(
  * @param data
  * @param options
  */
-export function applyQueryFilter(
+export function applyQueryFilters(
     query: SelectQueryBuilder<any> | undefined,
     data: unknown,
-    options?: {
-        parse?: FiltersParseOptions,
+    options?: FiltersParseOptions & {
         transform?: FiltersTransformOptions
     }
-) : FiltersTransformed  {
+) : FiltersTransformOutput  {
     options ??= {};
-    options.parse ??= {};
-    options.transform ??= {};
 
-    return applyParsedQueryFilters(
+    const {transform: transformOptions, ...parseOptions} = options;
+
+
+    return applyQueryFiltersParseOutput(
         query,
-        parseFilters(data, options.parse),
-        options.transform
+        parseQueryFilters(data, parseOptions),
+        transformOptions
     );
 }
