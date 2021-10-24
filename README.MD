@@ -34,16 +34,14 @@ Nevertheless, please read the [Changelog.md](CHANGELOG.md) file.
      - [createDatabase](#createdatabase)
      - [dropDatabase](#dropdatabase)
   - Query
-     - [applyQuery]()
-     - [applyQueryFields]()
-     - [applyQueryFilters]()
-     - [applyQueryPagination]()
-     - [applyQueryRelations]()
-     - [applyQuerySort]()
-     - [applyQueryParseOutput]()
+     - [applyQueryFields](#applyqueryfields)
+     - [applyQueryFilters](#applyqueryfilters)
+     - [applyQueryPagination](#applyquerypagination)
+     - [applyQueryRelations](#applyqueryrelations)
+     - [applyQuerySort](#applyquerysort)
 - [Types](#types)
   - Database
-    - [DatabaseOperationOptions]()
+    - [DatabaseOperationOptions](#databaseoperationoptions)
 
 ## Installation
 
