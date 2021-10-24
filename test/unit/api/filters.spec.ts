@@ -1,6 +1,7 @@
 import {FiltersParseOptions, parseQueryFilters, parseQueryRelations} from "@trapi/query";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 import {
+    applyFilters,
     applyFiltersTransformed, applyQueryFilters,
     applyQueryFiltersParseOutput, FiltersApplyOutput,
     FiltersTransformOutput,
@@ -143,7 +144,13 @@ describe('src/api/filters.ts', () => {
     });
 
     it('should apply query filters', () => {
-        const data = applyQueryFilters(queryBuilder, {id: 1}, {allowed: ['id']});
+        let data = applyQueryFilters(queryBuilder, {id: 1}, {allowed: ['id']});
+
+        expect(data).toEqual([
+            {key: 'id', operator: {}, value: 1}
+        ]);
+
+        data = applyFilters(queryBuilder, {id: 1}, {allowed: ['id']});
 
         expect(data).toEqual([
             {key: 'id', operator: {}, value: 1}

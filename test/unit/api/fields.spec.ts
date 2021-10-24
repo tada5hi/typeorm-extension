@@ -1,4 +1,5 @@
 import {
+    applyFields,
     applyQueryFields,
 } from "../../../src";
 
@@ -8,7 +9,11 @@ describe('src/api/fields.ts', () => {
     it('should apply query fields', () => {
         const queryBuilder = new FakeSelectQueryBuilder();
 
-        const value = applyQueryFields(queryBuilder, [], {});
+        let value = applyQueryFields(queryBuilder, [], {});
+        expect(value).toBeDefined();
+        expect(value).toEqual([]);
+
+        value = applyFields(queryBuilder, [], {});
         expect(value).toBeDefined();
         expect(value).toEqual([]);
     });
