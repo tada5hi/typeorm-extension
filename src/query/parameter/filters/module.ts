@@ -1,24 +1,11 @@
 import {
     FiltersParseOutput,
     FiltersParseOutputElement,
-    FiltersParseOptions,
     parseQueryFilters
 } from "@trapi/query";
 
 import {Brackets, SelectQueryBuilder} from "typeorm";
-
-// --------------------------------------------------
-
-export type FiltersTransformOptions = {
-    bindingKeyFn?: (key: string) => string,
-};
-
-export type FilterTransformOutputElement = {
-    statement: string,
-    binding: Record<string, any>
-};
-
-export type FiltersTransformOutput = FilterTransformOutputElement[];
+import {FiltersApplyOptions, FiltersApplyOutput, FiltersTransformOptions, FiltersTransformOutput} from "./type";
 
 // --------------------------------------------------
 
@@ -81,8 +68,6 @@ export function transformParsedFilters(
             queryParts.push(':' + bindingKey);
         }
 
-
-
         items.push({
             statement: queryParts.join(" "),
             binding: {[bindingKey]: value}
@@ -131,8 +116,10 @@ export function applyQueryFiltersParseOutput<T>(
     query: SelectQueryBuilder<T>,
     data: FiltersParseOutput,
     options?: FiltersTransformOptions
-) : FiltersTransformOutput {
-    return applyFiltersTransformed(query, transformParsedFilters(data, options));
+) : FiltersApplyOutput {
+    applyFiltersTransformed(query, transformParsedFilters(data, options));
+
+    return data;
 }
 
 // --------------------------------------------------
@@ -147,18 +134,30 @@ export function applyQueryFiltersParseOutput<T>(
 export function applyQueryFilters(
     query: SelectQueryBuilder<any> | undefined,
     data: unknown,
-    options?: FiltersParseOptions & {
-        transform?: FiltersTransformOptions
-    }
-) : FiltersTransformOutput  {
+    options?: FiltersApplyOptions
+) : FiltersApplyOutput  {
     options ??= {};
 
     const {transform: transformOptions, ...parseOptions} = options;
-
 
     return applyQueryFiltersParseOutput(
         query,
         parseQueryFilters(data, parseOptions),
         transformOptions
     );
+}
+
+/**
+ * Apply raw filter[s] parameter data on the db query.
+ *
+ * @param query
+ * @param data
+ * @param options
+ */
+export function applyFilters(
+    query: SelectQueryBuilder<any> | undefined,
+    data: unknown,
+    options?: FiltersApplyOptions
+) : FiltersApplyOutput  {
+    return applyQueryFilters(query, data, options);
 }

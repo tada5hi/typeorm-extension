@@ -1,5 +1,6 @@
-import {parseQueryRelations, RelationsParseOutput, RelationsParseOptions} from "@trapi/query";
+import {parseQueryRelations, RelationsParseOutput} from "@trapi/query";
 import {SelectQueryBuilder} from "typeorm";
+import {RelationsApplyOptions, RelationsApplyOutput} from "./type";
 
 /**
  * Apply parsed include/relation parameter data on the db query.
@@ -10,7 +11,7 @@ import {SelectQueryBuilder} from "typeorm";
 export function applyParsedQueryRelations<T>(
     query: SelectQueryBuilder<T>,
     data: RelationsParseOutput
-) : RelationsParseOutput {
+) : RelationsApplyOutput {
     for (let i=0; i<data.length; i++) {
         /* istanbul ignore next */
         query.leftJoinAndSelect(data[i].key, data[i].value);
@@ -29,7 +30,22 @@ export function applyParsedQueryRelations<T>(
 export function applyQueryRelations<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: RelationsParseOptions
-) : RelationsParseOutput {
+    options?: RelationsApplyOptions
+) : RelationsApplyOutput {
     return applyParsedQueryRelations(query, parseQueryRelations(data, options));
+}
+
+/**
+ * Apply raw include/relations parameter data on the db query.
+ *
+ * @param query
+ * @param data
+ * @param options
+ */
+export function applyRelations<T>(
+    query: SelectQueryBuilder<T>,
+    data: unknown,
+    options?: RelationsApplyOptions
+) : RelationsApplyOutput {
+    return applyQueryRelations(query, data, options);
 }

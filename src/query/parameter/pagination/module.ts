@@ -1,5 +1,6 @@
-import {PaginationParseOutput, PaginationParseOptions, parseQueryPagination} from "@trapi/query";
+import {parseQueryPagination} from "@trapi/query";
 import {SelectQueryBuilder} from "typeorm";
+import {PaginationApplyOptions, PaginationApplyOutput} from "./type";
 
 /**
  * Apply parsed page/pagination parameter data on the db query.
@@ -9,7 +10,7 @@ import {SelectQueryBuilder} from "typeorm";
  */
 export function applyParsedQueryPagination<T>(
     query: SelectQueryBuilder<T>,
-    data: PaginationParseOutput
+    data: PaginationApplyOutput
 ) {
     /* istanbul ignore next */
     if (typeof data.limit !== 'undefined') {
@@ -38,7 +39,22 @@ export function applyParsedQueryPagination<T>(
 export function applyQueryPagination<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: PaginationParseOptions
-) : PaginationParseOutput {
+    options?: PaginationApplyOptions
+) : PaginationApplyOutput {
     return applyParsedQueryPagination(query, parseQueryPagination(data, options));
+}
+
+/**
+ * Apply raw page/pagination parameter data on the db query.
+ *
+ * @param query
+ * @param data
+ * @param options
+ */
+export function applyPagination<T>(
+    query: SelectQueryBuilder<T>,
+    data: unknown,
+    options?: PaginationApplyOptions
+) : PaginationApplyOutput {
+    return applyQueryPagination(query, data, options);
 }

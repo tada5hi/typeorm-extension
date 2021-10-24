@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 - Database: renamed type `CustomOptions` to `DatabaseOperationOptions`.
 - Database: renamed type `AdditionalConnectionOptions` to `ConnectionAdditionalOptions`.
 - Query: argument option key `includes` renamed to `relations`.
+- Query: argument option key `queryAlias` renamed to `defaultAlias`.
 
 ### Removed
 - Query: Removed argument option key `stringCase`.

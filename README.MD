@@ -9,6 +9,17 @@ This is a library to
 - execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)` ⚡.
 - validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values to the `QueryBuilder` ( extended **JSON:API** specification).
 
+---
+**NOTE**
+
+If you are migrating from a `< v.1.0.0` release, don't worry 😇.
+Not much has changed in general for the public API and if you are lucky
+nothing has to be changed in your code base.
+If you have used this library only to create/drop the default database, only type names have changed.
+Nevertheless, please read the [Changelog.md](CHANGELOG.md) file.
+
+---
+
 **Table of Contents**
 
 - [Installation](#installation)
@@ -208,19 +219,19 @@ export async function getUsers(req: Request, res: Response) {
     // -----------------------------------------------------
 
     const relationsParsed = applyQueryRelations(query, include, {
-        queryAlias: 'user',
+        defaultAlias: 'user',
         allowed: ['profile']
     });
 
     applyQuerySort(query, sort, {
-        queryAlias: 'user',
+        defaultAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // profile.id can only be used as sorting key, if the relation 'profile' is included.
         relations: relationsParsed
     });
 
     applyQueryFields(query, fields, {
-        queryAlias: 'user',
+        defaultAlias: 'user',
         allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         // porfile fields can only be included, if the relation 'profile' is included.
         relations: relationsParsed
@@ -228,7 +239,7 @@ export async function getUsers(req: Request, res: Response) {
 
     // only allow filtering users by id & name
     applyQueryFilters(query, filter, {
-        queryAlias: 'user',
+        defaultAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // porfile.id can only be used as a filter, if the relation 'profile' is included.
         relations: relationsParsed
@@ -347,9 +358,9 @@ The function returns a promise with query results provided by underlying db driv
 
 ### applyQueryFields
 
-▸ `function` **applyQueryFields**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsOptions`): `FieldsTransformed`
+▸ `function` **applyQueryFields**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FieldsApplyOptions`): `FieldsApplyOutput`
 
-Transform fields of the main entity and optional of included relations passed in as `Record<string, string[]>` or `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields.
+Parse and apply fields of the main entity and optional of included relations passed in as `Record<string, string[]>` or `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields.
 
 #### Example
 **`Simple`**
@@ -360,7 +371,7 @@ import {applyQueryFields} from "typeorm-extension";
 
 const fields = applyQueryFields(query, ['name'], {
     allowed: ['id', 'name'],
-    queryAlias: 'user'
+    defaultAlias: 'user'
 });
 
 console.log(fields);
@@ -380,17 +391,17 @@ console.log(fields);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
-| `options` | `FieldsOptions` | Options for the fields to select.
+| `options` | `FieldsApplyOptions` | Options for the fields to select.
 
 #### Returns
 
-`FieldsTransformed`
+`FieldsApplyOutput`
 
 The function returns an array of objects. Each object has the properties `fields` and optional `alias` and `addFields`.
 
 ### applyQueryFilters
 
-▸ `function` **applyQueryFilters**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FiltersOptions`): `FiltersTransformed`
+▸ `function` **applyQueryFilters**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: FiltersApplyOptions`): `FiltersApplyOutput`
 
 Transform filters of the main entity and optional of included relations passed in as `Record<string, unknown>` and apply them to the `SelectQueryBuilder`, in case they match the allowed filters.
 
@@ -403,11 +414,11 @@ import {applyQueryFilters} from "typeorm-extension";
 
 const filters = applyQueryFilters(query, {id: 1}, {
     allowed: ['id', 'name'],
-    queryAlias: 'user'
+    defaultAlias: 'user'
 });
 
 console.log(filters);
-// [{statement: 'user.id = :filter_id', binding: {'filter_id': 1}}]
+// [{alias: 'user', key: 'id', value: 1}]
 ```
 
 #### Type parameters
@@ -423,18 +434,18 @@ console.log(filters);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Fields in raw format. F.e `{id: 1}`. |
-| `options` | `FiltersOptions` | Options for the fields to select.
+| `options` | `FiltersApplyOptions` | Options for the fields to select.
 
 #### Returns
 
-`FiltersTransformed`
+`FiltersApplyOutput`
 
-The function returns an array of objects. Each object has the properties `statement` and `binding`.
+The function returns an array of objects. Each object has the properties `key` and `value`.
 
 
 ### applyQueryRelations
 
-▸ `function` **applyQueryRelations**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: IncludesOptions`): `IncludesTransformed`
+▸ `function` **applyQueryRelations**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: RelationsApplyOptions`): `RelationsApplyOutput`
 
 Transform relations passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed relations.
 
@@ -447,7 +458,7 @@ import {applyQueryRelations} from "typeorm-extension";
 
 const includes = applyQueryRelations(query, ['roles'], {
     allowed: ['roles', 'photos'],
-    queryAlias: 'user'
+    defaultAlias: 'user'
 });
 
 console.log(includes);
@@ -467,17 +478,17 @@ console.log(includes);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Relations in raw format. F.e `['roles']` or `roles` |
-| `options` | `IncludesOptions` | Options for the relations to include.
+| `options` | `RelationsApplyOptions` | Options for the relations to include.
 
 #### Returns
 
-`IncludesTransformed`
+`RelationsApplyOutput`
 
 The function returns an array of objects. Each object has the properties `property` and `alias`.
 
 ### applyQueryPagination
 
-▸ `function` **applyQueryPagination**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationOptions`): `PaginationTransformed`
+▸ `function` **applyQueryPagination**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: PaginationApplyOptions`): `PaginationApplyOutput`
 
 Transform pagination data passed in as `{limit?: number, offset?: number}` and apply it to the `SelectQueryBuilder`.
 
@@ -509,17 +520,17 @@ console.log(pagination);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
-| `options` | `PaginationOptions` | Options for the pagination to select.
+| `options` | `PaginationApplyOptions` | Options for the pagination to select.
 
 #### Returns
 
-`PaginationTransformed`
+`PaginationApplyOutput`
 
 The function returns an object. The object might have the properties `limit` and `offset`.
 
 ### applyQuerySort
 
-▸ `function` **applyQuerySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortOptions`): `SortTransformed`
+▸ `function` **applyQuerySort**<`T`>(`query: SelectQueryBuilder<T>`, `data: unknown`, `options?: SortApplyOptions`): `SortApplyOutput`
 
 Transform sort fields passed in as `string`, `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields to sort.
 
@@ -532,7 +543,7 @@ import {applyQuerySort} from "typeorm-extension";
 
 const sort = applyQuerySort(query, ['-name'], {
     allowed: ['id', 'name'],
-    queryAlias: 'user'
+    defaultAlias: 'user'
 });
 
 console.log(sort);
@@ -552,11 +563,11 @@ console.log(sort);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order.  |
-| `options` | `SortOptions` | Options for the sorting strategy.
+| `options` | `SortApplyOptions` | Options for the sorting strategy.
 
 #### Returns
 
-`SortTransformed`
+`SortApplyOutput`
 
 The function returns an objects. Each key-value pair represents a field and the corresponding sorting direction.
 
