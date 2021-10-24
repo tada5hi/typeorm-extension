@@ -2,7 +2,7 @@ import {FiltersParseOptions, parseQueryFilters, parseQueryRelations} from "@trap
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 import {
     applyFiltersTransformed, applyQueryFilters,
-    applyQueryFiltersParseOutput,
+    applyQueryFiltersParseOutput, FiltersApplyOutput,
     FiltersTransformOutput,
     transformParsedFilters
 } from "../../../src";
@@ -123,8 +123,8 @@ describe('src/api/filters.ts', () => {
     it('should apply filters parse output', () => {
         const data = applyQueryFiltersParseOutput(queryBuilder, parseQueryFilters({id: 1}, {allowed: ['id']}));
         expect(data).toEqual([
-            {statement: 'id = :filter_id', binding: {'filter_id': 1}}
-        ] as FiltersTransformOutput);
+            {key: 'id', operator: {}, value: 1}
+        ] as FiltersApplyOutput);
     });
 
     it('should apply filters transform output', () => {
@@ -146,7 +146,7 @@ describe('src/api/filters.ts', () => {
         const data = applyQueryFilters(queryBuilder, {id: 1}, {allowed: ['id']});
 
         expect(data).toEqual([
-            {statement: 'id = :filter_id', binding: {'filter_id': 1}}
+            {key: 'id', operator: {}, value: 1}
         ]);
     });
 });
