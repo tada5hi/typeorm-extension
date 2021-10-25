@@ -8,7 +8,7 @@ import {PaginationApplyOptions, PaginationApplyOutput} from "./type";
  * @param query
  * @param data
  */
-export function applyParsedQueryPagination<T>(
+export function applyQueryPaginationParseOutput<T>(
     query: SelectQueryBuilder<T>,
     data: PaginationApplyOutput
 ) {
@@ -41,7 +41,7 @@ export function applyQueryPagination<T>(
     data: unknown,
     options?: PaginationApplyOptions
 ) : PaginationApplyOutput {
-    return applyParsedQueryPagination(query, parseQueryPagination(data, options));
+    return applyQueryPaginationParseOutput(query, parseQueryPagination(data, options));
 }
 
 /**

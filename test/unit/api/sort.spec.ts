@@ -1,14 +1,14 @@
 import {parseQuerySort} from "@trapi/query";
-import {applyQuerySort, applyParsedQuerySort, applySort} from "../../../src";
+import {applyQuerySort, applyQuerySortParseOutput, applySort} from "../../../src";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 
 describe('src/api/sort.ts', () => {
     const query = new FakeSelectQueryBuilder();
     it('should apply sort transformed', () => {
-        let data = applyParsedQuerySort(query, parseQuerySort('id', {allowed: ['id']}));
+        let data = applyQuerySortParseOutput(query, parseQuerySort('id', {allowed: ['id']}));
         expect(data).toBeDefined();
 
-        data = applyParsedQuerySort(query, []);
+        data = applyQuerySortParseOutput(query, []);
         expect(data).toEqual([]);
     });
 

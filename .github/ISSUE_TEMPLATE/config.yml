@@ -1,0 +1,6 @@
+blank_issues_enabled: false
+contact_links:
+    - name: ❗️ All other issues
+      url: https://github.com/PHT-Medic/central-ui/discussions
+      about: |
+          Please use GitHub Discussions for other issues and asking questions.

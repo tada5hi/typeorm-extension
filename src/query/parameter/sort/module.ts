@@ -10,7 +10,7 @@ import {SortApplyOptions, SortApplyOutput} from "./type";
  * @param query
  * @param data
  */
-export function applyParsedQuerySort<T>(
+export function applyQuerySortParseOutput<T>(
     query: SelectQueryBuilder<T>,
     data: SortParseOutput
 ) : SortApplyOutput {
@@ -44,7 +44,7 @@ export function applyQuerySort<T>(
     data: unknown,
     options?: SortApplyOptions
 ) : SortParseOutput {
-    return applyParsedQuerySort(query, parseQuerySort(data, options));
+    return applyQuerySortParseOutput(query, parseQuerySort(data, options));
 }
 
 /**
@@ -59,6 +59,6 @@ export function applySort<T>(
     data: unknown,
     options?: SortApplyOptions
 ) : SortParseOutput {
-    return applyParsedQuerySort(query, parseQuerySort(data, options));
+    return applyQuerySortParseOutput(query, parseQuerySort(data, options));
 }
 

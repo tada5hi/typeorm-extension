@@ -8,7 +8,7 @@ import {RelationsApplyOptions, RelationsApplyOutput} from "./type";
  * @param query
  * @param data
  */
-export function applyParsedQueryRelations<T>(
+export function applyQueryRelationsParseOutput<T>(
     query: SelectQueryBuilder<T>,
     data: RelationsParseOutput
 ) : RelationsApplyOutput {
@@ -32,7 +32,7 @@ export function applyQueryRelations<T>(
     data: unknown,
     options?: RelationsApplyOptions
 ) : RelationsApplyOutput {
-    return applyParsedQueryRelations(query, parseQueryRelations(data, options));
+    return applyQueryRelationsParseOutput(query, parseQueryRelations(data, options));
 }
 
 /**

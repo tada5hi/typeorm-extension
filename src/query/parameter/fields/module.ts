@@ -13,7 +13,7 @@ import {FieldsApplyOptions, FieldsApplyOutput} from "./type";
  * @param data
  */
 /* istanbul ignore next */
-export function applyParsedQueryFields<T>(
+export function applyQueryFieldsParseOutput<T>(
     query: SelectQueryBuilder<T>,
     data: FieldsApplyOutput
 ) {
@@ -53,7 +53,7 @@ export function applyQueryFields<T>(
     data: unknown,
     options?: FieldsApplyOptions
 ) : FieldsApplyOutput {
-    return applyParsedQueryFields(query, parseQueryFields(data, options));
+    return applyQueryFieldsParseOutput(query, parseQueryFields(data, options));
 }
 
 /**
