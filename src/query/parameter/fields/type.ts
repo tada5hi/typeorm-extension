@@ -1,9 +1,9 @@
-import {FieldsParseOptions, FieldsParseOutput} from "@trapi/query";
+import { FieldsParseOptions, FieldsParseOutput } from '@trapi/query';
 
 export type FieldsApplyOptions = FieldsParseOptions;
 export type FieldsApplyOutput = FieldsParseOutput;
 
 export {
     FieldsParseOptions,
-    FieldsParseOutput
+    FieldsParseOutput,
 };

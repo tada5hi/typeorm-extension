@@ -1,42 +1,42 @@
-import {OracleDriver} from "typeorm/driver/oracle/OracleDriver";
-import {SimpleConnectionOptions} from "../../connection";
-import {DatabaseOperationOptions} from "../type";
+import { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
+import { SimpleConnectionOptions } from '../../connection';
+import { DatabaseOperationOptions } from '../type';
 
 export function createSimpleOracleConnection(
     driver: OracleDriver,
-    connectionOptions: SimpleConnectionOptions
+    connectionOptions: SimpleConnectionOptions,
 ) {
-    const {getConnection} = driver.oracle;
+    const { getConnection } = driver.oracle;
 
     return getConnection({
         user: connectionOptions.user,
         password: connectionOptions.password,
-        connectString: connectionOptions.url
+        connectString: connectionOptions.url,
     });
 }
 
 export async function createOracleDatabase(
     driver: OracleDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
     const connection = createSimpleOracleConnection(driver, connectionOptions);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295
      */
-    const query : string = `CREATE DATABASE IF NOT EXISTS ${connectionOptions.database}`;
+    const query = `CREATE DATABASE IF NOT EXISTS ${connectionOptions.database}`;
 
-    return await connection.execute(query);
+    return connection.execute(query);
 }
 
 export async function dropOracleDatabase(
     driver: OracleDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295
      */
 
-    return await Promise.resolve();
+    return Promise.resolve();
 }

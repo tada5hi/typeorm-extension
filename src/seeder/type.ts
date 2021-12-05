@@ -1,4 +1,4 @@
-import {Connection, ConnectionOptions} from "typeorm";
+import { Connection, ConnectionOptions } from 'typeorm';
 
 export interface Seeder {
     run(connection: Connection) : Promise<void>;

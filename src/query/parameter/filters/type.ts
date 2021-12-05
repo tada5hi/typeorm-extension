@@ -1,4 +1,4 @@
-import {FiltersParseOptions, FiltersParseOutput} from "@trapi/query";
+import { FiltersParseOptions, FiltersParseOutput } from '@trapi/query';
 
 export type FiltersApplyOptions = FiltersParseOptions & {
     transform?: FiltersTransformOptions
@@ -8,7 +8,7 @@ export type FiltersApplyOutput = FiltersParseOutput;
 
 export {
     FiltersParseOptions,
-    FiltersParseOutput
+    FiltersParseOutput,
 };
 
 // -----------------------------------------

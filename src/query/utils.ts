@@ -1,19 +1,18 @@
-import {Parameter, ParameterType, ParseOutput} from "@trapi/query";
+import { Parameter, ParameterType, ParseOutput } from '@trapi/query';
 
+import { SelectQueryBuilder } from 'typeorm';
 import {
     applyQueryFieldsParseOutput,
+    applyQueryFiltersParseOutput,
     applyQueryPaginationParseOutput,
     applyQueryRelationsParseOutput,
-    applyQueryFiltersParseOutput
-} from "./parameter";
-
-import {SelectQueryBuilder} from "typeorm";
+} from './parameter';
 
 export function applyQueryParseOutput<T>(
     query: SelectQueryBuilder<T>,
-    context: ParseOutput
+    context: ParseOutput,
 ) : ParseOutput {
-    for(const key in context) {
+    for (const key in context) {
         switch (key as ParameterType) {
             case Parameter.FIELDS:
                 applyQueryFieldsParseOutput(query, context.fields);

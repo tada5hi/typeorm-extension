@@ -1,37 +1,37 @@
-import {MysqlDriver} from "typeorm/driver/mysql/MysqlDriver";
+import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 
-import {SimpleConnectionOptions} from "../../connection";
-import {DatabaseOperationOptions} from "../type";
+import { SimpleConnectionOptions } from '../../connection';
+import { DatabaseOperationOptions } from '../type';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
-    connectionOptions: SimpleConnectionOptions
+    connectionOptions: SimpleConnectionOptions,
 ) {
     /**
      * mysql|mysql2 library
      */
-    const {createConnection} = driver.mysql;
+    const { createConnection } = driver.mysql;
 
-    let option : Record<string,any> | string;
+    let option : Record<string, any> | string;
 
-    if(typeof connectionOptions.url === 'string') {
+    if (typeof connectionOptions.url === 'string') {
         option = connectionOptions.url;
     } else {
         option = {
             host: connectionOptions.host,
             user: connectionOptions.user,
             password: connectionOptions.password,
-            port: Number(connectionOptions.port ?? 3306)
+            port: Number(connectionOptions.port ?? 3306),
         };
     }
 
-    return await createConnection(option);
+    return createConnection(option);
 }
 
-export async function executeSimpleMysqlQuery(connection: any, query: string, endConnection: boolean = true) {
+export async function executeSimpleMysqlQuery(connection: any, query: string, endConnection = true) {
     return new Promise(((resolve, reject) => {
         connection.query(query, (queryErr: any, queryResult: any) => {
-            if(endConnection) connection.end();
+            if (endConnection) connection.end();
 
             if (queryErr) {
                 reject(queryErr);
@@ -45,37 +45,37 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 export async function createMySQLDatabase(
     driver: MysqlDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L297
      */
     let query = customOptions.ifNotExist ? `CREATE DATABASE IF NOT EXISTS \`${connectionOptions.database}\`` : `CREATE DATABASE \`${connectionOptions.database}\``;
-    if(typeof customOptions.charset === 'string') {
-        const charset : string = customOptions.charset;
-        let characterSet : string | undefined = customOptions.characterSet;
+    if (typeof customOptions.charset === 'string') {
+        const { charset } = customOptions;
+        let { characterSet } = customOptions;
 
-        if(typeof characterSet === 'undefined') {
-            if(charset.toLowerCase().startsWith('utf8mb4')) {
+        if (typeof characterSet === 'undefined') {
+            if (charset.toLowerCase().startsWith('utf8mb4')) {
                 characterSet = 'utf8mb4';
-            } else if(charset.toLowerCase().startsWith('utf8')) {
+            } else if (charset.toLowerCase().startsWith('utf8')) {
                 characterSet = 'utf8';
             }
         }
 
-        if(typeof characterSet === 'string') {
+        if (typeof characterSet === 'string') {
             query += ` CHARACTER SET ${characterSet} COLLATE ${charset}`;
         }
     }
 
-    return await executeSimpleMysqlQuery(connection, query);
+    return executeSimpleMysqlQuery(connection, query);
 }
 
 export async function dropMySQLDatabase(
     driver: MysqlDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);
 
@@ -84,8 +84,8 @@ export async function dropMySQLDatabase(
      */
     const query = customOptions.ifExist ? `DROP DATABASE IF EXISTS \`${connectionOptions.database}\`` : `DROP DATABASE \`${connectionOptions.database}\``;
 
-    await executeSimpleMysqlQuery(connection, `SET FOREIGN_KEY_CHECKS=0;`, false);
+    await executeSimpleMysqlQuery(connection, 'SET FOREIGN_KEY_CHECKS=0;', false);
     const result = await executeSimpleMysqlQuery(connection, query, false);
-    await executeSimpleMysqlQuery(connection, `SET FOREIGN_KEY_CHECKS=1;`);
+    await executeSimpleMysqlQuery(connection, 'SET FOREIGN_KEY_CHECKS=1;');
     return result;
 }

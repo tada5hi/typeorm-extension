@@ -7,5 +7,4 @@ export type SimpleConnectionOptions = {
     ssl?: any,
     // required for oracle and optional for other drivers
     url?: string
-}
-
+};

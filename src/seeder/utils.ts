@@ -1,6 +1,6 @@
-import glob from "glob";
-import path from "path";
-import {SeederConstructor, SeederOptions} from "./type";
+import glob from 'glob';
+import path from 'path';
+import { SeederConstructor, SeederOptions } from './type';
 
 /* istanbul ignore next */
 export function loadFiles(filesPattern: string[]) : string[] {
@@ -8,7 +8,7 @@ export function loadFiles(filesPattern: string[]) : string[] {
         .map((pattern) => glob.sync(
             path.isAbsolute(pattern) ?
                 pattern :
-                path.resolve(process.cwd(), pattern)
+                path.resolve(process.cwd(), pattern),
         ))
         .reduce((acc, el) => acc.concat(el));
 }
@@ -26,14 +26,14 @@ export function createDefaultSeederOptions<T extends SeederOptions>(options: T) 
     if (!options.factories) {
         options.factories = [
             process.env.TYPEORM_SEEDING_FACTORIES ||
-            'src/database/factories/**/*{.ts,.js}'
+            'src/database/factories/**/*{.ts,.js}',
         ];
     }
     if (!options.seeds) {
         options.seeds = [
             process.env.TYPEORM_SEEDS ||
             process.env.TYPEORM_SEEDING_SEEDS ||
-            'src/database/seeds/**/*{.ts,.js}'
+            'src/database/seeds/**/*{.ts,.js}',
         ];
     }
 

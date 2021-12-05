@@ -1,24 +1,24 @@
-import {ConnectionOptions} from "typeorm";
-import {DriverUtils} from "typeorm/driver/DriverUtils";
-import {SimpleConnectionOptions} from "./options";
-import {ConnectionWithSeederOptions} from "../seeder";
-import {hasOwnProperty, isTsNodeRuntimeEnvironment} from "../utils";
-import path from "path";
+import { ConnectionOptions } from 'typeorm';
+import { DriverUtils } from 'typeorm/driver/DriverUtils';
+import path from 'path';
+import { SimpleConnectionOptions } from './options';
+import { ConnectionWithSeederOptions } from '../seeder';
+import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../utils';
 
 /* istanbul ignore next */
 export function buildSimpleConnectionOptions(connectionOptions: ConnectionOptions) : SimpleConnectionOptions {
     let driverOptions : Record<string, any> = {};
 
     switch (connectionOptions.type) {
-        case "mysql" :
-        case "mariadb" :
-        case "postgres":
-        case "cockroachdb":
-        case "mssql":
-        case "oracle":
-            driverOptions =  DriverUtils.buildDriverOptions(connectionOptions.replication ? connectionOptions.replication.master : connectionOptions);
+        case 'mysql':
+        case 'mariadb':
+        case 'postgres':
+        case 'cockroachdb':
+        case 'mssql':
+        case 'oracle':
+            driverOptions = DriverUtils.buildDriverOptions(connectionOptions.replication ? connectionOptions.replication.master : connectionOptions);
             break;
-        case "mongodb":
+        case 'mongodb':
             driverOptions = DriverUtils.buildMongoDBDriverOptions(connectionOptions);
             break;
         default:
@@ -32,7 +32,7 @@ export function buildSimpleConnectionOptions(connectionOptions: ConnectionOption
         database: driverOptions.database,
         port: driverOptions.port,
         ssl: driverOptions.ssl,
-        url: driverOptions.url
+        url: driverOptions.url,
     };
 }
 
@@ -44,7 +44,7 @@ type CompilerOptions = {
 export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<string, any>>(
     options: T,
     key: keyof ConnectionWithSeederOptions,
-    compilerOptions?: CompilerOptions
+    compilerOptions?: CompilerOptions,
 ): T {
     if (!hasOwnProperty(options, key)) {
         return options;
@@ -55,18 +55,18 @@ export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<str
     let value = options[key];
 
     switch (key) {
-        case "entities":
-        case "subscribers":
-        case "seeds":
-        case "factories":
+        case 'entities':
+        case 'subscribers':
+        case 'seeds':
+        case 'factories':
             const isTsNodeEnv = isTsNodeRuntimeEnvironment();
             if (!isTsNodeEnv) {
-                let srcDir: string = 'src';
+                let srcDir = 'src';
                 if (typeof compilerOptions.srcDirectory === 'string') {
                     srcDir = compilerOptions.srcDirectory.split(path.sep)[0];
                 }
 
-                let outDir: string = 'dist';
+                let outDir = 'dist';
                 if (typeof compilerOptions.distDirectory === 'string') {
                     outDir = compilerOptions.distDirectory;
                 }
@@ -84,11 +84,9 @@ export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<str
                             .replace(srcDir, outDir)
                             .replace('.ts', '.js');
                     }
-                } else {
-                    if (typeof value === 'string') {
-                        value = value.replace(srcDir, outDir)
-                            .replace('.ts', '.js');
-                    }
+                } else if (typeof value === 'string') {
+                    value = value.replace(srcDir, outDir)
+                        .replace('.ts', '.js');
                 }
             }
             break;
@@ -96,26 +94,26 @@ export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<str
 
     return {
         ...options,
-        [key]: value
+        [key]: value,
     };
 }
 
 export function modifyConnectionOptionsForRuntimeEnvironment<T extends Record<string, any>>(
     connectionOptions: T,
-    compilerOptions?: CompilerOptions
+    compilerOptions?: CompilerOptions,
 ) : T {
     const keys: Extract<keyof ConnectionWithSeederOptions, 'entities' | 'subscribers' | 'seeds' | 'factories'>[] = [
         'entities',
         'subscribers',
         'seeds',
-        'factories'
+        'factories',
     ];
 
     for (let i = 0; i < keys.length; i++) {
         connectionOptions = modifyConnectionOptionForRuntimeEnvironment(
             connectionOptions,
             keys[i],
-            compilerOptions
+            compilerOptions,
         );
     }
 

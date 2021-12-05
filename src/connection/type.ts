@@ -4,4 +4,4 @@ export type ConnectionBuilderOptions = {
     root?: string,
     tsConfigDirectory?: string,
     buildForCommand?: boolean
-}
+};

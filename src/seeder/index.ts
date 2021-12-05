@@ -1,14 +1,14 @@
-import {Connection} from "typeorm";
+import { Connection } from 'typeorm';
 
-import {ConnectionWithSeederOptions, SeederConstructor, SeederOptions} from "./type";
-import {createDefaultSeederOptions, importSeed, loadFiles} from "./utils";
-import {modifyConnectionOptionForRuntimeEnvironment} from "../connection";
+import { ConnectionWithSeederOptions, SeederConstructor, SeederOptions } from './type';
+import { createDefaultSeederOptions, importSeed, loadFiles } from './utils';
+import { modifyConnectionOptionForRuntimeEnvironment } from '../connection';
 
 export * from './utils';
 export * from './type';
 
 async function prepareSeeder(
-    options?: SeederOptions
+    options?: SeederOptions,
 ) : Promise<SeederConstructor[]> {
     options = options ?? {};
 
@@ -17,27 +17,28 @@ async function prepareSeeder(
 
     const seedPaths : string[] = loadFiles(options.seeds);
 
-    return await Promise.all(seedPaths.map(seedPath => importSeed(seedPath)));
+    return Promise.all(seedPaths.map((seedPath) => importSeed(seedPath)));
 }
 
 export async function runSeeder(
     connection: Connection,
-    seederOptions?: SeederOptions
+    seederOptions?: SeederOptions,
 ) {
-    if(typeof seederOptions === 'undefined') {
+    if (typeof seederOptions === 'undefined') {
         seederOptions = {};
 
         // tslint:disable-next-line:no-shadowed-variable
-        const {seeds} = connection.options as ConnectionWithSeederOptions;
+        const { seeds } = connection.options as ConnectionWithSeederOptions;
 
-        if(typeof seeds !== 'undefined') {
+        if (typeof seeds !== 'undefined') {
             seederOptions.seeds = seeds;
         }
     }
 
     const seeds = await prepareSeeder(seederOptions);
-    for (const seed of seeds) {
-        const clazz = new seed();
+    // eslint-disable-next-line no-restricted-syntax
+    for (const Seed of seeds) {
+        const clazz = new Seed();
 
         const argLength = clazz.run.length;
         switch (argLength) {
@@ -45,7 +46,7 @@ export async function runSeeder(
                 // support typeorm-seeding library
                 /* istanbul ignore next */
                 try {
-                    const typeOrmSeedingLibrary : string = 'typeorm-seeding';
+                    const typeOrmSeedingLibrary = 'typeorm-seeding';
                     const typeormSeeding = await import(typeOrmSeedingLibrary);
                     await (clazz.run as any)(typeormSeeding.factory, connection);
                 } catch (e) {

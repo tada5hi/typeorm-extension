@@ -1,36 +1,40 @@
-import path from "path";
+import path from 'path';
 import fs from 'fs';
 
-import {SqliteDriver} from "typeorm/driver/sqlite/SqliteDriver";
+import { SqliteDriver } from 'typeorm/driver/sqlite/SqliteDriver';
 
-import {SimpleConnectionOptions} from "../../connection";
-import {DatabaseOperationOptions} from "../type";
+import { SimpleConnectionOptions } from '../../connection';
+import { DatabaseOperationOptions } from '../type';
 
 export async function createSQLiteDatabase(
     driver: SqliteDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
-    const filePath : string = path.isAbsolute(connectionOptions.database) ? connectionOptions.database : path.join(process.cwd(), connectionOptions.database);
+    const filePath : string = path.isAbsolute(connectionOptions.database) ?
+        connectionOptions.database :
+        path.join(process.cwd(), connectionOptions.database);
     const directoryPath : string = path.dirname(filePath);
 
     return new Promise(((resolve, reject) => {
-          fs.access(directoryPath, fs.constants.W_OK, (err) => {
-              if(err) {
-                  reject(err);
-              }
+        fs.access(directoryPath, fs.constants.W_OK, (err) => {
+            if (err) {
+                reject(err);
+            }
 
-              resolve(true);
-          })
+            resolve(true);
+        });
     }));
 }
 
 export async function dropSQLiteDatabase(
     driver: SqliteDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
-    const filePath : string = path.isAbsolute(connectionOptions.database) ? connectionOptions.database : path.join(process.cwd(), connectionOptions.database);
+    const filePath : string = path.isAbsolute(connectionOptions.database) ?
+        connectionOptions.database :
+        path.join(process.cwd(), connectionOptions.database);
 
     return new Promise(((resolve, reject) => {
         fs.access(filePath, fs.constants.F_OK | fs.constants.W_OK, (err) => {
@@ -39,12 +43,12 @@ export async function dropSQLiteDatabase(
             }
 
             fs.rm(filePath, (e) => {
-                if(err) {
+                if (err) {
                     reject(err);
                 }
 
                 resolve(true);
-            })
+            });
 
             resolve(true);
         });

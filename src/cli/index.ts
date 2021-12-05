@@ -4,19 +4,18 @@ import yargs from 'yargs';
 
 import {
     DatabaseCreateCommand,
-    DatabaseDropCommand
-} from "./commands";
+    DatabaseDropCommand,
+} from './commands';
 
 // tslint:disable-next-line:no-unused-expression
 yargs
-    .scriptName("typeorm-extension")
-    .usage("Usage: $0 <command> [options]")
+    .scriptName('typeorm-extension')
+    .usage('Usage: $0 <command> [options]')
     .demandCommand(1)
     .command(new DatabaseCreateCommand())
     .command(new DatabaseDropCommand())
     .strict()
-    .alias("v", "version")
-    .help("h")
-    .alias("h", "help")
+    .alias('v', 'version')
+    .help('h')
+    .alias('h', 'help')
     .argv;
-

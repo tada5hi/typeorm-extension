@@ -4,5 +4,3 @@ export * from './connection';
 export * from './database';
 export * from './seeder';
 export * from './utils';
-
-

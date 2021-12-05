@@ -1,19 +1,18 @@
-import {ConnectionOptions, ConnectionOptionsReader} from "typeorm";
-import {ConnectionWithSeederOptions, createDefaultSeederOptions, getCompilerOptions} from "../index";
-import {ConnectionBuilderOptions} from "./type";
-import {modifyConnectionOptionsForRuntimeEnvironment} from "./utils";
+import { ConnectionOptions, ConnectionOptionsReader } from 'typeorm';
+import { ConnectionWithSeederOptions, createDefaultSeederOptions, getCompilerOptions } from '../index';
+import { ConnectionBuilderOptions } from './type';
+import { modifyConnectionOptionsForRuntimeEnvironment } from './utils';
 
 export {
-    SimpleConnectionOptions
-} from "./options";
-
+    SimpleConnectionOptions,
+} from './options';
 
 export * from './type';
 export * from './utils';
 
 export async function buildConnectionOptions(
-    options?: ConnectionBuilderOptions
-) :  Promise<ConnectionWithSeederOptions> {
+    options?: ConnectionBuilderOptions,
+) : Promise<ConnectionWithSeederOptions> {
     options = options ?? {};
 
     const connectionOptionsReader = new ConnectionOptionsReader({
@@ -30,7 +29,7 @@ export async function buildConnectionOptions(
             synchronize: false,
             migrationsRun: false,
             dropSchema: false,
-            logging: ["query", "error", "schema"]
+            logging: ['query', 'error', 'schema'],
         } as ConnectionOptions);
     }
 
@@ -46,9 +45,8 @@ export async function buildConnectionOptions(
     }
 
     modifyConnectionOptionsForRuntimeEnvironment(connectionOptions, {
-        distDirectory: distDirectory
+        distDirectory,
     });
 
     return connectionOptions;
 }
-

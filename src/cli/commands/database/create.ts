@@ -1,7 +1,7 @@
-import {Arguments, Argv, CommandModule} from "yargs";
-import {ConnectionOptions, createConnection} from "typeorm";
-import {buildConnectionOptions} from "../../../connection";
-import {createDatabase, DatabaseOperationOptions} from "../../../database";
+import { Arguments, Argv, CommandModule } from 'yargs';
+import { ConnectionOptions, createConnection } from 'typeorm';
+import { buildConnectionOptions } from '../../../connection';
+import { DatabaseOperationOptions, createDatabase } from '../../../database';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
@@ -12,8 +12,9 @@ export interface DatabaseCreateArguments extends Arguments {
 }
 
 export class DatabaseCreateCommand implements CommandModule {
-    command = "db:create";
-    describe = "Create database.";
+    command = 'db:create';
+
+    describe = 'Create database.';
 
     builder(args: Argv) {
         return args
@@ -22,28 +23,28 @@ export class DatabaseCreateCommand implements CommandModule {
                 default: process.cwd(),
                 describe: 'Path to your typeorm config file',
             })
-            .option("connection", {
-                alias: "c",
-                default: "default",
-                describe: "Name of the connection on which run a query."
+            .option('connection', {
+                alias: 'c',
+                default: 'default',
+                describe: 'Name of the connection on which run a query.',
             })
-            .option("config", {
-                alias: "f",
-                default: "ormconfig",
-                describe: "Name of the file with connection configuration."
+            .option('config', {
+                alias: 'f',
+                default: 'ormconfig',
+                describe: 'Name of the file with connection configuration.',
             })
-            .option("synchronize", {
-                alias: "s",
-                default: "yes",
-                describe: "Create database schema for all entities.",
-                choices: ["yes", "no"]
+            .option('synchronize', {
+                alias: 's',
+                default: 'yes',
+                describe: 'Create database schema for all entities.',
+                choices: ['yes', 'no'],
             })
             .option('initialDatabase', {
-                describe: "Specify the initial database to connect to."
+                describe: 'Specify the initial database to connect to.',
             });
     }
 
-    async handler(raw: Arguments, exitProcess: boolean = true) {
+    async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
 
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
@@ -54,20 +55,20 @@ export class DatabaseCreateCommand implements CommandModule {
         });
 
         const operationOptions : DatabaseOperationOptions = {
-            ifNotExist: true
+            ifNotExist: true,
         };
 
-        if(
+        if (
             typeof args.initialDatabase === 'string' &&
-            args.initialDatabase !== ""
+            args.initialDatabase !== ''
         ) {
             operationOptions.initialDatabase = args.initialDatabase;
         }
 
         await createDatabase(operationOptions, connectionOptions);
 
-        if (args.synchronize !== "yes") {
-            if(exitProcess) {
+        if (args.synchronize !== 'yes') {
+            if (exitProcess) {
                 process.exit(0);
             }
 
@@ -83,9 +84,10 @@ export class DatabaseCreateCommand implements CommandModule {
                 process.exit(0);
             }
         } catch (e) {
+            // eslint-disable-next-line no-console
             console.log(e);
 
-            if(exitProcess) {
+            if (exitProcess) {
                 process.exit(1);
             }
         }

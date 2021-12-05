@@ -1,22 +1,22 @@
-import {SqlServerDriver} from "typeorm/driver/sqlserver/SqlServerDriver";
+import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 
-import {SimpleConnectionOptions} from "../../connection";
-import {DatabaseOperationOptions} from "../type";
+import { SimpleConnectionOptions } from '../../connection';
+import { DatabaseOperationOptions } from '../type';
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
-    connectionOptions: SimpleConnectionOptions
+    connectionOptions: SimpleConnectionOptions,
 ) {
-    let option : Record<string,any> | string;
+    let option : Record<string, any> | string;
 
-    if(typeof connectionOptions.url === 'string') {
+    if (typeof connectionOptions.url === 'string') {
         option = connectionOptions.url;
     } else {
         option = {
             user: connectionOptions.user,
             password: connectionOptions.password,
             server: connectionOptions.host,
-            port: connectionOptions.port ?? 1433
+            port: connectionOptions.port ?? 1433,
         };
     }
 
@@ -28,7 +28,7 @@ export async function createSimpleMsSQLConnection(
 export async function createMsSQLDatabase(
     driver: SqlServerDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
     /**
@@ -38,17 +38,17 @@ export async function createMsSQLDatabase(
         `IF DB_ID('${connectionOptions.database}') IS NULL CREATE DATABASE "${connectionOptions.database}"` :
         `CREATE DATABASE "${connectionOptions.database}"`;
 
-    if(typeof customOptions.characterSet === 'string') {
+    if (typeof customOptions.characterSet === 'string') {
         query += ` CHARACTER SET ${customOptions.characterSet}`;
     }
 
-    return await connection.query(query);
+    return connection.query(query);
 }
 
 export async function dropMsSQLDatabase(
     driver: SqlServerDriver,
     connectionOptions: SimpleConnectionOptions,
-    customOptions: DatabaseOperationOptions
+    customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
     /**
@@ -58,5 +58,5 @@ export async function dropMsSQLDatabase(
         `IF DB_ID('${connectionOptions.database}') IS NOT NULL DROP DATABASE "${connectionOptions.database}"` :
         `DROP DATABASE "${connectionOptions.database}"`;
 
-    return await connection.query(query);
+    return connection.query(query);
 }

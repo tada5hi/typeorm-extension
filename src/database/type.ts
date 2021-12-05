@@ -1,4 +1,4 @@
-import {ConnectionOptions} from "typeorm";
+import { ConnectionOptions } from 'typeorm';
 
 export type DatabaseOperationOptions = {
     characterSet?: string,

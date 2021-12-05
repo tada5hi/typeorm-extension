@@ -1,7 +1,7 @@
-import {Arguments, Argv, CommandModule} from "yargs";
-import {ConnectionOptions} from "typeorm";
-import {buildConnectionOptions} from "../../../connection";
-import {dropDatabase} from "../../../database";
+import { Arguments, Argv, CommandModule } from 'yargs';
+import { ConnectionOptions } from 'typeorm';
+import { buildConnectionOptions } from '../../../connection';
+import { dropDatabase } from '../../../database';
 
 export interface DatabaseDropArguments extends Arguments {
     root: string;
@@ -10,8 +10,9 @@ export interface DatabaseDropArguments extends Arguments {
 }
 
 export class DatabaseDropCommand implements CommandModule {
-    command = "db:drop";
-    describe = "Drop database.";
+    command = 'db:drop';
+
+    describe = 'Drop database.';
 
     builder(args: Argv) {
         return args
@@ -20,33 +21,33 @@ export class DatabaseDropCommand implements CommandModule {
                 default: process.cwd(),
                 describe: 'Path to your typeorm config file',
             })
-            .option("connection", {
-                alias: "c",
-                default: "default",
-                describe: "Name of the connection on which run a query."
+            .option('connection', {
+                alias: 'c',
+                default: 'default',
+                describe: 'Name of the connection on which run a query.',
             })
-            .option("config", {
-                alias: "f",
-                default: "ormconfig",
-                describe: "Name of the file with connection configuration."
+            .option('config', {
+                alias: 'f',
+                default: 'ormconfig',
+                describe: 'Name of the file with connection configuration.',
             });
     }
 
-    async handler(raw: Arguments, exitProcess: boolean = true) {
+    async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseDropArguments = raw as DatabaseDropArguments;
 
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
             name: args.connection,
             root: args.root,
             configName: args.config,
-            buildForCommand: true
+            buildForCommand: true,
         });
 
         await dropDatabase({
-            ifExist: true
+            ifExist: true,
         }, connectionOptions);
 
-        if(exitProcess) {
+        if (exitProcess) {
             process.exit(0);
         }
     }

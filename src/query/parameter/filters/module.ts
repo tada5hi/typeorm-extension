@@ -1,40 +1,42 @@
 import {
     FiltersParseOutput,
     FiltersParseOutputElement,
-    parseQueryFilters
-} from "@trapi/query";
+    parseQueryFilters,
+} from '@trapi/query';
 
-import {Brackets, SelectQueryBuilder} from "typeorm";
-import {FiltersApplyOptions, FiltersApplyOutput, FiltersTransformOptions, FiltersTransformOutput} from "./type";
+import { Brackets, SelectQueryBuilder } from 'typeorm';
+import {
+    FiltersApplyOptions, FiltersApplyOutput, FiltersTransformOptions, FiltersTransformOutput,
+} from './type';
 
 // --------------------------------------------------
 
 export function transformParsedFilters(
     data: FiltersParseOutput,
-    options?: FiltersTransformOptions
+    options?: FiltersTransformOptions,
 ) : FiltersTransformOutput {
     options ??= {};
 
     const items : FiltersTransformOutput = [];
 
     for (const key in data) {
-        const fullKey : string = (!!data[key].alias ? `${data[key].alias}.` : '') + data[key].key;
+        const fullKey : string = (data[key].alias ? `${data[key].alias}.` : '') + data[key].key;
 
         let bindingKey : string | undefined = typeof options.bindingKeyFn === 'function' ? options.bindingKeyFn(data[key].key) : undefined;
-        if(typeof bindingKey === 'undefined') {
+        if (typeof bindingKey === 'undefined') {
             bindingKey = `filter_${fullKey.replace('.', '_')}`;
         }
 
         const queryParts : string[] = [
-            fullKey
+            fullKey,
         ];
 
-        let value = data[key].value;
+        let { value } = data[key];
 
         const filter : FiltersParseOutputElement = data[key];
         filter.operator ??= {};
 
-        if(
+        if (
             (
                 typeof value === 'string' ||
                 typeof value === 'number'
@@ -44,33 +46,31 @@ export function transformParsedFilters(
             value += '%';
         }
 
-        if(filter.operator.in || filter.operator.like) {
-            if(filter.operator.negation) {
+        if (filter.operator.in || filter.operator.like) {
+            if (filter.operator.negation) {
                 queryParts.push('NOT');
             }
 
-            if(filter.operator.like) {
+            if (filter.operator.like) {
                 queryParts.push('LIKE');
-            } else if(filter.operator.in) {
+            } else if (filter.operator.in) {
                 queryParts.push('IN');
             }
+        } else if (filter.operator.negation) {
+            queryParts.push('!=');
         } else {
-            if(filter.operator.negation) {
-                queryParts.push('!=');
-            } else {
-                queryParts.push("=");
-            }
+            queryParts.push('=');
         }
 
         if (filter.operator.in) {
-            queryParts.push('(:...' + bindingKey + ')');
+            queryParts.push(`(:...${bindingKey})`);
         } else {
-            queryParts.push(':' + bindingKey);
+            queryParts.push(`:${bindingKey}`);
         }
 
         items.push({
-            statement: queryParts.join(" "),
-            binding: {[bindingKey]: value}
+            statement: queryParts.join(' '),
+            binding: { [bindingKey]: value },
         });
     }
 
@@ -87,14 +87,14 @@ export function applyFiltersTransformed<T>(
     query: SelectQueryBuilder<T>,
     data: FiltersTransformOutput,
 ) : FiltersTransformOutput {
-    if(data.length === 0) {
+    if (data.length === 0) {
         return data;
     }
 
     /* istanbul ignore next */
-    query.andWhere(new Brackets(qb => {
+    query.andWhere(new Brackets((qb) => {
         for (let i = 0; i < data.length; i++) {
-            if(i === 0) {
+            if (i === 0) {
                 qb.where(data[i].statement, data[i].binding);
             } else {
                 qb.andWhere(data[i].statement, data[i].binding);
@@ -115,7 +115,7 @@ export function applyFiltersTransformed<T>(
 export function applyQueryFiltersParseOutput<T>(
     query: SelectQueryBuilder<T>,
     data: FiltersParseOutput,
-    options?: FiltersTransformOptions
+    options?: FiltersTransformOptions,
 ) : FiltersApplyOutput {
     applyFiltersTransformed(query, transformParsedFilters(data, options));
 
@@ -134,16 +134,16 @@ export function applyQueryFiltersParseOutput<T>(
 export function applyQueryFilters(
     query: SelectQueryBuilder<any> | undefined,
     data: unknown,
-    options?: FiltersApplyOptions
-) : FiltersApplyOutput  {
+    options?: FiltersApplyOptions,
+) : FiltersApplyOutput {
     options ??= {};
 
-    const {transform: transformOptions, ...parseOptions} = options;
+    const { transform: transformOptions, ...parseOptions } = options;
 
     return applyQueryFiltersParseOutput(
         query,
         parseQueryFilters(data, parseOptions),
-        transformOptions
+        transformOptions,
     );
 }
 
@@ -157,7 +157,7 @@ export function applyQueryFilters(
 export function applyFilters(
     query: SelectQueryBuilder<any> | undefined,
     data: unknown,
-    options?: FiltersApplyOptions
-) : FiltersApplyOutput  {
+    options?: FiltersApplyOptions,
+) : FiltersApplyOutput {
     return applyQueryFilters(query, data, options);
 }
