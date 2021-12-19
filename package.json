@@ -38,7 +38,7 @@
     },
     "license": "MIT",
     "dependencies": {
-        "@trapi/query": "^2.0.2",
+        "@trapi/query": "^2.0.3",
         "glob": "^7.1.7",
         "typeorm": "^0.2.41",
         "typescript": "^4.5.4",
