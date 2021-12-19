@@ -89,6 +89,30 @@ describe('src/api/filters.ts', () => {
         expect(data).toEqual([
             {statement: 'name NOT LIKE :filter_name', binding: {'filter_name': 'name%'}}
         ] as FiltersTransformOutput);
+
+        // lessThan operator
+        data = transformParsedFilters(parseQueryFilters({id: '<10'}, {allowed: ['id']}));
+        expect(data).toEqual([
+            {statement: 'id < :filter_id', binding: {'filter_id': '10'}}
+        ] as FiltersTransformOutput);
+
+        // lessThanEqual operator
+        data = transformParsedFilters(parseQueryFilters({id: '<=10'}, {allowed: ['id']}));
+        expect(data).toEqual([
+            {statement: 'id <= :filter_id', binding: {'filter_id': '10'}}
+        ] as FiltersTransformOutput);
+
+        // moreThan operator
+        data = transformParsedFilters(parseQueryFilters({id: '>10'}, {allowed: ['id']}));
+        expect(data).toEqual([
+            {statement: 'id > :filter_id', binding: {'filter_id': '10'}}
+        ] as FiltersTransformOutput);
+
+        // moreThanEqual operator
+        data = transformParsedFilters(parseQueryFilters({id: '>=10'}, {allowed: ['id']}));
+        expect(data).toEqual([
+            {statement: 'id >= :filter_id', binding: {'filter_id': '10'}}
+        ] as FiltersTransformOutput);
     });
 
     it('should transform filters with includes', () => {

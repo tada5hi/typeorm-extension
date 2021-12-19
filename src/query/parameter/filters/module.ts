@@ -19,6 +19,7 @@ export function transformParsedFilters(
 
     const items : FiltersTransformOutput = [];
 
+    // eslint-disable-next-line no-restricted-syntax
     for (const key in data) {
         const fullKey : string = (data[key].alias ? `${data[key].alias}.` : '') + data[key].key;
 
@@ -58,6 +59,14 @@ export function transformParsedFilters(
             }
         } else if (filter.operator.negation) {
             queryParts.push('!=');
+        } else if (filter.operator.lessThan) {
+            queryParts.push('<');
+        } else if (filter.operator.lessThanEqual) {
+            queryParts.push('<=');
+        } else if (filter.operator.moreThan) {
+            queryParts.push('>');
+        } else if (filter.operator.moreThanEqual) {
+            queryParts.push('>=');
         } else {
             queryParts.push('=');
         }
