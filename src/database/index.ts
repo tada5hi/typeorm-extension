@@ -12,8 +12,7 @@ import { createMySQLDatabase, dropMySQLDatabase } from './driver/mysql';
 import { createPostgresDatabase, dropPostgresDatabase } from './driver/postgres';
 import { createOracleDatabase, dropOracleDatabase } from './driver/oracle';
 import { createMsSQLDatabase, dropMsSQLDatabase } from './driver/mssql';
-import { SimpleConnectionOptions, buildConnectionOptions } from '../connection';
-import { buildSimpleConnectionOptions } from '../connection/utils';
+import { SimpleConnectionOptions, buildConnectionOptions, buildSimpleConnectionOptions } from '../connection';
 import { createSQLiteDatabase, dropSQLiteDatabase } from './driver/sqlite';
 import { NotSupportedDriver } from './error';
 import { ConnectionWithAdditionalOptions, DatabaseOperationOptions } from './type';
@@ -56,9 +55,17 @@ async function createOrDropDatabase(
         connectionOptions = await buildConnectionOptions();
     }
 
+    const driversRequireDatabaseOption : ConnectionOptions['type'][] = [
+        'sqlite',
+        'better-sqlite3',
+    ];
+
     const fakeConnection : Connection = {
         options: {
             type: connectionOptions.type,
+            ...(driversRequireDatabaseOption.indexOf(connectionOptions.type) !== -1 ? {
+                database: connectionOptions.database,
+            } : {}),
         },
     } as Connection;
 
