@@ -41,7 +41,7 @@
         "@trapi/query": "^2.0.3",
         "glob": "^7.1.7",
         "typeorm": "^0.2.41",
-        "typescript": "^4.5.4",
+        "typescript": "^4.5.5",
         "yargs": "^17.3.1"
     },
     "devDependencies": {
