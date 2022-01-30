@@ -23,7 +23,8 @@ describe('src/database/module.ts', () => {
         expect(simpleConnectionOptions.user).toEqual('root');
         expect(simpleConnectionOptions.password).toEqual('admin');
         expect(simpleConnectionOptions.database).toEqual('test');
-        expect(simpleConnectionOptions.socketPath).toEqual('/var/mysqld/mysqld.sock');
+        expect(simpleConnectionOptions.extra).toBeDefined();
+        expect(simpleConnectionOptions.extra.socketPath).toEqual('/var/mysqld/mysqld.sock');
         expect(simpleConnectionOptions.port).toEqual(3306);
     });
 

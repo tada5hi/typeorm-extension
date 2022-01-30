@@ -31,7 +31,10 @@ export function buildDriverConnectionOptions(connectionOptions: ConnectionOption
         port: driverOptions.port,
         ...(driverOptions.ssl ? { ssl: driverOptions.ssl } : {}),
         ...(driverOptions.url ? { url: driverOptions.url } : {}),
-        ...(connectionOptions.extra ? connectionOptions.extra : {}),
+        ...(driverOptions.connectString ? { connectString: driverOptions.connectString } : {}),
+        ...(driverOptions.sid ? { sid: driverOptions.sid } : {}),
+        ...(driverOptions.serviceName ? { serviceName: driverOptions.serviceName } : {}),
+        ...(connectionOptions.extra ? { extra: connectionOptions.extra } : {}),
     };
 }
 

@@ -7,18 +7,13 @@ export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
     connectionOptions: DriverConnectionOptions,
 ) {
-    let option : Record<string, any> | string;
-
-    if (typeof connectionOptions.url === 'string') {
-        option = connectionOptions.url;
-    } else {
-        option = {
-            user: connectionOptions.user,
-            password: connectionOptions.password,
-            server: connectionOptions.host,
-            port: connectionOptions.port ?? 1433,
-        };
-    }
+    const option : Record<string, any> = {
+        user: connectionOptions.user,
+        password: connectionOptions.password,
+        server: connectionOptions.host,
+        port: connectionOptions.port || 1433,
+        ...(connectionOptions.extra ? connectionOptions.extra : {}),
+    };
 
     await driver.mssql.connect(option);
 

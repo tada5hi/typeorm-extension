@@ -1,35 +1,7 @@
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 import { DriverConnectionOptions } from '../../connection';
 import { DatabaseOperationOptions } from '../type';
-
-export async function createSimpleCockroachDBConnection(
-    driver: CockroachDriver,
-    connectionOptions: DriverConnectionOptions,
-) {
-    /**
-     * pg library
-     */
-    const { Client } = driver.postgres;
-    let options : Record<string, any> = {};
-
-    if (typeof connectionOptions.url === 'string') {
-        options.connectionString = connectionOptions.url;
-    } else {
-        options = {
-            host: connectionOptions.host,
-            port: connectionOptions.port,
-            user: connectionOptions.user,
-            password: connectionOptions.password,
-            ssl: connectionOptions.ssl,
-        };
-    }
-
-    const client = new Client(options);
-
-    await client.connect();
-
-    return client;
-}
+import { createSimplePostgresConnection } from './postgres';
 
 export async function executeSimpleCockroachDBQuery(connection: any, query: string, endConnection = true) {
     return new Promise(((resolve, reject) => {
@@ -52,7 +24,11 @@ export async function createCockroachDBDatabase(
     connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
 ) {
-    const connection = await createSimpleCockroachDBConnection(driver, connectionOptions);
+    const connection = await createSimplePostgresConnection(
+        driver,
+        connectionOptions,
+        customOptions,
+    );
 
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/cockroachdb/CockroachQueryRunner.ts#L347
@@ -67,7 +43,11 @@ export async function dropCockroachDBDatabase(
     connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
 ) {
-    const connection = await createSimpleCockroachDBConnection(driver, connectionOptions);
+    const connection = await createSimplePostgresConnection(
+        driver,
+        connectionOptions,
+        customOptions,
+    );
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/cockroachdb/CockroachQueryRunner.ts#L356
      */

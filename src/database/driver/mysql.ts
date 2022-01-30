@@ -12,18 +12,14 @@ export async function createSimpleMySQLConnection(
      */
     const { createConnection } = driver.mysql;
 
-    let option : DriverConnectionOptions | string;
-
-    if (typeof connectionOptions.url === 'string') {
-        option = connectionOptions.url;
-    } else {
-        option = {
-            host: connectionOptions.host,
-            user: connectionOptions.user,
-            password: connectionOptions.password,
-            port: Number(connectionOptions.port ?? 3306),
-        };
-    }
+    const option : Record<string, any> = {
+        host: connectionOptions.host,
+        user: connectionOptions.user,
+        password: connectionOptions.password,
+        port: connectionOptions.port,
+        ssl: connectionOptions.ssl,
+        ...(connectionOptions.extra ? connectionOptions.extra : {}),
+    };
 
     return createConnection(option);
 }

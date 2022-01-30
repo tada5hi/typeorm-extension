@@ -5,9 +5,14 @@ export type DriverConnectionOptions = {
     password?: string,
     port?: number,
     ssl?: any,
+
     // required for oracle and optional for other drivers
     url?: string,
+    connectString?: string,
+    sid?: string | number,
+    serviceName?: string,
 
-    // for extra driver connection options
-    [key: string]: any
+    extra?: {
+        [key: string]: any
+    }
 };

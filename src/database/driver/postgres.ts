@@ -1,11 +1,12 @@
 import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
+import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 
 import { DriverConnectionOptions } from '../../connection';
 import { DatabaseOperationOptions } from '../type';
 import { hasOwnProperty } from '../../utils';
 
 export async function createSimplePostgresConnection(
-    driver: PostgresDriver,
+    driver: PostgresDriver | CockroachDriver,
     connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
 ) {
@@ -13,22 +14,18 @@ export async function createSimplePostgresConnection(
      * pg library
      */
     const { Client } = driver.postgres;
-    let options : Record<string, any> = {};
 
-    if (typeof connectionOptions.url === 'string') {
-        options.connectionString = connectionOptions.url;
-    } else {
-        options = {
-            host: connectionOptions.host,
-            port: connectionOptions.port,
-            user: connectionOptions.user,
-            password: connectionOptions.password,
-            ssl: connectionOptions.ssl,
-        };
+    const options : Record<string, any> = {
+        host: connectionOptions.host,
+        port: connectionOptions.port,
+        user: connectionOptions.user,
+        password: connectionOptions.password,
+        ssl: connectionOptions.ssl,
+        ...(connectionOptions.extra ? connectionOptions.extra : {}),
+    };
 
-        if (typeof customOptions.initialDatabase === 'string') {
-            options.database = customOptions.initialDatabase;
-        }
+    if (typeof customOptions.initialDatabase === 'string') {
+        options.database = customOptions.initialDatabase;
     }
 
     const client = new Client(options);

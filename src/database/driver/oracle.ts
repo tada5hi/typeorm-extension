@@ -8,10 +8,35 @@ export function createSimpleOracleConnection(
 ) {
     const { getConnection } = driver.oracle;
 
+    if (!connectionOptions.connectString) {
+        let address = '(PROTOCOL=TCP)';
+
+        if (connectionOptions.host) {
+            address += `(HOST=${connectionOptions.host})`;
+        }
+
+        if (connectionOptions.port) {
+            address += `(PORT=${connectionOptions.port})`;
+        }
+
+        let connectData = '(SERVER=DEDICATED)';
+
+        if (connectionOptions.sid) {
+            connectData += `(SID=${connectionOptions.sid})`;
+        }
+
+        if (connectionOptions.serviceName) {
+            connectData += `(SERVICE_NAME=${connectionOptions.serviceName})`;
+        }
+
+        connectionOptions.connectString = `(DESCRIPTION=(ADDRESS=${address})(CONNECT_DATA=${connectData}))`;
+    }
+
     return getConnection({
         user: connectionOptions.user,
         password: connectionOptions.password,
-        connectString: connectionOptions.url,
+        connectString: connectionOptions.connectString || connectionOptions.url,
+        ...(connectionOptions.extra ? connectionOptions.extra : {}),
     });
 }
 

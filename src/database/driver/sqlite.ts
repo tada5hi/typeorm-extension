@@ -10,21 +10,14 @@ export async function createSQLiteDatabase(
     driver: SqliteDriver,
     connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
-) {
+) : Promise<void> {
     const filePath : string = path.isAbsolute(connectionOptions.database) ?
         connectionOptions.database :
         path.join(process.cwd(), connectionOptions.database);
+
     const directoryPath : string = path.dirname(filePath);
 
-    return new Promise(((resolve, reject) => {
-        fs.access(directoryPath, fs.constants.W_OK, (err) => {
-            if (err) {
-                reject(err);
-            }
-
-            resolve(true);
-        });
-    }));
+    await fs.promises.access(directoryPath, fs.constants.W_OK);
 }
 
 export async function dropSQLiteDatabase(
@@ -36,21 +29,10 @@ export async function dropSQLiteDatabase(
         connectionOptions.database :
         path.join(process.cwd(), connectionOptions.database);
 
-    return new Promise(((resolve, reject) => {
-        fs.access(filePath, fs.constants.F_OK | fs.constants.W_OK, (err) => {
-            if (err) {
-                reject(err);
-            }
-
-            fs.rm(filePath, (e) => {
-                if (err) {
-                    reject(err);
-                }
-
-                resolve(true);
-            });
-
-            resolve(true);
-        });
-    }));
+    try {
+        await fs.promises.access(filePath, fs.constants.F_OK | fs.constants.W_OK);
+        await fs.promises.unlink(filePath);
+    } catch (e) {
+        // ...
+    }
 }
