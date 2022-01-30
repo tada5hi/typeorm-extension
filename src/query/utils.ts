@@ -12,22 +12,26 @@ export function applyQueryParseOutput<T>(
     query: SelectQueryBuilder<T>,
     context: ParseOutput,
 ) : ParseOutput {
-    for (const key in context) {
-        switch (key as ParameterType) {
+    const keys = Object.keys(context);
+
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i] as ParameterType;
+
+        switch (key) {
             case Parameter.FIELDS:
-                applyQueryFieldsParseOutput(query, context.fields);
+                applyQueryFieldsParseOutput(query, context[key]);
                 break;
             case Parameter.FILTERS:
-                applyQueryFiltersParseOutput(query, context.filters);
+                applyQueryFiltersParseOutput(query, context[key]);
                 break;
             case Parameter.PAGINATION:
-                applyQueryPaginationParseOutput(query, context.pagination);
+                applyQueryPaginationParseOutput(query, context[key]);
                 break;
             case Parameter.RELATIONS:
-                applyQueryRelationsParseOutput(query, context.relations);
+                applyQueryRelationsParseOutput(query, context[key]);
                 break;
             case Parameter.SORT:
-                applyQueryRelationsParseOutput(query, context.sort);
+                applyQueryRelationsParseOutput(query, context[key]);
                 break;
         }
     }

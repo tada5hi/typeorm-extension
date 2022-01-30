@@ -7,7 +7,7 @@ import {
     DatabaseDropCommand,
 } from './commands';
 
-// tslint:disable-next-line:no-unused-expression
+// eslint-disable-next-line no-unused-expressions,@typescript-eslint/no-unused-expressions
 yargs
     .scriptName('typeorm-extension')
     .usage('Usage: $0 <command> [options]')
