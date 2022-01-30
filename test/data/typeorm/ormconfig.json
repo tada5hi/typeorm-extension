@@ -6,5 +6,9 @@
     "username": "root",
     "password": "admin",
     "database": "test",
-    "logging": false
+    "logging": false,
+    "extra": {
+        "socketPath": "/var/mysqld/mysqld.sock",
+        "charset": "UTF8_GENERAL_CI"
+    }
 }

@@ -1,4 +1,4 @@
-export type SimpleConnectionOptions = {
+export type DriverConnectionOptions = {
     database?: string,
     host?: string,
     user?: string,
@@ -6,5 +6,8 @@ export type SimpleConnectionOptions = {
     port?: number,
     ssl?: any,
     // required for oracle and optional for other drivers
-    url?: string
+    url?: string,
+
+    // for extra driver connection options
+    [key: string]: any
 };

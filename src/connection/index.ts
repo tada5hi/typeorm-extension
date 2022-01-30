@@ -4,7 +4,7 @@ import { ConnectionBuilderOptions } from './type';
 import { modifyConnectionOptionsForRuntimeEnvironment } from './utils';
 
 export {
-    SimpleConnectionOptions,
+    DriverConnectionOptions,
 } from './options';
 
 export * from './type';

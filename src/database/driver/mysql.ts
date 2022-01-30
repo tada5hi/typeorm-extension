@@ -1,18 +1,18 @@
 import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 
-import { SimpleConnectionOptions } from '../../connection';
+import { DriverConnectionOptions } from '../../connection';
 import { DatabaseOperationOptions } from '../type';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
-    connectionOptions: SimpleConnectionOptions,
+    connectionOptions: DriverConnectionOptions,
 ) {
     /**
      * mysql|mysql2 library
      */
     const { createConnection } = driver.mysql;
 
-    let option : Record<string, any> | string;
+    let option : DriverConnectionOptions | string;
 
     if (typeof connectionOptions.url === 'string') {
         option = connectionOptions.url;
@@ -44,7 +44,7 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 
 export async function createMySQLDatabase(
     driver: MysqlDriver,
-    connectionOptions: SimpleConnectionOptions,
+    connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);
@@ -74,7 +74,7 @@ export async function createMySQLDatabase(
 
 export async function dropMySQLDatabase(
     driver: MysqlDriver,
-    connectionOptions: SimpleConnectionOptions,
+    connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMySQLConnection(driver, connectionOptions);

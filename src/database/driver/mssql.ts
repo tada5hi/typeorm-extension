@@ -1,11 +1,11 @@
 import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 
-import { SimpleConnectionOptions } from '../../connection';
+import { DriverConnectionOptions } from '../../connection';
 import { DatabaseOperationOptions } from '../type';
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
-    connectionOptions: SimpleConnectionOptions,
+    connectionOptions: DriverConnectionOptions,
 ) {
     let option : Record<string, any> | string;
 
@@ -27,7 +27,7 @@ export async function createSimpleMsSQLConnection(
 
 export async function createMsSQLDatabase(
     driver: SqlServerDriver,
-    connectionOptions: SimpleConnectionOptions,
+    connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
@@ -47,7 +47,7 @@ export async function createMsSQLDatabase(
 
 export async function dropMsSQLDatabase(
     driver: SqlServerDriver,
-    connectionOptions: SimpleConnectionOptions,
+    connectionOptions: DriverConnectionOptions,
     customOptions: DatabaseOperationOptions,
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
