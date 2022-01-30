@@ -14,6 +14,7 @@
         "import/no-cycle": [2, {
             "maxDepth": 1
         }],
+        "no-shadow": "off",
         "no-use-before-define": "off",
 
         "@typescript-eslint/no-unused-vars": "off",

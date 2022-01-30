@@ -1,85 +1,73 @@
-import path from 'path';
-import { ConnectionWithSeederOptions } from '../seeder';
 import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../utils';
 
-type CompilerOptions = {
-    srcDirectory?: string,
-    distDirectory?: string,
+type PathOptions = {
+    src?: string,
+    dist?: string,
 };
 
-export function modifyConnectionOptionForRuntimeEnvironment<T extends Record<string, any>>(
+function changeTStoJSPath<T>(raw: T, options?: PathOptions) : T {
+    const isArray : boolean = Array.isArray(raw);
+    const value = Array.isArray(raw) ? raw : [raw];
+
+    options ??= {};
+    options.src = options.src || 'src';
+    options.dist = options.dist || 'dist';
+
+    for (let i = 0; i < value.length; i++) {
+        if (
+            typeof value[i] === 'string' &&
+            value[i].indexOf(options.src) !== -1 &&
+            value[i].indexOf('.ts') !== -1 &&
+
+            value[i].indexOf(options.dist) === -1 &&
+            value[i].indexOf('.js') === -1
+        ) {
+            value[i] = value[i]
+                .replace(options.src, options.dist)
+                .replace('.ts', '.js');
+        }
+    }
+
+    return isArray ? value : value[0];
+}
+
+export function modifyConnectionOptionForRuntimeEnvironment<
+    T extends Record<string, any>,
+    K extends keyof T,
+>(
     options: T,
-    key: keyof ConnectionWithSeederOptions,
-    compilerOptions?: CompilerOptions,
+    key: K,
+    compilerOptions?: PathOptions,
 ): T {
-    if (!hasOwnProperty(options, key)) {
+    if (!hasOwnProperty(options, key) || isTsNodeRuntimeEnvironment()) {
         return options;
     }
 
-    compilerOptions = compilerOptions ?? {};
-
-    let value = options[key];
-
     switch (key) {
         case 'entities':
+        case 'migrations':
         case 'subscribers':
         case 'seeds':
-        case 'factories':
-            const isTsNodeEnv = isTsNodeRuntimeEnvironment();
-            if (!isTsNodeEnv) {
-                let srcDir = 'src';
-                if (typeof compilerOptions.srcDirectory === 'string') {
-                    srcDir = compilerOptions.srcDirectory.split(path.sep)[0];
-                }
-
-                let outDir = 'dist';
-                if (typeof compilerOptions.distDirectory === 'string') {
-                    outDir = compilerOptions.distDirectory;
-                }
-
-                if (Array.isArray(value)) {
-                    for (let i = 0; i < value.length; i++) {
-                        const str = value[i];
-                        // won't happen in ts env
-                        /* istanbul ignore next */
-                        if (typeof str !== 'string') {
-                            continue;
-                        }
-
-                        value[i] = str
-                            .replace(srcDir, outDir)
-                            .replace('.ts', '.js');
-                    }
-                } else if (typeof value === 'string') {
-                    value = value.replace(srcDir, outDir)
-                        .replace('.ts', '.js');
-                }
-            }
+        case 'factories': {
+            options[key] = changeTStoJSPath(options[key], compilerOptions);
             break;
+        }
     }
 
-    return {
-        ...options,
-        [key]: value,
-    };
+    return options;
 }
 
 export function modifyConnectionOptionsForRuntimeEnvironment<T extends Record<string, any>>(
     connectionOptions: T,
-    compilerOptions?: CompilerOptions,
+    options?: PathOptions,
 ) : T {
-    const keys: Extract<keyof ConnectionWithSeederOptions, 'entities' | 'subscribers' | 'seeds' | 'factories'>[] = [
-        'entities',
-        'subscribers',
-        'seeds',
-        'factories',
-    ];
+    const keys = Object.keys(connectionOptions);
 
     for (let i = 0; i < keys.length; i++) {
         connectionOptions = modifyConnectionOptionForRuntimeEnvironment(
             connectionOptions,
-            keys[i],
-            compilerOptions,
+            keys[i] as keyof T,
+            options,
         );
     }
 

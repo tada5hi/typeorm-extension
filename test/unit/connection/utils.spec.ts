@@ -22,10 +22,10 @@ describe('src/connection/utils.ts', () => {
         });
 
         let modifiedConnectionOption = modifyConnectionOptionForRuntimeEnvironment({
-            entities: ['src/entities.ts']
+            entities: ['./src/entities.ts']
         }, 'entities');
 
-        expect(modifiedConnectionOption).toEqual({entities: ['dist/entities.js']});
+        expect(modifiedConnectionOption).toEqual({entities: ['./dist/entities.js']});
 
         const modifiedConnectionOptionAlt = modifyConnectionOptionForRuntimeEnvironment({
             entities: 'src/entities.ts'
@@ -37,7 +37,7 @@ describe('src/connection/utils.ts', () => {
             entities: ['src/entities.ts']
         }, 'entities',
             {
-            distDirectory: 'output'
+            dist: 'output'
         });
         expect(modifiedConnectionOption).toEqual({entities: ['output/entities.js']});
 
@@ -46,8 +46,8 @@ describe('src/connection/utils.ts', () => {
                 entities: ['src/entities.ts']
             }, 'entities',
             {
-                srcDirectory: 'dummySrc'
+                src: 'dummySrc'
             });
-        expect(modifiedConnectionOption).toEqual({entities: ['src/entities.js']});
+        expect(modifiedConnectionOption).toEqual({entities: ['src/entities.ts']});
     })
 });

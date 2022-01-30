@@ -6,7 +6,7 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "lib": [
-            "ESNext",
+            "ESNext"
         ],
         "module": "commonjs",
         "newLine": "LF",
