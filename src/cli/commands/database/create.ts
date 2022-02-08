@@ -7,8 +7,8 @@ import { DatabaseOperationOptions, createDatabase } from '../../../database';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
-    connection: 'default' | string;
-    config: 'ormconfig' | string;
+    connection: string;
+    config: string;
     synchronize: string;
     initialDatabase: unknown | undefined;
 }
