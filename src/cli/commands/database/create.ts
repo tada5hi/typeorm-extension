@@ -10,7 +10,7 @@ export interface DatabaseCreateArguments extends Arguments {
     connection: string;
     config: string;
     synchronize: string;
-    initialDatabase: unknown | undefined;
+    initialDatabase: unknown;
 }
 
 export class DatabaseCreateCommand implements CommandModule<Record<string, never>, DatabaseCreateArguments> {
