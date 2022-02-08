@@ -1,15 +1,15 @@
-import { Arguments, Argv, CommandModule } from 'yargs';
+import { Arguments, ArgumentsCamelCase, Argv, CommandModule } from 'yargs';
 import { ConnectionOptions } from 'typeorm';
 import { buildConnectionOptions } from '../../../connection';
 import { dropDatabase } from '../../../database';
 
 export interface DatabaseDropArguments extends Arguments {
     root: string;
-    connection: 'default' | string;
-    config: 'ormconfig' | string;
+    connection: string;
+    config: string;
 }
 
-export class DatabaseDropCommand implements CommandModule {
+export class DatabaseDropCommand implements CommandModule<any, DatabaseDropArguments> {
     command = 'db:drop';
 
     describe = 'Drop database.';
@@ -33,9 +33,7 @@ export class DatabaseDropCommand implements CommandModule {
             });
     }
 
-    async handler(raw: Arguments, exitProcess = true) {
-        const args : DatabaseDropArguments = raw as DatabaseDropArguments;
-
+    async handler(args: ArgumentsCamelCase<DatabaseDropArguments>, exitProcess = true) {
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
             name: args.connection,
             root: args.root,
