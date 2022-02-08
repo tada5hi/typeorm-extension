@@ -1,4 +1,6 @@
-import { Arguments, Argv, CommandModule } from 'yargs';
+import {
+    Arguments, ArgumentsCamelCase, Argv, CommandModule,
+} from 'yargs';
 import { ConnectionOptions, createConnection } from 'typeorm';
 import { buildConnectionOptions } from '../../../connection';
 import { DatabaseOperationOptions, createDatabase } from '../../../database';
@@ -8,10 +10,10 @@ export interface DatabaseCreateArguments extends Arguments {
     connection: 'default' | string;
     config: 'ormconfig' | string;
     synchronize: string;
-    initialDatabase?: unknown;
+    initialDatabase: unknown | undefined;
 }
 
-export class DatabaseCreateCommand implements CommandModule {
+export class DatabaseCreateCommand implements CommandModule<Record<string, never>, DatabaseCreateArguments> {
     command = 'db:create';
 
     describe = 'Create database.';
@@ -44,9 +46,7 @@ export class DatabaseCreateCommand implements CommandModule {
             });
     }
 
-    async handler(raw: Arguments, exitProcess = true) {
-        const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
-
+    async handler(args: ArgumentsCamelCase<DatabaseCreateArguments>, exitProcess = true) {
         const connectionOptions: ConnectionOptions = await buildConnectionOptions({
             name: args.connection,
             configName: args.config,
@@ -54,7 +54,7 @@ export class DatabaseCreateCommand implements CommandModule {
             buildForCommand: true,
         });
 
-        const operationOptions : DatabaseOperationOptions = {
+        const operationOptions: DatabaseOperationOptions = {
             ifNotExist: true,
         };
 
