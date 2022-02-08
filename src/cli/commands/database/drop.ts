@@ -1,4 +1,6 @@
-import { Arguments, ArgumentsCamelCase, Argv, CommandModule } from 'yargs';
+import {
+    Arguments, ArgumentsCamelCase, Argv, CommandModule,
+} from 'yargs';
 import { ConnectionOptions } from 'typeorm';
 import { buildConnectionOptions } from '../../../connection';
 import { dropDatabase } from '../../../database';
