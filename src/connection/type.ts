@@ -20,6 +20,9 @@ export type DriverConnectionOptions = {
     sid?: string | number,
     serviceName?: string,
 
+    // add mssql support
+    domain?: string,
+
     extra?: {
         [key: string]: any
     }

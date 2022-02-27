@@ -13,6 +13,7 @@ export async function createSimpleMsSQLConnection(
         server: connectionOptions.host,
         port: connectionOptions.port || 1433,
         ...(connectionOptions.extra ? connectionOptions.extra : {}),
+        ...(connectionOptions.domain ? { domain: connectionOptions.domain } : {}),
     };
 
     await driver.mssql.connect(option);

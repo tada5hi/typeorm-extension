@@ -35,6 +35,7 @@ export function buildDriverConnectionOptions(connectionOptions: ConnectionOption
         ...(driverOptions.sid ? { sid: driverOptions.sid } : {}),
         ...(driverOptions.serviceName ? { serviceName: driverOptions.serviceName } : {}),
         ...(connectionOptions.extra ? { extra: connectionOptions.extra } : {}),
+        ...(driverOptions.domain ? { domain: driverOptions.domain } : {}),
     };
 }
 
