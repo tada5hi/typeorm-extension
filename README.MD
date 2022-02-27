@@ -9,17 +9,6 @@ This is a library to
 - execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)` ⚡.
 - validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values to the `QueryBuilder` ( extended **JSON:API** specification).
 
----
-**NOTE**
-
-If you are migrating from a `< v.1.0.0` release, don't worry 😇.
-Not much has changed in general for the public API and if you are lucky
-nothing has to be changed in your code base.
-If you have used this library only to create/drop the default database, only type names have changed.
-Nevertheless, please read the [Changelog.md](CHANGELOG.md) file.
-
----
-
 **Table of Contents**
 
 - [Installation](#installation)
