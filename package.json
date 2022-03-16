@@ -38,7 +38,7 @@
     },
     "license": "MIT",
     "dependencies": {
-        "@trapi/query": "^2.0.5",
+        "@trapi/query": "^2.1.0",
         "glob": "^7.1.7",
         "reflect-metadata": "^0.1.13",
         "yargs": "^17.3.1"
