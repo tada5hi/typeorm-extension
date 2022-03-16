@@ -1,6 +1,5 @@
 import {
     FiltersParseOutput,
-    FiltersParseOutputElement,
     parseQueryFilters,
 } from '@trapi/query';
 
@@ -19,68 +18,92 @@ export function transformParsedFilters(
 
     const items : FiltersTransformOutput = [];
 
-    // eslint-disable-next-line no-restricted-syntax
-    for (const key in data) {
-        const fullKey : string = (data[key].alias ? `${data[key].alias}.` : '') + data[key].key;
+    for (let i = 0; i < data.length; i++) {
+        const fullKey : string = (data[i].alias ? `${data[i].alias}.` : '') + data[i].key;
 
-        let bindingKey : string | undefined = typeof options.bindingKeyFn === 'function' ? options.bindingKeyFn(data[key].key) : undefined;
-        if (typeof bindingKey === 'undefined') {
-            bindingKey = `filter_${fullKey.replace('.', '_')}`;
-        }
+        const filter = data[i];
+        filter.operator ??= {};
 
-        const queryParts : string[] = [
+        const statement : string[] = [
             fullKey,
         ];
 
-        let { value } = data[key];
-
-        const filter : FiltersParseOutputElement = data[key];
-        filter.operator ??= {};
-
         if (
-            (
-                typeof value === 'string' ||
-                typeof value === 'number'
-            ) &&
-            filter.operator.like
+            typeof filter.value === 'undefined' ||
+            filter.value === null ||
+            `${filter.value}`.toLowerCase() === 'null'
         ) {
-            value += '%';
-        }
+            statement.push('IS');
 
-        if (filter.operator.in || filter.operator.like) {
             if (filter.operator.negation) {
-                queryParts.push('NOT');
+                statement.push('NOT');
             }
 
-            if (filter.operator.like) {
-                queryParts.push('LIKE');
-            } else if (filter.operator.in) {
-                queryParts.push('IN');
+            statement.push('NULL');
+
+            items.push({
+                statement: statement.join(' '),
+                binding: {},
+            });
+        } else if (
+            typeof filter.value === 'string' ||
+            typeof filter.value === 'number' ||
+            typeof filter.value === 'boolean' ||
+            Array.isArray(filter.value)
+        ) {
+            if (
+                (
+                    typeof filter.value === 'string' ||
+                    typeof filter.value === 'number'
+                ) &&
+                filter.operator.like
+            ) {
+                filter.value += '%';
             }
-        } else if (filter.operator.negation) {
-            queryParts.push('!=');
-        } else if (filter.operator.lessThan) {
-            queryParts.push('<');
-        } else if (filter.operator.lessThanEqual) {
-            queryParts.push('<=');
-        } else if (filter.operator.moreThan) {
-            queryParts.push('>');
-        } else if (filter.operator.moreThanEqual) {
-            queryParts.push('>=');
-        } else {
-            queryParts.push('=');
-        }
 
-        if (filter.operator.in) {
-            queryParts.push(`(:...${bindingKey})`);
-        } else {
-            queryParts.push(`:${bindingKey}`);
-        }
+            if (filter.operator.in || filter.operator.like) {
+                if (filter.operator.negation) {
+                    statement.push('NOT');
+                }
 
-        items.push({
-            statement: queryParts.join(' '),
-            binding: { [bindingKey]: value },
-        });
+                if (filter.operator.like) {
+                    statement.push('LIKE');
+                } else if (filter.operator.in) {
+                    statement.push('IN');
+                }
+            } else if (filter.operator.negation) {
+                statement.push('!=');
+            } else if (filter.operator.lessThan) {
+                statement.push('<');
+            } else if (filter.operator.lessThanEqual) {
+                statement.push('<=');
+            } else if (filter.operator.moreThan) {
+                statement.push('>');
+            } else if (filter.operator.moreThanEqual) {
+                statement.push('>=');
+            } else {
+                statement.push('=');
+            }
+
+            let bindingKey : string | undefined = typeof options.bindingKeyFn === 'function' ?
+                options.bindingKeyFn(fullKey) :
+                undefined;
+
+            if (typeof bindingKey === 'undefined') {
+                bindingKey = `filter_${fullKey.replace('.', '_')}`;
+            }
+
+            if (filter.operator.in) {
+                statement.push(`(:...${bindingKey})`);
+            } else {
+                statement.push(`:${bindingKey}`);
+            }
+
+            items.push({
+                statement: statement.join(' '),
+                binding: { [bindingKey]: filter.value },
+            });
+        }
     }
 
     return items;

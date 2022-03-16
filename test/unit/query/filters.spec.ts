@@ -40,9 +40,19 @@ describe('src/api/filters.ts', () => {
         allowedFilters = transformParsedFilters(parseQueryFilters({name: ''}, {allowed: ['name']}));
         expect(allowedFilters).toEqual([] as FiltersTransformOutput);
 
+        // --------------------------------------------------
+
         // filter data with el null value
         allowedFilters = transformParsedFilters(parseQueryFilters({name: null}, {allowed: ['name']}));
-        expect(allowedFilters).toEqual([] as FiltersTransformOutput);
+        expect(allowedFilters).toEqual([{statement: 'name IS NULL', binding: {}}] as FiltersTransformOutput);
+
+        allowedFilters = transformParsedFilters(parseQueryFilters({name: 'null'}, {allowed: ['name']}));
+        expect(allowedFilters).toEqual([{statement: 'name IS NULL', binding: {}}] as FiltersTransformOutput);
+
+        allowedFilters = transformParsedFilters(parseQueryFilters({name: '!null'}, {allowed: ['name']}));
+        expect(allowedFilters).toEqual([{statement: 'name IS NOT NULL', binding: {}}] as FiltersTransformOutput);
+
+        // --------------------------------------------------
 
         // filter wrong allowed
         allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}, {allowed: ['name']}));
