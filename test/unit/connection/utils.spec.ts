@@ -1,6 +1,6 @@
 import {
-    modifyConnectionOptionForRuntimeEnvironment,
-    modifyConnectionOptionsForRuntimeEnvironment
+    modifyDataSourceOptionForRuntimeEnvironment,
+    modifyDataSourceOptionsForRuntimeEnvironment
 } from "../../../src";
 
 describe('src/connection/utils.ts', () => {
@@ -12,7 +12,7 @@ describe('src/connection/utils.ts', () => {
             subscribers: ['src/subscribers.ts']
         };
 
-        const modifiedConnectionOptions = modifyConnectionOptionsForRuntimeEnvironment(Object.assign({},options));
+        const modifiedConnectionOptions = modifyDataSourceOptionsForRuntimeEnvironment(Object.assign({},options));
 
         expect(modifiedConnectionOptions).toEqual({
             factories: ['dist/factories.js'],
@@ -21,18 +21,18 @@ describe('src/connection/utils.ts', () => {
             subscribers: ['dist/subscribers.js']
         });
 
-        let modifiedConnectionOption = modifyConnectionOptionForRuntimeEnvironment({
+        let modifiedConnectionOption = modifyDataSourceOptionForRuntimeEnvironment({
             entities: ['./src/entities.ts']
         }, 'entities');
 
         expect(modifiedConnectionOption).toEqual({entities: ['./dist/entities.js']});
 
-        const modifiedConnectionOptionAlt = modifyConnectionOptionForRuntimeEnvironment({
+        const modifiedConnectionOptionAlt = modifyDataSourceOptionForRuntimeEnvironment({
             entities: 'src/entities.ts'
         }, 'entities');
         expect(modifiedConnectionOptionAlt).toEqual({entities: 'dist/entities.js'});
 
-        modifiedConnectionOption = modifyConnectionOptionForRuntimeEnvironment(
+        modifiedConnectionOption = modifyDataSourceOptionForRuntimeEnvironment(
             {
             entities: ['src/entities.ts']
         }, 'entities',
@@ -41,7 +41,7 @@ describe('src/connection/utils.ts', () => {
         });
         expect(modifiedConnectionOption).toEqual({entities: ['output/entities.js']});
 
-        modifiedConnectionOption = modifyConnectionOptionForRuntimeEnvironment(
+        modifiedConnectionOption = modifyDataSourceOptionForRuntimeEnvironment(
             {
                 entities: ['src/entities.ts']
             }, 'entities',

@@ -3,12 +3,12 @@ import fs from 'fs';
 
 import { SqliteDriver } from 'typeorm/driver/sqlite/SqliteDriver';
 
-import { DriverConnectionOptions } from '../../connection';
 import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
+import { DriverOptions } from './type';
 
 export async function createSQLiteDatabase(
     driver: SqliteDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) : Promise<void> {
     const filePath : string = path.isAbsolute(options.database) ?
@@ -22,7 +22,7 @@ export async function createSQLiteDatabase(
 
 export async function dropSQLiteDatabase(
     driver: SqliteDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseDeleteOperationContext,
 ) {
     const filePath : string = path.isAbsolute(options.database) ?

@@ -1,11 +1,11 @@
 import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 
-import { DriverConnectionOptions } from '../../connection';
 import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
+import { DriverOptions } from './type';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
 ) {
     /**
      * mysql|mysql2 library
@@ -40,7 +40,7 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 
 export async function createMySQLDatabase(
     driver: MysqlDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) {
     const connection = await createSimpleMySQLConnection(driver, options);
@@ -70,7 +70,7 @@ export async function createMySQLDatabase(
 
 export async function dropMySQLDatabase(
     driver: MysqlDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseDeleteOperationContext,
 ) {
     const connection = await createSimpleMySQLConnection(driver, options);

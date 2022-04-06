@@ -3,12 +3,12 @@ import fs from 'fs';
 
 import { BetterSqlite3Driver } from 'typeorm/driver/better-sqlite3/BetterSqlite3Driver';
 
-import { DriverConnectionOptions } from '../../connection';
 import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
+import { DriverOptions } from './type';
 
 export async function createBetterSQLite3Database(
     driver: BetterSqlite3Driver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) : Promise<void> {
     const filePath : string = path.isAbsolute(options.database) ?
@@ -22,7 +22,7 @@ export async function createBetterSQLite3Database(
 
 export async function dropBetterSQLite3Database(
     driver: BetterSqlite3Driver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseDeleteOperationContext,
 ) {
     const filePath : string = path.isAbsolute(options.database) ?

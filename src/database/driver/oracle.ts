@@ -1,10 +1,10 @@
 import { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
-import { DriverConnectionOptions } from '../../connection';
 import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
+import { DriverOptions } from './type';
 
 export function createSimpleOracleConnection(
     driver: OracleDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
 ) {
     const { getConnection } = driver.oracle;
 
@@ -42,7 +42,7 @@ export function createSimpleOracleConnection(
 
 export async function createOracleDatabase(
     driver: OracleDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) {
     const connection = createSimpleOracleConnection(driver, options);
@@ -56,7 +56,7 @@ export async function createOracleDatabase(
 
 export async function dropOracleDatabase(
     driver: OracleDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseDeleteOperationContext,
 ) {
     /**

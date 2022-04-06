@@ -1,11 +1,11 @@
 import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 
-import { DriverConnectionOptions } from '../../connection';
 import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
+import { DriverOptions } from './type';
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
 ) {
     const option : Record<string, any> = {
         user: options.user,
@@ -23,7 +23,7 @@ export async function createSimpleMsSQLConnection(
 
 export async function createMsSQLDatabase(
     driver: SqlServerDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) {
     const connection = await createSimpleMsSQLConnection(driver, options);
@@ -43,7 +43,7 @@ export async function createMsSQLDatabase(
 
 export async function dropMsSQLDatabase(
     driver: SqlServerDriver,
-    connectionOptions: DriverConnectionOptions,
+    connectionOptions: DriverOptions,
     operationContext: DatabaseDeleteOperationContext,
 ) {
     const connection = await createSimpleMsSQLConnection(driver, connectionOptions);

@@ -1,4 +1,4 @@
-import {buildDataSourceOptions, createDefaultSeederOptions} from "../../../src";
+import {buildDataSourceOptions, setDefaultSeederOptions} from "../../../src";
 import * as path from "path";
 
 describe('src/connection/index.ts', () => {
@@ -10,7 +10,7 @@ describe('src/connection/index.ts', () => {
         });
 
         let ormConfig = require('../../data/typeorm/ormconfig.json');
-        ormConfig = createDefaultSeederOptions(ormConfig);
+        ormConfig = setDefaultSeederOptions(ormConfig);
 
         expect(connectionOptions).toEqual(ormConfig);
     })

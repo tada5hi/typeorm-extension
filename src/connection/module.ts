@@ -1,26 +1,26 @@
 import { ConnectionOptionsReader, DataSourceOptions } from 'typeorm';
-import { ConnectionBuilderOptions } from './type';
-import { ConnectionWithSeederOptions, createDefaultSeederOptions } from '../seeder';
-import { modifyConnectionOptionsForRuntimeEnvironment } from './utils';
+import { DataSourceOptionsBuildContext } from './type';
+import { setDefaultSeederOptions } from '../seeder';
+import { modifyDataSourceOptionsForRuntimeEnvironment } from './utils';
 import { readTsConfig } from '../utils/tsconfig';
 
 export async function buildDataSourceOptions(
-    options?: ConnectionBuilderOptions,
-) : Promise<ConnectionWithSeederOptions> {
-    options = options ?? {};
+    context?: DataSourceOptionsBuildContext,
+) : Promise<DataSourceOptions> {
+    context = context ?? {};
 
-    const root : string = options.root || process.cwd();
+    const root : string = context.root || process.cwd();
 
     const connectionOptionsReader = new ConnectionOptionsReader({
         root,
-        configName: options.configName,
+        configName: context.configName,
     });
 
-    let connectionOptions : ConnectionWithSeederOptions = await connectionOptionsReader.get(options.name || 'default');
+    let dataSourceOptions = await connectionOptionsReader.get(context.name || 'default');
 
     /* istanbul ignore next */
-    if (options.buildForCommand) {
-        Object.assign(connectionOptions, {
+    if (context.buildForCommand) {
+        Object.assign(dataSourceOptions, {
             subscribers: [],
             synchronize: false,
             migrationsRun: false,
@@ -29,14 +29,14 @@ export async function buildDataSourceOptions(
         } as DataSourceOptions);
     }
 
-    connectionOptions = createDefaultSeederOptions(connectionOptions);
+    dataSourceOptions = setDefaultSeederOptions(dataSourceOptions);
 
-    let { compilerOptions } = await readTsConfig(options.tsConfigDirectory || root);
+    let { compilerOptions } = await readTsConfig(context.tsConfigDirectory || root);
     compilerOptions = compilerOptions || {};
 
-    modifyConnectionOptionsForRuntimeEnvironment(connectionOptions, {
+    modifyDataSourceOptionsForRuntimeEnvironment(dataSourceOptions, {
         dist: compilerOptions.outDir,
     });
 
-    return connectionOptions;
+    return dataSourceOptions;
 }

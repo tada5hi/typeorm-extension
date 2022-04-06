@@ -31,7 +31,7 @@ function changeTStoJSPath<T>(raw: T, options?: PathOptions) : T {
     return isArray ? value : value[0];
 }
 
-export function modifyConnectionOptionForRuntimeEnvironment<
+export function modifyDataSourceOptionForRuntimeEnvironment<
     T extends Record<string, any>,
     K extends keyof T,
 >(
@@ -57,14 +57,14 @@ export function modifyConnectionOptionForRuntimeEnvironment<
     return options;
 }
 
-export function modifyConnectionOptionsForRuntimeEnvironment<T extends Record<string, any>>(
+export function modifyDataSourceOptionsForRuntimeEnvironment<T extends Record<string, any>>(
     connectionOptions: T,
     options?: PathOptions,
 ) : T {
     const keys = Object.keys(connectionOptions);
 
     for (let i = 0; i < keys.length; i++) {
-        connectionOptions = modifyConnectionOptionForRuntimeEnvironment(
+        connectionOptions = modifyDataSourceOptionForRuntimeEnvironment(
             connectionOptions,
             keys[i] as keyof T,
             options,

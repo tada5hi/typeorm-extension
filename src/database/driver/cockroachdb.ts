@@ -1,7 +1,7 @@
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import { DriverConnectionOptions } from '../../connection';
 import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
 import { createSimplePostgresConnection } from './postgres';
+import { DriverOptions } from './type';
 
 export async function executeSimpleCockroachDBQuery(connection: any, query: string, endConnection = true) {
     return new Promise(((resolve, reject) => {
@@ -21,7 +21,7 @@ export async function executeSimpleCockroachDBQuery(connection: any, query: stri
 
 export async function createCockroachDBDatabase(
     driver: CockroachDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) {
     const connection = await createSimplePostgresConnection(
@@ -40,7 +40,7 @@ export async function createCockroachDBDatabase(
 
 export async function dropCockroachDBDatabase(
     driver: CockroachDriver,
-    connectionOptions: DriverConnectionOptions,
+    connectionOptions: DriverOptions,
     operationContext: DatabaseDeleteOperationContext,
 ) {
     const connection = await createSimplePostgresConnection(

@@ -1,13 +1,13 @@
 import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 
-import { DriverConnectionOptions } from '../../connection';
 import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
 import { hasOwnProperty } from '../../utils';
+import { DriverOptions } from './type';
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) {
     /**
@@ -53,7 +53,7 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 
 export async function createPostgresDatabase(
     driver: PostgresDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseCreateOperationContext,
 ) {
     const connection = await createSimplePostgresConnection(driver, options, operationContext);
@@ -85,7 +85,7 @@ export async function createPostgresDatabase(
 
 export async function dropPostgresDatabase(
     driver: PostgresDriver,
-    options: DriverConnectionOptions,
+    options: DriverOptions,
     operationContext: DatabaseDeleteOperationContext,
 ) {
     const connection = await createSimplePostgresConnection(driver, options, operationContext);
