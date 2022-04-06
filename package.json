@@ -44,7 +44,7 @@
         "yargs": "^17.4.0"
     },
     "peerDependencies": {
-        "typeorm": "~0.2.41"
+        "typeorm": "~0.3.5"
     },
     "devDependencies": {
         "@tada5hi/eslint-config-typescript": "^1.0.0",
@@ -59,7 +59,7 @@
         "np": "^7.6.1",
         "ts-jest": "^27.1.4",
         "ts-node": "^10.7.0",
-        "typeorm": "^0.2.45",
+        "typeorm": "^0.3.5",
         "typescript": "^4.6.3"
     }
 }

@@ -1,63 +1,63 @@
 import { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
 import { DriverConnectionOptions } from '../../connection';
-import { DatabaseOperationOptions } from '../type';
+import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
 
 export function createSimpleOracleConnection(
     driver: OracleDriver,
-    connectionOptions: DriverConnectionOptions,
+    options: DriverConnectionOptions,
 ) {
     const { getConnection } = driver.oracle;
 
-    if (!connectionOptions.connectString) {
+    if (!options.connectString) {
         let address = '(PROTOCOL=TCP)';
 
-        if (connectionOptions.host) {
-            address += `(HOST=${connectionOptions.host})`;
+        if (options.host) {
+            address += `(HOST=${options.host})`;
         }
 
-        if (connectionOptions.port) {
-            address += `(PORT=${connectionOptions.port})`;
+        if (options.port) {
+            address += `(PORT=${options.port})`;
         }
 
         let connectData = '(SERVER=DEDICATED)';
 
-        if (connectionOptions.sid) {
-            connectData += `(SID=${connectionOptions.sid})`;
+        if (options.sid) {
+            connectData += `(SID=${options.sid})`;
         }
 
-        if (connectionOptions.serviceName) {
-            connectData += `(SERVICE_NAME=${connectionOptions.serviceName})`;
+        if (options.serviceName) {
+            connectData += `(SERVICE_NAME=${options.serviceName})`;
         }
 
-        connectionOptions.connectString = `(DESCRIPTION=(ADDRESS=${address})(CONNECT_DATA=${connectData}))`;
+        options.connectString = `(DESCRIPTION=(ADDRESS=${address})(CONNECT_DATA=${connectData}))`;
     }
 
     return getConnection({
-        user: connectionOptions.user,
-        password: connectionOptions.password,
-        connectString: connectionOptions.connectString || connectionOptions.url,
-        ...(connectionOptions.extra ? connectionOptions.extra : {}),
+        user: options.user,
+        password: options.password,
+        connectString: options.connectString || options.url,
+        ...(options.extra ? options.extra : {}),
     });
 }
 
 export async function createOracleDatabase(
     driver: OracleDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    options: DriverConnectionOptions,
+    operationContext: DatabaseCreateOperationContext,
 ) {
-    const connection = createSimpleOracleConnection(driver, connectionOptions);
+    const connection = createSimpleOracleConnection(driver, options);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295
      */
-    const query = `CREATE DATABASE IF NOT EXISTS ${connectionOptions.database}`;
+    const query = `CREATE DATABASE IF NOT EXISTS ${options.database}`;
 
     return connection.execute(query);
 }
 
 export async function dropOracleDatabase(
     driver: OracleDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    options: DriverConnectionOptions,
+    operationContext: DatabaseDeleteOperationContext,
 ) {
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295

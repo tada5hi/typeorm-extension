@@ -1,7 +1,7 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { ConnectionOptions, createConnection } from 'typeorm';
-import { buildConnectionOptions } from '../../../connection';
-import { DatabaseOperationOptions, createDatabase } from '../../../database';
+import { DataSource } from 'typeorm';
+import { buildDataSourceOptions } from '../../../connection';
+import { DatabaseCreateOperationContext, createDatabase } from '../../../database';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
@@ -47,25 +47,26 @@ export class DatabaseCreateCommand implements CommandModule {
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
 
-        const connectionOptions: ConnectionOptions = await buildConnectionOptions({
+        const dataSourceOptions = await buildDataSourceOptions({
             name: args.connection,
             configName: args.config,
             root: args.root,
             buildForCommand: true,
         });
 
-        const operationOptions : DatabaseOperationOptions = {
+        const context : DatabaseCreateOperationContext = {
             ifNotExist: true,
+            options: dataSourceOptions,
         };
 
         if (
             typeof args.initialDatabase === 'string' &&
             args.initialDatabase !== ''
         ) {
-            operationOptions.initialDatabase = args.initialDatabase;
+            context.initialDatabase = args.initialDatabase;
         }
 
-        await createDatabase(operationOptions, connectionOptions);
+        await createDatabase(context);
 
         if (args.synchronize !== 'yes') {
             if (exitProcess) {
@@ -76,11 +77,12 @@ export class DatabaseCreateCommand implements CommandModule {
         }
 
         try {
-            const connection = await createConnection(connectionOptions);
+            const connection = new DataSource(dataSourceOptions);
+            await connection.initialize();
             await connection.synchronize(false);
 
             if (exitProcess) {
-                await connection.close();
+                await connection.destroy();
                 process.exit(0);
             }
         } catch (e) {

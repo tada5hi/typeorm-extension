@@ -1,10 +1,10 @@
-import { ConnectionOptions, ConnectionOptionsReader } from 'typeorm';
+import { ConnectionOptionsReader, DataSourceOptions } from 'typeorm';
 import { ConnectionBuilderOptions } from './type';
 import { ConnectionWithSeederOptions, createDefaultSeederOptions } from '../seeder';
 import { modifyConnectionOptionsForRuntimeEnvironment } from './utils';
 import { readTsConfig } from '../utils/tsconfig';
 
-export async function buildConnectionOptions(
+export async function buildDataSourceOptions(
     options?: ConnectionBuilderOptions,
 ) : Promise<ConnectionWithSeederOptions> {
     options = options ?? {};
@@ -26,7 +26,7 @@ export async function buildConnectionOptions(
             migrationsRun: false,
             dropSchema: false,
             logging: ['query', 'error', 'schema'],
-        } as ConnectionOptions);
+        } as DataSourceOptions);
     }
 
     connectionOptions = createDefaultSeederOptions(connectionOptions);

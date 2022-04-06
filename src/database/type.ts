@@ -1,17 +1,18 @@
-import { ConnectionOptions } from 'typeorm';
+import { DataSourceOptions } from 'typeorm';
+import { DatabaseOperation } from './constants';
 
-export type DatabaseOperationOptions = {
-    characterSet?: string,
-    charset?: string,
-    ifExist?: boolean,
+export type DatabaseCreateOperationContext = {
+    options?: DataSourceOptions,
     ifNotExist?: boolean,
     initialDatabase?: string
 };
 
-export type ConnectionAdditionalOptions = {
-    // in case of mysql it is equal to collation
-    charset?: string,
-    characterSet?: string,
+export type DatabaseDeleteOperationContext = {
+    options?: DataSourceOptions,
+    ifExist?: boolean
 };
 
-export type ConnectionWithAdditionalOptions = ConnectionOptions & ConnectionAdditionalOptions;
+export type DatabaseOperationContext<T extends `${DatabaseOperation}`> =
+    T extends `${DatabaseOperation.CREATE}` ?
+        DatabaseCreateOperationContext :
+        DatabaseDeleteOperationContext;

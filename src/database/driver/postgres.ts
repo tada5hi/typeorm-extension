@@ -2,33 +2,33 @@ import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 
 import { DriverConnectionOptions } from '../../connection';
-import { DatabaseOperationOptions } from '../type';
+import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
 import { hasOwnProperty } from '../../utils';
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    options: DriverConnectionOptions,
+    operationContext: DatabaseCreateOperationContext,
 ) {
     /**
      * pg library
      */
     const { Client } = driver.postgres;
 
-    const options : Record<string, any> = {
-        host: connectionOptions.host,
-        port: connectionOptions.port,
-        user: connectionOptions.user,
-        password: connectionOptions.password,
-        ssl: connectionOptions.ssl,
-        ...(connectionOptions.extra ? connectionOptions.extra : {}),
+    const data : Record<string, any> = {
+        host: options.host,
+        port: options.port,
+        user: options.user,
+        password: options.password,
+        ssl: options.ssl,
+        ...(options.extra ? options.extra : {}),
     };
 
-    if (typeof customOptions.initialDatabase === 'string') {
-        options.database = customOptions.initialDatabase;
+    if (typeof operationContext.initialDatabase === 'string') {
+        data.database = operationContext.initialDatabase;
     }
 
-    const client = new Client(options);
+    const client = new Client(data);
 
     await client.connect();
 
@@ -53,13 +53,13 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 
 export async function createPostgresDatabase(
     driver: PostgresDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    options: DriverConnectionOptions,
+    operationContext: DatabaseCreateOperationContext,
 ) {
-    const connection = await createSimplePostgresConnection(driver, connectionOptions, customOptions);
+    const connection = await createSimplePostgresConnection(driver, options, operationContext);
 
-    if (customOptions.ifNotExist) {
-        const existQuery = `SELECT * FROM pg_database WHERE lower(datname) = lower('${connectionOptions.database}');`;
+    if (operationContext.ifNotExist) {
+        const existQuery = `SELECT * FROM pg_database WHERE lower(datname) = lower('${options.database}');`;
         const existResult = await executeSimplePostgresQuery(connection, existQuery, false);
 
         if (
@@ -75,9 +75,9 @@ export async function createPostgresDatabase(
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresQueryRunner.ts#L326
      */
-    let query = `CREATE DATABASE "${connectionOptions.database}"`;
-    if (typeof customOptions.characterSet === 'string') {
-        query += ` WITH ENCODING '${customOptions.characterSet}'`;
+    let query = `CREATE DATABASE "${options.database}"`;
+    if (typeof options.characterSet === 'string') {
+        query += ` WITH ENCODING '${options.characterSet}'`;
     }
 
     return executeSimplePostgresQuery(connection, query);
@@ -85,14 +85,14 @@ export async function createPostgresDatabase(
 
 export async function dropPostgresDatabase(
     driver: PostgresDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    options: DriverConnectionOptions,
+    operationContext: DatabaseDeleteOperationContext,
 ) {
-    const connection = await createSimplePostgresConnection(driver, connectionOptions, customOptions);
+    const connection = await createSimplePostgresConnection(driver, options, operationContext);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresQueryRunner.ts#L343
      */
-    const query = customOptions.ifExist ? `DROP DATABASE IF EXISTS "${connectionOptions.database}"` : `DROP DATABASE "${connectionOptions.database}"`;
+    const query = operationContext.ifExist ? `DROP DATABASE IF EXISTS "${options.database}"` : `DROP DATABASE "${options.database}"`;
 
     return executeSimplePostgresQuery(connection, query);
 }

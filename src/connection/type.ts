@@ -23,6 +23,9 @@ export type DriverConnectionOptions = {
     // add mssql support
     domain?: string,
 
+    charset?: string,
+    characterSet?: string,
+
     extra?: {
         [key: string]: any
     }

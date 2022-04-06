@@ -1,4 +1,3 @@
-import { ConnectionOptions } from 'typeorm';
 import { SqliteDriver } from 'typeorm/driver/sqlite/SqliteDriver';
 import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
@@ -6,11 +5,14 @@ import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 import { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
 import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 import { BetterSqlite3Driver } from 'typeorm/driver/better-sqlite3/BetterSqlite3Driver';
-import { DatabaseOperationOptions } from './type';
-import { DriverConnectionOptions, buildConnectionOptions } from '../connection';
-import { extendDatabaseOperationOptions } from './utils';
 import {
-    buildDriverConnectionOptions,
+    DatabaseCreateOperationContext,
+    DatabaseDeleteOperationContext,
+    DatabaseOperationContext
+} from './type';
+import { buildDataSourceOptions } from '../connection';
+import {
+    buildDriverOptions,
     createCockroachDBDatabase,
     createDriver,
     createMsSQLDatabase,
@@ -34,11 +36,10 @@ import { createBetterSQLite3Database, dropBetterSQLite3Database } from './driver
  *
  * @throws NotSupportedDriver
  *
- * @param connectionOptions
- * @param options
+ * @param context
  */
-export async function createDatabase(options?: DatabaseOperationOptions, connectionOptions?: ConnectionOptions) {
-    return createOrDropDatabase(DatabaseOperation.CREATE, options, connectionOptions);
+export async function createDatabase(context?: DatabaseCreateOperationContext) {
+    return createOrDropDatabase(DatabaseOperation.CREATE, context);
 }
 
 /**
@@ -46,86 +47,82 @@ export async function createDatabase(options?: DatabaseOperationOptions, connect
  *
  * @throws NotSupportedDriver
  *
- * @param connectionOptions
- * @param options
+ * @param context
  */
-export async function dropDatabase(options?: DatabaseOperationOptions, connectionOptions?: ConnectionOptions) {
-    return createOrDropDatabase(DatabaseOperation.DELETE, options, connectionOptions);
+export async function dropDatabase(context?: DatabaseDeleteOperationContext) {
+    return createOrDropDatabase(DatabaseOperation.DELETE, context);
 }
 
 // --------------------------------------------------------
 
-async function createOrDropDatabase(
-    operation: `${DatabaseOperation}`,
-    options?: DatabaseOperationOptions,
-    connectionOptions?: ConnectionOptions,
+async function createOrDropDatabase<T extends `${DatabaseOperation}`>(
+    operation: T,
+    context?: DatabaseOperationContext<T>
 ) {
-    if (typeof connectionOptions === 'undefined') {
-        connectionOptions = await buildConnectionOptions();
+    context = context || {};
+
+    if (typeof context.options === 'undefined') {
+        context.options = await buildDataSourceOptions();
     }
 
-    const driver = createDriver(connectionOptions);
-
-    const simpleConnectionOptions: DriverConnectionOptions = buildDriverConnectionOptions(connectionOptions);
-
-    options = options ?? {};
-    const customOptions: DatabaseOperationOptions = extendDatabaseOperationOptions(options, connectionOptions);
+    const driver = createDriver(context.options);
+    const driverOptions = buildDriverOptions(context.options);
 
     if (driver instanceof SqliteDriver) {
-        if (operation === DatabaseOperation.CREATE) {
-            return createSQLiteDatabase(driver, simpleConnectionOptions, customOptions);
+        if (operation === `${DatabaseOperation.CREATE}`) {
+            return createSQLiteDatabase(driver, driverOptions, context);
         }
 
-        return dropSQLiteDatabase(driver, simpleConnectionOptions, customOptions);
+        return dropSQLiteDatabase(driver, driverOptions, context);
     }
 
     if (driver instanceof BetterSqlite3Driver) {
         if (operation === DatabaseOperation.CREATE) {
-            return createBetterSQLite3Database(driver, simpleConnectionOptions, customOptions);
+            return createBetterSQLite3Database(driver, driverOptions, context);
         }
 
-        return dropBetterSQLite3Database(driver, simpleConnectionOptions, customOptions);
+        return dropBetterSQLite3Database(driver, driverOptions, context);
     }
 
     if (driver instanceof MysqlDriver) {
         if (operation === DatabaseOperation.CREATE) {
-            return createMySQLDatabase(driver, simpleConnectionOptions, customOptions);
+            return createMySQLDatabase(driver, driverOptions, context);
         }
 
-        return dropMySQLDatabase(driver, simpleConnectionOptions, customOptions);
+        return dropMySQLDatabase(driver, driverOptions, context);
     }
 
     if (driver instanceof PostgresDriver) {
         if (operation === DatabaseOperation.CREATE) {
-            return createPostgresDatabase(driver, simpleConnectionOptions, customOptions);
+            return createPostgresDatabase(driver, driverOptions, context);
         }
 
-        return dropPostgresDatabase(driver, simpleConnectionOptions, customOptions);
+        return dropPostgresDatabase(driver, driverOptions, context);
     }
 
     if (driver instanceof CockroachDriver) {
         if (operation === DatabaseOperation.CREATE) {
-            return createCockroachDBDatabase(driver, simpleConnectionOptions, customOptions);
+            return createCockroachDBDatabase(driver, driverOptions, context);
         }
 
-        return dropCockroachDBDatabase(driver, simpleConnectionOptions, customOptions);
+        return dropCockroachDBDatabase(driver, driverOptions, context);
     }
 
     if (driver instanceof OracleDriver) {
         if (operation === DatabaseOperation.CREATE) {
-            return createOracleDatabase(driver, simpleConnectionOptions, customOptions);
+            return createOracleDatabase(driver, driverOptions, context);
         }
 
-        return dropOracleDatabase(driver, simpleConnectionOptions, customOptions);
+        return dropOracleDatabase(driver, driverOptions, context);
     }
 
     if (driver instanceof SqlServerDriver) {
         if (operation === DatabaseOperation.CREATE) {
-            return createMsSQLDatabase(driver, simpleConnectionOptions, customOptions);
+            return createMsSQLDatabase(driver, driverOptions, context);
         }
 
-        return dropMsSQLDatabase(driver, simpleConnectionOptions, customOptions);
+        return dropMsSQLDatabase(driver, driverOptions, context);
     }
 
-    throw new NotSupportedDriver(connectionOptions.type);
+    throw new NotSupportedDriver(context.options.type);
 }

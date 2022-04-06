@@ -1,6 +1,5 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { ConnectionOptions } from 'typeorm';
-import { buildConnectionOptions } from '../../../connection';
+import { buildDataSourceOptions } from '../../../connection';
 import { dropDatabase } from '../../../database';
 
 export interface DatabaseDropArguments extends Arguments {
@@ -36,7 +35,7 @@ export class DatabaseDropCommand implements CommandModule {
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseDropArguments = raw as DatabaseDropArguments;
 
-        const connectionOptions: ConnectionOptions = await buildConnectionOptions({
+        const connectionOptions = await buildDataSourceOptions({
             name: args.connection,
             root: args.root,
             configName: args.config,
@@ -45,7 +44,8 @@ export class DatabaseDropCommand implements CommandModule {
 
         await dropDatabase({
             ifExist: true,
-        }, connectionOptions);
+            options: connectionOptions,
+        });
 
         if (exitProcess) {
             process.exit(0);

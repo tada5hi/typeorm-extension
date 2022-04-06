@@ -1,10 +1,10 @@
-import {buildConnectionOptions, createDefaultSeederOptions} from "../../../src";
+import {buildDataSourceOptions, createDefaultSeederOptions} from "../../../src";
 import * as path from "path";
 
 describe('src/connection/index.ts', () => {
     it('should build connection options', async () => {
         const rootPath : string = path.resolve(process.cwd(), 'test/data/typeorm');
-        const connectionOptions = await buildConnectionOptions({
+        const connectionOptions = await buildDataSourceOptions({
             root: rootPath,
             configName: 'ormconfig.json'
         });

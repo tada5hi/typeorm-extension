@@ -1,1 +1,1 @@
-export * from './operation-options';
+export * from './query';

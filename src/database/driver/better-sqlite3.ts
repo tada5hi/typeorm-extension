@@ -4,16 +4,16 @@ import fs from 'fs';
 import { BetterSqlite3Driver } from 'typeorm/driver/better-sqlite3/BetterSqlite3Driver';
 
 import { DriverConnectionOptions } from '../../connection';
-import { DatabaseOperationOptions } from '../type';
+import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
 
 export async function createBetterSQLite3Database(
     driver: BetterSqlite3Driver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    options: DriverConnectionOptions,
+    operationContext: DatabaseCreateOperationContext,
 ) : Promise<void> {
-    const filePath : string = path.isAbsolute(connectionOptions.database) ?
-        connectionOptions.database :
-        path.join(process.cwd(), connectionOptions.database);
+    const filePath : string = path.isAbsolute(options.database) ?
+        options.database :
+        path.join(process.cwd(), options.database);
 
     const directoryPath : string = path.dirname(filePath);
 
@@ -22,12 +22,12 @@ export async function createBetterSQLite3Database(
 
 export async function dropBetterSQLite3Database(
     driver: BetterSqlite3Driver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    options: DriverConnectionOptions,
+    operationContext: DatabaseDeleteOperationContext,
 ) {
-    const filePath : string = path.isAbsolute(connectionOptions.database) ?
-        connectionOptions.database :
-        path.join(process.cwd(), connectionOptions.database);
+    const filePath : string = path.isAbsolute(options.database) ?
+        options.database :
+        path.join(process.cwd(), options.database);
 
     try {
         await fs.promises.access(filePath, fs.constants.F_OK | fs.constants.W_OK);
