@@ -1,6 +1,15 @@
-import {ObjectLiteral, SelectQueryBuilder} from "typeorm";
+import {DataSource, ObjectLiteral, SelectQueryBuilder} from "typeorm";
 
-export class FakeSelectQueryBuilder{
+export class FakeEntity{
+
+}
+export class FakeSelectQueryBuilder extends SelectQueryBuilder<FakeEntity> {
+    constructor() {
+        super({
+            options: {}
+        } as DataSource);
+    }
+
     addSelect(selection: string|string[]|((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>), selectionAliasName?: string): this {
         return this;
     }
