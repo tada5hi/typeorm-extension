@@ -1,18 +1,12 @@
 import { DataSourceOptions } from 'typeorm';
-import { DatabaseOperation } from './constants';
 
-export type DatabaseCreateOperationContext = {
+export type DatabaseCreateContext = {
     options?: DataSourceOptions,
     ifNotExist?: boolean,
     initialDatabase?: string
 };
 
-export type DatabaseDeleteOperationContext = {
+export type DatabaseDropContext = {
     options?: DataSourceOptions,
     ifExist?: boolean
 };
-
-export type DatabaseOperationContext<T extends `${DatabaseOperation}`> =
-    T extends `${DatabaseOperation.CREATE}` ?
-        DatabaseCreateOperationContext :
-        DatabaseDeleteOperationContext;

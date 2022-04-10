@@ -1,14 +1,15 @@
 import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-
-import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
+import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { hasOwnProperty } from '../../utils';
 import { DriverOptions } from './type';
+import { buildDataSourceOptions } from '../../connection';
+import { buildDriverOptions, createDriver } from './utils';
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
     options: DriverOptions,
-    operationContext: DatabaseCreateOperationContext,
+    operationContext: DatabaseCreateContext,
 ) {
     /**
      * pg library
@@ -52,13 +53,17 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 }
 
 export async function createPostgresDatabase(
-    driver: PostgresDriver,
-    options: DriverOptions,
-    operationContext: DatabaseCreateOperationContext,
+    context?: DatabaseCreateContext,
 ) {
-    const connection = await createSimplePostgresConnection(driver, options, operationContext);
+    context = context || {};
+    context.options = context.options || await buildDataSourceOptions(context.options);
 
-    if (operationContext.ifNotExist) {
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as PostgresDriver;
+
+    const connection = await createSimplePostgresConnection(driver, options, context);
+
+    if (context.ifNotExist) {
         const existQuery = `SELECT * FROM pg_database WHERE lower(datname) = lower('${options.database}');`;
         const existResult = await executeSimplePostgresQuery(connection, existQuery, false);
 
@@ -84,15 +89,21 @@ export async function createPostgresDatabase(
 }
 
 export async function dropPostgresDatabase(
-    driver: PostgresDriver,
-    options: DriverOptions,
-    operationContext: DatabaseDeleteOperationContext,
+    context?: DatabaseDropContext,
 ) {
-    const connection = await createSimplePostgresConnection(driver, options, operationContext);
+    context = context || {};
+    context.options = context.options || await buildDataSourceOptions(context.options);
+
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as PostgresDriver;
+
+    const connection = await createSimplePostgresConnection(driver, options, context);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/postgres/PostgresQueryRunner.ts#L343
      */
-    const query = operationContext.ifExist ? `DROP DATABASE IF EXISTS "${options.database}"` : `DROP DATABASE "${options.database}"`;
+    const query = context.ifExist ?
+        `DROP DATABASE IF EXISTS "${options.database}"` :
+        `DROP DATABASE "${options.database}"`;
 
     return executeSimplePostgresQuery(connection, query);
 }

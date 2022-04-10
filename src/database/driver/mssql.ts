@@ -1,7 +1,8 @@
 import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
-
-import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
+import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { DriverOptions } from './type';
+import { buildDataSourceOptions } from '../../connection';
+import { buildDriverOptions, createDriver } from './utils';
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
@@ -22,15 +23,19 @@ export async function createSimpleMsSQLConnection(
 }
 
 export async function createMsSQLDatabase(
-    driver: SqlServerDriver,
-    options: DriverOptions,
-    operationContext: DatabaseCreateOperationContext,
+    context?: DatabaseCreateContext,
 ) {
+    context = context || {};
+    context.options = await buildDataSourceOptions(context.options);
+
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as SqlServerDriver;
+
     const connection = await createSimpleMsSQLConnection(driver, options);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L416
      */
-    let query = operationContext.ifNotExist ?
+    let query = context.ifNotExist ?
         `IF DB_ID('${options.database}') IS NULL CREATE DATABASE "${options.database}"` :
         `CREATE DATABASE "${options.database}"`;
 
@@ -42,17 +47,20 @@ export async function createMsSQLDatabase(
 }
 
 export async function dropMsSQLDatabase(
-    driver: SqlServerDriver,
-    connectionOptions: DriverOptions,
-    operationContext: DatabaseDeleteOperationContext,
+    context?: DatabaseDropContext,
 ) {
-    const connection = await createSimpleMsSQLConnection(driver, connectionOptions);
+    context.options = context.options || await buildDataSourceOptions(context.options);
+
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as SqlServerDriver;
+
+    const connection = await createSimpleMsSQLConnection(driver, options);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L425
      */
-    const query = operationContext.ifExist ?
-        `IF DB_ID('${connectionOptions.database}') IS NOT NULL DROP DATABASE "${connectionOptions.database}"` :
-        `DROP DATABASE "${connectionOptions.database}"`;
+    const query = context.ifExist ?
+        `IF DB_ID('${options.database}') IS NOT NULL DROP DATABASE "${options.database}"` :
+        `DROP DATABASE "${options.database}"`;
 
     return connection.query(query);
 }

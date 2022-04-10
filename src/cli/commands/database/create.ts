@@ -1,7 +1,7 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
 import { DataSource } from 'typeorm';
 import { buildDataSourceOptions } from '../../../connection';
-import { DatabaseCreateOperationContext, createDatabase } from '../../../database';
+import { DatabaseCreateContext, createDatabase } from '../../../database';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
@@ -54,7 +54,7 @@ export class DatabaseCreateCommand implements CommandModule {
             buildForCommand: true,
         });
 
-        const context : DatabaseCreateOperationContext = {
+        const context : DatabaseCreateContext = {
             ifNotExist: true,
             options: dataSourceOptions,
         };

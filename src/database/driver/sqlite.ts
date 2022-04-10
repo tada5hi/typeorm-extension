@@ -1,16 +1,17 @@
 import path from 'path';
 import fs from 'fs';
-
-import { SqliteDriver } from 'typeorm/driver/sqlite/SqliteDriver';
-
-import { DatabaseCreateOperationContext, DatabaseDeleteOperationContext } from '../type';
-import { DriverOptions } from './type';
+import { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import { buildDataSourceOptions } from '../../connection';
+import { buildDriverOptions } from './utils';
 
 export async function createSQLiteDatabase(
-    driver: SqliteDriver,
-    options: DriverOptions,
-    operationContext: DatabaseCreateOperationContext,
+    context?: DatabaseCreateContext,
 ) : Promise<void> {
+    context = context || {};
+    context.options = context.options || await buildDataSourceOptions(context.options);
+
+    const options = buildDriverOptions(context.options);
+
     const filePath : string = path.isAbsolute(options.database) ?
         options.database :
         path.join(process.cwd(), options.database);
@@ -21,17 +22,22 @@ export async function createSQLiteDatabase(
 }
 
 export async function dropSQLiteDatabase(
-    driver: SqliteDriver,
-    options: DriverOptions,
-    operationContext: DatabaseDeleteOperationContext,
+    context: DatabaseDropContext,
 ) {
+    context = context || {};
+    context.options = context.options || await buildDataSourceOptions(context.options);
+
+    const options = buildDriverOptions(context.options);
+
     const filePath : string = path.isAbsolute(options.database) ?
         options.database :
         path.join(process.cwd(), options.database);
 
     try {
         await fs.promises.access(filePath, fs.constants.F_OK | fs.constants.W_OK);
-        await fs.promises.unlink(filePath);
+        if (context.ifExist) {
+            await fs.promises.unlink(filePath);
+        }
     } catch (e) {
         // ...
     }
