@@ -3,8 +3,8 @@ import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { hasOwnProperty } from '../../utils';
 import { DriverOptions } from './type';
-import { buildDataSourceOptions } from '../../connection';
 import { buildDriverOptions, createDriver } from './utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabase } from '../utils';
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
@@ -55,8 +55,7 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 export async function createPostgresDatabase(
     context?: DatabaseCreateContext,
 ) {
-    context = context || {};
-    context.options = context.options || await buildDataSourceOptions(context.options);
+    context = await buildDatabaseDropContext(context);
 
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;
@@ -85,14 +84,19 @@ export async function createPostgresDatabase(
         query += ` WITH ENCODING '${options.characterSet}'`;
     }
 
-    return executeSimplePostgresQuery(connection, query);
+    const result = executeSimplePostgresQuery(connection, query);
+
+    if (context.synchronize) {
+        await synchronizeDatabase(context.options);
+    }
+
+    return result;
 }
 
 export async function dropPostgresDatabase(
     context?: DatabaseDropContext,
 ) {
-    context = context || {};
-    context.options = context.options || await buildDataSourceOptions(context.options);
+    context = await buildDatabaseCreateContext(context);
 
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;

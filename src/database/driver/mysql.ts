@@ -1,8 +1,8 @@
 import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { DriverOptions } from './type';
-import { buildDataSourceOptions } from '../../connection';
 import { buildDriverOptions, createDriver } from './utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabase } from '../utils';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
@@ -42,8 +42,7 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 export async function createMySQLDatabase(
     context?: DatabaseCreateContext,
 ) {
-    context = context || {};
-    context.options = context.options || await buildDataSourceOptions(context.options);
+    context = await buildDatabaseCreateContext(context);
 
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MysqlDriver;
@@ -73,14 +72,19 @@ export async function createMySQLDatabase(
         }
     }
 
-    return executeSimpleMysqlQuery(connection, query);
+    const result = executeSimpleMysqlQuery(connection, query);
+
+    if (context.synchronize) {
+        await synchronizeDatabase(context.options);
+    }
+
+    return result;
 }
 
 export async function dropMySQLDatabase(
     context?: DatabaseDropContext,
 ) {
-    context = context || {};
-    context.options = context.options || await buildDataSourceOptions(context.options);
+    context = await buildDatabaseDropContext(context);
 
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MysqlDriver;

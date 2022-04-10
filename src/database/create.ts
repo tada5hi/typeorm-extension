@@ -1,7 +1,6 @@
 import {
     DatabaseCreateContext,
 } from './type';
-import { buildDataSourceOptions } from '../connection';
 import {
     createCockroachDBDatabase,
     createMsSQLDatabase,
@@ -11,6 +10,7 @@ import {
     createSQLiteDatabase,
 } from './driver';
 import { NotSupportedDriver } from './error';
+import { buildDatabaseCreateContext } from './utils';
 
 /**
  * Create database for specified driver in ConnectionOptions.
@@ -20,11 +20,7 @@ import { NotSupportedDriver } from './error';
  * @param context
  */
 export async function createDatabase(context?: DatabaseCreateContext) {
-    context = context || {};
-
-    if (typeof context.options === 'undefined') {
-        context.options = await buildDataSourceOptions();
-    }
+    context = await buildDatabaseCreateContext(context);
 
     if (!context.options.type) {
         throw new NotSupportedDriver(context.options.type);

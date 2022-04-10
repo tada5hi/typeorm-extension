@@ -1,5 +1,4 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { DataSource } from 'typeorm';
 import { buildDataSourceOptions } from '../../../connection';
 import { DatabaseCreateContext, createDatabase } from '../../../database';
 
@@ -66,32 +65,12 @@ export class DatabaseCreateCommand implements CommandModule {
             context.initialDatabase = args.initialDatabase;
         }
 
+        context.synchronize = args.synchronize === 'yes';
+
         await createDatabase(context);
 
-        if (args.synchronize !== 'yes') {
-            if (exitProcess) {
-                process.exit(0);
-            }
-
-            return;
-        }
-
-        try {
-            const connection = new DataSource(dataSourceOptions);
-            await connection.initialize();
-            await connection.synchronize(false);
-
-            if (exitProcess) {
-                await connection.destroy();
-                process.exit(0);
-            }
-        } catch (e) {
-            // eslint-disable-next-line no-console
-            console.log(e);
-
-            if (exitProcess) {
-                process.exit(1);
-            }
+        if (exitProcess) {
+            process.exit(0);
         }
     }
 }

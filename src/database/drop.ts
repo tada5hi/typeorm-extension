@@ -1,7 +1,6 @@
 import {
     DatabaseDropContext,
 } from './type';
-import { buildDataSourceOptions } from '../connection';
 import {
     dropCockroachDBDatabase,
     dropMsSQLDatabase,
@@ -11,6 +10,7 @@ import {
     dropSQLiteDatabase,
 } from './driver';
 import { NotSupportedDriver } from './error';
+import { buildDatabaseDropContext } from './utils';
 
 /**
  * Drop database for specified driver in ConnectionOptions.
@@ -20,11 +20,7 @@ import { NotSupportedDriver } from './error';
  * @param context
  */
 export async function dropDatabase(context?: DatabaseDropContext) {
-    context = context || {};
-
-    if (!context.options) {
-        context.options = await buildDataSourceOptions();
-    }
+    context = await buildDatabaseDropContext(context);
 
     if (!context.options.type) {
         throw new NotSupportedDriver(context.options.type);

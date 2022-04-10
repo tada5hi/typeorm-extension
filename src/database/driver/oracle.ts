@@ -1,8 +1,8 @@
 import { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { DriverOptions } from './type';
-import { buildDataSourceOptions } from '../../connection';
 import { buildDriverOptions, createDriver } from './utils';
+import { buildDatabaseCreateContext, synchronizeDatabase } from '../utils';
 
 export function createSimpleOracleConnection(
     driver: OracleDriver,
@@ -45,8 +45,7 @@ export function createSimpleOracleConnection(
 export async function createOracleDatabase(
     context?: DatabaseCreateContext,
 ) {
-    context = context || {};
-    context.options = context.options || await buildDataSourceOptions(context.options);
+    context = await buildDatabaseCreateContext(context);
 
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as OracleDriver;
@@ -57,7 +56,13 @@ export async function createOracleDatabase(
      */
     const query = `CREATE DATABASE IF NOT EXISTS ${options.database}`;
 
-    return connection.execute(query);
+    const result = connection.execute(query);
+
+    if (context.synchronize) {
+        await synchronizeDatabase(context.options);
+    }
+
+    return result;
 }
 
 export async function dropOracleDatabase(

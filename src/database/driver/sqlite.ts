@@ -1,14 +1,13 @@
 import path from 'path';
 import fs from 'fs';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
-import { buildDataSourceOptions } from '../../connection';
 import { buildDriverOptions } from './utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabase } from '../utils';
 
 export async function createSQLiteDatabase(
     context?: DatabaseCreateContext,
 ) : Promise<void> {
-    context = context || {};
-    context.options = context.options || await buildDataSourceOptions(context.options);
+    context = await buildDatabaseCreateContext(context);
 
     const options = buildDriverOptions(context.options);
 
@@ -19,13 +18,16 @@ export async function createSQLiteDatabase(
     const directoryPath : string = path.dirname(filePath);
 
     await fs.promises.access(directoryPath, fs.constants.W_OK);
+
+    if (context.synchronize) {
+        await synchronizeDatabase(context.options);
+    }
 }
 
 export async function dropSQLiteDatabase(
     context: DatabaseDropContext,
 ) {
-    context = context || {};
-    context.options = context.options || await buildDataSourceOptions(context.options);
+    context = await buildDatabaseDropContext(context);
 
     const options = buildDriverOptions(context.options);
 
