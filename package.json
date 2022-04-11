@@ -41,7 +41,7 @@
         "@trapi/query": "^2.1.2",
         "glob": "^7.1.7",
         "reflect-metadata": "^0.1.13",
-        "yargs": "^17.4.0"
+        "yargs": "^17.4.1"
     },
     "peerDependencies": {
         "typeorm": "~0.3.0"
