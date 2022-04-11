@@ -1,17 +1,46 @@
-import { ConnectionOptions } from 'typeorm';
+import { DataSourceOptions } from 'typeorm';
+import { DataSourceFindContext } from '../data-source/utils';
 
-export type DatabaseOperationOptions = {
-    characterSet?: string,
-    charset?: string,
-    ifExist?: boolean,
+export type DatabaseBaseContext = {
+    /**
+     * Options for typeorm DataSource.
+     *
+     * Default: undefined
+     */
+    options?: DataSourceOptions,
+
+    /**
+     * Options for the find method, where to look for the data-source file.
+     */
+    dataSourceFind?: DataSourceFindContext
+};
+
+export type DatabaseCreateContext = DatabaseBaseContext & {
+    /**
+     * Only create database if not already exist.
+     *
+     * default: true
+     */
     ifNotExist?: boolean,
-    initialDatabase?: string
+    /**
+     * Initial database to connect.
+     *
+     * default: undefined
+     */
+    initialDatabase?: string,
+    /**
+     * Synchronize database entities.
+     *
+     * default: true
+     */
+    synchronize?: boolean
 };
 
-export type ConnectionAdditionalOptions = {
-    // in case of mysql it is equal to collation
-    charset?: string,
-    characterSet?: string,
+export type DatabaseDropContext = DatabaseBaseContext & {
+    /**
+     * Only drop database if existed.
+     *
+     * Default: true
+     */
+    ifExist?: boolean
 };
-
-export type ConnectionWithAdditionalOptions = ConnectionOptions & ConnectionAdditionalOptions;

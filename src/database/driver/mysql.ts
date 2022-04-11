@@ -1,11 +1,12 @@
 import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
-
-import { DriverConnectionOptions } from '../../connection';
-import { DatabaseOperationOptions } from '../type';
+import { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import { DriverOptions } from './type';
+import { buildDriverOptions, createDriver } from './utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabase } from '../utils';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
-    connectionOptions: DriverConnectionOptions,
+    options: DriverOptions,
 ) {
     /**
      * mysql|mysql2 library
@@ -13,12 +14,12 @@ export async function createSimpleMySQLConnection(
     const { createConnection } = driver.mysql;
 
     const option : Record<string, any> = {
-        host: connectionOptions.host,
-        user: connectionOptions.user,
-        password: connectionOptions.password,
-        port: connectionOptions.port,
-        ssl: connectionOptions.ssl,
-        ...(connectionOptions.extra ? connectionOptions.extra : {}),
+        host: options.host,
+        user: options.user,
+        password: options.password,
+        port: options.port,
+        ssl: options.ssl,
+        ...(options.extra ? options.extra : {}),
     };
 
     return createConnection(option);
@@ -39,18 +40,24 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 }
 
 export async function createMySQLDatabase(
-    driver: MysqlDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    context?: DatabaseCreateContext,
 ) {
-    const connection = await createSimpleMySQLConnection(driver, connectionOptions);
+    context = await buildDatabaseCreateContext(context);
+
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as MysqlDriver;
+
+    const connection = await createSimpleMySQLConnection(driver, options);
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L297
      */
-    let query = customOptions.ifNotExist ? `CREATE DATABASE IF NOT EXISTS \`${connectionOptions.database}\`` : `CREATE DATABASE \`${connectionOptions.database}\``;
-    if (typeof customOptions.charset === 'string') {
-        const { charset } = customOptions;
-        let { characterSet } = customOptions;
+    let query = context.ifNotExist ?
+        `CREATE DATABASE IF NOT EXISTS \`${options.database}\`` :
+        `CREATE DATABASE \`${options.database}\``;
+
+    if (typeof options.charset === 'string') {
+        const { charset } = options;
+        let { characterSet } = options;
 
         if (typeof characterSet === 'undefined') {
             if (charset.toLowerCase().startsWith('utf8mb4')) {
@@ -65,20 +72,31 @@ export async function createMySQLDatabase(
         }
     }
 
-    return executeSimpleMysqlQuery(connection, query);
+    const result = executeSimpleMysqlQuery(connection, query);
+
+    if (context.synchronize) {
+        await synchronizeDatabase(context.options);
+    }
+
+    return result;
 }
 
 export async function dropMySQLDatabase(
-    driver: MysqlDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    context?: DatabaseDropContext,
 ) {
-    const connection = await createSimpleMySQLConnection(driver, connectionOptions);
+    context = await buildDatabaseDropContext(context);
+
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as MysqlDriver;
+
+    const connection = await createSimpleMySQLConnection(driver, options);
 
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L306
      */
-    const query = customOptions.ifExist ? `DROP DATABASE IF EXISTS \`${connectionOptions.database}\`` : `DROP DATABASE \`${connectionOptions.database}\``;
+    const query = context.ifExist ?
+        `DROP DATABASE IF EXISTS \`${options.database}\`` :
+        `DROP DATABASE \`${options.database}\``;
 
     await executeSimpleMysqlQuery(connection, 'SET FOREIGN_KEY_CHECKS=0;', false);
     const result = await executeSimpleMysqlQuery(connection, query, false);

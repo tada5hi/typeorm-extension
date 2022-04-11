@@ -1,37 +1,45 @@
 import path from 'path';
 import fs from 'fs';
-
-import { SqliteDriver } from 'typeorm/driver/sqlite/SqliteDriver';
-
-import { DriverConnectionOptions } from '../../connection';
-import { DatabaseOperationOptions } from '../type';
+import { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import { buildDriverOptions } from './utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabase } from '../utils';
 
 export async function createSQLiteDatabase(
-    driver: SqliteDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    context?: DatabaseCreateContext,
 ) : Promise<void> {
-    const filePath : string = path.isAbsolute(connectionOptions.database) ?
-        connectionOptions.database :
-        path.join(process.cwd(), connectionOptions.database);
+    context = await buildDatabaseCreateContext(context);
+
+    const options = buildDriverOptions(context.options);
+
+    const filePath : string = path.isAbsolute(options.database) ?
+        options.database :
+        path.join(process.cwd(), options.database);
 
     const directoryPath : string = path.dirname(filePath);
 
     await fs.promises.access(directoryPath, fs.constants.W_OK);
+
+    if (context.synchronize) {
+        await synchronizeDatabase(context.options);
+    }
 }
 
 export async function dropSQLiteDatabase(
-    driver: SqliteDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    context: DatabaseDropContext,
 ) {
-    const filePath : string = path.isAbsolute(connectionOptions.database) ?
-        connectionOptions.database :
-        path.join(process.cwd(), connectionOptions.database);
+    context = await buildDatabaseDropContext(context);
+
+    const options = buildDriverOptions(context.options);
+
+    const filePath : string = path.isAbsolute(options.database) ?
+        options.database :
+        path.join(process.cwd(), options.database);
 
     try {
         await fs.promises.access(filePath, fs.constants.F_OK | fs.constants.W_OK);
-        await fs.promises.unlink(filePath);
+        if (context.ifExist) {
+            await fs.promises.unlink(filePath);
+        }
     } catch (e) {
         // ...
     }

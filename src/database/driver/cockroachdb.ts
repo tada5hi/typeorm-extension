@@ -1,7 +1,8 @@
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import { DriverConnectionOptions } from '../../connection';
-import { DatabaseOperationOptions } from '../type';
+import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { createSimplePostgresConnection } from './postgres';
+import { buildDriverOptions, createDriver } from './utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabase } from '../utils';
 
 export async function executeSimpleCockroachDBQuery(connection: any, query: string, endConnection = true) {
     return new Promise(((resolve, reject) => {
@@ -20,38 +21,49 @@ export async function executeSimpleCockroachDBQuery(connection: any, query: stri
 }
 
 export async function createCockroachDBDatabase(
-    driver: CockroachDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    context?: DatabaseCreateContext,
 ) {
+    context = await buildDatabaseCreateContext(context);
+
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as CockroachDriver;
+
     const connection = await createSimplePostgresConnection(
         driver,
-        connectionOptions,
-        customOptions,
+        options,
+        context,
     );
 
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/cockroachdb/CockroachQueryRunner.ts#L347
      */
-    const query = `CREATE DATABASE ${customOptions.ifNotExist ? 'IF NOT EXISTS ' : ''} "${connectionOptions.database}"`;
+    const query = `CREATE DATABASE ${context.ifNotExist ? 'IF NOT EXISTS ' : ''} "${options.database}"`;
+    const result = executeSimpleCockroachDBQuery(connection, query);
 
-    return executeSimpleCockroachDBQuery(connection, query);
+    if (context.synchronize) {
+        await synchronizeDatabase(context.options);
+    }
+
+    return result;
 }
 
 export async function dropCockroachDBDatabase(
-    driver: CockroachDriver,
-    connectionOptions: DriverConnectionOptions,
-    customOptions: DatabaseOperationOptions,
+    context?: DatabaseDropContext,
 ) {
+    context = await buildDatabaseDropContext(context);
+
+    const options = buildDriverOptions(context.options);
+    const driver = createDriver(context.options) as CockroachDriver;
+
     const connection = await createSimplePostgresConnection(
         driver,
-        connectionOptions,
-        customOptions,
+        options,
+        context,
     );
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/cockroachdb/CockroachQueryRunner.ts#L356
      */
-    const query = `DROP DATABASE ${customOptions.ifExist ? 'IF EXISTS ' : ''} "${connectionOptions.database}"`;
+    const query = `DROP DATABASE ${context.ifExist ? 'IF EXISTS ' : ''} "${options.database}"`;
 
     return executeSimpleCockroachDBQuery(connection, query);
 }

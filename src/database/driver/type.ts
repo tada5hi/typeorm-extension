@@ -1,12 +1,4 @@
-export type ConnectionBuilderOptions = {
-    name?: string,
-    configName?: string,
-    root?: string,
-    tsConfigDirectory?: string,
-    buildForCommand?: boolean
-};
-
-export type DriverConnectionOptions = {
+export type DriverOptions = {
     database?: string,
     host?: string,
     user?: string,
@@ -22,6 +14,9 @@ export type DriverConnectionOptions = {
 
     // add mssql support
     domain?: string,
+
+    charset?: string,
+    characterSet?: string,
 
     extra?: {
         [key: string]: any

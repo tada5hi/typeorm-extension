@@ -1,1 +1,3 @@
-export * from './operation-options';
+export * from './context';
+export * from './query';
+export * from './synchronize';

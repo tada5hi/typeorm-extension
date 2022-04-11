@@ -1,12 +1,14 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { ConnectionOptions, createConnection } from 'typeorm';
-import { buildConnectionOptions } from '../../../connection';
-import { DatabaseOperationOptions, createDatabase } from '../../../database';
+import { DataSourceOptions } from 'typeorm';
+import { buildDataSourceOptions } from '../../../data-source';
+import { DatabaseCreateContext, createDatabase } from '../../../database';
+import { findDataSource } from '../../../data-source/utils';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
     connection: 'default' | string;
     config: 'ormconfig' | string;
+    dataSource: 'data-source' | string;
     synchronize: string;
     initialDatabase?: unknown;
 }
@@ -21,17 +23,24 @@ export class DatabaseCreateCommand implements CommandModule {
             .option('root', {
                 alias: 'r',
                 default: process.cwd(),
-                describe: 'Path to your typeorm config file',
+                describe: 'Path to the data-source / config file.',
             })
             .option('connection', {
                 alias: 'c',
                 default: 'default',
                 describe: 'Name of the connection on which run a query.',
+                deprecated: true,
             })
             .option('config', {
                 alias: 'f',
                 default: 'ormconfig',
-                describe: 'Name of the file with connection configuration.',
+                describe: 'Name of the file with the data-source configuration.',
+                deprecated: true,
+            })
+            .option('dataSource', {
+                alias: 'd',
+                default: 'data-source',
+                describe: 'Name of the file with the data-source.',
             })
             .option('synchronize', {
                 alias: 's',
@@ -47,49 +56,42 @@ export class DatabaseCreateCommand implements CommandModule {
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
 
-        const connectionOptions: ConnectionOptions = await buildConnectionOptions({
-            name: args.connection,
-            configName: args.config,
-            root: args.root,
-            buildForCommand: true,
+        let dataSourceOptions : DataSourceOptions;
+        const dataSource = await findDataSource({
+            directory: args.root,
+            fileName: args.dataSource,
         });
+        if (dataSource) {
+            dataSourceOptions = dataSource.options;
+        }
 
-        const operationOptions : DatabaseOperationOptions = {
+        if (!dataSourceOptions) {
+            dataSourceOptions = await buildDataSourceOptions({
+                name: args.connection,
+                configName: args.config,
+                root: args.root,
+                buildForCommand: true,
+            });
+        }
+
+        const context : DatabaseCreateContext = {
             ifNotExist: true,
+            options: dataSourceOptions,
         };
 
         if (
             typeof args.initialDatabase === 'string' &&
             args.initialDatabase !== ''
         ) {
-            operationOptions.initialDatabase = args.initialDatabase;
+            context.initialDatabase = args.initialDatabase;
         }
 
-        await createDatabase(operationOptions, connectionOptions);
+        context.synchronize = args.synchronize === 'yes';
 
-        if (args.synchronize !== 'yes') {
-            if (exitProcess) {
-                process.exit(0);
-            }
+        await createDatabase(context);
 
-            return;
-        }
-
-        try {
-            const connection = await createConnection(connectionOptions);
-            await connection.synchronize(false);
-
-            if (exitProcess) {
-                await connection.close();
-                process.exit(0);
-            }
-        } catch (e) {
-            // eslint-disable-next-line no-console
-            console.log(e);
-
-            if (exitProcess) {
-                process.exit(1);
-            }
+        if (exitProcess) {
+            process.exit(0);
         }
     }
 }

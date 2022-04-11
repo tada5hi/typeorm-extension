@@ -5,9 +5,9 @@
 
 # Typeorm Extension 🚀
 This is a library to
-- `create` or `drop` the (default-) database 🔥 of a defined typeorm connection.
-- execute a full database setup (f.e create Database, setup Schema, run Seeds) with the `Command-Line-Interface (CLI)` ⚡.
-- validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values to the `QueryBuilder` ( extended **JSON:API** specification).
+- `create` or `drop` the (default-) database 🔥
+- seed the database ⚡
+- validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values ( extended **JSON:API** specification)
 
 **Table of Contents**
 
@@ -15,9 +15,8 @@ This is a library to
 - [Limitations](#limitations)
 - [Usage](#usage)
     - [CLI](#cli)
-    - [Runtime](#runtime)
-        - [Database](#database)
-        - [Query](#query)
+    - [Database](#database)
+    - [Query](#query)
 - [Functions](#functions)
   - Database
      - [createDatabase](#createdatabase)
@@ -30,7 +29,9 @@ This is a library to
      - [applyQuerySort](#applyquerysort)
 - [Types](#types)
   - Database
-    - [DatabaseOperationOptions](#databaseoperationoptions)
+    - [DatabaseCreateContext](#databasecreatecontext)
+    - [DatabaseDropContext](#databasedropcontext)
+  - [Query](#query-types)
 
 ## Installation
 
@@ -40,7 +41,9 @@ npm install typeorm-extension --save
 
 ## Limitations
 
-At the moment you can only `create` and `drop` a database for one of the following typeorm drivers:
+At the moment, only the following typeorm drivers are supported
+to `create` or `drop` a database:
+
 * CockroachDB
 * MSSQL
 * MySQL
@@ -52,11 +55,11 @@ At the moment you can only `create` and `drop` a database for one of the followi
 
 ### CLI
 
-You can use the following commands in the terminal:
+The following commands are available in the terminal:
 - `typeorm-extension db:create` to create the database
 - `typeorm-extension db:drop` to drop the database
 
-Alternatively, you can set the full command path in the package.json file and run it f.e. with ts-node.
+Alternatively, the full command path can be set in the package.json file to run it e.g. with ts-node.
 
 ```
 "scripts": {
@@ -67,48 +70,138 @@ Alternatively, you can set the full command path in the package.json file and ru
 }
 ```
 
-#### CLI Options
+#### Options
 
-| Option                 | Default         | Description                                                                 |
-| ---------------------- | --------------- | --------------------------------------------------------------------------- |
-| `--connection` or `-c` | `default`       | Name of the typeorm connection. Required if there are multiple connections. |
-| `--config` or `-f`     | `ormconfig.js`  | Name to the typeorm config file.                                            |
-| `--root` or `-r`       | `process.cwd()` | Path to the typeorm config file.                                            |
-| `--synchronize` or `-s`| `yes`           | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`. |
-| `--initialDatabase`    | `undefined`     | Specify the initial database to connect to. This option is only available for the create command and is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name.|
+| Option                  | Default         | Description                                                                                                                                                                                                                                                                                  |
+|-------------------------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--root` or `-r`        | `process.cwd()` | Path to the data-source / config file.                                                                                                                                                                                                                                                       |
+| `--dataSource` or `-d`  | `data-source`   | Name of the data-source file.                                                                                                                                                                                                                                                                |
+| `--synchronize` or `-s` | `yes`           | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`.                                                                                                                                                       |
+| `--initialDatabase`     | `undefined`     | Specify the initial database to connect to. This option is only available for the create command and is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name. |
+| `--connection` or `-c`  | `default`       | Name of the connection. Required if there are multiple connections.                                                                                                                                                                                                                   |
+| `--config` or `-f`      | `ormconfig.js`  | Name to the config file.                                                                                                                                                                                                                                                              |
 
-### Runtime
+### Database
+An alternative to the CLI variant, is to `create` and `drop` the database in the code base during the runtime of the application.
+Therefore, provide the `DataSourceOptions` for the DataSource manually, or let it be created automatically:
 
-#### Database
-As an alternative to the CLI variant, you can `create` or `drop` the specified/default database through your own code base.
-Therefore, you can create the `ConnectionOptions` for the Connection manually, or let it be created automatically:
-
-**General**
+#### Create
+**`Example #1`**
 ```typescript
-import {ConnectionOptions, getConnectionOptions} from 'typeorm';
-import {createDatabase, dropDatabase} from "typeorm-extension";
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { createDatabase } from 'typeorm-extension';
 
 (async () => {
-    const connectionOptions: ConnectionOptions = await getConnectionOptions();
+    const options: DataSourceOptions = {
+        type: 'better-sqlite',
+        database: 'db.sqlite'
+    };
 
-    // Create database with connection specification
-    await createDatabase(undefined, connectionOptions);
+    // Create the database with specification of the DataSource options
+    await createDatabase({
+        options
+    });
 
-    // or without manually specification
-    await createDatabase({ifNotExist: true});
-
-
-    // Drop Database with connection specification
-    await dropDatabase(undefined, connectionOptions);
-
-    // or without manually specification
-    await dropDatabase({ifExist: true});
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+    // do something with the DataSource
 })();
 ```
 
-To get a better overview and understanding about the [createDatabase](#createdatabase) and the [dropDatabase](#dropdatabase) function go to the [functions](#functions) section and read more about it.
+**`Example #2`**
+```typescript
+import { getConnectionOptions } from 'typeorm';
+import { createDatabase } from 'typeorm-extension';
 
-#### Query
+(async () => {
+    const options = await getConnectionOptions();
+
+    // Create the database with specification of the DataSource options
+    await createDatabase({
+        options
+    });
+
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+    // do something with the DataSource
+})();
+```
+
+**`Example #3`**
+
+It is also possible to let the library automatically search for the data-source under the hood.
+Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
+- src/db/
+- src/database
+- src
+
+```typescript
+import { createDatabase } from 'typeorm-extension';
+
+(async () => {
+    // Create the database without manually specification
+    await createDatabase();
+})();
+```
+
+
+To get a better overview and understanding of the [createDatabase](#createdatabase) function go to the [functions](#functions) section and read more about it.
+
+#### Drop
+
+**`Example #1`**
+```typescript
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { dropDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options: DataSourceOptions = {
+        type: 'better-sqlite',
+        database: 'db.sqlite'
+    };
+
+    // Create the database with specification of the DataSource options
+    await dropDatabase({
+        options
+    });
+})();
+```
+
+**`Example #2`**
+```typescript
+import { getConnectionOptions } from 'typeorm';
+import { dropDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options = await getConnectionOptions();
+
+    // Create the database with specification of the DataSource options
+    await dropDatabase({
+        options
+    });
+})();
+```
+
+**`Example #3`**
+
+It is also possible to let the library automatically search for the data-source under the hood.
+Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
+- src/db/
+- src/database
+- src
+
+```typescript
+import { dropDatabase } from 'typeorm-extension';
+
+(async () => {
+    // Drop the database without manually specification
+    await dropDatabase();
+})();
+```
+
+To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions) section and read more about it.
+
+### Query
 To build & parse (+validate) query parameter (fields, filter, ...) values, this library uses [@trapi/query](https://www.npmjs.com/package/@trapi/query) under the hood.
 The main functions and types are also exposed by this library.
 
@@ -255,91 +348,95 @@ export async function getUsers(req: Request, res: Response) {
 
 ### createDatabase
 
-▸ `function` **createDatabase**(`options?: DatabaseOperationOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
+▸ `function` **createDatabase**(`context?: DatabaseCreateContext`): `Promise`<`unknown`>
 
 Create database.
 
 #### Example
 
-**`Status`**
+**`Simple`**
 ```typescript
-// Only create database if it does not exists.
-await createDatabase({ifNotExist: true});
+// Only create database if it does not exist.
+await createDatabase({ ifNotExist: true });
+```
+
+**`Syncronization`**
+```typescript
+// To not synchronize database schema after database creation.
+await createDatabase({ synchronize: false });
 ```
 
 **`Charset`**
 
-You can also specify the `charset` and `characterSet` as property of the `DatabaseOperationOptions` parameter
-or parse it as extra parameter (ENV: TYPEORM_DRIVER_EXTRA) of the ormconfig.
-F.e
+It is possible to explizit specify `charset` & `characterSet`, besides defining it as part of the `DataSourceOptions` object.
+E.g.
 - postgres
   ```typescript
-   await createDatabase({ifNotExist: true, characterSet: "UTF8"});
+   await createDatabase({ characterSet: "UTF8" });
   ```
 - mysql
   ```typescript
-  await createDatabase({ifNotExist: true, charset: "utf8mb4_general_ci", characterSet: "utf8mb4"});
+  await createDatabase({ charset: "utf8mb4_general_ci", characterSet: "utf8mb4" });
   ```
 
-**`ConnectionOptions`**
+**`DataSourceOptions`**
 
-If you have defined `entites` or `subscribers` by environment variables or with another typeorm configuration option,
-you may want to use them with ts-node as well with the build (`dist`) variant.
-Therefore, you can build the ConnectionOptions with the build in function `buildConnectionOptions`.
+if `entities` & `subscribers` are defined as path, there may be a desire to use them with e.g. ts-node
+as well with the compiled javascript variant.
+Therefore, the DataSourceOptions can also be built or extended with the `buildDataSourceOptions` method.
 
 ```typescript
-import {craeteDatabase, dropDatabase, buildConnectionOptions} from "typeorm-extension";
+import { craeteDatabase, dropDatabase, buildDataSourceOptions } from 'typeorm-extension';
 
 (async () => {
-    const connectionOptions = await buildConnectionOptions();
+    const options = await buildDataSourceOptions();
     // Create database
-    await createDatabase({ifNotExist: true}, connectionOptions);
+    await createDatabase({
+        options
+    });
 })();
 ```
-If you have specified the path pattern for the entities like:
-`src/database/entities.ts`, the function will rewrite it to `dist/database/entities.js`,
+If the path pattern for the entities is defined like:
+`src/database/entities.ts`. The function will rewrite it to `dist/database/entities.js`,
 in case the function is not called within the ts-node runtime environment.
 
 The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seeding` library.
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `options` | `DatabaseOperationOptions` | Specify custom options like charset, coalition & conditions. |
-| `connectionOptions` | `ConnectionOptions` | Pass typeorm connection options object. |
+| Name      | Type                    | Description                                                                         |
+|:----------|:------------------------|:------------------------------------------------------------------------------------|
+| `context` | `DatabaseCreateContext` | Specify charset, coalition and DataSourceOptions. [Details](#databasecreatecontext) |
 
 #### Returns
 
 `Promise`<`unknown`>
 
-The function returns a promise with query results provided by underlying db driver.
+The function returns a promise with the query result of the underlying database driver.
 
 ### dropDatabase
 
-▸ `function` **dropDatabase**(`options?: DatabaseOperationOptions`, `connectionOptions?: ConnectionOptions`): `Promise`<`unknown`>
+▸ `function` **dropDatabase**(`context?: DatabaseDropContext`): `Promise`<`unknown`>
 
 Drop database.
 
 #### Example
 **`Simple`**
 ```typescript
-// Only drop database if it does exists.
-await dropDatabase({ifExist: true});
+await dropDatabase();
 ```
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `options` | `DatabaseOperationOptions` | Specify custom options like charset, coalition & conditions. |
-| `connectionOptions` | `ConnectionOptions` | Pass typeorm connection options object. |
+| Name      | Type                  | Description                                                                       |
+|:----------|:----------------------|:----------------------------------------------------------------------------------|
+| `context` | `DatabaseDropContext` | Specify charset, coalition and DataSourceOptions. [Details](#databasedropcontext) |
 
 #### Returns
 
 `Promise`<`unknown`>
 
-The function returns a promise with query results provided by underlying db driver.
+The function returns a promise with the query result of the underlying database driver.
 
 ## Functions - Query
 
@@ -369,7 +466,7 @@ console.log(fields);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -378,7 +475,7 @@ console.log(fields);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
-| `options` | `FieldsApplyOptions` | Options for the fields to select.
+| `options` | `FieldsApplyOptions` | Options for the fields to select. |
 
 #### Returns
 
@@ -410,9 +507,9 @@ console.log(filters);
 
 #### Type parameters
 
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type
+| Name | Description          |
+| :------ |:---------------------|
+| `T` | Typeorm entity type  |
 
 
 #### Parameters
@@ -421,7 +518,7 @@ console.log(filters);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Fields in raw format. F.e `{id: 1}`. |
-| `options` | `FiltersApplyOptions` | Options for the fields to select.
+| `options` | `FiltersApplyOptions` | Options for the fields to select. |
 
 #### Returns
 
@@ -456,7 +553,7 @@ console.log(includes);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -465,7 +562,7 @@ console.log(includes);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Relations in raw format. F.e `['roles']` or `roles` |
-| `options` | `RelationsApplyOptions` | Options for the relations to include.
+| `options` | `RelationsApplyOptions` | Options for the relations to include. |
 
 #### Returns
 
@@ -498,7 +595,7 @@ console.log(pagination);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -507,7 +604,7 @@ console.log(pagination);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
-| `options` | `PaginationApplyOptions` | Options for the pagination to select.
+| `options` | `PaginationApplyOptions` | Options for the pagination to select. |
 
 #### Returns
 
@@ -541,7 +638,7 @@ console.log(sort);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -550,7 +647,7 @@ console.log(sort);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order.  |
-| `options` | `SortApplyOptions` | Options for the sorting strategy.
+| `options` | `SortApplyOptions` | Options for the sorting strategy. |
 
 #### Returns
 
@@ -560,14 +657,56 @@ The function returns an objects. Each key-value pair represents a field and the 
 
 ## Types
 
-### DatabaseOperationOptions
+### DatabaseCreateContext
 ```typescript
-type DatabaseOperationOptions = {
-    characterSet?: string,
-    charset?: string,
-    ifExist?: boolean,
+import { DataSourceOptions } from 'typeorm';
+
+export type DatabaseCreateContext = {
+    /**
+     * Options for typeorm DataSource.
+     *
+     * Default: undefined
+     */
+    options?: DataSourceOptions,
+    /**
+     * Only create database if not already exist.
+     *
+     * default: true
+     */
     ifNotExist?: boolean,
-    initialDatabase?: string
+    /**
+     * Initial database to connect.
+     *
+     * default: undefined
+     */
+    initialDatabase?: string,
+    /**
+     * Synchronize database entities.
+     *
+     * default: true
+     */
+    synchronize?: boolean
+};
+```
+
+### DatabaseDropContext
+
+```typescript
+import { DataSourceOptions } from 'typeorm';
+
+export type DatabaseDropContext = {
+    /**
+     * Options for typeorm DataSource.
+     *
+     * Default: undefined
+     */
+    options?: DataSourceOptions,
+    /**
+     * Only drop database if existed.
+     *
+     * Default: true
+     */
+    ifExist?: boolean
 };
 ```
 
