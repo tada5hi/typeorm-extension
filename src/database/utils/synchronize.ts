@@ -1,8 +1,8 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 
 export async function synchronizeDatabase(options: DataSourceOptions) {
-    const connection = new DataSource(options);
-    await connection.initialize();
-    await connection.synchronize(false);
-    await connection.destroy();
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+    await dataSource.synchronize(false);
+    await dataSource.destroy();
 }

@@ -15,9 +15,8 @@ This is a library to
 - [Limitations](#limitations)
 - [Usage](#usage)
     - [CLI](#cli)
-    - [Runtime](#runtime)
-        - [Database](#database)
-        - [Query](#query)
+    - [Database](#database)
+    - [Query](#query)
 - [Functions](#functions)
   - Database
      - [createDatabase](#createdatabase)
@@ -82,16 +81,37 @@ Alternatively, the full command path can be set in the package.json file to run 
 | `--connection` or `-c`  | `default`       | Name of the connection. Required if there are multiple connections.                                                                                                                                                                                                                   |
 | `--config` or `-f`      | `ormconfig.js`  | Name to the config file.                                                                                                                                                                                                                                                              |
 
-### Runtime
-
-#### Database
+### Database
 An alternative to the CLI variant, is to `create` and `drop` the database in the code base during the runtime of the application.
 Therefore, provide the `DataSourceOptions` for the DataSource manually, or let it be created automatically:
 
-**General**
+#### Create
+**`Example #1`**
+```typescript
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { createDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options: DataSourceOptions = {
+        type: 'better-sqlite',
+        database: 'db.sqlite'
+    };
+
+    // Create the database with specification of the DataSource options
+    await createDatabase({
+        options
+    });
+
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+    // do something with the DataSource
+})();
+```
+
+**`Example #2`**
 ```typescript
 import { getConnectionOptions } from 'typeorm';
-import { createDatabase, dropDatabase } from 'typeorm-extension';
+import { createDatabase } from 'typeorm-extension';
 
 (async () => {
     const options = await getConnectionOptions();
@@ -101,24 +121,87 @@ import { createDatabase, dropDatabase } from 'typeorm-extension';
         options
     });
 
-    // or without manually specification
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+    // do something with the DataSource
+})();
+```
+
+**`Example #3`**
+
+It is also possible to let the library automatically search for the data-source under the hood.
+Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
+- src/db/
+- src/database
+- src
+
+```typescript
+import { createDatabase } from 'typeorm-extension';
+
+(async () => {
+    // Create the database without manually specification
     await createDatabase();
+})();
+```
 
-    // --------------------------------------------------------------
 
-    // Drop the database with specification of the DataSource options
+To get a better overview and understanding of the [createDatabase](#createdatabase) function go to the [functions](#functions) section and read more about it.
+
+#### Drop
+
+**`Example #1`**
+```typescript
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { dropDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options: DataSourceOptions = {
+        type: 'better-sqlite',
+        database: 'db.sqlite'
+    };
+
+    // Create the database with specification of the DataSource options
     await dropDatabase({
         options
     });
+})();
+```
 
-    // or without manually specification
+**`Example #2`**
+```typescript
+import { getConnectionOptions } from 'typeorm';
+import { dropDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options = await getConnectionOptions();
+
+    // Create the database with specification of the DataSource options
+    await dropDatabase({
+        options
+    });
+})();
+```
+
+**`Example #3`**
+
+It is also possible to let the library automatically search for the data-source under the hood.
+Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
+- src/db/
+- src/database
+- src
+
+```typescript
+import { dropDatabase } from 'typeorm-extension';
+
+(async () => {
+    // Drop the database without manually specification
     await dropDatabase();
 })();
 ```
 
-To get a better overview and understanding of the [createDatabase](#createdatabase) and the [dropDatabase](#dropdatabase) function go to the [functions](#functions) section and read more about them.
+To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions) section and read more about it.
 
-#### Query
+### Query
 To build & parse (+validate) query parameter (fields, filter, ...) values, this library uses [@trapi/query](https://www.npmjs.com/package/@trapi/query) under the hood.
 The main functions and types are also exposed by this library.
 
@@ -321,9 +404,9 @@ The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seedin
 
 #### Parameters
 
-| Name      | Type                    | Description                                       |
-|:----------|:------------------------|:--------------------------------------------------|
-| `context` | `DatabaseCreateContext` | Specify charset, coalition and DataSourceOptions. |
+| Name      | Type                    | Description                                                                         |
+|:----------|:------------------------|:------------------------------------------------------------------------------------|
+| `context` | `DatabaseCreateContext` | Specify charset, coalition and DataSourceOptions. [Details](#databasecreatecontext) |
 
 #### Returns
 
@@ -345,9 +428,9 @@ await dropDatabase();
 
 #### Parameters
 
-| Name      | Type                  | Description                                       |
-|:----------|:----------------------|:--------------------------------------------------|
-| `context` | `DatabaseDropContext` | Specify charset, coalition and DataSourceOptions. |
+| Name      | Type                  | Description                                                                       |
+|:----------|:----------------------|:----------------------------------------------------------------------------------|
+| `context` | `DatabaseDropContext` | Specify charset, coalition and DataSourceOptions. [Details](#databasedropcontext) |
 
 #### Returns
 
@@ -383,7 +466,7 @@ console.log(fields);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -392,7 +475,7 @@ console.log(fields);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
-| `options` | `FieldsApplyOptions` | Options for the fields to select.
+| `options` | `FieldsApplyOptions` | Options for the fields to select. |
 
 #### Returns
 
@@ -424,9 +507,9 @@ console.log(filters);
 
 #### Type parameters
 
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type
+| Name | Description          |
+| :------ |:---------------------|
+| `T` | Typeorm entity type  |
 
 
 #### Parameters
@@ -435,7 +518,7 @@ console.log(filters);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Fields in raw format. F.e `{id: 1}`. |
-| `options` | `FiltersApplyOptions` | Options for the fields to select.
+| `options` | `FiltersApplyOptions` | Options for the fields to select. |
 
 #### Returns
 
@@ -470,7 +553,7 @@ console.log(includes);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -479,7 +562,7 @@ console.log(includes);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Relations in raw format. F.e `['roles']` or `roles` |
-| `options` | `RelationsApplyOptions` | Options for the relations to include.
+| `options` | `RelationsApplyOptions` | Options for the relations to include. |
 
 #### Returns
 
@@ -512,7 +595,7 @@ console.log(pagination);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -521,7 +604,7 @@ console.log(pagination);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
-| `options` | `PaginationApplyOptions` | Options for the pagination to select.
+| `options` | `PaginationApplyOptions` | Options for the pagination to select. |
 
 #### Returns
 
@@ -555,7 +638,7 @@ console.log(sort);
 
 | Name | Description |
 | :------ | :------ |
-| `T` | Typeorm entity type
+| `T` | Typeorm entity type |
 
 
 #### Parameters
@@ -564,7 +647,7 @@ console.log(sort);
 | :------ | :------ | :------ |
 | `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
 | `data` | `unknown` | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order.  |
-| `options` | `SortApplyOptions` | Options for the sorting strategy.
+| `options` | `SortApplyOptions` | Options for the sorting strategy. |
 
 #### Returns
 

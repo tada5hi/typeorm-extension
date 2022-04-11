@@ -4,7 +4,7 @@ import { buildDataSourceOptions } from '../../data-source';
 
 async function setOptions<T extends DatabaseBaseContext>(context: T) : Promise<T> {
     if (!context.options) {
-        const dataSource = await findDataSource();
+        const dataSource = await findDataSource(context.dataSourceFind);
         if (dataSource) {
             context.options = dataSource.options;
         }
