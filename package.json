@@ -52,6 +52,7 @@
         "@types/jest": "^27.4.1",
         "@types/node": "^17.0.23",
         "@types/yargs": "^17.0.10",
+        "better-sqlite3": "^7.5.1",
         "coveralls": "^3.1.0",
         "cross-env": "^7.0.3",
         "eslint": "^8.12.0",

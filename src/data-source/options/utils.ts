@@ -1,4 +1,4 @@
-import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../utils';
+import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../../utils';
 
 type PathOptions = {
     src?: string,

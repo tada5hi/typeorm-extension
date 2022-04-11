@@ -1,8 +1,8 @@
 import { ConnectionOptionsReader, DataSourceOptions } from 'typeorm';
 import { DataSourceOptionsBuildContext } from './type';
-import { setDefaultSeederOptions } from '../seeder';
+import { setDefaultSeederOptions } from '../../seeder';
 import { modifyDataSourceOptionsForRuntimeEnvironment } from './utils';
-import { readTsConfig } from '../utils/tsconfig';
+import { readTsConfig } from '../../utils/tsconfig';
 
 export async function buildDataSourceOptions(
     context?: DataSourceOptionsBuildContext,

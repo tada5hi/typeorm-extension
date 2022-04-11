@@ -1,12 +1,15 @@
 import { DataSourceOptions } from 'typeorm';
 
-export type DatabaseCreateContext = {
+export type DatabaseBaseContext = {
     /**
      * Options for typeorm DataSource.
      *
      * Default: undefined
      */
     options?: DataSourceOptions,
+};
+
+export type DatabaseCreateContext = DatabaseBaseContext & {
     /**
      * Only create database if not already exist.
      *
@@ -27,13 +30,7 @@ export type DatabaseCreateContext = {
     synchronize?: boolean
 };
 
-export type DatabaseDropContext = {
-    /**
-     * Options for typeorm DataSource.
-     *
-     * Default: undefined
-     */
-    options?: DataSourceOptions,
+export type DatabaseDropContext = DatabaseBaseContext & {
     /**
      * Only drop database if existed.
      *

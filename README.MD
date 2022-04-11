@@ -73,18 +73,19 @@ Alternatively, the full command path can be set in the package.json file to run 
 
 #### Options
 
-| Option                  | Default       | Description                                                                                                                                                                                                                                                                                    |
-|-------------------------|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--connection` or `-c`  | `default`     | Name of the typeorm connection. Required if there are multiple connections.                                                                                                                                                                                                                    |
-| `--config` or `-f`      | `ormconfig.js` | Name to the typeorm config file.                                                                                                                                                                                                                                                               |
-| `--root` or `-r`        | `process.cwd()` | Path to the typeorm config file.                                                                                                                                                                                                                                                               |
-| `--synchronize` or `-s` | `yes`         | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`.                                                                                                                                                         |
-| `--initialDatabase`     | `undefined`   | Specify the initial database to connect to. This option is only available for the create command and is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name. |
+| Option                  | Default         | Description                                                                                                                                                                                                                                                                                  |
+|-------------------------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--root` or `-r`        | `process.cwd()` | Path to the data-source / config file.                                                                                                                                                                                                                                                       |
+| `--dataSource` or `-d`  | `data-source`   | Name of the data-source file.                                                                                                                                                                                                                                                                |
+| `--synchronize` or `-s` | `yes`           | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`.                                                                                                                                                       |
+| `--initialDatabase`     | `undefined`     | Specify the initial database to connect to. This option is only available for the create command and is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name. |
+| `--connection` or `-c`  | `default`       | Name of the connection. Required if there are multiple connections.                                                                                                                                                                                                                   |
+| `--config` or `-f`      | `ormconfig.js`  | Name to the config file.                                                                                                                                                                                                                                                              |
 
 ### Runtime
 
 #### Database
-An alternative to the CLI variant, is to `create` and `drop` the specified/default database in the code base during the runtime of the application.
+An alternative to the CLI variant, is to `create` and `drop` the database in the code base during the runtime of the application.
 Therefore, provide the `DataSourceOptions` for the DataSource manually, or let it be created automatically:
 
 **General**

@@ -1,7 +1,7 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { SeederConstructor, SeederOptions } from './type';
 import { importSeed, loadFiles, setDefaultSeederOptions } from './utils';
-import { modifyDataSourceOptionForRuntimeEnvironment } from '../connection';
+import { modifyDataSourceOptionForRuntimeEnvironment } from '../data-source';
 
 async function prepareSeeder(
     options?: SeederOptions,

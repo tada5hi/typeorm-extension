@@ -1,11 +1,14 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { buildDataSourceOptions } from '../../../connection';
+import { DataSourceOptions } from 'typeorm';
+import { buildDataSourceOptions } from '../../../data-source';
 import { DatabaseCreateContext, createDatabase } from '../../../database';
+import { findDataSource } from '../../../data-source/utils';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
     connection: 'default' | string;
     config: 'ormconfig' | string;
+    dataSource: 'data-source' | string;
     synchronize: string;
     initialDatabase?: unknown;
 }
@@ -20,17 +23,24 @@ export class DatabaseCreateCommand implements CommandModule {
             .option('root', {
                 alias: 'r',
                 default: process.cwd(),
-                describe: 'Path to your typeorm config file',
+                describe: 'Path to the data-source / config file.',
             })
             .option('connection', {
                 alias: 'c',
                 default: 'default',
                 describe: 'Name of the connection on which run a query.',
+                deprecated: true,
             })
             .option('config', {
                 alias: 'f',
                 default: 'ormconfig',
-                describe: 'Name of the file with connection configuration.',
+                describe: 'Name of the file with the data-source configuration.',
+                deprecated: true,
+            })
+            .option('dataSource', {
+                alias: 'd',
+                default: 'data-source',
+                describe: 'Name of the file with the data-source.',
             })
             .option('synchronize', {
                 alias: 's',
@@ -46,12 +56,23 @@ export class DatabaseCreateCommand implements CommandModule {
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
 
-        const dataSourceOptions = await buildDataSourceOptions({
-            name: args.connection,
-            configName: args.config,
-            root: args.root,
-            buildForCommand: true,
+        let dataSourceOptions : DataSourceOptions;
+        const dataSource = await findDataSource({
+            directory: args.root,
+            fileName: args.dataSource,
         });
+        if (dataSource) {
+            dataSourceOptions = dataSource.options;
+        }
+
+        if (!dataSourceOptions) {
+            dataSourceOptions = await buildDataSourceOptions({
+                name: args.connection,
+                configName: args.config,
+                root: args.root,
+                buildForCommand: true,
+            });
+        }
 
         const context : DatabaseCreateContext = {
             ifNotExist: true,
