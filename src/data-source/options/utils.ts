@@ -5,7 +5,7 @@ type PathOptions = {
     dist?: string,
 };
 
-function changeTStoJSPath<T>(raw: T, options?: PathOptions) : T {
+export function changeTStoJSPath<T>(raw: T, options?: PathOptions) : T {
     const isArray : boolean = Array.isArray(raw);
     const value = Array.isArray(raw) ? raw : [raw];
 
@@ -37,7 +37,7 @@ export function modifyDataSourceOptionForRuntimeEnvironment<
 >(
     options: T,
     key: K,
-    compilerOptions?: PathOptions,
+    pathOptions?: PathOptions,
 ): T {
     if (!hasOwnProperty(options, key) || isTsNodeRuntimeEnvironment()) {
         return options;
@@ -49,7 +49,7 @@ export function modifyDataSourceOptionForRuntimeEnvironment<
         case 'subscribers':
         case 'seeds':
         case 'factories': {
-            options[key] = changeTStoJSPath(options[key], compilerOptions);
+            options[key] = changeTStoJSPath(options[key], pathOptions);
             break;
         }
     }

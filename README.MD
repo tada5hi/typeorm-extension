@@ -131,9 +131,9 @@ import { createDatabase } from 'typeorm-extension';
 
 It is also possible to let the library automatically search for the data-source under the hood.
 Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- src/db/
-- src/database
-- src
+- `{src,dist}/db/`
+- `{src,dist}/database`
+- `{src,dist}`
 
 ```typescript
 import { createDatabase } from 'typeorm-extension';
@@ -186,9 +186,9 @@ import { dropDatabase } from 'typeorm-extension';
 
 It is also possible to let the library automatically search for the data-source under the hood.
 Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- src/db/
-- src/database
-- src
+- `{src,dist}/db/`
+- `{src,dist}/database`
+- `{src,dist}`
 
 ```typescript
 import { dropDatabase } from 'typeorm-extension';

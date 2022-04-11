@@ -2,6 +2,9 @@ import path from 'path';
 import { DataSource, InstanceChecker } from 'typeorm';
 import { loadFile, locateFile } from '../../file';
 import { DataSourceFindContext } from './type';
+import { isTsNodeRuntimeEnvironment } from '../../utils';
+import { readTsConfig } from '../../utils/tsconfig';
+import { changeTStoJSPath } from '../options';
 
 export async function findDataSource(
     context?: DataSourceFindContext,
@@ -21,6 +24,13 @@ export async function findDataSource(
         path.join(process.cwd(), 'src', 'database'),
         path.join(process.cwd(), 'src'),
     ];
+
+    if (!isTsNodeRuntimeEnvironment()) {
+        let { compilerOptions } = await readTsConfig(context.directory || process.cwd());
+        compilerOptions = compilerOptions || {};
+
+        paths.map((item) => changeTStoJSPath(item, { dist: compilerOptions.outDir }));
+    }
 
     context.directory = path.isAbsolute(context.directory) ?
         context.directory :
