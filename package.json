@@ -39,7 +39,7 @@
     "license": "MIT",
     "dependencies": {
         "@trapi/query": "^2.1.2",
-        "glob": "^7.1.7",
+        "glob": "^8.0.1",
         "reflect-metadata": "^0.1.13",
         "yargs": "^17.4.1"
     },
