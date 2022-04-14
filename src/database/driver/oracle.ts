@@ -56,7 +56,7 @@ export async function createOracleDatabase(
      */
     const query = `CREATE DATABASE IF NOT EXISTS ${options.database}`;
 
-    const result = connection.execute(query);
+    const result = await connection.execute(query);
 
     if (context.synchronize) {
         await synchronizeDatabase(context.options);

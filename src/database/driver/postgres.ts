@@ -84,7 +84,7 @@ export async function createPostgresDatabase(
         query += ` WITH ENCODING '${options.characterSet}'`;
     }
 
-    const result = executeSimplePostgresQuery(connection, query);
+    const result = await executeSimplePostgresQuery(connection, query);
 
     if (context.synchronize) {
         await synchronizeDatabase(context.options);

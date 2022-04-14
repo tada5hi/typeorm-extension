@@ -42,7 +42,7 @@ export async function createMsSQLDatabase(
         query += ` CHARACTER SET ${options.characterSet}`;
     }
 
-    const result = connection.query(query);
+    const result = await connection.query(query);
 
     if (context.synchronize) {
         await synchronizeDatabase(context.options);

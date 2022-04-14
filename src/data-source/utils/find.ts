@@ -19,24 +19,25 @@ export async function findDataSource(
         fileNames.unshift(context.fileName);
     }
 
+    let directory = context.directory || process.cwd();
+    directory = path.isAbsolute(directory) ?
+        directory :
+        path.join(process.cwd(), directory);
+
     const paths : string[] = [
-        path.join(process.cwd(), 'src', 'db'),
-        path.join(process.cwd(), 'src', 'database'),
-        path.join(process.cwd(), 'src'),
+        path.join(directory, 'src', 'db'),
+        path.join(directory, 'src', 'database'),
+        path.join(directory, 'src'),
     ];
 
     if (!isTsNodeRuntimeEnvironment()) {
-        let { compilerOptions } = await readTsConfig(context.directory || process.cwd());
+        let { compilerOptions } = await readTsConfig(directory);
         compilerOptions = compilerOptions || {};
 
         paths.map((item) => changeTStoJSPath(item, { dist: compilerOptions.outDir }));
     }
 
-    context.directory = path.isAbsolute(context.directory) ?
-        context.directory :
-        path.join(process.cwd(), context.directory);
-
-    paths.unshift(context.directory);
+    paths.unshift(directory);
 
     for (let i = 0; i < fileNames.length; i++) {
         const info = await locateFile(fileNames[i], {

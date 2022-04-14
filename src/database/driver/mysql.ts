@@ -72,7 +72,7 @@ export async function createMySQLDatabase(
         }
     }
 
-    const result = executeSimpleMysqlQuery(connection, query);
+    const result = await executeSimpleMysqlQuery(connection, query);
 
     if (context.synchronize) {
         await synchronizeDatabase(context.options);
