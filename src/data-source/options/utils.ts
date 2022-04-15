@@ -15,16 +15,23 @@ export function changeTStoJSPath<T>(raw: T, options?: PathOptions) : T {
 
     for (let i = 0; i < value.length; i++) {
         if (
-            typeof value[i] === 'string' &&
-            value[i].indexOf(options.src) !== -1 &&
-            value[i].indexOf('.ts') !== -1 &&
-
-            value[i].indexOf(options.dist) === -1 &&
-            value[i].indexOf('.js') === -1
+            typeof value[i] === 'string'
         ) {
-            value[i] = value[i]
-                .replace(options.src, options.dist)
-                .replace('.ts', '.js');
+            if (
+                value[i].indexOf(options.src) !== -1 &&
+                value[i].indexOf(options.dist) === -1
+            ) {
+                value[i] = value[i]
+                    .replace(options.src, options.dist);
+            }
+
+            if (
+                value[i].indexOf('.ts') !== -1 &&
+                value[i].indexOf('.js') === -1
+            ) {
+                value[i] = value[i]
+                    .replace('.ts', '.js');
+            }
         }
     }
 

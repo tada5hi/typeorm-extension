@@ -48,6 +48,6 @@ describe('src/connection/utils.ts', () => {
             {
                 src: 'dummySrc'
             });
-        expect(modifiedConnectionOption).toEqual({entities: ['src/entities.ts']});
+        expect(modifiedConnectionOption).toEqual({entities: ['src/entities.js']});
     })
 });
