@@ -1,9 +1,18 @@
 import {
+    changeTSToJSPath,
     modifyDataSourceOptionForRuntimeEnvironment,
     modifyDataSourceOptionsForRuntimeEnvironment
 } from "../../../src";
 
 describe('src/connection/utils.ts', () => {
+    it('should change ts to js path', () => {
+        let dirPath = 'src/packages/backend/src/data-source.ts';
+
+        let distDirPath = changeTSToJSPath(dirPath);
+
+        expect(distDirPath).toEqual('src/packages/backend/dist/data-source.js');
+    });
+
     it('should modify connection option(s) for runtime environment', async () => {
         let options : Record<string, any> = {
             factories: ['src/factories.ts'],

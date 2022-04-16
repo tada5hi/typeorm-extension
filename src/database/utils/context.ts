@@ -2,7 +2,7 @@ import { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from 
 import { findDataSource } from '../../data-source/utils';
 import { buildDataSourceOptions } from '../../data-source';
 
-async function setOptions<T extends DatabaseBaseContext>(context: T) : Promise<T> {
+async function setDatabaseContextOptions<T extends DatabaseBaseContext>(context: T) : Promise<T> {
     if (!context.options) {
         const dataSource = await findDataSource(context.dataSourceFind);
         if (dataSource) {
@@ -24,7 +24,7 @@ export async function buildDatabaseCreateContext(
 ) : Promise<DatabaseCreateContext> {
     context = context || {};
 
-    context = await setOptions(context);
+    context = await setDatabaseContextOptions(context);
 
     if (typeof context.synchronize === 'undefined') {
         context.synchronize = true;
@@ -41,7 +41,7 @@ export async function buildDatabaseDropContext(
     context?: DatabaseDropContext,
 ) : Promise<DatabaseDropContext> {
     context = context || {};
-    context = await setOptions(context);
+    context = await setDatabaseContextOptions(context);
 
     if (typeof context.ifExist === 'undefined') {
         context.ifExist = true;

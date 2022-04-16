@@ -4,7 +4,7 @@ import { loadFile, locateFile } from '../../file';
 import { DataSourceFindContext } from './type';
 import { isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
-import { changeTStoJSPath } from '../options';
+import { changeTSToJSPath } from '../options';
 
 export async function findDataSource(
     context?: DataSourceFindContext,
@@ -57,14 +57,14 @@ export async function findDataSource(
         for (let i = 0; i < basePaths.length; i++) {
             const { compilerOptions } = await readTsConfig(basePaths[i]);
             if (compilerOptions) {
-                paths = paths.map((item) => changeTStoJSPath(item, { dist: compilerOptions.outDir }));
+                paths = paths.map((item) => changeTSToJSPath(item, { dist: compilerOptions.outDir }));
                 tsConfigFound = true;
                 break;
             }
         }
 
         if (!tsConfigFound) {
-            paths = paths.map((item) => changeTStoJSPath(item));
+            paths = paths.map((item) => changeTSToJSPath(item));
         }
     }
 

@@ -5,7 +5,7 @@ type PathOptions = {
     dist?: string,
 };
 
-export function changeTStoJSPath<T>(raw: T, options?: PathOptions) : T {
+export function changeTSToJSPath<T>(raw: T, options?: PathOptions) : T {
     const isArray : boolean = Array.isArray(raw);
     const value = Array.isArray(raw) ? raw : [raw];
 
@@ -21,8 +21,11 @@ export function changeTStoJSPath<T>(raw: T, options?: PathOptions) : T {
                 value[i].indexOf(options.src) !== -1 &&
                 value[i].indexOf(options.dist) === -1
             ) {
-                value[i] = value[i]
-                    .replace(options.src, options.dist);
+                const lastIndex = value[i].lastIndexOf(options.src);
+
+                value[i] = value[i].substring(0, lastIndex) +
+                    options.dist +
+                    value[i].substring(lastIndex + options.src.length);
             }
 
             if (
@@ -56,7 +59,7 @@ export function modifyDataSourceOptionForRuntimeEnvironment<
         case 'subscribers':
         case 'seeds':
         case 'factories': {
-            options[key] = changeTStoJSPath(options[key], pathOptions);
+            options[key] = changeTSToJSPath(options[key], pathOptions);
             break;
         }
     }
