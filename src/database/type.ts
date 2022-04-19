@@ -1,9 +1,9 @@
 import { DataSourceOptions } from 'typeorm';
-import { DataSourceFindContext } from '../data-source/utils';
+import { DataSourceFindContext } from '../data-source';
 
 export type DatabaseBaseContext = {
     /**
-     * Options for typeorm DataSource.
+     * Options for finding the typeorm DataSource.
      *
      * Default: undefined
      */

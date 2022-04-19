@@ -1,4 +1,4 @@
-import {findDataSource} from "../../../src/data-source/utils";
+import {findDataSource} from "../../../src/data-source/find";
 import path from "path";
 
 describe('src/data-source/utils/find.ts', () => {

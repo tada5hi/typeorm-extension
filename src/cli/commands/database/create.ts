@@ -2,7 +2,7 @@ import { Arguments, Argv, CommandModule } from 'yargs';
 import { DataSourceOptions } from 'typeorm';
 import { buildDataSourceOptions } from '../../../data-source';
 import { DatabaseCreateContext, createDatabase } from '../../../database';
-import { findDataSource } from '../../../data-source/utils';
+import { findDataSource } from '../../../data-source/find';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;

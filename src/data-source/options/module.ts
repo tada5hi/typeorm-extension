@@ -4,6 +4,22 @@ import { setDefaultSeederOptions } from '../../seeder';
 import { modifyDataSourceOptionsForRuntimeEnvironment } from './utils';
 import { readTsConfig } from '../../utils/tsconfig';
 
+export async function extendDataSourceOptions(
+    options: DataSourceOptions,
+    tsConfigDirectory?: string,
+) : Promise<DataSourceOptions> {
+    options = setDefaultSeederOptions(options);
+
+    let { compilerOptions } = await readTsConfig(tsConfigDirectory || process.cwd());
+    compilerOptions = compilerOptions || {};
+
+    modifyDataSourceOptionsForRuntimeEnvironment(options, {
+        dist: compilerOptions.outDir,
+    });
+
+    return options;
+}
+
 export async function buildDataSourceOptions(
     context?: DataSourceOptionsBuildContext,
 ) : Promise<DataSourceOptions> {
@@ -16,7 +32,7 @@ export async function buildDataSourceOptions(
         configName: context.configName,
     });
 
-    let dataSourceOptions = await connectionOptionsReader.get(context.name || 'default');
+    const dataSourceOptions = await connectionOptionsReader.get(context.name || 'default');
 
     /* istanbul ignore next */
     if (context.buildForCommand) {
@@ -29,14 +45,5 @@ export async function buildDataSourceOptions(
         } as DataSourceOptions);
     }
 
-    dataSourceOptions = setDefaultSeederOptions(dataSourceOptions);
-
-    let { compilerOptions } = await readTsConfig(context.tsConfigDirectory || root);
-    compilerOptions = compilerOptions || {};
-
-    modifyDataSourceOptionsForRuntimeEnvironment(dataSourceOptions, {
-        dist: compilerOptions.outDir,
-    });
-
-    return dataSourceOptions;
+    return extendDataSourceOptions(dataSourceOptions, context.tsConfigDirectory || root);
 }

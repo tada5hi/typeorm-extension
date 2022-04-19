@@ -9,6 +9,13 @@ This is a library to
 - seed the database ⚡
 - validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values ( extended **JSON:API** specification)
 
+---
+**Important NOTE**
+
+From `v2.0.0` onwards, this library requires a typeorm version >= v0.3.0 ☂.
+
+---
+
 **Table of Contents**
 
 - [Installation](#installation)
@@ -28,7 +35,8 @@ This is a library to
      - [applyQueryRelations](#applyqueryrelations)
      - [applyQuerySort](#applyquerysort)
 - [Types](#types)
-  - Database
+  - [Database](#database-types)
+    - [DatabaseBaseContext](#databasebasecontext)
     - [DatabaseCreateContext](#databasecreatecontext)
     - [DatabaseDropContext](#databasedropcontext)
   - [Query](#query-types)
@@ -139,7 +147,7 @@ Therefore, it will search by default for a `data-source.{ts,js}` file in the fol
 import { createDatabase } from 'typeorm-extension';
 
 (async () => {
-    // Create the database without manually specification
+    // Create the database without specifying it manually
     await createDatabase();
 })();
 ```
@@ -194,7 +202,7 @@ Therefore, it will search by default for a `data-source.{ts,js}` file in the fol
 import { dropDatabase } from 'typeorm-extension';
 
 (async () => {
-    // Drop the database without manually specification
+    // Drop the database without specifying it manually
     await dropDatabase();
 })();
 ```
@@ -360,7 +368,7 @@ Create database.
 await createDatabase({ ifNotExist: true });
 ```
 
-**`Syncronization`**
+**`Synchronization`**
 ```typescript
 // To not synchronize database schema after database creation.
 await createDatabase({ synchronize: false });
@@ -381,26 +389,47 @@ E.g.
 
 **`DataSourceOptions`**
 
-if `entities` & `subscribers` are defined as path, there may be a desire to use them with e.g. ts-node
-as well with the compiled javascript variant.
-Therefore, the DataSourceOptions can also be built or extended with the `buildDataSourceOptions` method.
+- The typeorm DataSourceOptions object can be provided as `options` property to the createDatabase method.
 
-```typescript
-import { craeteDatabase, dropDatabase, buildDataSourceOptions } from 'typeorm-extension';
+  ```typescript
+  import { DataSourceOptions } from 'typeorm';
+  import { createDatabase } from 'typeorm-extension';
 
-(async () => {
-    const options = await buildDataSourceOptions();
-    // Create database
-    await createDatabase({
+  (async () => {
+     const options : DataSourceOptions = {
+        //...
+     };
+     // Create database
+     await createDatabase({
         options
-    });
-})();
-```
-If the path pattern for the entities is defined like:
-`src/database/entities.ts`. The function will rewrite it to `dist/database/entities.js`,
-in case the function is not called within the ts-node runtime environment.
+     });
+  })();
+  ```
 
-The same logic applies to `seeds` and `factories` path(s) of the `typeorm-seeding` library.
+- if `entities` & `subscribers` are defined as path, it is possible to use them with e.g. ts-node as well as with the compiled version.
+  Therefore, extend the DataSourceOptions with the `extendDataSourceOptions` utility method.
+
+  ```typescript
+  import { DataSourceOptions } from 'typeorm';
+  import { createDatabase, extendDataSourceOptions } from 'typeorm-extension';
+
+  (async () => {
+     let options : DataSourceOptions = {
+         // ...
+     }
+
+     options = await extendDataSourceOptions(options);
+
+     // Create database
+     await createDatabase({
+        options
+     });
+  })();
+  ```
+  This is achieved by rewriting the `src` path and `.ts` extension, to the `dist` (outDir) path and `.js` extension.
+
+  If the function is **not** called within the ts-node runtime environment, the source path `src/database/entities.ts` for example,
+  will be rewritten to `dist/database/entities.js`.
 
 #### Parameters
 
@@ -423,7 +452,30 @@ Drop database.
 #### Example
 **`Simple`**
 ```typescript
-await dropDatabase();
+import { createDatabase } from 'typeorm-extension';
+
+(async () => {
+    await dropDatabase();
+})();
+```
+
+**`DataSourceOptions`**
+
+The typeorm DataSourceOptions object can be provided as `options` property to the dropDatabase method.
+
+```typescript
+import { DataSourceOptions } from 'typeorm';
+import { dropDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options : DataSourceOptions = {
+        //...
+    };
+    // Drop database
+    await dropDatabase({
+        options
+    });
+})();
 ```
 
 #### Parameters
@@ -657,17 +709,33 @@ The function returns an objects. Each key-value pair represents a field and the 
 
 ## Types
 
-### DatabaseCreateContext
+### Database Types
+
+#### DatabaseBaseContext
 ```typescript
 import { DataSourceOptions } from 'typeorm';
+import { DataSourceFindContext } from 'typeorm-extension';
 
-export type DatabaseCreateContext = {
+export type DatabaseBaseContext = {
     /**
-     * Options for typeorm DataSource.
+     * Options for finding the typeorm DataSource.
      *
      * Default: undefined
      */
     options?: DataSourceOptions,
+
+    /**
+     * Options for the find method, where to look for the data-source file.
+     */
+    dataSourceFind?: DataSourceFindContext
+};
+```
+
+#### DatabaseCreateContext
+```typescript
+import { DatabaseBaseContext } from 'typeorm-extension';
+
+export type DatabaseCreateContext = DatabaseBaseContext & {
     /**
      * Only create database if not already exist.
      *
@@ -689,18 +757,12 @@ export type DatabaseCreateContext = {
 };
 ```
 
-### DatabaseDropContext
+#### DatabaseDropContext
 
 ```typescript
-import { DataSourceOptions } from 'typeorm';
+import { DatabaseBaseContext } from 'typeorm-extension';
 
-export type DatabaseDropContext = {
-    /**
-     * Options for typeorm DataSource.
-     *
-     * Default: undefined
-     */
-    options?: DataSourceOptions,
+export type DatabaseDropContext = DatabaseBaseContext & {
     /**
      * Only drop database if existed.
      *

@@ -1,5 +1,5 @@
 import { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
-import { findDataSource } from '../../data-source/utils';
+import { findDataSource } from '../../data-source/find';
 import { buildDataSourceOptions } from '../../data-source';
 
 async function setDatabaseContextOptions<T extends DatabaseBaseContext>(context: T) : Promise<T> {
