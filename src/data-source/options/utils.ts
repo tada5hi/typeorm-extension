@@ -14,9 +14,7 @@ export function changeTSToJSPath<T>(raw: T, options?: PathOptions) : T {
     options.dist = options.dist || 'dist';
 
     for (let i = 0; i < value.length; i++) {
-        if (
-            typeof value[i] === 'string'
-        ) {
+        if (typeof value[i] === 'string') {
             if (
                 value[i].indexOf(options.src) !== -1 &&
                 value[i].indexOf(options.dist) === -1

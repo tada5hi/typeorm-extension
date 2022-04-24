@@ -23,6 +23,7 @@ From `v2.0.0` onwards, this library requires a typeorm version >= v0.3.0 ☂.
 - [Usage](#usage)
     - [CLI](#cli)
     - [Database](#database)
+    - [Seeding](#seeding)
     - [Query](#query)
 - [Functions](#functions)
   - Database
@@ -66,6 +67,7 @@ to `create` or `drop` a database:
 The following commands are available in the terminal:
 - `typeorm-extension db:create` to create the database
 - `typeorm-extension db:drop` to drop the database
+- `typeorm-extension seed` seed the database
 
 Alternatively, the full command path can be set in the package.json file to run it e.g. with ts-node.
 
@@ -74,23 +76,25 @@ Alternatively, the full command path can be set in the package.json file to run 
   ...
   "db:create": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:create",
   "db:drop": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:drop",
+  "seed": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js seed"
   ...
 }
 ```
 
 #### Options
 
-| Option                  | Default         | Description                                                                                                                                                                                                                                                                                  |
-|-------------------------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--root` or `-r`        | `process.cwd()` | Path to the data-source / config file.                                                                                                                                                                                                                                                       |
-| `--dataSource` or `-d`  | `data-source`   | Name of the data-source file.                                                                                                                                                                                                                                                                |
-| `--synchronize` or `-s` | `yes`           | Synchronize the database schema after database creation. This option is only available for the create command. Options: `yes` or `no`.                                                                                                                                                       |
-| `--initialDatabase`     | `undefined`     | Specify the initial database to connect to. This option is only available for the create command and is only relevant for the `postgres` driver, where you always have to connect to a database. If you don't provide a database, the database name will be equal to the connection user name. |
-| `--connection` or `-c`  | `default`       | Name of the connection. Required if there are multiple connections.                                                                                                                                                                                                                   |
-| `--config` or `-f`      | `ormconfig.js`  | Name to the config file.                                                                                                                                                                                                                                                              |
+| Option                  | Commands                        | Default         | Description                                                                                                                                                                                                                              |
+|-------------------------|---------------------------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--root` or `-r`        | `db:create`, `db:drop` & `seed` | `process.cwd()` | Path to the data-source / config file.                                                                                                                                                                                                   |
+| `--dataSource` or `-d`  | `db:create`, `db:drop` & `seed` | `data-source`   | Name of the data-source file.                                                                                                                                                                                                            |
+| `--synchronize` or `-s` | `db:create` & `db:drop`         | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                         |
+| `--initialDatabase`     | `db:create`                     | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always to connect to a database. If no database is provided, the database name will be equal to the connection user name. |
+| `--seed`                | `seed`                          | `undefined`     | Specify a specific seed class to run.                                                                                                                                                                                                    |
+| `--connection` or `-c`  | `db:create`, `db:drop` & `seed` | `default`       | Name of the connection. Required if there are multiple connections.                                                                                                                                                                      |
+| `--config` or `-f`      | `db:create`, `db:drop` & `seed` | `ormconfig.js`  | Name to the config file.                                                                                                                                                                                                                 |
 
 ### Database
-An alternative to the CLI variant, is to `create` and `drop` the database in the code base during the runtime of the application.
+An alternative to the CLI variant, is to `create` the database in the code base during the runtime of the application.
 Therefore, provide the `DataSourceOptions` for the DataSource manually, or let it be created automatically:
 
 #### Create
@@ -208,6 +212,147 @@ import { dropDatabase } from 'typeorm-extension';
 ```
 
 To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions) section and read more about it.
+
+### Seeding
+
+Seeding the database is fairly easy and can be achieved by following the steps below:
+- `Entity`: Define one or more entities.
+- `Factory` (optional): Define a factory for each entity for which data should be automatically generated.
+- `Seeder`: Define one or more seeder classes to populate the database with an initial data set or generated data by a factory.
+- `Execute`: Run the seeder(s) with the CLI or in the code base.
+
+#### Entity
+To get started, define one or more entities.
+
+**`user.ts`**
+```typescript
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column
+} from "typeorm"
+
+@Entity()
+export class User {
+    @PrimaryGeneratedColumn()
+    id: number
+
+    @Column()
+    firstName: string
+
+    @Column()
+    lastName: string
+
+    @Column()
+    email: string
+}
+```
+
+#### Factory
+To create entities with random data, create a factory for each desired entity.
+The definition of a factory is **optional**.
+
+**`user.factory.ts`**
+```typescript
+import { setSeederFactory } from "typeorm-extension";
+import {User} from "./user";
+
+setSeederFactory(User, (faker) => {
+    const user = new User();
+    user.firstName = faker.name.firstName('male');
+    user.lastName = faker.name.lastName('male');
+    user.email = faker.internet.email(user.firstName, user.lastName);
+
+    return user;
+})
+```
+
+#### Seeder
+And last but not least, create a seeder. The seeder can be called by the cli command `seed` or in the codebase
+by using the function `runSeeder`.
+A seeder class only requires one method, called `run` and provides the arguments `dataSource` & `factoryManager`.
+
+**`user.seeder.ts`**
+
+The final seeder class could look like this:
+
+```typescript
+import { Seeder, SeederFactoryManager } from 'typeorm-extension';
+import { DataSource } from 'typeorm';
+import { User } from './user';
+
+export default class UserSeeder implements Seeder {
+    public async run(
+        dataSource: DataSource,
+        factoryManager: SeederFactoryManager
+    ): Promise<any> {
+        const repository =  dataSource.getRepository(User);
+        await repository.insert([
+            {firstName: 'Caleb', lastName: 'Barrows'},
+            {firstName: 'Wilson', lastName: 'Terry'},
+        ]);
+
+        // ---------------------------------------------------
+
+        const userFactory = await factoryManager.get(User);
+        // save 1 factory generated entity, to the database
+        await userFactory.save();
+
+        // save 5 factory generated entities, to the database
+        await userFactory.saveMany(5);
+    }
+}
+```
+
+#### Execute
+
+Execute a `single` seeder in the code base:
+
+```typescript
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { runSeeder, SeederOptions } from 'typeorm-extension';
+import { User } from 'user';
+import { UserSeeder } from 'user.seeder';
+
+(async () => {
+    const options: DataSourceOptions & SeederOptions = {
+        type: 'better-sqlite',
+        database: 'db.sqlite',
+        entities: [User],
+
+        factories: ['./**.factory.ts']
+    };
+
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+
+    await runSeeder(dataSource, UserSeeder);
+})();
+```
+
+Execute `multiple` seeders in the code base:
+
+```typescript
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { runSeeder, SeederOptions } from 'typeorm-extension';
+import { User } from 'user';
+
+(async () => {
+    const options: DataSourceOptions & SeederOptions = {
+        type: 'better-sqlite',
+        database: 'db.sqlite',
+        entities: [User],
+
+        seeds: ['./**.seeder.ts'],
+        factories: ['./**.factory.ts']
+    };
+
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+
+    await runSeeders(dataSource);
+})();
+```
 
 ### Query
 To build & parse (+validate) query parameter (fields, filter, ...) values, this library uses [@trapi/query](https://www.npmjs.com/package/@trapi/query) under the hood.
@@ -714,7 +859,7 @@ The function returns an objects. Each key-value pair represents a field and the 
 #### DatabaseBaseContext
 ```typescript
 import { DataSourceOptions } from 'typeorm';
-import { DataSourceFindContext } from 'typeorm-extension';
+import { DataSourceFindOptions } from 'typeorm-extension';
 
 export type DatabaseBaseContext = {
     /**
@@ -727,7 +872,7 @@ export type DatabaseBaseContext = {
     /**
      * Options for the find method, where to look for the data-source file.
      */
-    dataSourceFind?: DataSourceFindContext
+    findOptions?: DataSourceFindOptions
 };
 ```
 

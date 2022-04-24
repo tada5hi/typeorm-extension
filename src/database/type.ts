@@ -1,5 +1,5 @@
 import { DataSourceOptions } from 'typeorm';
-import { DataSourceFindContext } from '../data-source';
+import { DataSourceFindOptions } from '../data-source';
 
 export type DatabaseBaseContext = {
     /**
@@ -12,7 +12,7 @@ export type DatabaseBaseContext = {
     /**
      * Options for the find method, where to look for the data-source file.
      */
-    dataSourceFind?: DataSourceFindContext
+    findOptions?: DataSourceFindOptions
 };
 
 export type DatabaseCreateContext = DatabaseBaseContext & {

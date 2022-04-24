@@ -1,13 +1,13 @@
 import path from 'path';
 import { DataSource, InstanceChecker } from 'typeorm';
 import { loadFile, locateFile } from '../../file';
-import { DataSourceFindContext } from './type';
+import { DataSourceFindOptions } from './type';
 import { isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
 import { changeTSToJSPath } from '../options';
 
 export async function findDataSource(
-    context?: DataSourceFindContext,
+    context?: DataSourceFindOptions,
 ) : Promise<DataSource | undefined> {
     const fileNames : string[] = [
         'data-source',
@@ -83,8 +83,10 @@ export async function findDataSource(
             if (typeof fileExports === 'object') {
                 const keys = Object.keys(fileExports);
                 for (let j = 0; j < keys.length; j++) {
-                    if (InstanceChecker.isDataSource((fileExports as Record<string, any>)[keys[i]])) {
-                        return (fileExports as Record<string, any>)[keys[i]];
+                    const value = (fileExports as Record<string, any>)[keys[i]];
+
+                    if (InstanceChecker.isDataSource(value)) {
+                        return value;
                     }
                 }
             }
