@@ -844,7 +844,6 @@ Parse and apply fields of the main entity and optional of included relations pas
 **`Simple`**
 
 ```typescript
-// Only drop database if it does exists.
 import { applyQueryFields } from 'typeorm-extension';
 
 const fields = applyQueryFields(query, ['name'], {
@@ -887,7 +886,6 @@ Transform filters of the main entity and optional of included relations passed i
 **`Simple`**
 
 ```typescript
-// Only drop database if it does exists.
 import { applyQueryFilters } from 'typeorm-extension';
 
 const filters = applyQueryFilters(query, {id: 1}, {
@@ -931,7 +929,6 @@ Transform relations passed in as `string`, `string[]` and apply them to the `Sel
 **`Simple`**
 
 ```typescript
-// Only drop database if it does exists.
 import { applyQueryRelations } from 'typeorm-extension';
 
 const includes = applyQueryRelations(query, ['roles'], {
@@ -974,7 +971,6 @@ Transform pagination data passed in as `{limit?: number, offset?: number}` and a
 **`Simple`**
 
 ```typescript
-// Only drop database if it does exists.
 import { applyQueryPagination } from 'typeorm-extension';
 
 const pagination = applyQueryPagination(query, {limit: 100}, {
@@ -1016,7 +1012,6 @@ Transform sort fields passed in as `string`, `string[]` and apply them to the `S
 **`Simple`**
 
 ```typescript
-// Only drop database if it does exists.
 import { applyQuerySort } from 'typeorm-extension';
 
 const sort = applyQuerySort(query, ['-name'], {
@@ -1119,7 +1114,7 @@ export type DatabaseDropContext = DatabaseBaseContext & {
 #### Seeder
 ```typescript
 import { DataSource } from 'typeorm';
-import { SeederFactoryManager } from './factory';
+import { SeederFactoryManager } from 'typeorm-extension';
 
 interface Seeder {
     run(dataSource: DataSource, factoryManager: SeederFactoryManager) : Promise<void>;
