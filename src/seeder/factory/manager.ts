@@ -29,10 +29,8 @@ export class SeederFactoryManager {
             throw new Error(`No seeder factory is registered for the entity: ${name}`);
         }
 
-        const { factoryFn } = this.items[name];
-
         return new SeederFactory({
-            factoryFn,
+            factoryFn: this.items[name].factoryFn,
             entity,
             name,
         });

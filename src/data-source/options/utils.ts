@@ -5,7 +5,10 @@ type PathOptions = {
     dist?: string,
 };
 
-export function changeTSToJSPath<T>(raw: T, options?: PathOptions) : T {
+export function changeTSToJSPath<T>(
+    raw: T,
+    options?: PathOptions,
+) : T {
     const isArray : boolean = Array.isArray(raw);
     const value = Array.isArray(raw) ? raw : [raw];
 
@@ -26,12 +29,22 @@ export function changeTSToJSPath<T>(raw: T, options?: PathOptions) : T {
                     value[i].substring(lastIndex + options.src.length);
             }
 
+            let lastPart : string;
+
+            if (value[i].indexOf('\\') !== -1) {
+                lastPart = value[i].split('\\').pop();
+            } else {
+                lastPart = value[i].split('/').pop();
+            }
+
             if (
-                value[i].indexOf('.ts') !== -1 &&
-                value[i].indexOf('.js') === -1
+                // ignore pattern paths
+                value[i].indexOf('*') === -1 &&
+                lastPart.indexOf('ts') !== -1 &&
+                lastPart.indexOf('js') === -1
             ) {
                 value[i] = value[i]
-                    .replace('.ts', '.js');
+                    .replace('ts', 'js');
             }
         }
     }
@@ -47,7 +60,10 @@ export function modifyDataSourceOptionForRuntimeEnvironment<
     key: K,
     pathOptions?: PathOptions,
 ): T {
-    if (!hasOwnProperty(options, key) || isTsNodeRuntimeEnvironment()) {
+    if (
+        !hasOwnProperty(options, key) ||
+        isTsNodeRuntimeEnvironment()
+    ) {
         return options;
     }
 

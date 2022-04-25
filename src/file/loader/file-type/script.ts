@@ -6,7 +6,10 @@ export async function loadScriptFileSingleExport(
 ) : Promise<unknown | undefined> {
     try {
         const data = await import(filePath);
-        if (hasOwnProperty(data, 'default')) {
+        if (
+            !filterFn &&
+            hasOwnProperty(data, 'default')
+        ) {
             return data.default;
         }
 

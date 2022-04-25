@@ -1,15 +1,23 @@
-import {createDatabase, dropDatabase, findDataSource, setDataSource, useDataSource} from "../../../src";
-import path from "path";
+import {
+    buildDataSourceOptions,
+    createDatabase,
+    dropDatabase,
+    setDataSource,
+    unsetDataSource,
+    useDataSource
+} from "../../../src";
+import {DataSource} from "typeorm";
 
 export async function setupTestDatabase() {
-    const dataSource = await findDataSource({
-        directory: path.join(__dirname)
-    });
+    const options = await buildDataSourceOptions({
+        directory: __dirname
+    })
 
     await createDatabase({
-        options: dataSource.options
+        options
     });
 
+    const dataSource = new DataSource(options);
     await dataSource.initialize();
 
     setDataSource(dataSource);
@@ -22,4 +30,6 @@ export async function destroyTestDatabase() {
     await dropDatabase({
         options: dataSource.options
     });
+
+    unsetDataSource()
 }

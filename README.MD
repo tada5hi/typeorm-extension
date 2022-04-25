@@ -81,17 +81,20 @@ Alternatively, the full command path can be set in the package.json file to run 
 }
 ```
 
+> Read the [Seeding Configuration](#configuration) section to find out how to specify the path,
+> for the seeder- & factory-location.
+
 #### Options
 
-| Option                  | Commands                        | Default         | Description                                                                                                                                                                                                                              |
-|-------------------------|---------------------------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--root` or `-r`        | `db:create`, `db:drop` & `seed` | `process.cwd()` | Path to the data-source / config file.                                                                                                                                                                                                   |
-| `--dataSource` or `-d`  | `db:create`, `db:drop` & `seed` | `data-source`   | Name of the data-source file.                                                                                                                                                                                                            |
-| `--synchronize` or `-s` | `db:create` & `db:drop`         | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                         |
-| `--initialDatabase`     | `db:create`                     | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always to connect to a database. If no database is provided, the database name will be equal to the connection user name. |
-| `--seed`                | `seed`                          | `undefined`     | Specify a specific seed class to run.                                                                                                                                                                                                    |
-| `--connection` or `-c`  | `db:create`, `db:drop` & `seed` | `default`       | Name of the connection. Required if there are multiple connections.                                                                                                                                                                      |
-| `--config` or `-f`      | `db:create`, `db:drop` & `seed` | `ormconfig.js`  | Name to the config file.                                                                                                                                                                                                                 |
+| Option                  | Commands                        | Default         | Deprecated | Description                                                                                                                                                                                                                              |
+|-------------------------|---------------------------------|-----------------|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--root` or `-r`        | `db:create`, `db:drop` & `seed` | `process.cwd()` | `no`       | Path to the data-source / config file.                                                                                                                                                                                                   |
+| `--dataSource` or `-d`  | `db:create`, `db:drop` & `seed` | `data-source`   | `no`       | Name of the data-source file.                                                                                                                                                                                                            |
+| `--synchronize` or `-s` | `db:create` & `db:drop`         | `yes`           | `no`       | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                         |
+| `--initialDatabase`     | `db:create`                     | `undefined`     | `no`       | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always to connect to a database. If no database is provided, the database name will be equal to the connection user name. |
+| `--seed`                | `seed`                          | `undefined`     | `no`       | Specify a specific seed class to run.                                                                                                                                                                                                    |
+| `--connection` or `-c`  | `db:create`, `db:drop` & `seed` | `default`       | `yes`      | Name of the connection. Required if there are multiple connections.                                                                                                                                                                      |
+| `--config` or `-f`      | `db:create`, `db:drop` & `seed` | `ormconfig.js`  | `yes`      | Name to the config file.                                                                                                                                                                                                                 |
 
 ### Database
 An alternative to the CLI variant, is to `create` the database in the code base during the runtime of the application.
@@ -216,10 +219,67 @@ To get a better overview and understanding of the [dropDatabase](#dropdatabase) 
 ### Seeding
 
 Seeding the database is fairly easy and can be achieved by following the steps below:
+- `Configuration`: Specify the seed and factory location by path or object.
 - `Entity`: Define one or more entities.
 - `Factory` (optional): Define a factory for each entity for which data should be automatically generated.
 - `Seeder`: Define one or more seeder classes to populate the database with an initial data set or generated data by a factory.
 - `Execute`: Run the seeder(s) with the CLI or in the code base.
+
+#### Configuration
+
+The seeder- & factory-location, can be specified via:
+- `environment` variable(s)
+- extended `data-source.ts` file
+- `runSeeder(s)` method options parameter, in case of a direct code base usage
+
+> The default factory path is: `src/database/factories/**/*{.ts,.js}`
+
+> The default seed path is: `src/database/seeds/**/*{.ts,.js}`
+
+`env`
+```
+TYPEORM_SEEDING_FACTORIES=src/database/factories/**/*{.ts,.js}
+TYPEORM_SEEDING_SEEDS=src/database/seeds/**/*{.ts,.js}
+```
+
+`data-source.ts`
+
+```typescript
+import {DataSourceOptions} from 'typeorm';
+import {SeederOptions} from 'typeorm-extension';
+
+const options: DataSourceOptions & SeederOptions = {
+    type: 'better-sqlite',
+    database: 'db.sqlite',
+
+    seeds: ['src/database/seeds/**/*{.ts,.js}'],
+    factories: ['src/database/factories/**/*{.ts,.js}']
+};
+
+export const dataSource = new DataSource(options);
+```
+
+`runSeeder(s)`
+
+```typescript
+import {DataSourceOptions} from 'typeorm';
+import {runSeeders, SeederOptions} from 'typeorm-extension';
+
+(async () => {
+    const options: DataSourceOptions = {
+        type: 'better-sqlite',
+        database: 'db.sqlite',
+    };
+
+    const dataSource = new DataSource(options);
+    await dataSource.initialize();
+
+    runSeeders(dataSource, {
+        seeds: ['src/database/seeds/**/*{.ts,.js}'],
+        factories: ['src/database/factories/**/*{.ts,.js}']
+    });
+})();
+```
 
 #### Entity
 To get started, define one or more entities.
@@ -288,8 +348,11 @@ export default class UserSeeder implements Seeder {
     ): Promise<any> {
         const repository =  dataSource.getRepository(User);
         await repository.insert([
-            {firstName: 'Caleb', lastName: 'Barrows'},
-            {firstName: 'Wilson', lastName: 'Terry'},
+            {
+                firstName: 'Caleb',
+                lastName: 'Barrows',
+                email: 'caleb.barrows@gmail.com'
+            }
         ]);
 
         // ---------------------------------------------------

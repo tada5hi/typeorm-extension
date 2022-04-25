@@ -1,6 +1,6 @@
+import { DataSourceOptions } from 'typeorm';
 import { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
-import { findDataSource } from '../../data-source/find';
-import { buildDataSourceOptions } from '../../data-source';
+import { buildDataSourceOptions, findDataSource } from '../../data-source';
 
 async function setDatabaseContextOptions<T extends DatabaseBaseContext>(context: T) : Promise<T> {
     if (!context.options) {
@@ -10,11 +10,19 @@ async function setDatabaseContextOptions<T extends DatabaseBaseContext>(context:
         }
 
         if (!context.options) {
-            context.options = await buildDataSourceOptions({
-                buildForCommand: true,
-            });
+            context.options = await buildDataSourceOptions();
         }
     }
+
+    Object.assign(context.options, {
+        subscribers: [],
+        synchronize: false,
+        migrationsRun: false,
+        dropSchema: false,
+        logging: [
+            ...(process.env.NODE_ENV !== 'test' ? ['query', 'error', 'schema'] : []),
+        ],
+    } as DataSourceOptions);
 
     return context;
 }

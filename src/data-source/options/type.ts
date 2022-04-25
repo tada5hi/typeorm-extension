@@ -1,7 +1,31 @@
 export type DataSourceOptionsBuildContext = {
+    /**
+     * Database connection name
+     * Default: default
+     *
+     * @deprecated
+     */
     name?: string,
+    /**
+     * Configuration file name without extension
+     * Default: ormconfig
+     *
+     * @deprecated
+     */
     configName?: string,
-    root?: string,
-    tsConfigDirectory?: string,
-    buildForCommand?: boolean
+    /**
+     * Data source file name without extension
+     * Default: data-source
+     */
+    dataSourceName?: string,
+    /**
+     * Directory where to find dataSource + config
+     * Default: process.cwd()
+     */
+    directory?: string,
+    /**
+     * Directory path to the tsconfig.json file
+     * Default: process.cwd()
+     */
+    tsconfigDirectory?: string
 };

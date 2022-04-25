@@ -9,8 +9,7 @@ export default class UserSeeder implements Seeder {
     ) : Promise<void> {
         const repository =  dataSource.getRepository(User);
         await repository.insert([
-            {firstName: 'Caleb', lastName: 'Barrows'},
-            {firstName: 'Wilson', lastName: 'Terry'},
+            {firstName: 'Caleb', lastName: 'Barrows', email: 'caleb.barrows@gmail.com'}
         ]);
 
         // ---------------------------------------------------

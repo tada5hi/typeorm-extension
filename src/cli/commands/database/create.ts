@@ -1,8 +1,6 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { DataSourceOptions } from 'typeorm';
 import { buildDataSourceOptions } from '../../../data-source';
 import { DatabaseCreateContext, createDatabase } from '../../../database';
-import { findDataSource } from '../../../data-source/find';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;
@@ -56,23 +54,12 @@ export class DatabaseCreateCommand implements CommandModule {
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
 
-        let dataSourceOptions : DataSourceOptions;
-        const dataSource = await findDataSource({
+        const dataSourceOptions = await buildDataSourceOptions({
+            name: args.connection,
+            configName: args.config,
             directory: args.root,
-            fileName: args.dataSource,
+            dataSourceName: args.dataSource,
         });
-        if (dataSource) {
-            dataSourceOptions = dataSource.options;
-        }
-
-        if (!dataSourceOptions) {
-            dataSourceOptions = await buildDataSourceOptions({
-                name: args.connection,
-                configName: args.config,
-                root: args.root,
-                buildForCommand: true,
-            });
-        }
 
         const context : DatabaseCreateContext = {
             ifNotExist: true,

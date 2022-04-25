@@ -3,6 +3,7 @@ import { DataSourceOptionsBuildContext } from './type';
 import { setDefaultSeederOptions } from '../../seeder';
 import { modifyDataSourceOptionsForRuntimeEnvironment } from './utils';
 import { readTsConfig } from '../../utils/tsconfig';
+import { findDataSource } from '../find';
 
 export async function extendDataSourceOptions(
     options: DataSourceOptions,
@@ -20,30 +21,52 @@ export async function extendDataSourceOptions(
     return options;
 }
 
-export async function buildDataSourceOptions(
-    context?: DataSourceOptionsBuildContext,
+/**
+ * Build DataSourceOptions from configuration.
+ *
+ * @deprecated
+ * @param context
+ */
+export async function buildLegacyDataSourceOptions(
+    context: DataSourceOptionsBuildContext,
 ) : Promise<DataSourceOptions> {
-    context = context ?? {};
-
-    const root : string = context.root || process.cwd();
+    const directory : string = context.directory || process.cwd();
+    const tsconfigDirectory : string = context.tsconfigDirectory || process.cwd();
 
     const connectionOptionsReader = new ConnectionOptionsReader({
-        root,
+        root: directory,
         configName: context.configName,
     });
 
     const dataSourceOptions = await connectionOptionsReader.get(context.name || 'default');
 
-    /* istanbul ignore next */
-    if (context.buildForCommand) {
-        Object.assign(dataSourceOptions, {
-            subscribers: [],
-            synchronize: false,
-            migrationsRun: false,
-            dropSchema: false,
-            logging: ['query', 'error', 'schema'],
-        } as DataSourceOptions);
+    return extendDataSourceOptions(dataSourceOptions, tsconfigDirectory);
+}
+
+/**
+ * Build DataSourceOptions from DataSource or from configuration.
+ *
+ * @param context
+ */
+export async function buildDataSourceOptions(
+    context?: DataSourceOptionsBuildContext,
+) : Promise<DataSourceOptions> {
+    context = context ?? {};
+
+    const directory : string = context.directory || process.cwd();
+    const tsconfigDirectory : string = context.tsconfigDirectory || process.cwd();
+
+    const dataSource = await findDataSource({
+        directory,
+        fileName: context.dataSourceName,
+    });
+
+    if (dataSource) {
+        return extendDataSourceOptions(
+            dataSource.options,
+            tsconfigDirectory,
+        );
     }
 
-    return extendDataSourceOptions(dataSourceOptions, context.tsConfigDirectory || root);
+    return buildLegacyDataSourceOptions(context);
 }

@@ -1,15 +1,12 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { DataSourceOptions } from 'typeorm';
 import {
     runSeeders,
-} from '../../../seeder';
+} from '../../seeder';
 import {
     buildDataSourceOptions,
-    extendDataSourceOptions,
-    findDataSource,
     setDataSourceOptions,
     useDataSource,
-} from '../../../data-source';
+} from '../../data-source';
 
 export interface DatabaseSeedArguments extends Arguments {
     root: string;
@@ -19,10 +16,10 @@ export interface DatabaseSeedArguments extends Arguments {
     seed: undefined | string,
 }
 
-export class DatabaseSeedCommand implements CommandModule {
-    command = 'db:create';
+export class SeedCommand implements CommandModule {
+    command = 'seed';
 
-    describe = 'Create database.';
+    describe = 'Populate the database with an initial data set or generated data by a factory.';
 
     builder(args: Argv) {
         return args
@@ -57,30 +54,17 @@ export class DatabaseSeedCommand implements CommandModule {
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseSeedArguments = raw as DatabaseSeedArguments;
 
-        let dataSourceOptions : DataSourceOptions;
-        let dataSource = await findDataSource({
+        const dataSourceOptions = await buildDataSourceOptions({
+            name: args.connection,
+            configName: args.config,
             directory: args.root,
-            fileName: args.dataSource,
+            dataSourceName: args.dataSource,
         });
-
-        if (dataSource) {
-            dataSourceOptions = dataSource.options;
-        }
-
-        if (!dataSourceOptions) {
-            dataSourceOptions = await buildDataSourceOptions({
-                name: args.connection,
-                configName: args.config,
-                root: args.root,
-                buildForCommand: true,
-            });
-        }
-
-        dataSourceOptions = await extendDataSourceOptions(dataSourceOptions);
 
         setDataSourceOptions(dataSourceOptions);
 
-        dataSource = await useDataSource();
+        const dataSource = await useDataSource();
+
         await runSeeders(dataSource, {
             seedName: args.seed,
         });

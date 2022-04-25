@@ -4,11 +4,11 @@ import {destroyTestDatabase, setupTestDatabase} from "../../data/typeorm/utils";
 import '../../data/factory/user';
 
 describe('src/seeder/factory/index.ts', function () {
-    beforeAll(async () => {
+    beforeEach(async () => {
         await setupTestDatabase();
     });
 
-    afterAll(async () => {
+    afterEach(async () => {
         await destroyTestDatabase();
     });
 

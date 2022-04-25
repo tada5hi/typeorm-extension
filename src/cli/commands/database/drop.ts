@@ -1,8 +1,6 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
-import { DataSourceOptions } from 'typeorm';
 import { buildDataSourceOptions } from '../../../data-source';
 import { dropDatabase } from '../../../database';
-import { findDataSource } from '../../../data-source/find';
 
 export interface DatabaseDropArguments extends Arguments {
     root: string;
@@ -45,23 +43,12 @@ export class DatabaseDropCommand implements CommandModule {
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseDropArguments = raw as DatabaseDropArguments;
 
-        let dataSourceOptions : DataSourceOptions;
-        const dataSource = await findDataSource({
+        const dataSourceOptions = await buildDataSourceOptions({
+            name: args.connection,
+            configName: args.config,
             directory: args.root,
-            fileName: args.dataSource,
+            dataSourceName: args.dataSource,
         });
-        if (dataSource) {
-            dataSourceOptions = dataSource.options;
-        }
-
-        if (!dataSourceOptions) {
-            dataSourceOptions = await buildDataSourceOptions({
-                name: args.connection,
-                configName: args.config,
-                root: args.root,
-                buildForCommand: true,
-            });
-        }
 
         await dropDatabase({
             ifExist: true,

@@ -1,6 +1,6 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { SeederConstructor, SeederOptions } from './type';
-import { resolveFilePaths, setDefaultSeederOptions } from './utils';
+import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
 import { modifyDataSourceOptionForRuntimeEnvironment } from '../data-source';
 import { loadScriptFile, loadScriptFileSingleExport } from '../file';
 import { SeederFactoryConfig, useSeederFactoryManager } from './factory';
@@ -28,7 +28,9 @@ async function prepareSeeder(
         }
 
         if (factoryFiles.length > 0) {
+            factoryFiles = resolveFilePatterns(factoryFiles);
             factoryFiles = resolveFilePaths(factoryFiles);
+
             for (let i = 0; i < factoryFiles.length; i++) {
                 await loadScriptFile(factoryFiles[i]);
             }
@@ -62,7 +64,9 @@ async function prepareSeeder(
         }
 
         if (seedFiles.length > 0) {
+            seedFiles = resolveFilePatterns(seedFiles);
             seedFiles = resolveFilePaths(seedFiles);
+
             for (let i = 0; i < seedFiles.length; i++) {
                 const item = await loadScriptFileSingleExport(seedFiles[i]) as SeederConstructor;
 
@@ -86,11 +90,11 @@ async function prepareSeeder(
 
 export async function runSeeder(
     dataSource: DataSource,
-    seeder: SeederConstructor,
+    Seeder: SeederConstructor,
     seederOptions?: SeederOptions,
 ) {
     seederOptions = seederOptions || {};
-    seederOptions.seeds = [seeder];
+    seederOptions.seeds = [Seeder];
     seederOptions.factoriesLoad = seederOptions.factoriesLoad ?? true;
 
     if (
@@ -105,23 +109,10 @@ export async function runSeeder(
     }
 
     await prepareSeeder(seederOptions);
+    const clazz = new Seeder();
 
-    // eslint-disable-next-line new-cap
-    const clazz = new seeder();
-
-    const argLength = clazz.run.length;
-
-    switch (argLength) {
-        case 2: {
-            const factoryManager = useSeederFactoryManager();
-            await clazz.run(dataSource, factoryManager);
-            break;
-        }
-        default: {
-            await clazz.run(dataSource);
-            break;
-        }
-    }
+    const factoryManager = useSeederFactoryManager();
+    await clazz.run(dataSource, factoryManager);
 }
 
 export async function runSeeders(
@@ -132,11 +123,17 @@ export async function runSeeders(
 
     const { seeds, factories } = dataSource.options as DataSourceOptions & SeederOptions;
 
-    if (typeof seeds !== 'undefined') {
+    if (
+        typeof seederOptions.seeds === 'undefined' &&
+        typeof seeds !== 'undefined'
+    ) {
         seederOptions.seeds = seeds;
     }
 
-    if (typeof factories !== 'undefined') {
+    if (
+        typeof seederOptions.factories === 'undefined' &&
+        typeof factories !== 'undefined'
+    ) {
         seederOptions.factories = factories;
     }
 

@@ -48,7 +48,7 @@ export class SeederFactory<O extends Record<string, any>> {
         const dataSource = await useDataSource();
 
         const entity = await this.make(params, true);
-        const entityManager = dataSource.createEntityManager();
+        const entityManager = dataSource.getRepository(this.context.entity);
 
         return entityManager.save(entity, options);
     }

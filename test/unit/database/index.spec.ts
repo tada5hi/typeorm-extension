@@ -1,16 +1,16 @@
 import path from "path";
 import {
-    buildDataSourceOptions
+    buildLegacyDataSourceOptions
 } from "../../../src";
-import {buildDriverOptions} from "../../../src/database/driver";
+import {buildDriverOptions} from "../../../src";
 import {getCharsetFromDataSourceOptions} from "../../../src/database/driver/utils/charset";
 
 describe('src/database/module.ts', () => {
     const rootPath : string = path.resolve(process.cwd(), 'test/data/typeorm');
 
     it('should build simple connection options', async () => {
-        const options = await buildDataSourceOptions({
-            root: rootPath,
+        const options = await buildLegacyDataSourceOptions({
+            directory: rootPath,
             configName: 'ormconfig.json'
         });
 
@@ -29,8 +29,8 @@ describe('src/database/module.ts', () => {
     });
 
     it('should extend database operation options', async () => {
-        const connectionOptions = await buildDataSourceOptions({
-            root: rootPath,
+        const connectionOptions = await buildLegacyDataSourceOptions({
+            directory: rootPath,
             configName: 'ormconfig.json'
         });
 
