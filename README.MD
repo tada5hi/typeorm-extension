@@ -29,6 +29,9 @@ From `v2.0.0` onwards, this library requires a typeorm version >= v0.3.0 ☂.
   - Database
      - [createDatabase](#createdatabase)
      - [dropDatabase](#dropdatabase)
+  - Seeding
+     - [runSeeder](#runseeder)
+     - [runSeeders](#runseeders)
   - Query
      - [applyQueryFields](#applyqueryfields)
      - [applyQueryFilters](#applyqueryfilters)
@@ -160,7 +163,7 @@ import { createDatabase } from 'typeorm-extension';
 ```
 
 
-To get a better overview and understanding of the [createDatabase](#createdatabase) function go to the [functions](#functions) section and read more about it.
+To get a better overview and understanding of the [createDatabase](#createdatabase) function go to the [functions](#functions---database) section and read more about it.
 
 #### Drop
 
@@ -214,7 +217,7 @@ import { dropDatabase } from 'typeorm-extension';
 })();
 ```
 
-To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions) section and read more about it.
+To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions---database) section and read more about it.
 
 ### Seeding
 
@@ -245,8 +248,8 @@ TYPEORM_SEEDING_SEEDS=src/database/seeds/**/*{.ts,.js}
 `data-source.ts`
 
 ```typescript
-import {DataSourceOptions} from 'typeorm';
-import {SeederOptions} from 'typeorm-extension';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { SeederOptions } from 'typeorm-extension';
 
 const options: DataSourceOptions & SeederOptions = {
     type: 'better-sqlite',
@@ -262,8 +265,8 @@ export const dataSource = new DataSource(options);
 `runSeeder(s)`
 
 ```typescript
-import {DataSourceOptions} from 'typeorm';
-import {runSeeders, SeederOptions} from 'typeorm-extension';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { runSeeders, SeederOptions } from 'typeorm-extension';
 
 (async () => {
     const options: DataSourceOptions = {
@@ -290,7 +293,7 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     Column
-} from "typeorm"
+} from 'typeorm';
 
 @Entity()
 export class User {
@@ -314,10 +317,10 @@ The definition of a factory is **optional**.
 
 **`user.factory.ts`**
 ```typescript
-import { setSeederFactory } from "typeorm-extension";
-import {User} from "./user";
+import { setSeederFactory } from 'typeorm-extension';
+import { User } from './user';
 
-setSeederFactory(User, (faker) => {
+export default setSeederFactory(User, (faker) => {
     const user = new User();
     user.firstName = faker.name.firstName('male');
     user.lastName = faker.name.lastName('male');
@@ -369,13 +372,12 @@ export default class UserSeeder implements Seeder {
 
 #### Execute
 
-Execute a `single` seeder in the code base:
+Populate the database from the code base:
 
 ```typescript
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { runSeeder, SeederOptions } from 'typeorm-extension';
+import { runSeeders, SeederOptions } from 'typeorm-extension';
 import { User } from 'user';
-import { UserSeeder } from 'user.seeder';
 
 (async () => {
     const options: DataSourceOptions & SeederOptions = {
@@ -383,22 +385,25 @@ import { UserSeeder } from 'user.seeder';
         database: 'db.sqlite',
         entities: [User],
 
-        factories: ['./**.factory.ts']
+        seeds: ['./*.seeder.ts'],
+        factories: ['./*.factory.ts']
     };
 
     const dataSource = new DataSource(options);
     await dataSource.initialize();
 
-    await runSeeder(dataSource, UserSeeder);
+    await runSeeders(dataSource);
 })();
 ```
 
-Execute `multiple` seeders in the code base:
+Populate the database by explicit definitions from the codebase.
 
 ```typescript
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { runSeeder, SeederOptions } from 'typeorm-extension';
 import { User } from 'user';
+import UserSeeder from 'user.seeder';
+import UserFactory from 'user.factory';
 
 (async () => {
     const options: DataSourceOptions & SeederOptions = {
@@ -406,8 +411,8 @@ import { User } from 'user';
         database: 'db.sqlite',
         entities: [User],
 
-        seeds: ['./**.seeder.ts'],
-        factories: ['./**.factory.ts']
+        seeds: [UserSeeder],
+        factories: [UserFactory]
     };
 
     const dataSource = new DataSource(options);
@@ -418,15 +423,12 @@ import { User } from 'user';
 ```
 
 ### Query
-To build & parse (+validate) query parameter (fields, filter, ...) values, this library uses [@trapi/query](https://www.npmjs.com/package/@trapi/query) under the hood.
+The query submodule enables query parameter (fields, filter, ...) values to be build, parsed & validated.
+Therefore, the [@trapi/query](https://www.npmjs.com/package/@trapi/query) library is used under the hood.
 The main functions and types are also exposed by this library.
 
-To understand the full syntax to build an acceptable URL query string, which can be parsed check out the `README.md` of the [@trapi/query](https://www.npmjs.com/package/@trapi/query) library.
-
----
-
-For explanation proposes of the query utils,
-two simple entities with a simple relation between them are declared to demonstrate their usage:
+For explanation proposes,
+two simple entities with a relation between them are declared to demonstrate the usage of the query utils:
 
 ```typescript
 import {
@@ -435,7 +437,7 @@ import {
     Column,
     OneToOne,
     JoinColumn
-} from "typeorm";
+} from 'typeorm';
 
 @Entity()
 export class User {
@@ -470,21 +472,19 @@ export class Profile {
 }
 ```
 
-In the following example [typeorm](https://www.npmjs.com/package/typeorm) is used for object-relational mapping (ORM)
-and [express](https://www.npmjs.com/package/express) to handle requests.
-
+In the following example [express](https://www.npmjs.com/package/express) is used to handle the HTTP request.
 Each query parameter is applied individually in following code snippet (applyQueryFields, applyQueryFilter, ...).
 
 ```typescript
-import {getRepository} from "typeorm";
-import {Request, Response} from 'express';
+import { getRepository } from 'typeorm';
+import { Request, Response } from 'express';
 import {
     applyQueryFields,
     applyQueryFilters,
     applyQueryRelations,
     applyQueryPagination,
     applyQuerySort
-} from "typeorm-extension";
+} from 'typeorm-extension';
 
 /**
  * Get many users.
@@ -560,7 +560,7 @@ export async function getUsers(req: Request, res: Response) {
 }
 ```
 
-## Functions
+## Functions - Database
 
 ### createDatabase
 
@@ -698,6 +698,136 @@ import { dropDatabase } from 'typeorm-extension';
 
 The function returns a promise with the query result of the underlying database driver.
 
+## Functions - Seeding
+
+### runSeeder
+
+▸ `function` **runSeeder**(`dataSource?: DataSource`, `seeder: SeederConstructor`, `options: SeederOptions`): `Promise`<`void`>
+
+Populate the database with a specific seeder.
+
+#### Example
+
+**`Simple`**
+
+```typescript
+import { DataSource } from 'typeorm';
+import { runSeeder, Seeder, SeederFactoryManager } from 'typeorm-extension';
+
+class SimpleSeeder implements Seeder {
+    public async run(
+        dataSource: DataSource,
+        factoryManager: SeederFactoryManager
+    ): Promise<void> {
+        // ...
+    }
+}
+
+(async () => {
+    const dataSource = new DataSource({
+        // ...
+    });
+    await dataSource.initialize();
+
+    await runSeeder(dataSource, SimpleSeeder);
+})();
+
+```
+
+**`SeederOptions`**
+
+```typescript
+import { DataSource } from 'typeorm';
+import { runSeeder, Seeder, SeederFactoryManager } from 'typeorm-extension';
+
+class SimpleSeeder implements Seeder {
+    public async run(
+        dataSource: DataSource,
+        factoryManager: SeederFactoryManager
+    ): Promise<void> {
+        // ...
+    }
+}
+
+(async () => {
+    const dataSource = new DataSource({
+        // ...
+    });
+    await dataSource.initialize();
+
+    await runSeeder(dataSource, SimpleSeeder, {
+        factories: ['src/database/factories/*{.ts,.js}']
+    });
+})();
+```
+
+#### Parameters
+
+| Name         | Type                 | Description                                               |
+|:-------------|:---------------------|:----------------------------------------------------------|
+| `dataSource` | `DataSource`         | Typeorm DataSource Object                                 |
+| `seeder`     | `SeederConstructor`  | A class which implements the Seeder Interface.            |
+| `options`    | `SeederOptions`      | Seeding options to provide or overwrite the default ones. |
+
+#### Returns
+
+`Promise`<`void`>
+
+### runSeeders
+
+▸ `function` **runSeeders**(`dataSource?: DataSource`, `options: SeederOptions`): `Promise`<`void`>
+
+Populate the database.
+
+#### Example
+
+**`Simple`**
+
+```typescript
+import { DataSource } from 'typeorm';
+import { runSeeders } from 'typeorm-extension';
+
+(async () => {
+    const dataSource = new DataSource({
+        // ...
+    });
+    await dataSource.initialize();
+
+    await runSeeder(dataSource);
+})();
+
+```
+
+**`SeederOptions`**
+
+```typescript
+import { DataSource } from 'typeorm';
+import { runSeeders } from 'typeorm-extension';
+
+(async () => {
+    const dataSource = new DataSource({
+        // ...
+    });
+    await dataSource.initialize();
+
+    await runSeeder(dataSource, {
+        seeds: ['src/database/seeds/*{.ts,.js}'],
+        factories: ['src/database/factories/*{.ts,.js}']
+    });
+})();
+```
+
+#### Parameters
+
+| Name         | Type               | Description                                               |
+|:-------------|:-------------------|:----------------------------------------------------------|
+| `dataSource` | `DataSource`       | Typeorm DataSource Object                                 |
+| `options`    | `SeederOptions`    | Seeding options to provide or overwrite the default ones. |
+
+#### Returns
+
+`Promise`<`void`>
+
 ## Functions - Query
 
 ### applyQueryFields
@@ -724,18 +854,18 @@ console.log(fields);
 
 #### Type parameters
 
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type |
+| Name | Description         |
+|:-----|:--------------------|
+| `T`  | Typeorm entity type |
 
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
-| `data` | `unknown` | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
-| `options` | `FieldsApplyOptions` | Options for the fields to select. |
+| Name      | Type                      | Description                                                 |
+|:----------|:--------------------------|:------------------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                           |
+| `data`    | `unknown`                 | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
+| `options` | `FieldsApplyOptions`      | Options for the fields to select.                           |
 
 #### Returns
 
@@ -767,18 +897,18 @@ console.log(filters);
 
 #### Type parameters
 
-| Name | Description          |
-| :------ |:---------------------|
-| `T` | Typeorm entity type  |
+| Name | Description         |
+|:-----|:--------------------|
+| `T`  | Typeorm entity type |
 
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
-| `data` | `unknown` | Fields in raw format. F.e `{id: 1}`. |
-| `options` | `FiltersApplyOptions` | Options for the fields to select. |
+| Name      | Type                      | Description                          |
+|:----------|:--------------------------|:-------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.    |
+| `data`    | `unknown`                 | Fields in raw format. F.e `{id: 1}`. |
+| `options` | `FiltersApplyOptions`     | Options for the fields to select.    |
 
 #### Returns
 
@@ -811,18 +941,18 @@ console.log(includes);
 
 #### Type parameters
 
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type |
+| Name  | Description         |
+|:------|:--------------------|
+| `T`   | Typeorm entity type |
 
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
-| `data` | `unknown` | Relations in raw format. F.e `['roles']` or `roles` |
-| `options` | `RelationsApplyOptions` | Options for the relations to include. |
+| Name      | Type                      | Description                                         |
+|:----------|:--------------------------|:----------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                   |
+| `data`    | `unknown`                 | Relations in raw format. F.e `['roles']` or `roles` |
+| `options` | `RelationsApplyOptions`   | Options for the relations to include.               |
 
 #### Returns
 
@@ -853,18 +983,18 @@ console.log(pagination);
 
 #### Type parameters
 
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type |
+| Name | Description         |
+|:-----|:--------------------|
+| `T`  | Typeorm entity type |
 
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
-| `data` | `unknown` | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
-| `options` | `PaginationApplyOptions` | Options for the pagination to select. |
+| Name      | Type                      | Description                                                   |
+|:----------|:--------------------------|:--------------------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                             |
+| `data`    | `unknown`                 | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
+| `options` | `PaginationApplyOptions`  | Options for the pagination to select.                         |
 
 #### Returns
 
@@ -896,18 +1026,18 @@ console.log(sort);
 
 #### Type parameters
 
-| Name | Description |
-| :------ | :------ |
-| `T` | Typeorm entity type |
+| Name   | Description         |
+|:-------|:--------------------|
+| `T`    | Typeorm entity type |
 
 
 #### Parameters
 
-| Name | Type | Description |
-| :------ | :------ | :------ |
-| `query` | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class. |
-| `data` | `unknown` | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order.  |
-| `options` | `SortApplyOptions` | Options for the sorting strategy. |
+| Name      | Type                      | Description                                                                                                               |
+|:----------|:--------------------------|:--------------------------------------------------------------------------------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                                                                                         |
+| `data`    | `unknown`                 | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order. |
+| `options` | `SortApplyOptions`        | Options for the sorting strategy.                                                                                         |
 
 #### Returns
 

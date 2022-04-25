@@ -90,26 +90,27 @@ async function prepareSeeder(
 
 export async function runSeeder(
     dataSource: DataSource,
-    Seeder: SeederConstructor,
-    seederOptions?: SeederOptions,
-) {
-    seederOptions = seederOptions || {};
-    seederOptions.seeds = [Seeder];
-    seederOptions.factoriesLoad = seederOptions.factoriesLoad ?? true;
+    seeder: SeederConstructor,
+    options?: SeederOptions,
+) : Promise<void> {
+    options = options || {};
+    options.seeds = [seeder];
+    options.factoriesLoad = options.factoriesLoad ?? true;
 
     if (
-        seederOptions.factoriesLoad &&
-        !seederOptions.factories
+        options.factoriesLoad &&
+        !options.factories
     ) {
         const { factories: dataSourceFactories } = dataSource.options as DataSourceOptions & SeederOptions;
 
         if (typeof dataSourceFactories !== 'undefined') {
-            seederOptions.factories = dataSourceFactories;
+            options.factories = dataSourceFactories;
         }
     }
 
-    await prepareSeeder(seederOptions);
-    const clazz = new Seeder();
+    await prepareSeeder(options);
+    // eslint-disable-next-line new-cap
+    const clazz = new seeder();
 
     const factoryManager = useSeederFactoryManager();
     await clazz.run(dataSource, factoryManager);
@@ -117,27 +118,27 @@ export async function runSeeder(
 
 export async function runSeeders(
     dataSource: DataSource,
-    seederOptions?: SeederOptions,
-) {
-    seederOptions = seederOptions || {};
+    options?: SeederOptions,
+) : Promise<void> {
+    options = options || {};
 
     const { seeds, factories } = dataSource.options as DataSourceOptions & SeederOptions;
 
     if (
-        typeof seederOptions.seeds === 'undefined' &&
+        typeof options.seeds === 'undefined' &&
         typeof seeds !== 'undefined'
     ) {
-        seederOptions.seeds = seeds;
+        options.seeds = seeds;
     }
 
     if (
-        typeof seederOptions.factories === 'undefined' &&
+        typeof options.factories === 'undefined' &&
         typeof factories !== 'undefined'
     ) {
-        seederOptions.factories = factories;
+        options.factories = factories;
     }
 
-    const items = await prepareSeeder(seederOptions);
+    const items = await prepareSeeder(options);
 
     for (let i = 0; i < items.length; i++) {
         await runSeeder(dataSource, items[i], {
