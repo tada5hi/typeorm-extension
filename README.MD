@@ -25,25 +25,29 @@ From `v2.0.0` onwards, this library requires a typeorm version >= v0.3.0 ☂.
     - [Database](#database)
     - [Seeding](#seeding)
     - [Query](#query)
-- [Functions](#functions)
-  - Database
+- Functions
+  - [Database](#functions---database)
      - [createDatabase](#createdatabase)
      - [dropDatabase](#dropdatabase)
-  - Seeding
+  - [Seeding](#functions---seeding)
      - [runSeeder](#runseeder)
      - [runSeeders](#runseeders)
-  - Query
+  - [Query](#functions---query)
      - [applyQueryFields](#applyqueryfields)
      - [applyQueryFilters](#applyqueryfilters)
      - [applyQueryPagination](#applyquerypagination)
      - [applyQueryRelations](#applyqueryrelations)
      - [applyQuerySort](#applyquerysort)
 - [Types](#types)
-  - [Database](#database-types)
+  - [Database](#types---database)
     - [DatabaseBaseContext](#databasebasecontext)
     - [DatabaseCreateContext](#databasecreatecontext)
     - [DatabaseDropContext](#databasedropcontext)
-  - [Query](#query-types)
+  - [Seeding](#types---seeding)
+    - [Seeder](#seeder)
+    - [SeederConstructor](#seederconstructor)
+    - [SeederOptions](#seederoptions)
+  - [Query](#types---query)
 
 ## Installation
 
@@ -225,7 +229,7 @@ Seeding the database is fairly easy and can be achieved by following the steps b
 - `Configuration`: Specify the seed and factory location by path or object.
 - `Entity`: Define one or more entities.
 - `Factory` (optional): Define a factory for each entity for which data should be automatically generated.
-- `Seeder`: Define one or more seeder classes to populate the database with an initial data set or generated data by a factory.
+- `Seed`: Define one or more seed classes to populate the database with an initial data set or generated data by a factory.
 - `Execute`: Run the seeder(s) with the CLI or in the code base.
 
 #### Configuration
@@ -330,14 +334,14 @@ export default setSeederFactory(User, (faker) => {
 })
 ```
 
-#### Seeder
+#### Seed
 And last but not least, create a seeder. The seeder can be called by the cli command `seed` or in the codebase
 by using the function `runSeeder`.
 A seeder class only requires one method, called `run` and provides the arguments `dataSource` & `factoryManager`.
 
 **`user.seeder.ts`**
 
-The final seeder class could look like this:
+A seeder class must implement the [Seeder](#seeder) interface, and could look like this:
 
 ```typescript
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
@@ -763,11 +767,11 @@ class SimpleSeeder implements Seeder {
 
 #### Parameters
 
-| Name         | Type                 | Description                                               |
-|:-------------|:---------------------|:----------------------------------------------------------|
-| `dataSource` | `DataSource`         | Typeorm DataSource Object                                 |
-| `seeder`     | `SeederConstructor`  | A class which implements the Seeder Interface.            |
-| `options`    | `SeederOptions`      | Seeding options to provide or overwrite the default ones. |
+| Name         | Type                 | Description                                                                         |
+|:-------------|:---------------------|:------------------------------------------------------------------------------------|
+| `dataSource` | `DataSource`         | Typeorm DataSource Object                                                           |
+| `seeder`     | `SeederConstructor`  | A class which implements the Seeder Interface.                                      |
+| `options`    | `SeederOptions`      | Seeding options to provide or overwrite the default ones. [Details](#seederoptions) |
 
 #### Returns
 
@@ -819,10 +823,10 @@ import { runSeeders } from 'typeorm-extension';
 
 #### Parameters
 
-| Name         | Type               | Description                                               |
-|:-------------|:-------------------|:----------------------------------------------------------|
-| `dataSource` | `DataSource`       | Typeorm DataSource Object                                 |
-| `options`    | `SeederOptions`    | Seeding options to provide or overwrite the default ones. |
+| Name         | Type               | Description                                                                         |
+|:-------------|:-------------------|:------------------------------------------------------------------------------------|
+| `dataSource` | `DataSource`       | Typeorm DataSource Object                                                           |
+| `options`    | `SeederOptions`    | Seeding options to provide or overwrite the default ones. [Details](#seederoptions) |
 
 #### Returns
 
@@ -841,7 +845,7 @@ Parse and apply fields of the main entity and optional of included relations pas
 
 ```typescript
 // Only drop database if it does exists.
-import {applyQueryFields} from "typeorm-extension";
+import { applyQueryFields } from 'typeorm-extension';
 
 const fields = applyQueryFields(query, ['name'], {
     allowed: ['id', 'name'],
@@ -884,7 +888,7 @@ Transform filters of the main entity and optional of included relations passed i
 
 ```typescript
 // Only drop database if it does exists.
-import {applyQueryFilters} from "typeorm-extension";
+import { applyQueryFilters } from 'typeorm-extension';
 
 const filters = applyQueryFilters(query, {id: 1}, {
     allowed: ['id', 'name'],
@@ -928,7 +932,7 @@ Transform relations passed in as `string`, `string[]` and apply them to the `Sel
 
 ```typescript
 // Only drop database if it does exists.
-import {applyQueryRelations} from "typeorm-extension";
+import { applyQueryRelations } from 'typeorm-extension';
 
 const includes = applyQueryRelations(query, ['roles'], {
     allowed: ['roles', 'photos'],
@@ -971,7 +975,7 @@ Transform pagination data passed in as `{limit?: number, offset?: number}` and a
 
 ```typescript
 // Only drop database if it does exists.
-import {applyQueryPagination} from "typeorm-extension";
+import { applyQueryPagination } from 'typeorm-extension';
 
 const pagination = applyQueryPagination(query, {limit: 100}, {
     maxLimit: 50
@@ -1013,7 +1017,7 @@ Transform sort fields passed in as `string`, `string[]` and apply them to the `S
 
 ```typescript
 // Only drop database if it does exists.
-import {applyQuerySort} from "typeorm-extension";
+import { applyQuerySort } from 'typeorm-extension';
 
 const sort = applyQuerySort(query, ['-name'], {
     allowed: ['id', 'name'],
@@ -1047,7 +1051,7 @@ The function returns an objects. Each key-value pair represents a field and the 
 
 ## Types
 
-### Database Types
+### Types - Database
 
 #### DatabaseBaseContext
 ```typescript
@@ -1110,7 +1114,39 @@ export type DatabaseDropContext = DatabaseBaseContext & {
 };
 ```
 
-### Query Types
+### Types - Seeding
+
+#### Seeder
+```typescript
+import { DataSource } from 'typeorm';
+import { SeederFactoryManager } from './factory';
+
+interface Seeder {
+    run(dataSource: DataSource, factoryManager: SeederFactoryManager) : Promise<void>;
+}
+```
+#### SeederConstructor
+```typescript
+import { Seeder } from 'typeorm-extension';
+
+type SeederConstructor = new () => Seeder;
+```
+
+#### SeederOptions
+
+```typescript
+import { SeederConstructor, SeederFactoryConfig } from 'typeorm-extension';
+
+export type SeederOptions = {
+    seeds?: SeederConstructor[] | string[],
+    seedName?: string,
+
+    factories?: SeederFactoryConfig[] | string[],
+    factoriesLoad?: boolean
+};
+```
+
+### Types - Query
 
 To understand the structure of the parsed query parameter values or to know which values can be passed as (i.e. `buildQuery`, `parseQuery`, ...) function argument,
 check out the [Types](https://www.npmjs.com/package/@trapi/query#types) and [Functions](https://www.npmjs.com/package/@trapi/query#functions) section
