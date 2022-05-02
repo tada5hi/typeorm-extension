@@ -35,7 +35,7 @@ export async function buildDatabaseCreateContext(
     context = await setDatabaseContextOptions(context);
 
     if (typeof context.synchronize === 'undefined') {
-        context.synchronize = true;
+        context.synchronize = false;
     }
 
     if (typeof context.ifNotExist === 'undefined') {
