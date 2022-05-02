@@ -31,7 +31,7 @@ export type DatabaseCreateContext = DatabaseBaseContext & {
     /**
      * Synchronize database entities.
      *
-     * default: true
+     * default: false
      */
     synchronize?: boolean
 };
