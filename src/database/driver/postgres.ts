@@ -72,6 +72,8 @@ export async function createPostgresDatabase(
             Array.isArray(existResult.rows) &&
             existResult.rows.length > 0
         ) {
+            await connection.end();
+
             return Promise.resolve();
         }
     }
