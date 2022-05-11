@@ -23,6 +23,7 @@ From `v2.0.0` onwards, this library requires a typeorm version >= v0.3.0 ☂.
 - [Usage](#usage)
     - [CLI](#cli)
     - [Database](#database)
+    - [Multiple Instances](#multiple-instances)
     - [Seeding](#seeding)
     - [Query](#query)
 - Functions
@@ -222,6 +223,28 @@ import { dropDatabase } from 'typeorm-extension';
 ```
 
 To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions---database) section and read more about it.
+
+### Multiple Instances
+
+This library can also be used to manage one or many DataSource instances, by using the singleton pattern.
+Therefore, additional DataSources must be registered under a different alias manually.
+
+```typescript
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { setDataSourceOptions, useDataSource } from 'typeorm-extension';
+
+(async () => {
+    const secondDataSourceOptions : DataSourceOptions = {
+        // ...
+    };
+
+    setDataSourceOptions(secondDataSourceOptions, 'second');
+
+    const secondDataSource = await useDataSource('second');
+})
+
+
+```
 
 ### Seeding
 

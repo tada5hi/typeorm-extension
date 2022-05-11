@@ -1,31 +1,57 @@
-import { DataSource } from 'typeorm';
-import { DataSourceOptionsBuildContext, useDataSourceOptions } from './options';
+import { DataSource, DataSourceOptions } from 'typeorm';
+import { useDataSourceOptions } from './options';
 
-let instance : DataSource | undefined;
+const instances : Record<string, DataSource> = {};
 
-export function setDataSource(dataSource: DataSource) {
-    instance = dataSource;
+const initializePromises : Record<string, Promise<DataSource>> = {};
+const optionsPromises: Record<string, Promise<DataSourceOptions>> = {};
+
+export function setDataSource(
+    dataSource: DataSource,
+    alias?: string,
+) {
+    alias = alias || 'default';
+
+    instances[alias] = dataSource;
 }
 
-export function unsetDataSource() {
-    instance = undefined;
-}
+export function unsetDataSource(alias?: string) {
+    alias = alias || 'default';
 
-export async function useDataSource(context?: DataSourceOptionsBuildContext) {
-    if (typeof instance !== 'undefined') {
-        if (!instance.isInitialized) {
-            await instance.initialize();
-        }
-
-        return instance;
+    if (Object.prototype.hasOwnProperty.call(instances, alias)) {
+        delete instances[alias];
     }
 
-    const options = await useDataSourceOptions(context);
+    if (Object.prototype.hasOwnProperty.call(optionsPromises, alias)) {
+        delete optionsPromises[alias];
+    }
+
+    if (Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
+        delete initializePromises[alias];
+    }
+}
+
+export async function useDataSource(alias?: string) : Promise<DataSource> {
+    alias = alias || 'default';
+
+    if (Object.prototype.hasOwnProperty.call(instances, alias)) {
+        return instances[alias];
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(optionsPromises, alias)) {
+        optionsPromises[alias] = useDataSourceOptions(alias);
+    }
+
+    const options = await optionsPromises[alias];
 
     const dataSource = new DataSource(options);
-    await dataSource.initialize();
+    if (!Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
+        initializePromises[alias] = dataSource.initialize();
+    }
 
-    instance = dataSource;
+    await initializePromises[alias];
+
+    instances[alias] = dataSource;
 
     return dataSource;
 }

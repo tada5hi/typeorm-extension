@@ -1,19 +1,29 @@
 import { DataSourceOptions } from 'typeorm';
 import { buildDataSourceOptions } from './module';
-import { DataSourceOptionsBuildContext } from './type';
 
-let instance : DataSourceOptions | undefined;
+let instances : Record<string, DataSourceOptions>;
+let instancePromises : Record<string, Promise<DataSourceOptions>>;
 
-export function setDataSourceOptions(options: DataSourceOptions) {
-    instance = options;
+export function setDataSourceOptions(
+    options: DataSourceOptions,
+    alias?: string,
+) {
+    alias = alias || 'default';
+    instances[alias] = options;
 }
 
-export async function useDataSourceOptions(context?: DataSourceOptionsBuildContext) {
-    if (typeof instance !== 'undefined') {
-        return instance;
+export async function useDataSourceOptions(alias?: string) {
+    alias = alias || 'default';
+
+    if (Object.prototype.hasOwnProperty.call(instances, alias)) {
+        return instances[alias];
     }
 
-    instance = await buildDataSourceOptions(context);
+    if (!Object.prototype.hasOwnProperty.call(instances, alias)) {
+        instancePromises[alias] = buildDataSourceOptions();
+    }
 
-    return instance;
+    instances[alias] = await instancePromises[alias];
+
+    return instances[alias];
 }
