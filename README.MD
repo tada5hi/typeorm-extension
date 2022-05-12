@@ -23,13 +23,18 @@ From `v2.0.0` onwards, this library requires a typeorm version >= v0.3.0 ☂.
 - [Usage](#usage)
     - [CLI](#cli)
     - [Database](#database)
-    - [Multiple Instances](#multiple-instances)
+    - [Instances](#instances)
     - [Seeding](#seeding)
     - [Query](#query)
 - Functions
   - [Database](#functions---database)
      - [createDatabase](#createdatabase)
      - [dropDatabase](#dropdatabase)
+  - [Instances](#functions---instances)
+    - [setDataSource](#setdatasource)
+    - [useDataSource](#usedatasource)
+    - [setDataSourceOptions](#setdatasourceoptions)
+    - [useDataSourceOptions](#usedatasourceoptions)
   - [Seeding](#functions---seeding)
      - [runSeeder](#runseeder)
      - [runSeeders](#runseeders)
@@ -224,27 +229,51 @@ import { dropDatabase } from 'typeorm-extension';
 
 To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions---database) section and read more about it.
 
-### Multiple Instances
+### Instances
 
-This library can also be used to manage one or many DataSource instances, by using the singleton pattern.
-Therefore, additional DataSources must be registered under a different alias manually.
+#### Single
+
+The default DataSource instance can be acquired, by not providing any alias at all or using the key `default`.
+If no DataSource instance or DataSourceOptions object is deposited initially the method will attempt to locate and load
+the DataSource file and initialize itself from there.
+
+```typescript
+import { useDataSource } from 'typeorm-extension';
+
+(async () => {
+    const dataSource : DataSource = await useDataSource();
+})();
+```
+
+Reference(s):
+- [setDataSource](#setdatasource)
+- [useDataSource](#usedatasource)
+
+#### Multiple
+
+It is also possible to manage multiple DataSource instances.
+Therefore, each additional DataSource must be registered under a different alias.
+This can be done by either setting the DataSource instance or the DataSourceOptions object for the given alias.
 
 ```typescript
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { setDataSourceOptions, useDataSource } from 'typeorm-extension';
+import { setDataSource, useDataSource } from 'typeorm-extension';
 
 (async () => {
     const secondDataSourceOptions : DataSourceOptions = {
         // ...
     };
 
-    setDataSourceOptions(secondDataSourceOptions, 'second');
+    const dataSource = new DataSource(secondDataSourceOptions);
+    setDataSource(dataSource, 'second');
 
-    const secondDataSource = await useDataSource('second');
-})
-
-
+    const instance : DataSource = await useDataSource('second');
+})();
 ```
+
+Reference(s):
+- [setDataSource](#setdatasource)
+- [setDataSourceOptions](#setdatasourceoptions)
 
 ### Seeding
 
@@ -724,6 +753,236 @@ import { dropDatabase } from 'typeorm-extension';
 `Promise`<`unknown`>
 
 The function returns a promise with the query result of the underlying database driver.
+
+## Functions - Instances
+
+### setDataSource
+
+▸ `function` **setDataSourceOptions**(`dataSource: DataSource`, `alias?: string`): `void`
+
+Set the default DataSource, by not providing any alias at all or using the key `default`.
+This method should only be used, if an additional DataSource should be registered or the library should
+not attempt to instantiate the instance on the fly.
+
+#### Example
+**`Single`**
+```typescript
+import { setDataSource } from 'typeorm-extension';
+import { DataSource, DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+const dataSource = new DataSource(options);
+setDataSource(dataSource);
+```
+
+**`Multiple`**
+```typescript
+import { setDataSource } from 'typeorm-extension';
+import { DataSource, DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+const dataSource = new DataSource(options);
+setDataSource(dataSource, 'foo');
+```
+
+#### Parameters
+
+| Name         | Type                    | Description                                                              |
+|:-------------|:------------------------|:-------------------------------------------------------------------------|
+| `dataSource` | `DataSource`            | Typeorm DataSource instance.                                             |
+| `alias`      | `string` or `undefined` | Alias for depositing the typeorm DataSource instance. Default: `default` |
+
+#### Returns
+
+`void`
+
+### useDataSource
+
+▸ `function` **useDataSource**(`alias?: string`): `Promise`<`DataSource`>
+
+Use the default deposited DataSource, by not providing any alias at all or using the key `default`.
+If no DataSource instance or DataSourceOptions object is deposited initially, the method will attempt
+to locate, load & initialize the DataSource.
+
+#### Example
+**`Auto`**
+```typescript
+import { useDataSource } from 'typeorm-extension';
+
+(async () => {
+    // Load the deposited DataSource,
+    // otherwise instanitate the instance from the deposited DataSourceOptions object
+    const options = await useDataSource();
+})();
+```
+
+**`Single`**
+```typescript
+import { setDataSource, useDataSource } from 'typeorm-extension';
+import { DataSource, DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+const dataSource = new DataSource(options);
+setDataSource(dataSource);
+
+(async () => {
+    // now the method can use the deposited configuration.
+    const instance = await useDataSource();
+})();
+```
+
+**`Multiple`**
+```typescript
+import { setDataSource, useDataSource } from 'typeorm-extension';
+import { DataSource, DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+const dataSource = new DataSource(options);
+setDataSource(dataSource, 'foo');
+
+(async () => {
+    // now the method can use the deposited configuration.
+    const instance = await useDataSource('foo');
+})();
+```
+
+#### Parameters
+
+| Name      | Type                    | Description                                                             |
+|:----------|:------------------------|:------------------------------------------------------------------------|
+| `alias`   | `string` or `undefined` | Alias for receiving the typeorm DataSource instance. Default: `default` |
+
+#### Returns
+
+`Promise`<`DataSource`>
+
+### setDataSourceOptions
+
+▸ `function` **setDataSourceOptions**(`options: DataSourceOptions`, `alias?: string`): `void`
+
+Set the default DataSourceOptions object, by not providing any alias at all or using the key `default`.
+The DataSource instance will be created from this configuration, if it has not already been created before.
+
+#### Example
+**`Single`**
+```typescript
+import { setDataSourceOptions, useDataSource } from 'typeorm-extension';
+import { DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+setDataSourceOptions(options);
+```
+
+**`Multiple`**
+```typescript
+import { setDataSourceOptions, useDataSource } from 'typeorm-extension';
+import { DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+setDataSourceOptions(options, 'foo');
+```
+
+#### Parameters
+
+| Name      | Type                    | Description                                                         |
+|:----------|:------------------------|:--------------------------------------------------------------------|
+| `options` | `DataSourceOptions`     | Typeorm DataSourceOptions object.                                   |
+| `alias`   | `string` or `undefined` | Alias for depositing the typeorm options object. Default: `default` |
+
+#### Returns
+
+`void`
+
+### useDataSourceOptions
+
+▸ `function` **useDataSourceOptions**(`alias?: string`): `Promise`<`DataSourceOptions`>
+
+Use the default deposited DataSourceOptions object, by not providing any alias at all or using the key `default`.
+If no DataSourceOptions object is deposited initially the method will attempt to locate and load the DataSource file
+and extract the options from there.
+
+Therefore, it will search for a `data-source.{ts,js}` file in the following directories:
+
+- `{src,dist}/db/`
+- `{src,dist}/database`
+- `{src,dist}`
+
+#### Example
+
+**`Auto`**
+```typescript
+import { useDataSourceOptions } from 'typeorm-extension';
+import { DataSourceOptions } from 'typeorm';
+
+(async () => {
+    // load the deposited options otherwise the library
+    // will attempt to locate and load the data-source file and
+    // extract the options from there
+    const options = await useDataSourceOptions();
+})();
+```
+
+**`Single`**
+```typescript
+import { setDataSourceOptions, useDataSource } from 'typeorm-extension';
+import { DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+setDataSourceOptions(options);
+
+(async () => {
+    // now the method can use the deposited configuration.
+    const options = await useDataSourceOptions();
+})();
+```
+
+**`Multiple`**
+```typescript
+import { setDataSourceOptions, useDataSource } from 'typeorm-extension';
+import { DataSourceOptions } from 'typeorm';
+
+const options: DataSourceOptions = {
+    // ...
+}
+
+setDataSourceOptions(options, 'foo');
+
+(async () => {
+    // now the method can use the deposited configuration.
+    const options = await useDataSourceOptions('foo');
+})();
+```
+
+#### Parameters
+
+| Name      | Type                    | Description                                                        |
+|:----------|:------------------------|:-------------------------------------------------------------------|
+| `alias`   | `string` or `undefined` | Alias for receiving the typeorm options object. Default: `default` |
+
+#### Returns
+
+`Promise`<`DataSourceOptions`>
 
 ## Functions - Seeding
 

@@ -35,6 +35,14 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
     alias = alias || 'default';
 
     if (Object.prototype.hasOwnProperty.call(instances, alias)) {
+        if (!instances[alias].isInitialized) {
+            if (!Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
+                initializePromises[alias] = instances[alias].initialize();
+            }
+
+            await initializePromises[alias];
+        }
+
         return instances[alias];
     }
 

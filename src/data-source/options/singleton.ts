@@ -1,8 +1,8 @@
 import { DataSourceOptions } from 'typeorm';
 import { buildDataSourceOptions } from './module';
 
-let instances : Record<string, DataSourceOptions>;
-let instancePromises : Record<string, Promise<DataSourceOptions>>;
+const instances : Record<string, DataSourceOptions> = {};
+const instancePromises : Record<string, Promise<DataSourceOptions>> = {};
 
 export function setDataSourceOptions(
     options: DataSourceOptions,
@@ -12,7 +12,7 @@ export function setDataSourceOptions(
     instances[alias] = options;
 }
 
-export async function useDataSourceOptions(alias?: string) {
+export async function useDataSourceOptions(alias?: string) : Promise<DataSourceOptions> {
     alias = alias || 'default';
 
     if (Object.prototype.hasOwnProperty.call(instances, alias)) {

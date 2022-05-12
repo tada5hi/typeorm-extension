@@ -1,7 +1,7 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { SeederConstructor, SeederOptions } from './type';
 import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
-import { modifyDataSourceOptionForRuntimeEnvironment } from '../data-source';
+import { modifyDataSourceOptionForRuntimeEnvironment, setDataSource } from '../data-source';
 import { loadScriptFile, loadScriptFileSingleExport } from '../file';
 import { SeederFactoryConfig, useSeederFactoryManager } from './factory';
 
@@ -109,6 +109,9 @@ export async function runSeeder(
     }
 
     await prepareSeeder(options);
+
+    setDataSource(dataSource);
+
     // eslint-disable-next-line new-cap
     const clazz = new seeder();
 
