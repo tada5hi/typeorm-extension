@@ -1,6 +1,6 @@
 import path from 'path';
 import { DataSource, InstanceChecker } from 'typeorm';
-import { loadFile, locateFile } from '../../file';
+import { loadScriptFile, locateFile } from 'locter';
 import { DataSourceFindOptions } from './type';
 import { isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
@@ -75,7 +75,7 @@ export async function findDataSource(
         });
 
         if (info) {
-            const fileExports = await loadFile(info);
+            const fileExports = await loadScriptFile(info);
             if (InstanceChecker.isDataSource(fileExports)) {
                 return fileExports;
             }

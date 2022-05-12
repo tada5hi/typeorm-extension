@@ -15,6 +15,12 @@ export function setDataSource(
     instances[alias] = dataSource;
 }
 
+export function isSetDataSource(alias?: string) : boolean {
+    alias = alias || 'default';
+
+    return Object.prototype.hasOwnProperty.call(instances, alias);
+}
+
 export function unsetDataSource(alias?: string) {
     alias = alias || 'default';
 
@@ -22,10 +28,12 @@ export function unsetDataSource(alias?: string) {
         delete instances[alias];
     }
 
+    /* istanbul ignore next */
     if (Object.prototype.hasOwnProperty.call(optionsPromises, alias)) {
         delete optionsPromises[alias];
     }
 
+    /* istanbul ignore next */
     if (Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
         delete initializePromises[alias];
     }
@@ -36,6 +44,7 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
 
     if (Object.prototype.hasOwnProperty.call(instances, alias)) {
         if (!instances[alias].isInitialized) {
+            /* istanbul ignore next */
             if (!Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
                 initializePromises[alias] = instances[alias].initialize();
             }
@@ -46,6 +55,7 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
         return instances[alias];
     }
 
+    /* istanbul ignore next */
     if (!Object.prototype.hasOwnProperty.call(optionsPromises, alias)) {
         optionsPromises[alias] = useDataSourceOptions(alias);
     }
@@ -53,6 +63,8 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
     const options = await optionsPromises[alias];
 
     const dataSource = new DataSource(options);
+
+    /* istanbul ignore next */
     if (!Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
         initializePromises[alias] = dataSource.initialize();
     }
