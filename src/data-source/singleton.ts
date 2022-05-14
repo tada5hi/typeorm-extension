@@ -46,7 +46,12 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
         if (!instances[alias].isInitialized) {
             /* istanbul ignore next */
             if (!Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
-                initializePromises[alias] = instances[alias].initialize();
+                initializePromises[alias] = instances[alias].initialize()
+                    .catch((e) => {
+                        delete initializePromises[alias];
+
+                        throw e;
+                    });
             }
 
             await initializePromises[alias];
@@ -57,7 +62,12 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
 
     /* istanbul ignore next */
     if (!Object.prototype.hasOwnProperty.call(optionsPromises, alias)) {
-        optionsPromises[alias] = useDataSourceOptions(alias);
+        optionsPromises[alias] = useDataSourceOptions(alias)
+            .catch((e) => {
+                delete optionsPromises[alias];
+
+                throw e;
+            });
     }
 
     const options = await optionsPromises[alias];
@@ -66,7 +76,12 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
 
     /* istanbul ignore next */
     if (!Object.prototype.hasOwnProperty.call(initializePromises, alias)) {
-        initializePromises[alias] = dataSource.initialize();
+        initializePromises[alias] = dataSource.initialize()
+            .catch((e) => {
+                delete initializePromises[alias];
+
+                throw e;
+            });
     }
 
     await initializePromises[alias];

@@ -27,7 +27,12 @@ export async function useDataSourceOptions(alias?: string) : Promise<DataSourceO
 
     /* istanbul ignore next */
     if (!Object.prototype.hasOwnProperty.call(instancePromises, alias)) {
-        instancePromises[alias] = buildDataSourceOptions();
+        instancePromises[alias] = buildDataSourceOptions()
+            .catch((e) => {
+                delete instancePromises[alias];
+
+                throw e;
+            });
     }
 
     instances[alias] = await instancePromises[alias];
