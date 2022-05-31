@@ -4,9 +4,12 @@ export async function synchronizeDatabase(options: DataSourceOptions) {
     const dataSource = new DataSource(options);
     await dataSource.initialize();
 
-    const migrationsAmount = Array.isArray(options.migrations) ?
-        options.migrations.length :
-        Object.keys(options.migrations).length;
+    let migrationsAmount = 0;
+    if (options.migrations) {
+        migrationsAmount = Array.isArray(options.migrations) ?
+            options.migrations.length :
+            Object.keys(options.migrations).length;
+    }
 
     if (migrationsAmount > 0) {
         await dataSource.runMigrations();
