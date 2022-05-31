@@ -29,7 +29,7 @@ export type DatabaseCreateContext = DatabaseBaseContext & {
      */
     initialDatabase?: string,
     /**
-     * Synchronize database entities.
+     * Synchronize or seed the database scheme.
      *
      * default: true
      */

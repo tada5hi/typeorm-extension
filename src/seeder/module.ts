@@ -69,10 +69,12 @@ async function prepareSeeder(
 
             for (let i = 0; i < seedFiles.length; i++) {
                 const fileExport = await loadScriptFileExport(seedFiles[i]);
-                const item = fileExport.value as SeederConstructor;
+                if (fileExport) {
+                    const item = fileExport.value as SeederConstructor;
 
-                if (!options.seedName || options.seedName === item.name) {
-                    items.push(item);
+                    if (!options.seedName || options.seedName === item.name) {
+                        items.push(item);
+                    }
                 }
             }
         }
