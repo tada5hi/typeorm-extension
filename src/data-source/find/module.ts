@@ -69,9 +69,8 @@ export async function findDataSource(
     }
 
     for (let i = 0; i < fileNames.length; i++) {
-        const info = await locateFile(fileNames[i], {
-            paths,
-            extensions: ['.js', '.ts'],
+        const info = await locateFile(`${fileNames[i]}.{js,ts}`, {
+            path: paths,
         });
 
         if (info) {

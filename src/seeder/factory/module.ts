@@ -1,4 +1,4 @@
-import faker from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 import { SaveOptions } from 'typeorm';
 import { SeederFactoryContext } from './type';
 import { hasOwnProperty } from '../../utils';

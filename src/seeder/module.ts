@@ -28,7 +28,7 @@ async function prepareSeeder(
         }
 
         if (factoryFiles.length > 0) {
-            factoryFiles = resolveFilePatterns(factoryFiles);
+            factoryFiles = await resolveFilePatterns(factoryFiles);
             factoryFiles = resolveFilePaths(factoryFiles);
 
             for (let i = 0; i < factoryFiles.length; i++) {
@@ -64,7 +64,7 @@ async function prepareSeeder(
         }
 
         if (seedFiles.length > 0) {
-            seedFiles = resolveFilePatterns(seedFiles);
+            seedFiles = await resolveFilePatterns(seedFiles);
             seedFiles = resolveFilePaths(seedFiles);
 
             for (let i = 0; i < seedFiles.length; i++) {

@@ -39,10 +39,9 @@
     },
     "license": "MIT",
     "dependencies": {
-        "@faker-js/faker": "^6.3.1",
+        "@faker-js/faker": "^7.1.0",
         "@trapi/query": "^2.1.3",
-        "locter": "^0.0.1",
-        "glob": "^8.0.3",
+        "locter": "^0.1.2",
         "reflect-metadata": "^0.1.13",
         "yargs": "^17.5.1"
     },
