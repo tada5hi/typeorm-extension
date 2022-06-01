@@ -1,17 +1,17 @@
 /* istanbul ignore next */
 import path from 'path';
-import { locateFilesSync } from 'locter';
+import { locateFiles } from 'locter';
 
 export async function resolveFilePatterns(
     filesPattern: string[],
     root?: string,
 ) : Promise<string[]> {
-    return locateFilesSync(
+    return locateFiles(
         filesPattern,
         {
             ...(root ? { path: root } : {}),
         },
-    ).map((el) => path.join(el.path, el.fileName + el.fileExtension));
+    ).then((files) => files.map((el) => path.join(el.path, el.fileName + el.fileExtension)));
 }
 
 export function resolveFilePaths(
