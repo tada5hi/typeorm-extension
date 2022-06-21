@@ -39,7 +39,7 @@
     },
     "license": "MIT",
     "dependencies": {
-        "@faker-js/faker": "^7.2.0",
+        "@faker-js/faker": "^7.3.0",
         "@trapi/query": "^2.1.3",
         "locter": "^0.1.2",
         "reflect-metadata": "^0.1.13",
