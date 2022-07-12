@@ -3,7 +3,7 @@ import path from "path";
 import {User} from "../entity/user";
 import {SeederOptions} from "../../../src";
 
-const options : DataSourceOptions & SeederOptions = {
+export const options : DataSourceOptions & SeederOptions = {
     type: 'better-sqlite3',
     entities: [User],
     database: path.join(__dirname, 'db.sqlite'),

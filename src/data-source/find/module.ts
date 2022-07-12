@@ -82,7 +82,7 @@ export async function findDataSource(
             if (typeof fileExports === 'object') {
                 const keys = Object.keys(fileExports);
                 for (let j = 0; j < keys.length; j++) {
-                    const value = (fileExports as Record<string, any>)[keys[i]];
+                    const value = (fileExports as Record<string, any>)[keys[j]];
 
                     if (InstanceChecker.isDataSource(value)) {
                         return value;
