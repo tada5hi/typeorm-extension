@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { buildDriverOptions } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, createDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
 
 export async function createSQLiteDatabase(
     context?: DatabaseCreateContext,
@@ -20,7 +20,7 @@ export async function createSQLiteDatabase(
     await fs.promises.access(directoryPath, fs.constants.W_OK);
 
     if (context.synchronize) {
-        await createDatabaseSchema(context.options);
+        await setupDatabaseSchema(context.options);
     }
 }
 

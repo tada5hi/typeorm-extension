@@ -1,6 +1,6 @@
 import { DataSource, DataSourceOptions, InstanceChecker } from 'typeorm';
 
-export async function createDatabaseSchema(input: DataSource | DataSourceOptions) {
+export async function setupDatabaseSchema(input: DataSource | DataSourceOptions) {
     let dataSource : DataSource;
 
     if (InstanceChecker.isDataSource(input)) {

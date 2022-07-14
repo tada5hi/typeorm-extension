@@ -2,7 +2,7 @@ import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, createDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
@@ -75,7 +75,7 @@ export async function createMySQLDatabase(
     const result = await executeSimpleMysqlQuery(connection, query);
 
     if (context.synchronize) {
-        await createDatabaseSchema(context.options);
+        await setupDatabaseSchema(context.options);
     }
 
     return result;
