@@ -456,7 +456,7 @@ Populate the database by explicit definitions from the codebase.
 
 ```typescript
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { runSeeder, SeederOptions } from 'typeorm-extension';
+import { runSeeders, SeederOptions } from 'typeorm-extension';
 import { User } from 'user';
 import UserSeeder from 'user.seeder';
 import UserFactory from 'user.factory';
@@ -1079,7 +1079,7 @@ import { runSeeders } from 'typeorm-extension';
     });
     await dataSource.initialize();
 
-    await runSeeder(dataSource);
+    await runSeeders(dataSource);
 })();
 
 ```
@@ -1096,7 +1096,7 @@ import { runSeeders } from 'typeorm-extension';
     });
     await dataSource.initialize();
 
-    await runSeeder(dataSource, {
+    await runSeeders(dataSource, {
         seeds: ['src/database/seeds/*{.ts,.js}'],
         factories: ['src/database/factories/*{.ts,.js}']
     });
