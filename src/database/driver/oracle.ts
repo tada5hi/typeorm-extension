@@ -2,7 +2,7 @@ import { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, synchronizeDatabase } from '../utils';
+import { buildDatabaseCreateContext, createDatabaseSchema } from '../utils';
 
 export function createSimpleOracleConnection(
     driver: OracleDriver,
@@ -59,7 +59,7 @@ export async function createOracleDatabase(
     const result = await connection.execute(query);
 
     if (context.synchronize) {
-        await synchronizeDatabase(context.options);
+        await createDatabaseSchema(context.options);
     }
 
     return result;

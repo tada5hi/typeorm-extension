@@ -2,7 +2,7 @@ import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabase } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, createDatabaseSchema } from '../utils';
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
@@ -45,7 +45,7 @@ export async function createMsSQLDatabase(
     const result = await connection.query(query);
 
     if (context.synchronize) {
-        await synchronizeDatabase(context.options);
+        await createDatabaseSchema(context.options);
     }
 
     return result;
