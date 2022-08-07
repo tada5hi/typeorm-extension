@@ -18,7 +18,7 @@ Alternatively, the full command path can be set in the package.json file to run 
 ```
 
 :::info Hint
-Read the [Seeding Configuration](#configuration) section to find out how to specify the path,
+Read the [Seeding Configuration](seeding#configuration) section to find out how to specify the path,
 for the seeder- & factory-location.
 :::
 

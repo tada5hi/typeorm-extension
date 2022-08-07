@@ -441,7 +441,7 @@ import UserFactory from 'user.factory';
 
 ### Query
 The query submodule enables query parameter (fields, filter, ...) values to be build, parsed & validated.
-Therefore, the [@trapi/query](https://www.npmjs.com/package/@trapi/query) library is used under the hood.
+Therefore, the [rapiq](https://www.npmjs.com/package/rapiq) library is used under the hood.
 The main functions and types are also exposed by this library.
 
 For explanation proposes,
