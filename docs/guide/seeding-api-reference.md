@@ -77,6 +77,10 @@ class SimpleSeeder implements Seeder {
 
 `Promise`<`void`>
 
+**References**
+- [SeederConstructor](#seederconstructor)
+- [SeederOptions](#seederoptions)
+
 ## `runSeeders`
 
 ```typescript
@@ -134,6 +138,9 @@ import { runSeeders } from 'typeorm-extension';
 **Returns**
 
 `Promise`<`void`>
+
+**References**
+- [SeederOptions](#seederoptions)
 
 ## `Seeder`
 ```typescript

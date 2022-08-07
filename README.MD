@@ -207,8 +207,8 @@ import { useDataSource } from 'typeorm-extension';
 ```
 
 Reference(s):
-- [setDataSource](https://typeorm-extension.tada5hi.net/guide/instances-api-reference.html#setdatasource)
-- [useDataSource](https://typeorm-extension.tada5hi.net/guide/instances-api-reference.html#usedatasource)
+- [setDataSource](https://typeorm-extension.tada5hi.net/guide/datasource-api-reference.html#setdatasource)
+- [useDataSource](https://typeorm-extension.tada5hi.net/guide/datasource-api-reference.html#usedatasource)
 
 #### Multiple
 
@@ -233,8 +233,8 @@ import { setDataSource, useDataSource } from 'typeorm-extension';
 ```
 
 Reference(s):
-- [setDataSource](https://typeorm-extension.tada5hi.net/guide/instances-api-reference.html#setdatasource)
-- [setDataSourceOptions](https://typeorm-extension.tada5hi.net/guide/instances-api-reference.html#setdatasourceoptions)
+- [setDataSource](https://typeorm-extension.tada5hi.net/guide/datasource-api-reference.html#setdatasource)
+- [setDataSourceOptions](https://typeorm-extension.tada5hi.net/guide/datasource-api-reference.html#setdatasourceoptions)
 
 ### Seeding
 

@@ -1,4 +1,4 @@
-# Instances
+# DataSource
 
 ## `setDataSource`
 
@@ -233,10 +233,97 @@ setDataSourceOptions(options, 'foo');
 
 **Parameters**
 
-| Name      | Type                    | Description                                                        |
-|:----------|:------------------------|:-------------------------------------------------------------------|
-| `alias`   | `string` or `undefined` | Alias for receiving the typeorm options object. Default: `default` |
+| Name      | Type                    | Description                       |
+|:----------|:------------------------|:----------------------------------|
+| `alias`   | `string` or `undefined` | Typeorm DataSourceOptions object. |
 
 **Returns**
 
 `Promise`<`DataSourceOptions`>
+
+
+## `buildDataSourceOptions`
+
+```typescript
+declare async function buildDataSourceOptions(
+    context?: DataSourceOptionsBuildContext,
+) : Promise<DataSourceOptions>
+```
+
+**Parameters**
+
+| Name      | Type                                  | Description                            |
+|:----------|:--------------------------------------|:---------------------------------------|
+| `context` | `DataSourceOptionsBuildContext`       | Context for building DataSourceOptions |
+
+**Returns**
+
+`Promise`<`DataSourceOptions`>
+
+**References**
+- [DataSourceOptionsBuildContext](#datasourceoptionsbuildcontext)
+
+## `extendDataSourceOptions`
+
+```typescript
+declare async function extendDataSourceOptions(
+    options: DataSourceOptions,
+    tsConfigDirectory?: string,
+) : Promise<DataSourceOptions>;
+```
+
+**Parameters**
+
+| Name                | Type                        | Description                                                        |
+|:--------------------|:----------------------------|:-------------------------------------------------------------------|
+| `options`           | `DataSourceOptions`         | Alias for receiving the typeorm options object. Default: `default` |
+| `tsConfigDirectory` | `string` or `undefined`     | Directory path of tsconfig.json. Default: `process.cwd()`          |
+
+**Returns**
+
+`Promise`<`DataSourceOptions`>
+
+## `DataSourceFindOptions`
+
+```typescript
+export type DataSourceFindOptions = {
+    directory?: string,
+    fileName?: string
+};
+```
+
+## `DataSourceOptionsBuildContext`
+
+```typescript
+export type DataSourceOptionsBuildContext = {
+    /**
+     * Database connection name
+     * Default: default
+     *
+     * @deprecated
+     */
+    name?: string,
+    /**
+     * Configuration file name without extension
+     * Default: ormconfig
+     *
+     * @deprecated
+     */
+    configName?: string,
+    /**
+     * Data source file name without extension
+     * Default: data-source
+     */
+    dataSourceName?: string,
+    /**
+     * Directory where to find dataSource + config
+     * Default: process.cwd()
+     */
+    directory?: string,
+    /**
+     * Directory path to the tsconfig.json file
+     * Default: process.cwd()
+     */
+    tsconfigDirectory?: string
+};
+```

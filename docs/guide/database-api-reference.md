@@ -92,6 +92,9 @@ will be rewritten to `dist/database/entities.js`.
 
 The function returns a promise with the query result of the underlying database driver.
 
+**References**
+- [DatabaseCreateContext](#databasecreatecontext)
+
 ## `dropDatabase`
 
 ```ts
@@ -142,6 +145,9 @@ import { dropDatabase } from 'typeorm-extension';
 
 The function returns a promise with the query result of the underlying database driver.
 
+**References**
+- [DatabaseDropContext](#databasedropcontext)
+
 ## DatabaseBaseContext
 ```typescript
 import { DataSourceOptions } from 'typeorm';
@@ -161,6 +167,9 @@ export type DatabaseBaseContext = {
     findOptions?: DataSourceFindOptions
 };
 ```
+
+**References**
+- [DataSourceFindOptions](datasource-api-reference.md#datasourcefindoptions)
 
 ## DatabaseCreateContext
 ```typescript
@@ -188,6 +197,9 @@ export type DatabaseCreateContext = DatabaseBaseContext & {
 };
 ```
 
+**References**
+- [DatabaseBaseContext](#databasebasecontext)
+
 ## DatabaseDropContext
 
 ```typescript
@@ -202,3 +214,6 @@ export type DatabaseDropContext = DatabaseBaseContext & {
     ifExist?: boolean
 };
 ```
+
+**References**
+- [DatabaseBaseContext](#databasebasecontext)

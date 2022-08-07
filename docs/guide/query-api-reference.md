@@ -53,6 +53,10 @@ console.log(fields);
 
 The function returns an array of objects. Each object has the properties `fields` and optional `alias` and `addFields`.
 
+**References**
+- [FieldsApplyOptions](#fieldsapplyoptions)
+- [FieldsApplyOutput](#fieldsapplyoutput)
+
 ## `applyQueryFilters`
 
 ```typescript
@@ -100,6 +104,9 @@ console.log(filters);
 
 The function returns an array of objects. Each object has the properties `key` and `value`.
 
+**References**
+- [FiltersApplyOptions](#filtersapplyoptions)
+- [FiltersApplyOutput](#filtersapplyoutput)
 
 ## `applyQueryRelations`
 
@@ -148,6 +155,10 @@ console.log(includes);
 
 The function returns an array of objects. Each object has the properties `property` and `alias`.
 
+**References**
+- [RelationsApplyOptions](#relationsapplyoptions)
+- [RelationsApplyOutput](#relationsapplyoutput)
+
 ## `applyQueryPagination`
 
 ```typescript
@@ -193,6 +204,10 @@ console.log(pagination);
 `PaginationApplyOutput`
 
 The function returns an object. The object might have the properties `limit` and `offset`.
+
+**References**
+- [PaginationApplyOptions](#paginationapplyoptions)
+- [PaginationApplyOutput](#paginationapplyoutput)
 
 ### applyQuerySort
 
@@ -240,3 +255,103 @@ console.log(sort);
 `SortApplyOutput`
 
 The function returns an objects. Each key-value pair represents a field and the corresponding sorting direction.
+
+**References**
+- [SortApplyOptions](#sortapplyoptions)
+- [SortApplyOutput](#sortapplyoutput)
+
+## `FieldsApplyOptions`
+
+```typescript
+import { FieldsParseOptions } from 'rapiq';
+
+export type FieldsApplyOptions = FieldsParseOptions;
+```
+
+## `FieldsApplyOutput`
+
+```typescript
+import { FieldsParseOutput } from 'rapiq';
+
+export type FieldsApplyOutput = FieldsParseOutput;
+```
+
+## `FiltersApplyOptions`
+
+```typescript
+import { FiltersParseOptions } from 'rapiq';
+
+export type FiltersTransformOptions = {
+    bindingKeyFn?: (key: string) => string,
+};
+
+export type FilterTransformOutputElement = {
+    statement: string,
+    binding: Record<string, any>
+};
+export type FiltersTransformOutput = FilterTransformOutputElement[];
+
+// -----------------------------------------
+
+export type FiltersApplyOptions = FiltersParseOptions & {
+    transform?: FiltersTransformOptions
+};
+```
+
+## `FiltersApplyOutput`
+
+```typescript
+import { FiltersParseOutput } from 'rapiq';
+
+export type FiltersApplyOutput = FiltersParseOutput;
+```
+
+## `PaginationApplyOptions`
+
+```typescript
+import { PaginationParseOptions } from 'rapiq';
+
+export type PaginationApplyOptions = PaginationParseOptions;
+```
+
+## `PaginationApplyOutput`
+
+```typescript
+import { PaginationParseOutput } from 'rapiq';
+
+type PaginationApplyOutput = PaginationParseOutput;
+```
+
+## `RelationsApplyOptions`
+
+```typescript
+import { RelationsParseOptions } from 'rapiq';
+
+export type RelationsApplyOptions = RelationsParseOptions;
+```
+
+## `RelationsApplyOutput`
+
+```typescript
+import { RelationsParseOutput } from 'rapiq';
+
+export type RelationsApplyOutput = RelationsParseOutput;
+```
+
+## `SortApplyOptions`
+
+```typescript
+
+import { SortParseOptions } from 'rapiq';
+
+export type SortApplyOptions = SortParseOptions;
+```
+
+## `SortApplyOutput`
+
+```typescript
+
+import { SortParseOutput } from 'rapiq';
+
+export type SortApplyOutput = SortParseOutput;
+```

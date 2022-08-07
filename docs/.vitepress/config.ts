@@ -49,7 +49,7 @@ export default defineConfig({
                     collapsible: false,
                     items: [
                         {text: 'Database', link: '/guide/database-api-reference'},
-                        {text: 'Instances', link: '/guide/instances-api-reference'},
+                        {text: 'DataSource', link: '/guide/datasource-api-reference'},
                         {text: 'Seeding', link: '/guide/seeding-api-reference'},
                         {text: 'Query', link: '/guide/query-api-reference'},
                     ]

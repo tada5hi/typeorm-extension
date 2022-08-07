@@ -1,9 +1,9 @@
-# Instance Management
+# Instances
 
 ## Single
 
 The default DataSource instance can be acquired, by not providing any alias at all or using the key `default`.
-If no DataSource instance or DataSourceOptions object is deposited initially the method will attempt to locate and load
+If no DataSource instance or DataSourceOptions object is deposited initially, the method will attempt to locate and load
 the DataSource file and initialize itself from there.
 
 ```typescript
@@ -15,8 +15,7 @@ import { useDataSource } from 'typeorm-extension';
 ```
 
 Reference(s):
-- [setDataSource](#setdatasource)
-- [useDataSource](#usedatasource)
+- [useDataSource](datasource-api-reference#usedatasource)
 
 ## Multiple
 
@@ -41,5 +40,5 @@ import { setDataSource, useDataSource } from 'typeorm-extension';
 ```
 
 Reference(s):
-- [setDataSource](#setdatasource)
-- [setDataSourceOptions](#setdatasourceoptions)
+- [setDataSource](datasource-api-reference#setdatasource)
+- [setDataSourceOptions](datasource-api-reference#setdatasourceoptions)
