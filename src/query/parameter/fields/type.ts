@@ -1,4 +1,4 @@
-import { FieldsParseOptions, FieldsParseOutput } from '@trapi/query';
+import { FieldsParseOptions, FieldsParseOutput } from 'rapiq';
 
 export type FieldsApplyOptions = FieldsParseOptions;
 export type FieldsApplyOutput = FieldsParseOutput;

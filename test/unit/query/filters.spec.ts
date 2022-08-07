@@ -1,4 +1,4 @@
-import {FiltersParseOptions, parseQueryFilters, parseQueryRelations} from "@trapi/query";
+import {FiltersParseOptions, parseQueryFilters, parseQueryRelations} from "rapiq";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 import {
     applyFilters,
@@ -13,7 +13,7 @@ describe('src/api/filters.ts', () => {
 
     it('should transform request filters', () => {
         // filter id
-        let allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}));
+        let allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}, {allowed: ['id']}));
         expect(allowedFilters).toEqual([{statement: 'id = :filter_id', binding: {'filter_id': 1}}]  as FiltersTransformOutput);
 
         // filter none
@@ -126,7 +126,7 @@ describe('src/api/filters.ts', () => {
     });
 
     it('should transform filters with includes', () => {
-        const includes = parseQueryRelations(['profile', 'user_roles.role']);
+        const includes = parseQueryRelations(['profile', 'user_roles.role'], {allowed: ['profile', 'user_roles.role']});
 
         const options : FiltersParseOptions = {
             allowed: ['id', 'profile.id', 'role.id'],

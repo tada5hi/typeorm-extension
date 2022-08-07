@@ -1,4 +1,4 @@
-import { PaginationParseOptions, PaginationParseOutput } from '@trapi/query';
+import { PaginationParseOptions, PaginationParseOutput } from 'rapiq';
 
 export type PaginationApplyOptions = PaginationParseOptions;
 export type PaginationApplyOutput = PaginationParseOutput;

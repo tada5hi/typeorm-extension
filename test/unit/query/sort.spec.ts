@@ -1,4 +1,4 @@
-import {parseQuerySort} from "@trapi/query";
+import {parseQuerySort} from "rapiq";
 import {applyQuerySort, applyQuerySortParseOutput, applySort} from "../../../src";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 

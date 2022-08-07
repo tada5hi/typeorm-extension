@@ -1,4 +1,4 @@
-import { SortParseOptions, SortParseOutput } from '@trapi/query';
+import { SortParseOptions, SortParseOutput } from 'rapiq';
 
 export type SortApplyOptions = SortParseOptions;
 export type SortApplyOutput = SortParseOutput;

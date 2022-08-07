@@ -1,7 +1,7 @@
 import {
     FiltersParseOutput,
     parseQueryFilters,
-} from '@trapi/query';
+} from 'rapiq';
 
 import { Brackets, SelectQueryBuilder } from 'typeorm';
 import {

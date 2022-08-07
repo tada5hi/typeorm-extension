@@ -1,7 +1,7 @@
 import {
     FieldOperator,
     parseQueryFields,
-} from '@trapi/query';
+} from 'rapiq';
 
 import { SelectQueryBuilder } from 'typeorm';
 import { FieldsApplyOptions, FieldsApplyOutput } from './type';
@@ -20,6 +20,7 @@ export function applyQueryFieldsParseOutput<T>(
     if (data.length === 0) {
         return data;
     }
+
     for (let i = 0; i < data.length; i++) {
         const prefix : string = (data[i].alias ? `${data[i].alias}.` : '');
         const key = `${prefix}${data[i].key}`;

@@ -1,4 +1,4 @@
-import {RelationsParseOutput} from "@trapi/query";
+import {RelationsParseOutput} from "rapiq";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 import {applyQueryRelations, applyRelations} from "../../../src";
 

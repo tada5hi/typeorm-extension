@@ -1,4 +1,4 @@
-import { Parameter, ParseOutput } from '@trapi/query';
+import { Parameter, ParseOutput } from 'rapiq';
 
 import { SelectQueryBuilder } from 'typeorm';
 import {

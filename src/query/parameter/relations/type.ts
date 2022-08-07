@@ -1,4 +1,4 @@
-import { RelationsParseOptions, RelationsParseOutput } from '@trapi/query';
+import { RelationsParseOptions, RelationsParseOutput } from 'rapiq';
 
 export type RelationsApplyOptions = RelationsParseOptions;
 export type RelationsApplyOutput = RelationsParseOutput;

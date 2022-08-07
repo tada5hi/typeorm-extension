@@ -1,4 +1,4 @@
-import { RelationsParseOutput, parseQueryRelations } from '@trapi/query';
+import { RelationsParseOutput, parseQueryRelations } from 'rapiq';
 import { SelectQueryBuilder } from 'typeorm';
 import { RelationsApplyOptions, RelationsApplyOutput } from './type';
 

@@ -1,4 +1,4 @@
-import { FiltersParseOptions, FiltersParseOutput } from '@trapi/query';
+import { FiltersParseOptions, FiltersParseOutput } from 'rapiq';
 
 export type FiltersApplyOptions = FiltersParseOptions & {
     transform?: FiltersTransformOptions

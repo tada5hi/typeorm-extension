@@ -1,4 +1,4 @@
-import { SortDirection, SortParseOutput, parseQuerySort } from '@trapi/query';
+import { SortDirection, SortParseOutput, parseQuerySort } from 'rapiq';
 import { SelectQueryBuilder } from 'typeorm';
 import { SortApplyOptions, SortApplyOutput } from './type';
 

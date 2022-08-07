@@ -1,4 +1,4 @@
-import { parseQueryPagination } from '@trapi/query';
+import { parseQueryPagination } from 'rapiq';
 import { SelectQueryBuilder } from 'typeorm';
 import { PaginationApplyOptions, PaginationApplyOutput } from './type';
 
