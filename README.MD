@@ -6,7 +6,7 @@
 [![Known Vulnerabilities](https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json)](https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json)
 
 This is a library to
-- `create`, `drop` & seed the (default-) database 🔥
+- `create`, `drop` & `seed` the (default-) database 🔥
 - validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values ( extended **JSON:API** specification)
 
 **Table of Contents**
