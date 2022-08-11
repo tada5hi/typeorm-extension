@@ -1,6 +1,6 @@
 import { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
-import { dropDatabase } from '../../../database';
+import { DatabaseDropContext, dropDatabase } from '../../../database';
 
 export interface DatabaseDropArguments extends Arguments {
     root: string;
@@ -37,6 +37,9 @@ export class DatabaseDropCommand implements CommandModule {
                 alias: 'd',
                 default: 'data-source',
                 describe: 'Name of the file with the data-source.',
+            })
+            .option('initialDatabase', {
+                describe: 'Specify the initial database to connect to.',
             });
     }
 
@@ -50,10 +53,19 @@ export class DatabaseDropCommand implements CommandModule {
             dataSourceName: args.dataSource,
         });
 
-        await dropDatabase({
+        const context : DatabaseDropContext = {
             ifExist: true,
             options: dataSourceOptions,
-        });
+        };
+
+        if (
+            typeof args.initialDatabase === 'string' &&
+            args.initialDatabase !== ''
+        ) {
+            context.initialDatabase = args.initialDatabase;
+        }
+
+        await dropDatabase(context);
 
         if (exitProcess) {
             process.exit(0);

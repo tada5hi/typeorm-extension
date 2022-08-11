@@ -1,6 +1,6 @@
 import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { hasOwnProperty } from '../../utils';
 import { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
@@ -9,7 +9,7 @@ import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSche
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
     options: DriverOptions,
-    operationContext: DatabaseCreateContext,
+    operationContext: DatabaseBaseContext,
 ) {
     /**
      * pg library
@@ -55,7 +55,7 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 export async function createPostgresDatabase(
     context?: DatabaseCreateContext,
 ) {
-    context = await buildDatabaseDropContext(context);
+    context = await buildDatabaseCreateContext(context);
 
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;
@@ -98,7 +98,7 @@ export async function createPostgresDatabase(
 export async function dropPostgresDatabase(
     context?: DatabaseDropContext,
 ) {
-    context = await buildDatabaseCreateContext(context);
+    context = await buildDatabaseDropContext(context);
 
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;

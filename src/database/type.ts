@@ -12,7 +12,14 @@ export type DatabaseBaseContext = {
     /**
      * Options for the find method, where to look for the data-source file.
      */
-    findOptions?: DataSourceFindOptions
+    findOptions?: DataSourceFindOptions,
+
+    /**
+     * Initial database to connect.
+     *
+     * default: undefined
+     */
+    initialDatabase?: string,
 };
 
 export type DatabaseCreateContext = DatabaseBaseContext & {
@@ -22,12 +29,6 @@ export type DatabaseCreateContext = DatabaseBaseContext & {
      * default: true
      */
     ifNotExist?: boolean,
-    /**
-     * Initial database to connect.
-     *
-     * default: undefined
-     */
-    initialDatabase?: string,
     /**
      * Synchronize or migrate the database scheme.
      *
