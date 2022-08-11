@@ -15,16 +15,22 @@ import { FieldsApplyOptions, FieldsApplyOutput } from './type';
 export function applyQueryFieldsParseOutput<T>(
     query: SelectQueryBuilder<T>,
     data: FieldsApplyOutput,
+    extendSelection?: boolean,
 ) {
     if (data.length === 0) {
         return data;
     }
 
-    for (let i = 0; i < data.length; i++) {
-        const prefix : string = (data[i].alias ? `${data[i].alias}.` : '');
-        const key = `${prefix}${data[i].key}`;
-
-        query.select(key);
+    if (extendSelection) {
+        query.addSelect(data.map((field) => {
+            const prefix : string = (field.alias ? `${field.alias}.` : '');
+            return `${prefix}${field.key}`;
+        }));
+    } else {
+        query.select(data.map((field) => {
+            const prefix : string = (field.alias ? `${field.alias}.` : '');
+            return `${prefix}${field.key}`;
+        }));
     }
 
     return data;
