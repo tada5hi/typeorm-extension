@@ -10,8 +10,9 @@ export async function resolveFilePatterns(
         filesPattern,
         {
             ...(root ? { path: root } : {}),
+            ignore: ['**/*.d.ts'],
         },
-    ).then((files) => files.map((el) => path.join(el.path, el.fileName + el.fileExtension)));
+    ).then((files) => files.map((el) => path.join(el.path, el.name + el.extension)));
 }
 
 export function resolveFilePaths(

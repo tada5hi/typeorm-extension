@@ -15,7 +15,10 @@ export async function findDataSource(
 
     context = context || {};
 
-    if (context.fileName) {
+    if (
+        context.fileName &&
+        context.fileName !== 'data-source'
+    ) {
         fileNames.unshift(context.fileName);
     }
 
@@ -43,11 +46,8 @@ export async function findDataSource(
     let paths : string[] = [];
     for (let i = 0; i < basePaths.length; i++) {
         paths.push(basePaths[i]);
-
-        if (basePaths[i] === process.cwd()) {
-            for (let j = 0; j < directories.length; j++) {
-                paths.push(path.join(basePaths[i], directories[j]));
-            }
+        for (let j = 0; j < directories.length; j++) {
+            paths.push(path.join(basePaths[i], directories[j]));
         }
     }
 
@@ -71,6 +71,7 @@ export async function findDataSource(
     for (let i = 0; i < fileNames.length; i++) {
         const info = await locateFile(`${fileNames[i]}.{js,ts}`, {
             path: paths,
+            ignore: ['**/*.d.ts'],
         });
 
         if (info) {

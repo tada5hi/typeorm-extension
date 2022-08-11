@@ -1,5 +1,4 @@
 import {
-    FieldOperator,
     parseQueryFields,
 } from 'rapiq';
 
@@ -25,17 +24,7 @@ export function applyQueryFieldsParseOutput<T>(
         const prefix : string = (data[i].alias ? `${data[i].alias}.` : '');
         const key = `${prefix}${data[i].key}`;
 
-        switch (data[i].value) {
-            case FieldOperator.INCLUDE:
-                query.addSelect(key);
-                break;
-            case FieldOperator.EXCLUDE:
-                // todo: not implemented yet :/
-                break;
-            default:
-                query.select(key);
-                break;
-        }
+        query.select(key);
     }
 
     return data;

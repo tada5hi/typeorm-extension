@@ -43,8 +43,8 @@
     "license": "MIT",
     "dependencies": {
         "@faker-js/faker": "^7.4.0",
-        "locter": "^0.1.2",
-        "rapiq": "^0.0.3",
+        "locter": "^0.2.2",
+        "rapiq": "^0.0.4",
         "reflect-metadata": "^0.1.13",
         "yargs": "^17.5.1"
     },
