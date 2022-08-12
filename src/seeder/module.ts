@@ -3,7 +3,7 @@ import { loadScriptFile, loadScriptFileExport } from 'locter';
 import { SeederConstructor, SeederOptions } from './type';
 import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
 import { modifyDataSourceOptionForRuntimeEnvironment, setDataSource } from '../data-source';
-import { SeederFactoryConfig, useSeederFactoryManager } from './factory';
+import { SeederFactoryConfig, SeederFactoryManager, useSeederFactoryManager } from './factory';
 
 async function prepareSeeder(
     options?: SeederOptions,
@@ -91,11 +91,11 @@ async function prepareSeeder(
     return items;
 }
 
-export async function runSeeder(
+async function setupFactory(
     dataSource: DataSource,
     seeder: SeederConstructor,
     options?: SeederOptions,
-) : Promise<void> {
+) : Promise<SeederFactoryManager> {
     options = options || {};
     options.seeds = [seeder];
     options.factoriesLoad = options.factoriesLoad ?? true;
@@ -110,15 +110,22 @@ export async function runSeeder(
             options.factories = dataSourceFactories;
         }
     }
-
     await prepareSeeder(options);
 
     setDataSource(dataSource);
 
+    const factoryManager = useSeederFactoryManager();
+    return factoryManager;
+}
+
+export async function runSeeder(
+    dataSource: DataSource,
+    seeder: SeederConstructor,
+    options?: SeederOptions,
+) : Promise<void> {
+    const factoryManager = await setupFactory(dataSource, seeder, options);
     // eslint-disable-next-line new-cap
     const clazz = new seeder();
-
-    const factoryManager = useSeederFactoryManager();
     await clazz.run(dataSource, factoryManager);
 }
 
@@ -151,4 +158,16 @@ export async function runSeeders(
             factoriesLoad: false,
         });
     }
+}
+
+
+export async function runSeederWithResponse(
+    dataSource: DataSource,
+    seeder: SeederConstructor,
+    options?: SeederOptions,
+) : Promise<any> {
+    const factoryManager = await setupFactory(dataSource, seeder, options);
+    // eslint-disable-next-line new-cap
+    const clazz = new seeder();
+    return clazz.run(dataSource, factoryManager);
 }

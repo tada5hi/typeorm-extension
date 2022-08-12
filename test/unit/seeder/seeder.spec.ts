@@ -1,4 +1,4 @@
-import {runSeeder, runSeeders, useDataSource} from "../../../src";
+import {runSeeder, runSeeders, runSeederWithResponse, useDataSource} from "../../../src";
 import {User} from "../../data/entity/user";
 import {destroyTestDatabase, setupTestDatabase} from "../../data/typeorm/utils";
 import '../../data/factory/user';
@@ -48,5 +48,18 @@ describe('src/seeder/index.ts', function () {
 
         expect(entities).toBeDefined();
         expect(entities.length).toBeGreaterThanOrEqual(7);
+    })
+
+    it('should seed with explicit definition', async () => {
+        const dataSource = await useDataSource();
+
+        const resp = await runSeederWithResponse(dataSource, UserSeeder);
+
+        const repository = dataSource.getRepository(User);
+        const entities = await repository.find();
+
+        expect(entities).toBeDefined();
+        expect(entities.length).toBeGreaterThanOrEqual(7);
+        expect(resp.length).toBeGreaterThanOrEqual(6);
     })
 });
