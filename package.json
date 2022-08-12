@@ -24,7 +24,8 @@
         "lint:fix": "npm run lint -- --fix",
         "docs:dev": "vitepress dev docs --temp .temp",
         "docs:build": "vitepress build docs --temp .temp",
-        "docs:help": "vitepress --help"
+        "docs:help": "vitepress --help",
+        "prepublishOnly": "npm run build"
     },
     "keywords": [
         "database",
