@@ -69,6 +69,6 @@
         "typeorm": "^0.3.9",
         "typescript": "^4.8.2",
         "vitepress": "^1.0.0-alpha.12",
-        "vue": "^3.2.37"
+        "vue": "^3.2.38"
     }
 }
