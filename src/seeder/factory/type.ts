@@ -1,7 +1,7 @@
 import { Faker } from '@faker-js/faker';
 import { EntitySchema, ObjectType } from 'typeorm';
 
-export type FactoryCallback<O> = (faker: Faker, meta: unknown) => O;
+export type FactoryCallback<O> = (faker: Faker, meta: unknown) => O | Promise<O>;
 
 export type SeederFactoryConfig = {
     factoryFn: FactoryCallback<any>,

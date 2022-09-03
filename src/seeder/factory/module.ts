@@ -3,6 +3,7 @@ import { SaveOptions } from 'typeorm';
 import { SeederFactoryContext } from './type';
 import { hasOwnProperty } from '../../utils';
 import { useDataSource } from '../../data-source';
+import { isPromise } from '../utils';
 
 export class SeederFactory<O extends Record<string, any>> {
     public readonly context: SeederFactoryContext<O>;
@@ -26,8 +27,13 @@ export class SeederFactory<O extends Record<string, any>> {
     // --------------------------------------------------------------
 
     public async make(params?: Partial<O>, save?: boolean) {
-        let entity = this.context.factoryFn(faker, this.meta);
-        entity = await this.resolve(entity, save);
+        const factoryFn = this.context.factoryFn(faker, this.meta);
+        let entity : O;
+        if (isPromise(factoryFn)) {
+            entity = await this.resolve(await factoryFn);
+        } else {
+            entity = await this.resolve(factoryFn, save);
+        }
 
         if (params) {
             const keys : (keyof O)[] = Object.keys(params);
