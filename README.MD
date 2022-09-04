@@ -332,6 +332,9 @@ export class User {
 To create entities with random data, create a factory for each desired entity.
 The definition of a factory is **optional**.
 
+The factory callback provides an instance of the [faker](https://fakerjs.dev/guide/) library as function argument,
+to populate the entity with random data.
+
 **`user.factory.ts`**
 ```typescript
 import { setSeederFactory } from 'typeorm-extension';
