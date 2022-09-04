@@ -95,7 +95,7 @@ export async function runSeeder(
     dataSource: DataSource,
     seeder: SeederConstructor,
     options?: SeederOptions,
-) : Promise<void> {
+) : Promise<unknown> {
     options = options || {};
     options.seeds = [seeder];
     options.factoriesLoad = options.factoriesLoad ?? true;
@@ -119,13 +119,13 @@ export async function runSeeder(
     const clazz = new seeder();
 
     const factoryManager = useSeederFactoryManager();
-    await clazz.run(dataSource, factoryManager);
+    return clazz.run(dataSource, factoryManager);
 }
 
 export async function runSeeders(
     dataSource: DataSource,
     options?: SeederOptions,
-) : Promise<void> {
+) : Promise<unknown[]> {
     options = options || {};
 
     const { seeds, factories } = dataSource.options as DataSourceOptions & SeederOptions;
@@ -145,10 +145,15 @@ export async function runSeeders(
     }
 
     const items = await prepareSeeder(options);
+    const promises : Promise<unknown>[] = [];
 
     for (let i = 0; i < items.length; i++) {
-        await runSeeder(dataSource, items[i], {
+        const promise = runSeeder(dataSource, items[i], {
             factoriesLoad: false,
         });
+
+        promises.push(promise);
     }
+
+    return Promise.all(promises);
 }
