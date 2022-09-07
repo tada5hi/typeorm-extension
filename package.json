@@ -56,7 +56,7 @@
         "@tada5hi/eslint-config-typescript": "^1.0.6",
         "@types/glob": "^8.0.0",
         "@types/jest": "^27.5.0",
-        "@types/node": "^18.7.14",
+        "@types/node": "^18.7.15",
         "@types/yargs": "^17.0.12",
         "better-sqlite3": "^7.6.2",
         "coveralls": "^3.1.0",
