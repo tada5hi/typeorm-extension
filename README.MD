@@ -19,6 +19,7 @@ This is a library to
     - [Instances](#instances)
     - [Seeding](#seeding)
     - [Query](#query)
+- [License](#license)
 
 ## Installation
 
@@ -579,3 +580,9 @@ export async function getUsers(req: Request, res: Response) {
     });
 }
 ```
+
+## License
+
+Made with 💚
+
+Published under [MIT License](./LICENSE).

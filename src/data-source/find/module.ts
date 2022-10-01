@@ -5,6 +5,7 @@ import { DataSourceFindOptions } from './type';
 import { isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
 import { changeTSToJSPath } from '../options';
+import {removeFileExtension} from "./utils";
 
 export async function findDataSource(
     context?: DataSourceFindOptions,
@@ -15,11 +16,15 @@ export async function findDataSource(
 
     context = context || {};
 
-    if (
-        context.fileName &&
-        context.fileName !== 'data-source'
-    ) {
-        fileNames.unshift(context.fileName);
+    if (context.fileName) {
+        context.fileName = removeFileExtension(
+            context.fileName,
+            ['.js', '.ts', '.mjs', '.cjs']
+        );
+
+        if(context.fileName !== 'data-source') {
+            fileNames.unshift(context.fileName);
+        }
     }
 
     const basePaths = [
@@ -69,7 +74,7 @@ export async function findDataSource(
     }
 
     for (let i = 0; i < fileNames.length; i++) {
-        const info = await locateFile(`${fileNames[i]}.{js,ts}`, {
+        const info = await locateFile(`${fileNames[i]}.{cjs,js,mjs,ts}`, {
             path: paths,
             ignore: ['**/*.d.ts'],
         });
