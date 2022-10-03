@@ -12,3 +12,7 @@ updates:
       schedule:
           interval: "daily"
       versioning-strategy: increase
+      commit-message:
+          prefix: "fix"
+          prefix-development: "build"
+          include: "scope"

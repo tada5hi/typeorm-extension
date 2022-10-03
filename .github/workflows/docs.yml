@@ -14,10 +14,10 @@ jobs:
               with:
                   node-version: 16
 
-            - name: Install
+            - name: Install dependencies
               run: npm ci
 
-            - name: Build
+            - name: Build package
               run: npm run docs:build
 
             - name: CNAME
