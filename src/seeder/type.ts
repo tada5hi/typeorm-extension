@@ -12,5 +12,7 @@ export type SeederOptions = {
     seedName?: string,
 
     factories?: SeederFactoryConfig[] | string[],
-    factoriesLoad?: boolean
+    factoriesLoad?: boolean,
+
+    parallelExecution?: boolean
 };

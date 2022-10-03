@@ -1,3 +1,4 @@
+import { removeFileNameExtension } from 'locter/dist/utils';
 import path from 'path';
 import { DataSource, InstanceChecker } from 'typeorm';
 import { loadScriptFile, locateFile } from 'locter';
@@ -5,7 +6,6 @@ import { DataSourceFindOptions } from './type';
 import { isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
 import { changeTSToJSPath } from '../options';
-import {removeFileExtension} from "./utils";
 
 export async function findDataSource(
     context?: DataSourceFindOptions,
@@ -17,12 +17,12 @@ export async function findDataSource(
     context = context || {};
 
     if (context.fileName) {
-        context.fileName = removeFileExtension(
+        context.fileName = removeFileNameExtension(
             context.fileName,
-            ['.js', '.ts', '.mjs', '.cjs']
+            ['.js', '.ts', '.mjs', '.cjs'],
         );
 
-        if(context.fileName !== 'data-source') {
+        if (context.fileName !== 'data-source') {
             fileNames.unshift(context.fileName);
         }
     }

@@ -146,14 +146,23 @@ export async function runSeeders(
 
     const items = await prepareSeeder(options);
     const promises : Promise<unknown>[] = [];
+    const results : unknown[] = [];
 
     for (let i = 0; i < items.length; i++) {
         const promise = runSeeder(dataSource, items[i], {
             factoriesLoad: false,
         });
 
-        promises.push(promise);
+        if (options.parallelExecution) {
+            promises.push(promise);
+        } else {
+            await promise;
+        }
     }
 
-    return Promise.all(promises);
+    if (promises.length > 0) {
+        return Promise.all(promises);
+    }
+
+    return results;
 }
