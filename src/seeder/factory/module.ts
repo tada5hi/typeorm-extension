@@ -30,7 +30,7 @@ export class SeederFactory<O extends Record<string, any>> {
         const factoryFn = this.context.factoryFn(faker, this.meta);
         let entity : O;
         if (isPromise(factoryFn)) {
-            entity = await this.resolve(await factoryFn);
+            entity = await this.resolve(await factoryFn, save);
         } else {
             entity = await this.resolve(factoryFn, save);
         }

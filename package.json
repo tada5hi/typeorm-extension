@@ -27,6 +27,7 @@
         "docs:dev": "vitepress dev docs --temp .temp",
         "docs:build": "vitepress build docs --temp .temp",
         "docs:help": "vitepress --help",
+        "prepare": "husky install",
         "prepublishOnly": "npm run build"
     },
     "keywords": [
