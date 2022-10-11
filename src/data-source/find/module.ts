@@ -1,7 +1,6 @@
-import { removeFileNameExtension } from 'locter/dist/utils';
+import { loadScriptFile, locateFile, removeFileNameExtension } from 'locter';
 import path from 'path';
 import { DataSource, InstanceChecker } from 'typeorm';
-import { loadScriptFile, locateFile } from 'locter';
 import { DataSourceFindOptions } from './type';
 import { isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
