@@ -1,3 +1,10 @@
+## [2.1.14](https://github.com/tada5hi/typeorm-extension/compare/v2.1.13...v2.1.14) (2022-10-11)
+
+
+### Bug Fixes
+
+* file import ([39825b3](https://github.com/tada5hi/typeorm-extension/commit/39825b3a07ab5dc6845e97cb6e27622d154dfad0))
+
 ## [2.1.13](https://github.com/tada5hi/typeorm-extension/compare/v2.1.12...v2.1.13) (2022-10-10)
 
 
