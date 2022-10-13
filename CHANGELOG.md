@@ -1,3 +1,10 @@
+## [2.1.15](https://github.com/tada5hi/typeorm-extension/compare/v2.1.14...v2.1.15) (2022-10-13)
+
+
+### Bug Fixes
+
+* **deps:** bump @faker-js/faker from 7.5.0 to 7.6.0 ([9730d27](https://github.com/tada5hi/typeorm-extension/commit/9730d27aca3b4a2ffcf11cff6296ca0549999b72))
+
 ## [2.1.14](https://github.com/tada5hi/typeorm-extension/compare/v2.1.13...v2.1.14) (2022-10-11)
 
 
