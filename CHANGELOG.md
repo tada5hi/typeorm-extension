@@ -1,3 +1,10 @@
+## [2.2.2](https://github.com/tada5hi/typeorm-extension/compare/v2.2.1...v2.2.2) (2022-10-19)
+
+
+### Bug Fixes
+
+* updated rapiq to v0.2.4 ([0b35d43](https://github.com/tada5hi/typeorm-extension/commit/0b35d43354f72bc7bb818836c74024aae9c89172))
+
 ## [2.2.1](https://github.com/tada5hi/typeorm-extension/compare/v2.2.0...v2.2.1) (2022-10-19)
 
 
