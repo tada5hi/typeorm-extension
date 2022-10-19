@@ -1,5 +1,6 @@
 import { RelationsParseOutput, parseQueryRelations } from 'rapiq';
-import { SelectQueryBuilder } from 'typeorm';
+import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import { buildKeyWithPrefix } from '../../utils';
 import { RelationsApplyOptions, RelationsApplyOutput } from './type';
 
 /**
@@ -7,14 +8,28 @@ import { RelationsApplyOptions, RelationsApplyOutput } from './type';
  *
  * @param query
  * @param data
+ * @param options
  */
-export function applyQueryRelationsParseOutput<T>(
+export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: RelationsParseOutput,
+    options?: RelationsApplyOptions<T>,
 ) : RelationsApplyOutput {
+    options = options || {};
     for (let i = 0; i < data.length; i++) {
+        const parts = data[i].key.split('.');
+
+        let key : string;
+        if (parts.length > 1) {
+            key = parts.slice(-2).join('.');
+        } else {
+            key = buildKeyWithPrefix(data[i].key, options.defaultAlias);
+        }
+
+        data[i].key = key;
+
         /* istanbul ignore next */
-        query.leftJoinAndSelect(data[i].key, data[i].value);
+        query.leftJoinAndSelect(key, data[i].value);
     }
 
     return data;
@@ -27,12 +42,12 @@ export function applyQueryRelationsParseOutput<T>(
  * @param data
  * @param options
  */
-export function applyQueryRelations<T>(
+export function applyQueryRelations<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: RelationsApplyOptions,
+    options?: RelationsApplyOptions<T>,
 ) : RelationsApplyOutput {
-    return applyQueryRelationsParseOutput(query, parseQueryRelations(data, options));
+    return applyQueryRelationsParseOutput(query, parseQueryRelations(data, options), options);
 }
 
 /**
@@ -42,10 +57,10 @@ export function applyQueryRelations<T>(
  * @param data
  * @param options
  */
-export function applyRelations<T>(
+export function applyRelations<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: RelationsApplyOptions,
+    options?: RelationsApplyOptions<T>,
 ) : RelationsApplyOutput {
     return applyQueryRelations(query, data, options);
 }

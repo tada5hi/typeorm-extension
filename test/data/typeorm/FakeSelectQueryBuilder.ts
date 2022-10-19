@@ -1,9 +1,6 @@
 import {DataSource, ObjectLiteral, SelectQueryBuilder} from "typeorm";
 
-export class FakeEntity{
-
-}
-export class FakeSelectQueryBuilder extends SelectQueryBuilder<FakeEntity> {
+export class FakeSelectQueryBuilder<T extends ObjectLiteral = ObjectLiteral> extends SelectQueryBuilder<T> {
     constructor() {
         super({
             options: {}

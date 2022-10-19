@@ -1,14 +1,15 @@
 import { Parameter, ParseOutput } from 'rapiq';
 
-import { SelectQueryBuilder } from 'typeorm';
+import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import {
     applyQueryFieldsParseOutput,
     applyQueryFiltersParseOutput,
     applyQueryPaginationParseOutput,
     applyQueryRelationsParseOutput,
-} from './parameter';
+    applyQuerySortParseOutput,
+} from '../parameter';
 
-export function applyQueryParseOutput<T>(
+export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     context: ParseOutput,
 ) : ParseOutput {
@@ -19,19 +20,27 @@ export function applyQueryParseOutput<T>(
 
         switch (key) {
             case Parameter.FIELDS:
-                applyQueryFieldsParseOutput(query, context[key]);
+                applyQueryFieldsParseOutput(query, context[key], {
+                    defaultAlias: context.defaultPath,
+                    relations: context.relations,
+                });
                 break;
             case Parameter.FILTERS:
-                applyQueryFiltersParseOutput(query, context[key]);
+                applyQueryFiltersParseOutput(query, context[key], {
+                    defaultAlias: context.defaultPath,
+                    relations: context.relations,
+                });
                 break;
             case Parameter.PAGINATION:
                 applyQueryPaginationParseOutput(query, context[key]);
                 break;
             case Parameter.RELATIONS:
-                applyQueryRelationsParseOutput(query, context[key]);
+                applyQueryRelationsParseOutput(query, context[key], {
+                    defaultAlias: context.defaultPath,
+                });
                 break;
             case Parameter.SORT:
-                applyQueryRelationsParseOutput(query, context[key]);
+                applyQuerySortParseOutput(query, context[key]);
                 break;
         }
     }

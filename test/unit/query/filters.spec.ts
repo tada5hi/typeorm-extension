@@ -1,127 +1,137 @@
 import {FiltersParseOptions, parseQueryFilters, parseQueryRelations} from "rapiq";
+import {ObjectLiteral} from "typeorm";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 import {
     applyFilters,
     applyFiltersTransformed, applyQueryFilters,
-    applyQueryFiltersParseOutput, FiltersApplyOutput,
+    applyQueryFiltersParseOutput, FiltersApplyOptions, FiltersApplyOutput,
     FiltersTransformOutput,
     transformParsedFilters
 } from "../../../src";
+
+function parseAndTransformFilters<T extends ObjectLiteral = ObjectLiteral>(
+    data: unknown,
+    options: FiltersApplyOptions<T>
+) : FiltersTransformOutput {
+    const parsed = parseQueryFilters(data, options);
+
+    return transformParsedFilters(parsed, options);
+}
 
 describe('src/api/filters.ts', () => {
     const queryBuilder = new FakeSelectQueryBuilder();
 
     it('should transform request filters', () => {
         // filter id
-        let allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}, {allowed: ['id']}));
+        let allowedFilters = parseAndTransformFilters({id: 1}, {allowed: ['id']});
         expect(allowedFilters).toEqual([{statement: 'id = :filter_id', binding: {'filter_id': 1}}]  as FiltersTransformOutput);
 
         // filter none
-        allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}, {allowed: []}));
+        allowedFilters = parseAndTransformFilters({id: 1}, {allowed: []});
         expect(allowedFilters).toEqual([]  as FiltersTransformOutput);
 
         // filter with alias
-        allowedFilters = transformParsedFilters(parseQueryFilters({aliasId: 1}, {aliasMapping: {aliasId: 'id'}, allowed: ['id']}));
+        allowedFilters = parseAndTransformFilters({aliasId: 1}, {mapping: {aliasId: 'id'}, allowed: ['id']});
         expect(allowedFilters).toEqual([{statement: 'id = :filter_id', binding: {'filter_id': 1}}] as FiltersTransformOutput);
 
         // filter with custom queryBindingKey
-        allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}, {allowed: ['id']}), {bindingKeyFn: key => key});
-        expect(allowedFilters).toEqual([{statement: 'id = :id', binding: {'id': 1}}] as FiltersTransformOutput);
+        allowedFilters = parseAndTransformFilters({id: 1}, {allowed: ['id'],bindingKey: key => 'prefix_' + key});
+        expect(allowedFilters).toEqual([{statement: 'id = :prefix_id', binding: {'prefix_id': 1}}] as FiltersTransformOutput);
 
         // filter with query alias
-        allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}, {defaultAlias: 'user', allowed: ['id']}));
+        allowedFilters = parseAndTransformFilters({id: 1}, {defaultAlias: 'user', allowed: ['id']});
         expect(allowedFilters).toEqual([{statement: 'user.id = :filter_user_id', binding: {'filter_user_id': 1}}] as FiltersTransformOutput);
 
         // filter allowed
-        allowedFilters = transformParsedFilters(parseQueryFilters({name: 'tada5hi'}, {allowed: ['name']}));
+        allowedFilters = parseAndTransformFilters({name: 'tada5hi'}, {allowed: ['name']});
         expect(allowedFilters).toEqual( [{statement: 'name = :filter_name', binding: {'filter_name': 'tada5hi'}}] as FiltersTransformOutput);
 
         // filter data with el empty value
-        allowedFilters = transformParsedFilters(parseQueryFilters({name: ''}, {allowed: ['name']}));
+        allowedFilters = parseAndTransformFilters({name: ''}, {allowed: ['name']});
         expect(allowedFilters).toEqual([] as FiltersTransformOutput);
 
         // --------------------------------------------------
 
         // filter data with el null value
-        allowedFilters = transformParsedFilters(parseQueryFilters({name: null}, {allowed: ['name']}));
+        allowedFilters = parseAndTransformFilters({name: null}, {allowed: ['name']});
         expect(allowedFilters).toEqual([{statement: 'name IS NULL', binding: {}}] as FiltersTransformOutput);
 
-        allowedFilters = transformParsedFilters(parseQueryFilters({name: 'null'}, {allowed: ['name']}));
+        allowedFilters = parseAndTransformFilters({name: 'null'}, {allowed: ['name']});
         expect(allowedFilters).toEqual([{statement: 'name IS NULL', binding: {}}] as FiltersTransformOutput);
 
-        allowedFilters = transformParsedFilters(parseQueryFilters({name: '!null'}, {allowed: ['name']}));
+        allowedFilters = parseAndTransformFilters({name: '!null'}, {allowed: ['name']});
         expect(allowedFilters).toEqual([{statement: 'name IS NOT NULL', binding: {}}] as FiltersTransformOutput);
 
         // --------------------------------------------------
 
         // filter wrong allowed
-        allowedFilters = transformParsedFilters(parseQueryFilters({id: 1}, {allowed: ['name']}));
+        allowedFilters = parseAndTransformFilters({id: 1}, {allowed: ['name']});
         expect(allowedFilters).toEqual([] as FiltersTransformOutput);
 
         // filter empty data
-        allowedFilters = transformParsedFilters(parseQueryFilters({}, {allowed: ['name']}));
+        allowedFilters = parseAndTransformFilters({}, {allowed: ['name']});
         expect(allowedFilters).toEqual([] as FiltersTransformOutput);
     });
 
     it('should transform filters with different operators', () => {
         // equal operator
-        let data = transformParsedFilters(parseQueryFilters({id: '1'}, {allowed: ['id']}));
+        let data = parseAndTransformFilters({id: '1'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id = :filter_id', binding: {'filter_id': '1'}}
+            {statement: 'id = :filter_id', binding: {'filter_id': 1}}
         ] as FiltersTransformOutput);
 
         // negation with equal operator
-        data = transformParsedFilters(parseQueryFilters({id: '!1'}, {allowed: ['id']}));
+        data = parseAndTransformFilters({id: '!1'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id != :filter_id', binding: {'filter_id': '1'}}
+            {statement: 'id != :filter_id', binding: {'filter_id': 1}}
         ] as FiltersTransformOutput);
 
         // in operator
-        data = transformParsedFilters(parseQueryFilters({id: '1,2,3'}, {allowed: ['id']}));
+        data = parseAndTransformFilters({id: '1,2,3'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id IN (:...filter_id)', binding: {'filter_id': ["1","2","3"]}}
+            {statement: 'id IN (:...filter_id)', binding: {'filter_id': [1,2,3]}}
         ] as FiltersTransformOutput);
 
         // negation with in operator
-        data = transformParsedFilters(parseQueryFilters({id: '!1,2,3'}, {allowed: ['id']}));
+        data = parseAndTransformFilters({id: '!1,2,3'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id NOT IN (:...filter_id)', binding: {'filter_id': ["1","2","3"]}}
+            {statement: 'id NOT IN (:...filter_id)', binding: {'filter_id': [1,2,3]}}
         ] as FiltersTransformOutput);
 
         // like operator
-        data = transformParsedFilters(parseQueryFilters({name: '~name'}, {allowed: ['name']}));
+        data = parseAndTransformFilters({name: '~name'}, {allowed: ['name']});
         expect(data).toEqual([
             {statement: 'name LIKE :filter_name', binding: {'filter_name': 'name%'}}
         ] as FiltersTransformOutput);
 
         // negation with like operator
-        data = transformParsedFilters(parseQueryFilters({name: '!~name'}, {allowed: ['name']}));
+        data = parseAndTransformFilters({name: '!~name'}, {allowed: ['name']});
         expect(data).toEqual([
             {statement: 'name NOT LIKE :filter_name', binding: {'filter_name': 'name%'}}
         ] as FiltersTransformOutput);
 
         // lessThan operator
-        data = transformParsedFilters(parseQueryFilters({id: '<10'}, {allowed: ['id']}));
+        data = parseAndTransformFilters({id: '<10'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id < :filter_id', binding: {'filter_id': '10'}}
+            {statement: 'id < :filter_id', binding: {'filter_id': 10}}
         ] as FiltersTransformOutput);
 
         // lessThanEqual operator
-        data = transformParsedFilters(parseQueryFilters({id: '<=10'}, {allowed: ['id']}));
+        data = parseAndTransformFilters({id: '<=10'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id <= :filter_id', binding: {'filter_id': '10'}}
+            {statement: 'id <= :filter_id', binding: {'filter_id': 10}}
         ] as FiltersTransformOutput);
 
         // moreThan operator
-        data = transformParsedFilters(parseQueryFilters({id: '>10'}, {allowed: ['id']}));
+        data = parseAndTransformFilters({id: '>10'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id > :filter_id', binding: {'filter_id': '10'}}
+            {statement: 'id > :filter_id', binding: {'filter_id': 10}}
         ] as FiltersTransformOutput);
 
         // moreThanEqual operator
-        data = transformParsedFilters(parseQueryFilters({id: '>=10'}, {allowed: ['id']}));
+        data = parseAndTransformFilters({id: '>=10'}, {allowed: ['id']});
         expect(data).toEqual([
-            {statement: 'id >= :filter_id', binding: {'filter_id': '10'}}
+            {statement: 'id >= :filter_id', binding: {'filter_id': 10}}
         ] as FiltersTransformOutput);
     });
 
@@ -129,26 +139,26 @@ describe('src/api/filters.ts', () => {
         const includes = parseQueryRelations(['profile', 'user_roles.role'], {allowed: ['profile', 'user_roles.role']});
 
         const options : FiltersParseOptions = {
-            allowed: ['id', 'profile.id', 'role.id'],
+            allowed: ['id', 'profile.id', 'user_roles.role.id'],
             relations: includes,
         };
 
         // simple
-        let transformed = transformParsedFilters(parseQueryFilters({id: 1, 'profile.id': 2}, options));
+        let transformed = parseAndTransformFilters({id: 1, 'profile.id': 2}, options);
         expect(transformed).toEqual([
             {statement: 'id = :filter_id', binding: {'filter_id': 1}},
             {statement: 'profile.id = :filter_profile_id', binding: {'filter_profile_id': 2}}
         ] as FiltersTransformOutput);
 
         // with include & query alias
-        transformed = transformParsedFilters(parseQueryFilters({id: 1, 'profile.id': 2}, {...options, defaultAlias: 'user'}));
+        transformed = parseAndTransformFilters({id: 1, 'profile.id': 2}, {...options, defaultAlias: 'user'});
         expect(transformed).toEqual([
             {statement: 'user.id = :filter_user_id', binding: {'filter_user_id': 1}},
             {statement: 'profile.id = :filter_profile_id', binding: {'filter_profile_id': 2}}
         ] as FiltersTransformOutput);
 
         // with deep nested include
-        transformed = transformParsedFilters(parseQueryFilters({id: 1, 'role.id': 2}, options));
+        transformed = parseAndTransformFilters({id: 1, 'user_roles.role.id': 2}, options);
         expect(transformed).toEqual([
             {statement: 'id = :filter_id', binding: {'filter_id': 1}},
             {statement: 'role.id = :filter_role_id', binding: {'filter_role_id': 2}}
@@ -163,10 +173,10 @@ describe('src/api/filters.ts', () => {
     });
 
     it('should apply filters transform output', () => {
-        let data = applyFiltersTransformed(queryBuilder, transformParsedFilters(
-            parseQueryFilters(
-                {id: 1}, {allowed: ['id']}
-            )
+        let data = applyFiltersTransformed(queryBuilder, parseAndTransformFilters(
+                {id: 1},
+            {allowed: ['id']}
+
         ));
 
         expect(data).toEqual([

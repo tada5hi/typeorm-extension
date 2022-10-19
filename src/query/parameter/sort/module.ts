@@ -1,5 +1,5 @@
 import { SortDirection, SortParseOutput, parseQuerySort } from 'rapiq';
-import { SelectQueryBuilder } from 'typeorm';
+import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { SortApplyOptions, SortApplyOutput } from './type';
 
 // --------------------------------------------------
@@ -10,7 +10,7 @@ import { SortApplyOptions, SortApplyOutput } from './type';
  * @param query
  * @param data
  */
-export function applyQuerySortParseOutput<T>(
+export function applyQuerySortParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: SortParseOutput,
 ) : SortApplyOutput {
@@ -18,10 +18,10 @@ export function applyQuerySortParseOutput<T>(
         return data;
     }
 
-    const sort : Record<string, SortDirection> = {};
+    const sort : Record<string, `${SortDirection}`> = {};
 
     for (let i = 0; i < data.length; i++) {
-        const prefix : string = data[i].alias ? `${data[i].alias}.` : '';
+        const prefix : string = data[i].path ? `${data[i].path}.` : '';
         const key = `${prefix}${data[i].key}`;
 
         sort[key] = data[i].value;
@@ -39,11 +39,16 @@ export function applyQuerySortParseOutput<T>(
  * @param data
  * @param options
  */
-export function applyQuerySort<T>(
+export function applyQuerySort<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: SortApplyOptions,
+    options?: SortApplyOptions<T>,
 ) : SortParseOutput {
+    options = options || {};
+    if (options.defaultAlias) {
+        options.defaultPath = options.defaultAlias;
+    }
+
     return applyQuerySortParseOutput(query, parseQuerySort(data, options));
 }
 
@@ -54,10 +59,10 @@ export function applyQuerySort<T>(
  * @param data
  * @param options
  */
-export function applySort<T>(
+export function applySort<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: SortApplyOptions,
+    options?: SortApplyOptions<T>,
 ) : SortParseOutput {
     return applyQuerySortParseOutput(query, parseQuerySort(data, options));
 }

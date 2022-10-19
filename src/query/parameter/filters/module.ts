@@ -1,25 +1,26 @@
-import {
-    FiltersParseOutput,
-    parseQueryFilters,
-} from 'rapiq';
+import { FiltersParseOutput, parseQueryFilters } from 'rapiq';
 
-import { Brackets, SelectQueryBuilder } from 'typeorm';
+import { Brackets, ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import { buildKeyWithPrefix, getAliasForPath } from '../../utils';
 import {
-    FiltersApplyOptions, FiltersApplyOutput, FiltersTransformOptions, FiltersTransformOutput,
+    FiltersApplyOptions, FiltersApplyOutput, FiltersTransformOutput,
 } from './type';
 
 // --------------------------------------------------
 
 export function transformParsedFilters(
     data: FiltersParseOutput,
-    options?: FiltersTransformOptions,
+    options: FiltersApplyOptions,
 ) : FiltersTransformOutput {
-    options ??= {};
+    options = options || {};
 
     const items : FiltersTransformOutput = [];
 
     for (let i = 0; i < data.length; i++) {
-        const fullKey : string = (data[i].alias ? `${data[i].alias}.` : '') + data[i].key;
+        const alias = getAliasForPath(options.relations, data[i].path) ||
+            options.defaultAlias;
+
+        const fullKey : string = buildKeyWithPrefix(data[i].key, alias);
 
         const filter = data[i];
         filter.operator ??= {};
@@ -85,8 +86,8 @@ export function transformParsedFilters(
                 statement.push('=');
             }
 
-            let bindingKey : string | undefined = typeof options.bindingKeyFn === 'function' ?
-                options.bindingKeyFn(fullKey) :
+            let bindingKey : string | undefined = typeof options.bindingKey === 'function' ?
+                options.bindingKey(fullKey) :
                 undefined;
 
             if (typeof bindingKey === 'undefined') {
@@ -115,7 +116,7 @@ export function transformParsedFilters(
  * @param query
  * @param data
  */
-export function applyFiltersTransformed<T>(
+export function applyFiltersTransformed<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: FiltersTransformOutput,
 ) : FiltersTransformOutput {
@@ -144,10 +145,10 @@ export function applyFiltersTransformed<T>(
  * @param data
  * @param options
  */
-export function applyQueryFiltersParseOutput<T>(
+export function applyQueryFiltersParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: FiltersParseOutput,
-    options?: FiltersTransformOptions,
+    options?: FiltersApplyOptions<T>,
 ) : FiltersApplyOutput {
     applyFiltersTransformed(query, transformParsedFilters(data, options));
 
@@ -163,19 +164,20 @@ export function applyQueryFiltersParseOutput<T>(
  * @param data
  * @param options
  */
-export function applyQueryFilters(
-    query: SelectQueryBuilder<any> | undefined,
+export function applyQueryFilters<T extends ObjectLiteral = ObjectLiteral>(
+    query: SelectQueryBuilder<T> | undefined,
     data: unknown,
-    options?: FiltersApplyOptions,
+    options?: FiltersApplyOptions<T>,
 ) : FiltersApplyOutput {
-    options ??= {};
-
-    const { transform: transformOptions, ...parseOptions } = options;
+    options = options || {};
+    if (options.defaultAlias) {
+        options.defaultPath = options.defaultAlias;
+    }
 
     return applyQueryFiltersParseOutput(
         query,
-        parseQueryFilters(data, parseOptions),
-        transformOptions,
+        parseQueryFilters(data, options),
+        options,
     );
 }
 
@@ -186,10 +188,10 @@ export function applyQueryFilters(
  * @param data
  * @param options
  */
-export function applyFilters(
-    query: SelectQueryBuilder<any> | undefined,
+export function applyFilters<T extends ObjectLiteral = ObjectLiteral>(
+    query: SelectQueryBuilder<T> | undefined,
     data: unknown,
-    options?: FiltersApplyOptions,
+    options?: FiltersApplyOptions<T>,
 ) : FiltersApplyOutput {
     return applyQueryFilters(query, data, options);
 }
