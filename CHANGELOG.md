@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/tada5hi/typeorm-extension/compare/v2.2.0...v2.2.1) (2022-10-19)
+
+
+### Bug Fixes
+
+* export parse* methods + updated docs & README.md ([3251135](https://github.com/tada5hi/typeorm-extension/commit/32511352eb62427bc7553424d0467ada29dcbdc4))
+
 # [2.2.0](https://github.com/tada5hi/typeorm-extension/compare/v2.1.15...v2.2.0) (2022-10-19)
 
 
