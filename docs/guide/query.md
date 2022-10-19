@@ -61,9 +61,10 @@ import { Request, Response } from 'express';
 import {
     applyQueryFields,
     applyQueryFilters,
-    applyQueryRelations,
+    applyQueryRelationsParseOutput,
     applyQueryPagination,
-    applyQuerySort
+    applyQuerySort,
+    parseQueryRelations,
 } from 'typeorm-extension';
 
 /**
@@ -94,7 +95,7 @@ export async function getUsers(req: Request, res: Response) {
 
     // -----------------------------------------------------
 
-    const relationsParsed = applyQueryRelations(query, include, {
+    const relations = parseQueryRelations(include, {
         defaultAlias: 'user',
         allowed: ['profile']
     });
@@ -103,14 +104,14 @@ export async function getUsers(req: Request, res: Response) {
         defaultAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // profile.id can only be used as sorting key, if the relation 'profile' is included.
-        relations: relationsParsed
+        relations
     });
 
     applyQueryFields(query, fields, {
         defaultAlias: 'user',
         allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         // porfile fields can only be included, if the relation 'profile' is included.
-        relations: relationsParsed
+        relations
     })
 
     // only allow filtering users by id & name
@@ -118,11 +119,13 @@ export async function getUsers(req: Request, res: Response) {
         defaultAlias: 'user',
         allowed: ['id', 'name', 'profile.id'],
         // porfile.id can only be used as a filter, if the relation 'profile' is included.
-        relations: relationsParsed
+        relations
     });
 
     // only allow to select 20 items at maximum.
     const pagination = applyQueryPagination(query, page, {maxLimit: 20});
+
+    applyQueryRelationsParseOutput(query, relations);
 
     // -----------------------------------------------------
 

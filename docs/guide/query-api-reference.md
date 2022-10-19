@@ -12,8 +12,8 @@ check out the [documentation](https://rapiq.tada5hi.net) of the [rapiq](https://
 declare function applyQueryFields<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: FieldsApplyOptions
-) : FieldsApplyOutput;
+    options?: FieldsApplyOptions<T>
+): FieldsApplyOutput;
 ```
 
 Parse and apply fields of the main entity and optional of included relations passed in as `Record<string, string[]>` or `string[]` and apply them to the `SelectQueryBuilder`, in case they match the allowed fields.
@@ -41,11 +41,11 @@ console.log(fields);
 
 **Parameters**
 
-| Name      | Type                      | Description                                                 |
-|:----------|:--------------------------|:------------------------------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                           |
-| `data`    | `unknown`                 | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
-| `options` | `FieldsApplyOptions`      | Options for the fields to select.                           |
+| Name      | Type                       | Description                                                 |
+|:----------|:---------------------------|:------------------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>  | Typeorm SelectQueryBuilder Class.                           |
+| `data`    | `unknown`                  | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
+| `options` | `FieldsApplyOptions`<`T`>  | Options for the fields to select.                           |
 
 **Returns**
 
@@ -63,7 +63,7 @@ The function returns an array of objects. Each object has the properties `fields
 declare function applyQueryFilters<T>(
     query: SelectQueryBuilder<T>,
     data: unknown, 
-    options?: FiltersApplyOptions
+    options?: FiltersApplyOptions<T>
 ): FiltersApplyOutput;
 ```
 
@@ -92,11 +92,11 @@ console.log(filters);
 
 **Parameters**
 
-| Name      | Type                      | Description                          |
-|:----------|:--------------------------|:-------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.    |
-| `data`    | `unknown`                 | Fields in raw format. F.e `{id: 1}`. |
-| `options` | `FiltersApplyOptions`     | Options for the fields to select.    |
+| Name      | Type                        | Description                          |
+|:----------|:----------------------------|:-------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>   | Typeorm SelectQueryBuilder Class.    |
+| `data`    | `unknown`                   | Fields in raw format. F.e `{id: 1}`. |
+| `options` | `FiltersApplyOptions`<`T`>  | Options for the fields to select.    |
 
 **Returns**
 
@@ -114,7 +114,7 @@ The function returns an array of objects. Each object has the properties `key` a
 declare function applyQueryRelations<T>(
     query: SelectQueryBuilder<T>,
     data: unknown, 
-    options?: RelationsApplyOptions
+    options?: RelationsApplyOptions<T>
 ): RelationsApplyOutput;
 ```
 
@@ -143,11 +143,11 @@ console.log(includes);
 
 **Parameters**
 
-| Name      | Type                      | Description                                         |
-|:----------|:--------------------------|:----------------------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                   |
-| `data`    | `unknown`                 | Relations in raw format. F.e `['roles']` or `roles` |
-| `options` | `RelationsApplyOptions`   | Options for the relations to include.               |
+| Name      | Type                          | Description                                         |
+|:----------|:------------------------------|:----------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>     | Typeorm SelectQueryBuilder Class.                   |
+| `data`    | `unknown`                     | Relations in raw format. F.e `['roles']` or `roles` |
+| `options` | `RelationsApplyOptions`<`T`>  | Options for the relations to include.               |
 
 **Returns**
 
@@ -215,7 +215,7 @@ The function returns an object. The object might have the properties `limit` and
 declare function applyQuerySort<T>(
     query: SelectQueryBuilder<T>,
     data: unknown, 
-    options?: SortApplyOptions
+    options?: SortApplyOptions<T>
 ): SortApplyOutput;
 ```
 
@@ -248,7 +248,7 @@ console.log(sort);
 |:----------|:--------------------------|:--------------------------------------------------------------------------------------------------------------------------|
 | `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                                                                                         |
 | `data`    | `unknown`                 | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order. |
-| `options` | `SortApplyOptions`        | Options for the sorting strategy.                                                                                         |
+| `options` | `SortApplyOptions`<`T`>   | Options for the sorting strategy.                                                                                         |
 
 **Returns**
 
@@ -265,7 +265,7 @@ The function returns an objects. Each key-value pair represents a field and the 
 ```typescript
 import { FieldsParseOptions } from 'rapiq';
 
-export type FieldsApplyOptions = FieldsParseOptions;
+export type FieldsApplyOptions<T> = FieldsParseOptions<T>;
 ```
 
 ## `FieldsApplyOutput`
@@ -273,17 +273,15 @@ export type FieldsApplyOptions = FieldsParseOptions;
 ```typescript
 import { FieldsParseOutput } from 'rapiq';
 
-export type FieldsApplyOutput = FieldsParseOutput;
+export type FieldsApplyOutput = FieldsParseOutput & {
+    defaultAlias?: string
+};
 ```
 
 ## `FiltersApplyOptions`
 
 ```typescript
 import { FiltersParseOptions } from 'rapiq';
-
-export type FiltersTransformOptions = {
-    bindingKeyFn?: (key: string) => string,
-};
 
 export type FilterTransformOutputElement = {
     statement: string,
@@ -293,8 +291,9 @@ export type FiltersTransformOutput = FilterTransformOutputElement[];
 
 // -----------------------------------------
 
-export type FiltersApplyOptions = FiltersParseOptions & {
-    transform?: FiltersTransformOptions
+export type FiltersApplyOptions<T> = FiltersParseOptions<T> & {
+    defaultAlias?: string,
+    bindindKey?: (key: string) => string
 };
 ```
 
@@ -327,7 +326,9 @@ type PaginationApplyOutput = PaginationParseOutput;
 ```typescript
 import { RelationsParseOptions } from 'rapiq';
 
-export type RelationsApplyOptions = RelationsParseOptions;
+export type RelationsApplyOptions<T> = RelationsParseOptions<T> & {
+    defaultAlias?: string
+};
 ```
 
 ## `RelationsApplyOutput`
@@ -344,7 +345,9 @@ export type RelationsApplyOutput = RelationsParseOutput;
 
 import { SortParseOptions } from 'rapiq';
 
-export type SortApplyOptions = SortParseOptions;
+export type SortApplyOptions<T> = SortParseOptions<T> & {
+    defaultAlias?: string
+};
 ```
 
 ## `SortApplyOutput`
