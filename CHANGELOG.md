@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/tada5hi/typeorm-extension/compare/v2.1.15...v2.2.0) (2022-10-19)
+
+
+### Features
+
+* strongly typed options for query parse functions ([206c653](https://github.com/tada5hi/typeorm-extension/commit/206c6535a69ca50a5c8c4bdb0849b30e7d151eb9))
+
 ## [2.1.15](https://github.com/tada5hi/typeorm-extension/compare/v2.1.14...v2.1.15) (2022-10-13)
 
 
