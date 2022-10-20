@@ -1,5 +1,6 @@
 import { SortDirection, SortParseOutput, parseQuerySort } from 'rapiq';
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import { buildKeyWithPrefix } from '../../utils';
 import { SortApplyOptions, SortApplyOutput } from './type';
 
 // --------------------------------------------------
@@ -21,8 +22,7 @@ export function applyQuerySortParseOutput<T extends ObjectLiteral = ObjectLitera
     const sort : Record<string, `${SortDirection}`> = {};
 
     for (let i = 0; i < data.length; i++) {
-        const prefix : string = data[i].path ? `${data[i].path}.` : '';
-        const key = `${prefix}${data[i].key}`;
+        const key = buildKeyWithPrefix(data[i].key, data[i].path);
 
         sort[key] = data[i].value;
     }
@@ -64,5 +64,5 @@ export function applySort<T extends ObjectLiteral = ObjectLiteral>(
     data: unknown,
     options?: SortApplyOptions<T>,
 ) : SortParseOutput {
-    return applyQuerySortParseOutput(query, parseQuerySort(data, options));
+    return applyQuerySort(query, data, options);
 }
