@@ -26,7 +26,9 @@ export function applyQueryFieldsParseOutput<T extends ObjectLiteral = ObjectLite
 
     query.select(data.map((field) => {
         const alias = getAliasForPath(options.relations, field.path) ||
-            options.defaultAlias;
+            options.defaultAlias ||
+            options.defaultPath;
+
         return buildKeyWithPrefix(field.key, alias);
     }));
 

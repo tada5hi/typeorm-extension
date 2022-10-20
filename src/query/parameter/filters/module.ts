@@ -18,7 +18,8 @@ export function transformParsedFilters(
 
     for (let i = 0; i < data.length; i++) {
         const alias = getAliasForPath(options.relations, data[i].path) ||
-            options.defaultAlias;
+            options.defaultAlias ||
+            options.defaultPath;
 
         const fullKey : string = buildKeyWithPrefix(data[i].key, alias);
 
