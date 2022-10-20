@@ -96,7 +96,6 @@ export async function getUsers(req: Request, res: Response) {
     // -----------------------------------------------------
 
     const relations = parseQueryRelations(include, {
-        defaultAlias: 'user',
         allowed: ['profile']
     });
 
@@ -125,7 +124,7 @@ export async function getUsers(req: Request, res: Response) {
     // only allow to select 20 items at maximum.
     const pagination = applyQueryPagination(query, page, {maxLimit: 20});
 
-    applyQueryRelationsParseOutput(query, relations);
+    applyQueryRelationsParseOutput(query, relations, { defaultAlias: 'user' });
 
     // -----------------------------------------------------
 
