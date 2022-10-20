@@ -1,3 +1,10 @@
+## [2.2.4](https://github.com/tada5hi/typeorm-extension/compare/v2.2.3...v2.2.4) (2022-10-20)
+
+
+### Bug Fixes
+
+* use default-path as alternative default-alias ([13594d4](https://github.com/tada5hi/typeorm-extension/commit/13594d4279fa84462607fe8badfaf6c4564100ae))
+
 ## [2.2.3](https://github.com/tada5hi/typeorm-extension/compare/v2.2.2...v2.2.3) (2022-10-20)
 
 
