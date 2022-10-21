@@ -1,3 +1,10 @@
+## [2.2.8](https://github.com/tada5hi/typeorm-extension/compare/v2.2.7...v2.2.8) (2022-10-21)
+
+
+### Bug Fixes
+
+* param order in apply-query-parse-output ([4fff8cd](https://github.com/tada5hi/typeorm-extension/commit/4fff8cdb756272aa3bf2765499595d213ec7f71c))
+
 ## [2.2.7](https://github.com/tada5hi/typeorm-extension/compare/v2.2.6...v2.2.7) (2022-10-21)
 
 
