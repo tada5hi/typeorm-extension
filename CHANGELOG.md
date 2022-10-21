@@ -1,3 +1,10 @@
+## [2.2.7](https://github.com/tada5hi/typeorm-extension/compare/v2.2.6...v2.2.7) (2022-10-21)
+
+
+### Bug Fixes
+
+* add apply-query function + cleaned up query sub-module ([247fa0a](https://github.com/tada5hi/typeorm-extension/commit/247fa0ae5a4a075818239501e4d96f4bcf9eb401))
+
 ## [2.2.6](https://github.com/tada5hi/typeorm-extension/compare/v2.2.5...v2.2.6) (2022-10-20)
 
 
