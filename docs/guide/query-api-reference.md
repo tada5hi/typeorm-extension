@@ -41,11 +41,11 @@ console.log(fields);
 
 **Parameters**
 
-| Name      | Type                       | Description                                                 |
-|:----------|:---------------------------|:------------------------------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`>  | Typeorm SelectQueryBuilder Class.                           |
-| `data`    | `unknown`                  | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
-| `options` | `QueryFieldsApplyOptions`<`T`>  | Options for the fields to select.                           |
+| Name      | Type                           | Description                                                 |
+|:----------|:-------------------------------|:------------------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>      | Typeorm SelectQueryBuilder Class.                           |
+| `data`    | `unknown`                      | Fields in raw format. F.e `['name']` or `{user: ['name']}`. |
+| `options` | `QueryFieldsApplyOptions`<`T`> | Options for the fields to select.                           |
 
 **Returns**
 
@@ -54,8 +54,8 @@ console.log(fields);
 The function returns an array of objects. Each object has the properties `fields` and optional `alias` and `addFields`.
 
 **References**
-- [QueryFieldsApplyOptions](#fieldsapplyoptions)
-- [QueryFieldsApplyOutput](#fieldsapplyoutput)
+- [QueryFieldsApplyOptions](#queryfieldsapplyoptions)
+- [QueryFieldsApplyOutput](#queryfieldsapplyoutput)
 
 ## `applyQueryFilters`
 
@@ -92,11 +92,11 @@ console.log(filters);
 
 **Parameters**
 
-| Name      | Type                        | Description                          |
-|:----------|:----------------------------|:-------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`>   | Typeorm SelectQueryBuilder Class.    |
-| `data`    | `unknown`                   | Fields in raw format. F.e `{id: 1}`. |
-| `options` | `QueryFiltersApplyOptions`<`T`>  | Options for the fields to select.    |
+| Name      | Type                            | Description                          |
+|:----------|:--------------------------------|:-------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>       | Typeorm SelectQueryBuilder Class.    |
+| `data`    | `unknown`                       | Fields in raw format. F.e `{id: 1}`. |
+| `options` | `QueryFiltersApplyOptions`<`T`> | Options for the fields to select.    |
 
 **Returns**
 
@@ -105,8 +105,8 @@ console.log(filters);
 The function returns an array of objects. Each object has the properties `key` and `value`.
 
 **References**
-- [QueryFiltersApplyOptions](#filtersapplyoptions)
-- [QueryFiltersApplyOutput](#filtersapplyoutput)
+- [QueryFiltersApplyOptions](#queryfiltersapplyoptions)
+- [QueryFiltersApplyOutput](#queryfiltersapplyoutput)
 
 ## `applyQueryRelations`
 
@@ -143,11 +143,11 @@ console.log(includes);
 
 **Parameters**
 
-| Name      | Type                          | Description                                         |
-|:----------|:------------------------------|:----------------------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`>     | Typeorm SelectQueryBuilder Class.                   |
-| `data`    | `unknown`                     | Relations in raw format. F.e `['roles']` or `roles` |
-| `options` | `QueryRelationsApplyOptions`<`T`>  | Options for the relations to include.               |
+| Name      | Type                              | Description                                         |
+|:----------|:----------------------------------|:----------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>         | Typeorm SelectQueryBuilder Class.                   |
+| `data`    | `unknown`                         | Relations in raw format. F.e `['roles']` or `roles` |
+| `options` | `QueryRelationsApplyOptions`<`T`> | Options for the relations to include.               |
 
 **Returns**
 
@@ -156,8 +156,8 @@ console.log(includes);
 The function returns an array of objects. Each object has the properties `property` and `alias`.
 
 **References**
-- [QueryRelationsApplyOptions](#relationsapplyoptions)
-- [QueryRelationsApplyOutput](#relationsapplyoutput)
+- [QueryRelationsApplyOptions](#queryrelationsapplyoptions)
+- [QueryRelationsApplyOutput](#queryrelationsapplyoutput)
 
 ## `applyQueryPagination`
 
@@ -193,11 +193,11 @@ console.log(pagination);
 
 **Parameters**
 
-| Name      | Type                      | Description                                                   |
-|:----------|:--------------------------|:--------------------------------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                             |
-| `data`    | `unknown`                 | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
-| `options` | `QueryPaginationApplyOptions`  | Options for the pagination to select.                         |
+| Name      | Type                             | Description                                                   |
+|:----------|:---------------------------------|:--------------------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>        | Typeorm SelectQueryBuilder Class.                             |
+| `data`    | `unknown`                        | Pagination data in raw format. F.e `{limit: 20, offset: 10}`. |
+| `options` | `QueryPaginationApplyOptions`    | Options for the pagination to select.                         |
 
 **Returns**
 
@@ -206,8 +206,8 @@ console.log(pagination);
 The function returns an object. The object might have the properties `limit` and `offset`.
 
 **References**
-- [QueryPaginationApplyOptions](#paginationapplyoptions)
-- [QueryPaginationApplyOutput](#paginationapplyoutput)
+- [QueryPaginationApplyOptions](#querypaginationapplyoptions)
+- [QueryPaginationApplyOutput](#querypaginationapplyoutput)
 
 ### applyQuerySort
 
@@ -244,11 +244,11 @@ console.log(sort);
 
 **Parameters**
 
-| Name      | Type                      | Description                                                                                                               |
-|:----------|:--------------------------|:--------------------------------------------------------------------------------------------------------------------------|
-| `query`   | `SelectQueryBuilder`<`T`> | Typeorm SelectQueryBuilder Class.                                                                                         |
-| `data`    | `unknown`                 | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order. |
-| `options` | `QuerySortApplyOptions`<`T`>   | Options for the sorting strategy.                                                                                         |
+| Name      | Type                         | Description                                                                                                               |
+|:----------|:-----------------------------|:--------------------------------------------------------------------------------------------------------------------------|
+| `query`   | `SelectQueryBuilder`<`T`>    | Typeorm SelectQueryBuilder Class.                                                                                         |
+| `data`    | `unknown`                    | Sorting Fields in raw format. F.e `['-name']`, `-name` or `{name: 'DESC'}`. The hyphen prefix indicates descending order. |
+| `options` | `QuerySortApplyOptions`<`T`> | Options for the sorting strategy.                                                                                         |
 
 **Returns**
 
@@ -257,8 +257,8 @@ console.log(sort);
 The function returns an objects. Each key-value pair represents a field and the corresponding sorting direction.
 
 **References**
-- [QuerySortApplyOptions](#sortapplyoptions)
-- [QuerySortApplyOutput](#sortapplyoutput)
+- [QuerySortApplyOptions](#querysortapplyoptions)
+- [QuerySortApplyOutput](#querysortapplyoutput)
 
 ## `QueryFieldsApplyOptions`
 

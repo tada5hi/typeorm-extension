@@ -1,4 +1,4 @@
-import { FiltersParseOutput, parseQueryFilters } from 'rapiq';
+import { FilterComparisonOperator, FiltersParseOutput, parseQueryFilters } from 'rapiq';
 
 import { Brackets, ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix, getAliasForPath } from '../../utils';
@@ -10,9 +10,9 @@ import {
 
 // --------------------------------------------------
 
-export function transformParsedFilters(
+export function transformParsedFilters<T extends ObjectLiteral = ObjectLiteral>(
     data: FiltersParseOutput,
-    options: QueryFiltersApplyOptions,
+    options: QueryFiltersApplyOptions<T>,
 ) : QueryFiltersOutput {
     options = options || {};
 
@@ -26,20 +26,23 @@ export function transformParsedFilters(
         const fullKey : string = buildKeyWithPrefix(data[i].key, alias);
 
         const filter = data[i];
-        filter.operator ??= {};
 
         const statement : string[] = [
             fullKey,
         ];
 
-        if (
-            typeof filter.value === 'undefined' ||
-            filter.value === null ||
-            `${filter.value}`.toLowerCase() === 'null'
-        ) {
+        let bindingKey : string | undefined = typeof options.bindingKey === 'function' ?
+            options.bindingKey(fullKey) :
+            undefined;
+
+        if (typeof bindingKey === 'undefined') {
+            bindingKey = `filter_${fullKey.replace('.', '_')}`;
+        }
+
+        if (filter.value === null || typeof filter.value === 'undefined') {
             statement.push('IS');
 
-            if (filter.operator.negation) {
+            if (filter.operator === FilterComparisonOperator.NOT_EQUAL) {
                 statement.push('NOT');
             }
 
@@ -49,65 +52,70 @@ export function transformParsedFilters(
                 statement: statement.join(' '),
                 binding: {},
             });
-        } else if (
-            typeof filter.value === 'string' ||
-            typeof filter.value === 'number' ||
-            typeof filter.value === 'boolean' ||
-            Array.isArray(filter.value)
-        ) {
-            if (
-                (
-                    typeof filter.value === 'string' ||
-                    typeof filter.value === 'number'
-                ) &&
-                filter.operator.like
-            ) {
-                filter.value += '%';
-            }
 
-            if (filter.operator.in || filter.operator.like) {
-                if (filter.operator.negation) {
+            continue;
+        }
+
+        switch (filter.operator) {
+            case FilterComparisonOperator.EQUAL:
+            case FilterComparisonOperator.NOT_EQUAL: {
+                if (filter.operator === FilterComparisonOperator.EQUAL) {
+                    statement.push('=');
+                } else {
+                    statement.push('!=');
+                }
+
+                statement.push(`:${bindingKey}`);
+                break;
+            }
+            case FilterComparisonOperator.LIKE:
+            case FilterComparisonOperator.NOT_LIKE: {
+                if (filter.operator === FilterComparisonOperator.NOT_LIKE) {
                     statement.push('NOT');
                 }
 
-                if (filter.operator.like) {
-                    statement.push('LIKE');
-                } else if (filter.operator.in) {
-                    statement.push('IN');
-                }
-            } else if (filter.operator.negation) {
-                statement.push('!=');
-            } else if (filter.operator.lessThan) {
-                statement.push('<');
-            } else if (filter.operator.lessThanEqual) {
-                statement.push('<=');
-            } else if (filter.operator.moreThan) {
-                statement.push('>');
-            } else if (filter.operator.moreThanEqual) {
-                statement.push('>=');
-            } else {
-                statement.push('=');
-            }
+                statement.push('LIKE');
 
-            let bindingKey : string | undefined = typeof options.bindingKey === 'function' ?
-                options.bindingKey(fullKey) :
-                undefined;
-
-            if (typeof bindingKey === 'undefined') {
-                bindingKey = `filter_${fullKey.replace('.', '_')}`;
-            }
-
-            if (filter.operator.in) {
-                statement.push(`(:...${bindingKey})`);
-            } else {
                 statement.push(`:${bindingKey}`);
+
+                filter.value += '%';
+                break;
             }
 
-            items.push({
-                statement: statement.join(' '),
-                binding: { [bindingKey]: filter.value },
-            });
+            case FilterComparisonOperator.IN:
+            case FilterComparisonOperator.NOT_IN: {
+                if (filter.operator === FilterComparisonOperator.NOT_IN) {
+                    statement.push('NOT');
+                }
+
+                statement.push('IN');
+
+                statement.push(`(:...${bindingKey})`);
+                break;
+            }
+            case FilterComparisonOperator.LESS_THAN:
+            case FilterComparisonOperator.LESS_THAN_EQUAL:
+            case FilterComparisonOperator.GREATER_THAN:
+            case FilterComparisonOperator.GREATER_THAN_EQUAL: {
+                if (filter.operator === FilterComparisonOperator.LESS_THAN) {
+                    statement.push('<');
+                } else if (filter.operator === FilterComparisonOperator.LESS_THAN_EQUAL) {
+                    statement.push('<=');
+                } else if (filter.operator === FilterComparisonOperator.GREATER_THAN) {
+                    statement.push('>');
+                } else {
+                    statement.push('>=');
+                }
+
+                statement.push(`:${bindingKey}`);
+                break;
+            }
         }
+
+        items.push({
+            statement: statement.join(' '),
+            binding: { [bindingKey]: filter.value },
+        });
     }
 
     return items;
@@ -153,7 +161,7 @@ export function applyQueryFiltersParseOutput<T extends ObjectLiteral = ObjectLit
     data: FiltersParseOutput,
     options?: QueryFiltersApplyOptions<T>,
 ) : QueryFiltersApplyOutput {
-    applyFiltersTransformed(query, transformParsedFilters(data, options));
+    applyFiltersTransformed(query, transformParsedFilters<T>(data, options));
 
     return data;
 }

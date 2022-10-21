@@ -1,4 +1,4 @@
-import {FiltersParseOptions, parseQueryFilters, parseQueryRelations} from "rapiq";
+import {FilterComparisonOperator, FiltersParseOptions, parseQueryFilters, parseQueryRelations} from "rapiq";
 import {ObjectLiteral} from "typeorm";
 import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
 import {
@@ -168,7 +168,7 @@ describe('src/api/filters.ts', () => {
     it('should apply filters parse output', () => {
         const data = applyQueryFiltersParseOutput(queryBuilder, parseQueryFilters({id: 1}, {allowed: ['id']}));
         expect(data).toEqual([
-            {key: 'id', operator: {}, value: 1}
+            {key: 'id', operator: FilterComparisonOperator.EQUAL, value: 1}
         ] as QueryFiltersApplyOutput);
     });
 
@@ -191,13 +191,13 @@ describe('src/api/filters.ts', () => {
         let data = applyQueryFilters(queryBuilder, {id: 1}, {allowed: ['id']});
 
         expect(data).toEqual([
-            {key: 'id', operator: {}, value: 1}
+            {key: 'id', operator: FilterComparisonOperator.EQUAL, value: 1}
         ]);
 
         data = applyFilters(queryBuilder, {id: 1}, {allowed: ['id']});
 
         expect(data).toEqual([
-            {key: 'id', operator: {}, value: 1}
+            {key: 'id', operator: FilterComparisonOperator.EQUAL, value: 1}
         ]);
     });
 });
