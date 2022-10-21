@@ -1,3 +1,10 @@
+## [2.2.6](https://github.com/tada5hi/typeorm-extension/compare/v2.2.5...v2.2.6) (2022-10-20)
+
+
+### Bug Fixes
+
+* apply-sort should rely on apply-query-sort ([dc7f713](https://github.com/tada5hi/typeorm-extension/commit/dc7f713899032eafbda19de9dfeba936c020a1d3))
+
 ## [2.2.5](https://github.com/tada5hi/typeorm-extension/compare/v2.2.4...v2.2.5) (2022-10-20)
 
 
