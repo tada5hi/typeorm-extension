@@ -1,7 +1,7 @@
 import { SortDirection, SortParseOutput, parseQuerySort } from 'rapiq';
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix } from '../../utils';
-import { SortApplyOptions, SortApplyOutput } from './type';
+import { QuerySortApplyOptions, QuerySortApplyOutput } from './type';
 
 // --------------------------------------------------
 
@@ -14,7 +14,7 @@ import { SortApplyOptions, SortApplyOutput } from './type';
 export function applyQuerySortParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: SortParseOutput,
-) : SortApplyOutput {
+) : QuerySortApplyOutput {
     if (data.length === 0) {
         return data;
     }
@@ -42,7 +42,7 @@ export function applyQuerySortParseOutput<T extends ObjectLiteral = ObjectLitera
 export function applyQuerySort<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: SortApplyOptions<T>,
+    options?: QuerySortApplyOptions<T>,
 ) : SortParseOutput {
     options = options || {};
     if (options.defaultAlias) {
@@ -62,7 +62,7 @@ export function applyQuerySort<T extends ObjectLiteral = ObjectLiteral>(
 export function applySort<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: SortApplyOptions<T>,
+    options?: QuerySortApplyOptions<T>,
 ) : SortParseOutput {
     return applyQuerySort(query, data, options);
 }

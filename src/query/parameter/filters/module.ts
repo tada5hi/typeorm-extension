@@ -3,18 +3,20 @@ import { FiltersParseOutput, parseQueryFilters } from 'rapiq';
 import { Brackets, ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix, getAliasForPath } from '../../utils';
 import {
-    FiltersApplyOptions, FiltersApplyOutput, FiltersTransformOutput,
+    QueryFiltersApplyOptions,
+    QueryFiltersApplyOutput,
+    QueryFiltersOutput,
 } from './type';
 
 // --------------------------------------------------
 
 export function transformParsedFilters(
     data: FiltersParseOutput,
-    options: FiltersApplyOptions,
-) : FiltersTransformOutput {
+    options: QueryFiltersApplyOptions,
+) : QueryFiltersOutput {
     options = options || {};
 
-    const items : FiltersTransformOutput = [];
+    const items : QueryFiltersOutput = [];
 
     for (let i = 0; i < data.length; i++) {
         const alias = getAliasForPath(options.relations, data[i].path) ||
@@ -119,8 +121,8 @@ export function transformParsedFilters(
  */
 export function applyFiltersTransformed<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
-    data: FiltersTransformOutput,
-) : FiltersTransformOutput {
+    data: QueryFiltersOutput,
+) : QueryFiltersOutput {
     if (data.length === 0) {
         return data;
     }
@@ -149,8 +151,8 @@ export function applyFiltersTransformed<T extends ObjectLiteral = ObjectLiteral>
 export function applyQueryFiltersParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: FiltersParseOutput,
-    options?: FiltersApplyOptions<T>,
-) : FiltersApplyOutput {
+    options?: QueryFiltersApplyOptions<T>,
+) : QueryFiltersApplyOutput {
     applyFiltersTransformed(query, transformParsedFilters(data, options));
 
     return data;
@@ -168,8 +170,8 @@ export function applyQueryFiltersParseOutput<T extends ObjectLiteral = ObjectLit
 export function applyQueryFilters<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T> | undefined,
     data: unknown,
-    options?: FiltersApplyOptions<T>,
-) : FiltersApplyOutput {
+    options?: QueryFiltersApplyOptions<T>,
+) : QueryFiltersApplyOutput {
     options = options || {};
     if (options.defaultAlias) {
         options.defaultPath = options.defaultAlias;
@@ -192,7 +194,7 @@ export function applyQueryFilters<T extends ObjectLiteral = ObjectLiteral>(
 export function applyFilters<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T> | undefined,
     data: unknown,
-    options?: FiltersApplyOptions<T>,
-) : FiltersApplyOutput {
+    options?: QueryFiltersApplyOptions<T>,
+) : QueryFiltersApplyOutput {
     return applyQueryFilters(query, data, options);
 }

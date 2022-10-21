@@ -1,7 +1,7 @@
 import { RelationsParseOutput, parseQueryRelations } from 'rapiq';
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix } from '../../utils';
-import { RelationsApplyOptions, RelationsApplyOutput } from './type';
+import { QueryRelationsApplyOptions, QueryRelationsApplyOutput } from './type';
 
 /**
  * Apply parsed include/relation parameter data on the db query.
@@ -13,8 +13,8 @@ import { RelationsApplyOptions, RelationsApplyOutput } from './type';
 export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: RelationsParseOutput,
-    options?: RelationsApplyOptions<T>,
-) : RelationsApplyOutput {
+    options?: QueryRelationsApplyOptions<T>,
+) : QueryRelationsApplyOutput {
     options = options || {};
     for (let i = 0; i < data.length; i++) {
         const parts = data[i].key.split('.');
@@ -45,8 +45,8 @@ export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectL
 export function applyQueryRelations<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: RelationsApplyOptions<T>,
-) : RelationsApplyOutput {
+    options?: QueryRelationsApplyOptions<T>,
+) : QueryRelationsApplyOutput {
     return applyQueryRelationsParseOutput(query, parseQueryRelations(data, options), options);
 }
 
@@ -60,7 +60,7 @@ export function applyQueryRelations<T extends ObjectLiteral = ObjectLiteral>(
 export function applyRelations<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: RelationsApplyOptions<T>,
-) : RelationsApplyOutput {
+    options?: QueryRelationsApplyOptions<T>,
+) : QueryRelationsApplyOutput {
     return applyQueryRelations(query, data, options);
 }

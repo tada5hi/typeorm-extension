@@ -1,6 +1,6 @@
-import { RelationsApplyOutput } from '../parameter';
+import { QueryRelationsApplyOutput } from '../parameter';
 
-export function getAliasForPath(items?: RelationsApplyOutput, path?: string) {
+export function getAliasForPath(items?: QueryRelationsApplyOutput, path?: string) {
     if (typeof path === 'undefined' || typeof items === 'undefined') {
         return undefined;
     }

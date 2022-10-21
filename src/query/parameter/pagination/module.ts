@@ -1,6 +1,6 @@
 import { parseQueryPagination } from 'rapiq';
 import { SelectQueryBuilder } from 'typeorm';
-import { PaginationApplyOptions, PaginationApplyOutput } from './type';
+import { QueryPaginationApplyOptions, QueryPaginationApplyOutput } from './type';
 
 /**
  * Apply parsed page/pagination parameter data on the db query.
@@ -10,7 +10,7 @@ import { PaginationApplyOptions, PaginationApplyOutput } from './type';
  */
 export function applyQueryPaginationParseOutput<T>(
     query: SelectQueryBuilder<T>,
-    data: PaginationApplyOutput,
+    data: QueryPaginationApplyOutput,
 ) {
     /* istanbul ignore next */
     if (typeof data.limit !== 'undefined') {
@@ -39,8 +39,8 @@ export function applyQueryPaginationParseOutput<T>(
 export function applyQueryPagination<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: PaginationApplyOptions,
-) : PaginationApplyOutput {
+    options?: QueryPaginationApplyOptions,
+) : QueryPaginationApplyOutput {
     return applyQueryPaginationParseOutput(query, parseQueryPagination(data, options));
 }
 
@@ -54,7 +54,7 @@ export function applyQueryPagination<T>(
 export function applyPagination<T>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: PaginationApplyOptions,
-) : PaginationApplyOutput {
+    options?: QueryPaginationApplyOptions,
+) : QueryPaginationApplyOutput {
     return applyQueryPagination(query, data, options);
 }

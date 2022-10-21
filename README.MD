@@ -496,18 +496,12 @@ export class Profile {
 ```
 
 In the following example [express](https://www.npmjs.com/package/express) is used to handle the HTTP request.
-Each query parameter is applied individually in following code snippet (applyQueryFields, applyQueryFilter, ...).
 
 ```typescript
-import { getRepository } from 'typeorm';
 import { Request, Response } from 'express';
 import {
-    applyQueryFields,
-    applyQueryFilters,
-    applyQueryRelationsParseOutput,
-    applyQueryPagination,
-    applyQuerySort,
-    parseQueryRelations,
+    applyQuery,
+    useDataSource
 } from 'typeorm-extension';
 
 /**
@@ -531,43 +525,37 @@ import {
  * @param res
  */
 export async function getUsers(req: Request, res: Response) {
-    const {fields, filter, include, page, sort} = req.query;
-
-    const repository = getRepository(User);
+    const dataSource = await useDataSource();
+    const repository = dataSource.getRepository(User);
     const query = repository.createQueryBuilder('user');
 
     // -----------------------------------------------------
 
-    const relations = parseQueryRelations(include, {
-        allowed: ['profile']
-    });
-
-    applyQuerySort(query, sort, {
+    const { pagination } = applyQuery(query, req.query, {
         defaultAlias: 'user',
-        allowed: ['id', 'name', 'profile.id'],
-        // profile.id can only be used as sorting key, if the relation 'profile' is included.
-        relations
+        fields: {
+            // porfile fields can only be included,
+            // if the relation 'profile' is included.
+            allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
+        },
+        filters: {
+            // porfile.id can only be used as a filter,
+            // if the relation 'profile' is included.
+            allowed: ['id', 'name', 'profile.id'],
+        },
+        pagination: {
+            // only allow to select 20 items at maximum.
+            maxLimit: 20
+        },
+        relations: {
+            allowed: ['profile']
+        },
+        sort: {
+            // profile.id can only be used as sorting key,
+            // if the relation 'profile' is included.
+            allowed: ['id', 'name', 'profile.id']
+        },
     });
-
-    applyQueryFields(query, fields, {
-        defaultAlias: 'user',
-        allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
-        // porfile fields can only be included, if the relation 'profile' is included.
-        relations
-    })
-
-    // only allow filtering users by id & name
-    applyQueryFilters(query, filter, {
-        defaultAlias: 'user',
-        allowed: ['id', 'name', 'profile.id'],
-        // porfile.id can only be used as a filter, if the relation 'profile' is included.
-        relations
-    });
-
-    // only allow to select 20 items at maximum.
-    const pagination = applyQueryPagination(query, page, {maxLimit: 20});
-
-    applyQueryRelationsParseOutput(query, relations, { defaultAlias: 'user' });
 
     // -----------------------------------------------------
 

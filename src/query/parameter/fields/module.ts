@@ -4,7 +4,7 @@ import {
 
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix, getAliasForPath } from '../../utils';
-import { FieldsApplyOptions, FieldsApplyOutput } from './type';
+import { QueryFieldsApplyOptions, QueryFieldsApplyOutput } from './type';
 
 /**
  * Apply parsed fields parameter data on the db query.
@@ -15,8 +15,8 @@ import { FieldsApplyOptions, FieldsApplyOutput } from './type';
 /* istanbul ignore next */
 export function applyQueryFieldsParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
-    data: FieldsApplyOutput,
-    options?: FieldsApplyOptions<T>,
+    data: QueryFieldsApplyOutput,
+    options?: QueryFieldsApplyOptions<T>,
 ) {
     options = options || {};
 
@@ -45,8 +45,8 @@ export function applyQueryFieldsParseOutput<T extends ObjectLiteral = ObjectLite
 export function applyQueryFields<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: FieldsApplyOptions<T>,
-) : FieldsApplyOutput {
+    options?: QueryFieldsApplyOptions<T>,
+) : QueryFieldsApplyOutput {
     options = options || {};
     if (options.defaultAlias) {
         options.defaultPath = options.defaultAlias;
@@ -65,7 +65,7 @@ export function applyQueryFields<T extends ObjectLiteral = ObjectLiteral>(
 export function applyFields<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: FieldsApplyOptions<T>,
-) : FieldsApplyOutput {
+    options?: QueryFieldsApplyOptions<T>,
+) : QueryFieldsApplyOutput {
     return applyQueryFields(query, data, options);
 }

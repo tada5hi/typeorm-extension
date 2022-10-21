@@ -1,5 +1,4 @@
-import { Parameter, ParseOutput } from 'rapiq';
-
+import { Parameter, ParseOutput, parseQuery } from 'rapiq';
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import {
     applyQueryFieldsParseOutput,
@@ -7,12 +6,13 @@ import {
     applyQueryPaginationParseOutput,
     applyQueryRelationsParseOutput,
     applyQuerySortParseOutput,
-} from '../parameter';
+} from './parameter';
+import { QueryApplyOptions, QueryApplyOutput } from './type';
 
 export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     context: ParseOutput,
-) : ParseOutput {
+): ParseOutput {
     const keys = Object.keys(context);
 
     for (let i = 0; i < keys.length; i++) {
@@ -46,4 +46,21 @@ export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     }
 
     return context;
+}
+
+export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
+    query: SelectQueryBuilder<T>,
+    input: unknown,
+    options?: QueryApplyOptions<T>,
+) : QueryApplyOutput {
+    if (options.defaultAlias) {
+        options.defaultPath = options.defaultAlias;
+    }
+
+    const output = applyQueryParseOutput(query, parseQuery(input, options));
+
+    return {
+        ...output,
+        ...(options.defaultAlias ? { defaultAlias: options.defaultAlias } : {}),
+    };
 }
