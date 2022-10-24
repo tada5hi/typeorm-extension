@@ -70,7 +70,7 @@
         "@tada5hi/eslint-config-typescript": "^1.0.8",
         "@types/glob": "^8.0.0",
         "@types/jest": "^27.5.0",
-        "@types/node": "^18.11.0",
+        "@types/node": "^18.11.4",
         "@types/yargs": "^17.0.13",
         "better-sqlite3": "^7.6.2",
         "coveralls": "^3.1.0",
