@@ -9,7 +9,13 @@
 
 This is a library to
 - `create`, `drop` & `seed` the (default-) database 🔥
-- validate, parse & apply `fields, filter[s], include[s], page and sort` parameter values ( extended **JSON:API** specification)
+- manage one or many data-source instances 👻
+- parse & apply query parameters (extended **JSON:API** specification & fully typed) to:
+    - `filter` (related) resources according to one or more criteria,
+    - reduce (related) resource `fields`,
+    - `include` related resources,
+    - `sort` resources according to one or more criteria,
+    - limit the number of resources returned in a response by `page` limit & offset
 
 **Table of Contents**
 
@@ -448,7 +454,9 @@ import UserFactory from 'user.factory';
 ### Query
 The query submodule enables query parameter (fields, filter, ...) values to be build, parsed & validated.
 Therefore, the [rapiq](https://www.npmjs.com/package/rapiq) library is used under the hood.
-The main functions and types are also exposed by this library.
+
+The query parameter options (allowed, default, ...) are fully typed 🔥 and depend on the (nested-) properties of the target entity passed to
+the typeorm query builder.
 
 For explanation proposes,
 two simple entities with a relation between them are declared to demonstrate the usage of the query utils:
