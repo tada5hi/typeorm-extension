@@ -1,3 +1,10 @@
+## [2.2.11](https://github.com/tada5hi/typeorm-extension/compare/v2.2.10...v2.2.11) (2022-10-28)
+
+
+### Bug Fixes
+
+* only apply query parameter if options are defined ([49b1d0a](https://github.com/tada5hi/typeorm-extension/commit/49b1d0afb9e290ef86f2a8209f234e514ffebbd5))
+
 ## [2.2.10](https://github.com/tada5hi/typeorm-extension/compare/v2.2.9...v2.2.10) (2022-10-27)
 
 
