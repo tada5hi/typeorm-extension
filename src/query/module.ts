@@ -8,6 +8,7 @@ import {
     applyQuerySortParseOutput,
 } from './parameter';
 import { QueryApplyOptions, QueryApplyOutput } from './type';
+import { isQueryOptionDefined } from './utils';
 
 export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
@@ -49,8 +50,44 @@ export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
     input: unknown,
     options?: QueryApplyOptions<T>,
 ) : QueryApplyOutput {
+    options = options || {};
+
     if (options.defaultAlias) {
         options.defaultPath = options.defaultAlias;
+    }
+
+    if (
+        typeof options.fields === 'undefined' ||
+        !isQueryOptionDefined(options.fields, ['allowed', 'default'])
+    ) {
+        options.fields = false;
+    }
+
+    if (
+        typeof options.filters === 'undefined' ||
+        !isQueryOptionDefined(options.fields, ['allowed', 'default'])
+    ) {
+        options.filters = false;
+    }
+
+    if (
+        typeof options.pagination === 'undefined'
+    ) {
+        options.pagination = false;
+    }
+
+    if (
+        typeof options.relations === 'undefined' ||
+        !isQueryOptionDefined(options.relations, ['allowed'])
+    ) {
+        options.relations = false;
+    }
+
+    if (
+        typeof options.sort === 'undefined' ||
+        !isQueryOptionDefined(options.sort, ['allowed', 'default'])
+    ) {
+        options.sort = false;
     }
 
     const output = applyQueryParseOutput(query, parseQuery(input, options));
