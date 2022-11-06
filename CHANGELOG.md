@@ -1,3 +1,10 @@
+## [2.2.12](https://github.com/tada5hi/typeorm-extension/compare/v2.2.11...v2.2.12) (2022-11-06)
+
+
+### Bug Fixes
+
+* **deps:** bump yargs from 17.6.0 to 17.6.2 ([b76eeac](https://github.com/tada5hi/typeorm-extension/commit/b76eeacbc2907352870f021032c71305bbf6c01c))
+
 ## [2.2.11](https://github.com/tada5hi/typeorm-extension/compare/v2.2.10...v2.2.11) (2022-10-28)
 
 
