@@ -67,7 +67,7 @@
         "@semantic-release/github": "^8.0.6",
         "@semantic-release/npm": "^9.0.1",
         "@semantic-release/release-notes-generator": "^10.0.3",
-        "@tada5hi/eslint-config-typescript": "^1.0.9",
+        "@tada5hi/eslint-config-typescript": "^1.0.10",
         "@types/glob": "^8.0.0",
         "@types/jest": "^27.5.0",
         "@types/node": "^18.11.9",
