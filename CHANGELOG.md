@@ -1,3 +1,10 @@
+## [2.2.13](https://github.com/tada5hi/typeorm-extension/compare/v2.2.12...v2.2.13) (2022-11-16)
+
+
+### Bug Fixes
+
+* typo in apply-query check ([df79051](https://github.com/tada5hi/typeorm-extension/commit/df79051ad6485948d9683916c94f4640fe39e7c4))
+
 ## [2.2.12](https://github.com/tada5hi/typeorm-extension/compare/v2.2.11...v2.2.12) (2022-11-06)
 
 
