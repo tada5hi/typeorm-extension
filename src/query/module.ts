@@ -65,7 +65,7 @@ export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
 
     if (
         typeof options.filters === 'undefined' ||
-        !isQueryOptionDefined(options.fields, ['allowed', 'default'])
+        !isQueryOptionDefined(options.filters, ['allowed', 'default'])
     ) {
         options.filters = false;
     }
