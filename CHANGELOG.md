@@ -1,3 +1,11 @@
+# [2.3.0](https://github.com/tada5hi/typeorm-extension/compare/v2.2.13...v2.3.0) (2022-11-27)
+
+
+### Features
+
+* add check-database utility fn ([706e044](https://github.com/tada5hi/typeorm-extension/commit/706e044571b751bdf2c31dc9bace9deec6b4689a))
+* allow null value in query filter list ([949124c](https://github.com/tada5hi/typeorm-extension/commit/949124cbfaabe5b81db56883e2106b71b7be0a52))
+
 ## [2.2.13](https://github.com/tada5hi/typeorm-extension/compare/v2.2.12...v2.2.13) (2022-11-16)
 
 
