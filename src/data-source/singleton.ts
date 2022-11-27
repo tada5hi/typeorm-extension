@@ -15,7 +15,7 @@ export function setDataSource(
     instances[alias] = dataSource;
 }
 
-export function isSetDataSource(alias?: string) : boolean {
+export function hasDataSource(alias?: string) : boolean {
     alias = alias || 'default';
 
     return Object.prototype.hasOwnProperty.call(instances, alias);

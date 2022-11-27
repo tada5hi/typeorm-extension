@@ -12,7 +12,7 @@ export function setDataSourceOptions(
     instances[alias] = options;
 }
 
-export function isSetDataSourceOptions(alias?: string) : boolean {
+export function hasDataSourceOptions(alias?: string) : boolean {
     alias = alias || 'default';
 
     return Object.prototype.hasOwnProperty.call(instances, alias);

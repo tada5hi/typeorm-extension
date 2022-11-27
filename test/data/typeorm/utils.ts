@@ -1,14 +1,14 @@
 import {
-    buildDataSourceOptions,
+    buildDataSourceOptions, checkDatabase,
     createDatabase,
-    dropDatabase,
+    dropDatabase, hasDataSource,
     setDataSource,
     unsetDataSource,
     useDataSource
 } from "../../../src";
 import {DataSource} from "typeorm";
 
-export async function setupTestDatabase() {
+export async function setupTestDatabase() : Promise<DataSource> {
     const options = await buildDataSourceOptions({
         directory: __dirname
     })
@@ -21,15 +21,36 @@ export async function setupTestDatabase() {
     await dataSource.initialize();
 
     setDataSource(dataSource);
+
+    return dataSource;
+}
+
+export async function checkTestDatabase() {
+    const options = await buildDataSourceOptions({
+        directory: __dirname
+    });
+
+    return await checkDatabase({
+        options
+    })
 }
 
 export async function destroyTestDatabase() {
+    if(!hasDataSource()) {
+        const options = await buildDataSourceOptions({
+            directory: __dirname
+        });
+        await dropDatabase({options});
+
+        return;
+    }
+
     const dataSource = await useDataSource();
     await dataSource.destroy();
 
-    await dropDatabase({
-        options: dataSource.options
-    });
+    const { options } = dataSource;
 
-    unsetDataSource()
+    unsetDataSource();
+
+    await dropDatabase({options});
 }
