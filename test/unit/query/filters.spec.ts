@@ -92,10 +92,22 @@ describe('src/api/filters.ts', () => {
             {statement: 'id IN (:...filter_id)', binding: {'filter_id': [1,2,3]}}
         ] as QueryFiltersOutput);
 
+        // in operator with null
+        data = parseAndTransformFilters({id: 'null,1,2,3'}, {allowed: ['id']});
+        expect(data).toEqual([
+            {statement: '( id IN (:...filter_id) OR id IS NULL )', binding: {'filter_id': [1,2,3]}}
+        ] as QueryFiltersOutput);
+
         // negation with in operator
         data = parseAndTransformFilters({id: '!1,2,3'}, {allowed: ['id']});
         expect(data).toEqual([
             {statement: 'id NOT IN (:...filter_id)', binding: {'filter_id': [1,2,3]}}
+        ] as QueryFiltersOutput);
+
+        // negation with in operator and null
+        data = parseAndTransformFilters({id: '!null,1,2,3'}, {allowed: ['id']});
+        expect(data).toEqual([
+            {statement: '( id NOT IN (:...filter_id) AND id IS NOT NULL )', binding: {'filter_id': [1,2,3]}}
         ] as QueryFiltersOutput);
 
         // like operator

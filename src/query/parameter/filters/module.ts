@@ -91,6 +91,29 @@ export function transformParsedFilters<T extends ObjectLiteral = ObjectLiteral>(
                 statement.push('IN');
 
                 statement.push(`(:...${bindingKey})`);
+
+                if (Array.isArray(filter.value)) {
+                    const nullIndex = (filter.value as unknown[]).indexOf(null);
+                    if (nullIndex !== -1) {
+                        filter.value.splice(nullIndex, 1);
+
+                        statement.unshift('(');
+                        if (filter.operator === FilterComparisonOperator.NOT_IN) {
+                            statement.push('AND');
+                        } else {
+                            statement.push('OR');
+                        }
+                        statement.push(fullKey);
+                        statement.push('IS');
+
+                        if (filter.operator === FilterComparisonOperator.NOT_IN) {
+                            statement.push('NOT');
+                        }
+
+                        statement.push('NULL');
+                        statement.push(')');
+                    }
+                }
                 break;
             }
             case FilterComparisonOperator.LESS_THAN:
