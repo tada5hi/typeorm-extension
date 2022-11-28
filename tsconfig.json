@@ -9,7 +9,8 @@
         "lib": [
             "ESNext"
         ],
-        "module": "commonjs",
+        "module": "ESNext",
+        "moduleResolution": "Node",
         "newLine": "LF",
         "noFallthroughCasesInSwitch": true,
         "noImplicitAny": true,
