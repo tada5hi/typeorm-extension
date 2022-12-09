@@ -61,19 +61,19 @@ export async function checkDatabase(context?: DatabaseCheckContext) : Promise<Da
         return result;
     }
 
+    const queryRunner = dataSource.createQueryRunner();
+
     if (
         dataSource.migrations &&
         dataSource.migrations.length > 0
     ) {
-        const migrationExecutor = new MigrationExecutor(dataSource);
+        const migrationExecutor = new MigrationExecutor(dataSource, queryRunner);
         result.migrationsPending = await migrationExecutor.getPendingMigrations();
 
         if (result.migrationsPending.length === 0) {
             result.schema = true;
         }
     } else {
-        const queryRunner = dataSource.createQueryRunner();
-
         let schema : string | undefined;
         if (hasStringProperty(dataSource.driver.options, 'schema')) {
             schema = dataSource.driver.options.schema;
@@ -93,9 +93,9 @@ export async function checkDatabase(context?: DatabaseCheckContext) : Promise<Da
 
             result.schema = tables.length === dataSource.entityMetadatas.length;
         }
-
-        await queryRunner.release();
     }
+
+    await queryRunner.release();
 
     if (!dataSourceExisted) {
         if (context.dataSourceCleanup) {
