@@ -156,7 +156,7 @@ import { dropDatabase } from 'typeorm-extension';
         database: 'db.sqlite'
     };
 
-    // Create the database with specification of the DataSource options
+    // Drop the database with specification of the DataSource options
     await dropDatabase({
         options
     });
@@ -171,7 +171,7 @@ import { dropDatabase } from 'typeorm-extension';
 (async () => {
     const options = await getConnectionOptions();
 
-    // Create the database with specification of the DataSource options
+    // Drop the database with specification of the DataSource options
     await dropDatabase({
         options
     });
@@ -542,12 +542,12 @@ export async function getUsers(req: Request, res: Response) {
     const { pagination } = applyQuery(query, req.query, {
         defaultAlias: 'user',
         fields: {
-            // porfile fields can only be included,
+            // profile fields can only be included,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         },
         filters: {
-            // porfile.id can only be used as a filter,
+            // profile.id can only be used as a filter,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id'],
         },
