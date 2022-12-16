@@ -1,12 +1,15 @@
 import { DataSource, DataSourceOptions, InstanceChecker } from 'typeorm';
 
 export async function setupDatabaseSchema(input: DataSource | DataSourceOptions) {
-    let dataSource : DataSource;
+    let dataSource: DataSource;
+    let options: DataSourceOptions;
 
     if (InstanceChecker.isDataSource(input)) {
         dataSource = input;
+        options = dataSource.options;
     } else {
-        dataSource = new DataSource(input);
+        options = input;
+        dataSource = new DataSource(options);
     }
 
     if (!dataSource.isInitialized) {
@@ -21,7 +24,7 @@ export async function setupDatabaseSchema(input: DataSource | DataSourceOptions)
     }
 
     if (migrationsCount > 0) {
-        await dataSource.runMigrations();
+        await dataSource.runMigrations({ transaction: options.migrationsTransactionMode });
     } else {
         await dataSource.synchronize(false);
     }
