@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/tada5hi/typeorm-extension/compare/v2.3.1...v2.4.0) (2022-12-16)
+
+
+### Features
+
+* run migrations with specified transaction mode ([3e7f9a5](https://github.com/tada5hi/typeorm-extension/commit/3e7f9a58424a9ee57d3ba50c2b8beb25ebd045c4))
+
 ## [2.3.1](https://github.com/tada5hi/typeorm-extension/compare/v2.3.0...v2.3.1) (2022-12-09)
 
 
