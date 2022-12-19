@@ -27,6 +27,7 @@ This is a library to
     - [Instances](#instances)
     - [Seeding](#seeding)
     - [Query](#query)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Installation
@@ -580,6 +581,12 @@ export async function getUsers(req: Request, res: Response) {
     });
 }
 ```
+
+## Contributing
+
+Before starting to work on a pull request, it is important to review the guidelines for
+[contributing](./CONTRIBUTING.md) and the [code of conduct](./CODE_OF_CONDUCT.md).
+These guidelines will help to ensure that contributions are made effectively and are accepted.
 
 ## License
 
