@@ -1,3 +1,11 @@
+## [2.4.1](https://github.com/tada5hi/typeorm-extension/compare/v2.4.0...v2.4.1) (2022-12-28)
+
+
+### Bug Fixes
+
+* **deps:** bump locter from 0.6.0 to 0.6.1 ([79f44bf](https://github.com/tada5hi/typeorm-extension/commit/79f44bf46c6013285d0c0c45b281d13425f7047f))
+* **deps:** bump rapiq from 0.6.1 to 0.6.2 ([1c941a1](https://github.com/tada5hi/typeorm-extension/commit/1c941a19cf4b11cf449d71d12bb2ebba35ae305b))
+
 # [2.4.0](https://github.com/tada5hi/typeorm-extension/compare/v2.3.1...v2.4.0) (2022-12-16)
 
 
