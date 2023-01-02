@@ -75,7 +75,7 @@
         "better-sqlite3": "^8.0.1",
         "coveralls": "^3.1.0",
         "cross-env": "^7.0.3",
-        "eslint": "^8.30.0",
+        "eslint": "^8.31.0",
         "husky": "^8.0.2",
         "jest": "^27.5.1",
         "semantic-release": "^19.0.5",
