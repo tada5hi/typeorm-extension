@@ -57,7 +57,7 @@
         "typeorm": "~0.3.0"
     },
     "devDependencies": {
-        "@commitlint/cli": "^17.3.0",
+        "@commitlint/cli": "^17.4.0",
         "@commitlint/config-angular": "^17.4.0",
         "@commitlint/config-conventional": "^17.3.0",
         "@commitlint/cz-commitlint": "^17.4.0",
