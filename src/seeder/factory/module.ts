@@ -8,7 +8,7 @@ import { isPromise } from '../utils';
 export class SeederFactory<O extends Record<string, any>> {
     public readonly context: SeederFactoryContext<O>;
 
-    public meta: unknown;
+    public meta: never;
 
     // --------------------------------------------------------------
 
@@ -18,7 +18,7 @@ export class SeederFactory<O extends Record<string, any>> {
 
     // --------------------------------------------------------------
 
-    public setMeta(value: unknown) {
+    public setMeta(value: never) {
         this.meta = value;
 
         return this;
