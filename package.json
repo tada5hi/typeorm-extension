@@ -78,7 +78,7 @@
         "eslint": "^8.31.0",
         "husky": "^8.0.3",
         "jest": "^27.5.1",
-        "semantic-release": "^19.0.5",
+        "semantic-release": "^20.0.2",
         "ts-jest": "^27.1.4",
         "ts-node": "^10.9.1",
         "typeorm": "^0.3.11",
