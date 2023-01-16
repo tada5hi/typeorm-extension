@@ -6,9 +6,9 @@ import { SeederFactory } from './module';
 export class SeederFactoryManager {
     public readonly items : Record<string, SeederFactoryConfig> = {};
 
-    set<O extends Record<string, any>>(
+    set<O extends Record<string, any>, Meta = unknown>(
         entity: ObjectType<O> | EntitySchema<O>,
-        factoryFn: FactoryCallback<O>,
+        factoryFn: FactoryCallback<O, Meta>,
     ) : SeederFactoryConfig {
         const name = getEntityName(entity);
 
@@ -20,9 +20,9 @@ export class SeederFactoryManager {
         return this.items[name];
     }
 
-    get<O extends Record<string, any>>(
+    get<O extends Record<string, any>, Meta = unknown>(
         entity: ObjectType<O> | EntitySchema<O>,
-    ) : SeederFactory<O> {
+    ) : SeederFactory<O, Meta> {
         const name = getEntityName(entity);
 
         if (!hasOwnProperty(this.items, name)) {

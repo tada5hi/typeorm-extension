@@ -5,20 +5,20 @@ import { hasOwnProperty } from '../../utils';
 import { useDataSource } from '../../data-source';
 import { isPromise } from '../utils';
 
-export class SeederFactory<O extends Record<string, any>> {
-    public readonly context: SeederFactoryContext<O>;
+export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
+    public readonly context: SeederFactoryContext<O, Meta>;
 
-    public meta: never;
+    public meta: Meta;
 
     // --------------------------------------------------------------
 
-    constructor(context: SeederFactoryContext<O>) {
+    constructor(context: SeederFactoryContext<O, Meta>) {
         this.context = context;
     }
 
     // --------------------------------------------------------------
 
-    public setMeta(value: never) {
+    public setMeta(value: Meta) {
         this.meta = value;
 
         return this;
