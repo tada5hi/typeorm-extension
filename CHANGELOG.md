@@ -1,3 +1,12 @@
+## [2.4.2](https://github.com/tada5hi/typeorm-extension/compare/v2.4.1...v2.4.2) (2023-01-17)
+
+
+### Bug Fixes
+
+* **deps:** bump locter from 0.6.1 to 0.7.0 ([bb0d2fa](https://github.com/tada5hi/typeorm-extension/commit/bb0d2fac3a7f6de19fde323f0907b10716741c53))
+* **deps:** bump rapiq from 0.6.2 to 0.6.3 ([#438](https://github.com/tada5hi/typeorm-extension/issues/438)) ([d2d4919](https://github.com/tada5hi/typeorm-extension/commit/d2d49195bc16e5b79c133d8740b6e08f94e91138))
+* generic type for seeder meta ([f82c655](https://github.com/tada5hi/typeorm-extension/commit/f82c65505fb9e8ee48a81e1d55c9504795116274))
+
 ## [2.4.1](https://github.com/tada5hi/typeorm-extension/compare/v2.4.0...v2.4.1) (2022-12-28)
 
 
