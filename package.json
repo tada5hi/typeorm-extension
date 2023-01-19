@@ -71,7 +71,7 @@
         "@types/glob": "^8.0.0",
         "@types/jest": "^27.5.0",
         "@types/node": "^18.11.18",
-        "@types/yargs": "^17.0.19",
+        "@types/yargs": "^17.0.20",
         "better-sqlite3": "^8.0.1",
         "coveralls": "^3.1.0",
         "cross-env": "^7.0.3",
