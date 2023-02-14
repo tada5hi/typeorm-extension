@@ -1,6 +1,6 @@
 import {
-    loadScriptFileSync,
-    locateFile,
+    load,
+    locate,
     removeFileNameExtension,
 } from 'locter';
 import path from 'path';
@@ -77,13 +77,13 @@ export async function findDataSource(
     }
 
     for (let i = 0; i < fileNames.length; i++) {
-        const info = await locateFile(`${fileNames[i]}.{cjs,js,mjs,ts}`, {
+        const info = await locate(`${fileNames[i]}.{cjs,js,mjs,ts}`, {
             path: paths,
             ignore: ['**/*.d.ts'],
         });
 
         if (info) {
-            const fileExports = loadScriptFileSync(info);
+            const fileExports = await load(info);
             if (InstanceChecker.isDataSource(fileExports)) {
                 return fileExports;
             }

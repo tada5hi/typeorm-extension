@@ -1,12 +1,12 @@
 /* istanbul ignore next */
 import path from 'path';
-import { locateFiles } from 'locter';
+import { locateMany } from 'locter';
 
 export async function resolveFilePatterns(
     filesPattern: string[],
     root?: string,
 ) : Promise<string[]> {
-    return locateFiles(
+    return locateMany(
         filesPattern,
         {
             ...(root ? { path: root } : {}),

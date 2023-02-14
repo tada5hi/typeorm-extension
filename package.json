@@ -20,7 +20,7 @@
         "build": "rm -rf ./dist && tsc",
         "build:watch": "npm run build -- --watch",
         "commit": "npx git-cz",
-        "test": "cross-env NODE_ENV=test jest --config ./test/jest.config.js",
+        "test": "jest --config ./test/jest.config.js",
         "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage",
         "lint": "eslint --ext .js,.vue,.ts ./src",
         "lint:fix": "npm run lint -- --fix",
@@ -48,7 +48,7 @@
     "license": "MIT",
     "dependencies": {
         "@faker-js/faker": "^7.6.0",
-        "locter": "^0.7.0",
+        "locter": "^1.0.3",
         "rapiq": "^0.6.3",
         "reflect-metadata": "^0.1.13",
         "yargs": "^17.6.2"
