@@ -9,14 +9,24 @@ Seeding the database is fairly easy and can be achieved by following the steps b
 
 ## Configuration
 
+Seeder paths are configured as **glob patterns**, making it easy
+to match all the factory/seeder files in your project without configuration effort:
+- use `*` to match anything expect slashes and hidden files
+- use `**` to match zero or more directories
+- use comma separate values between `{}` to match against a list of options
+
+Check out the [glob](https://www.npmjs.com/package/glob) documentation for other supported pattern features.
+It is important to use the posix/unix path separator (/) because
+the Windows path separator (\\) is used to match paths with literal global pattern characters.
+
 The seeder- & factory-location, can be specified via:
 - `environment` variable(s)
 - extended `data-source.ts` file
 - `runSeeder(s)` method options parameter, in case of a direct code base usage
 
-> The default factory path is: `src/database/factories/**/*{.ts,.js}`
-
-> The default seed path is: `src/database/seeds/**/*{.ts,.js}`
+The following values are assumed by default:
+- factory path: `src/database/factories/**/*{.ts,.js}`
+- seed path: `src/database/seeds/**/*{.ts,.js}`
 
 `env`
 ```
