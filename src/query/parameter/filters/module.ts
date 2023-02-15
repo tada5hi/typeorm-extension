@@ -12,7 +12,7 @@ import {
 
 export function transformParsedFilters<T extends ObjectLiteral = ObjectLiteral>(
     data: FiltersParseOutput,
-    options: QueryFiltersApplyOptions<T>,
+    options: QueryFiltersApplyOptions<T> = {},
 ) : QueryFiltersOutput {
     options = options || {};
 
@@ -199,7 +199,7 @@ export function applyQueryFiltersParseOutput<T extends ObjectLiteral = ObjectLit
  * @param options
  */
 export function applyQueryFilters<T extends ObjectLiteral = ObjectLiteral>(
-    query: SelectQueryBuilder<T> | undefined,
+    query: SelectQueryBuilder<T>,
     data: unknown,
     options?: QueryFiltersApplyOptions<T>,
 ) : QueryFiltersApplyOutput {
@@ -223,7 +223,7 @@ export function applyQueryFilters<T extends ObjectLiteral = ObjectLiteral>(
  * @param options
  */
 export function applyFilters<T extends ObjectLiteral = ObjectLiteral>(
-    query: SelectQueryBuilder<T> | undefined,
+    query: SelectQueryBuilder<T>,
     data: unknown,
     options?: QueryFiltersApplyOptions<T>,
 ) : QueryFiltersApplyOutput {

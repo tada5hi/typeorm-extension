@@ -1,3 +1,4 @@
+import { DriverError, OptionsError } from '../errors';
 import {
     DatabaseDropContext,
 } from './type';
@@ -9,21 +10,25 @@ import {
     dropPostgresDatabase,
     dropSQLiteDatabase,
 } from './driver';
-import { NotSupportedDriver } from './error';
 import { buildDatabaseDropContext } from './utils';
 
 /**
  * Drop database for specified driver in ConnectionOptions.
  *
- * @throws NotSupportedDriver
+ * @throws DriverError
+ * @throws OptionsError
  *
  * @param context
  */
 export async function dropDatabase(context?: DatabaseDropContext) {
     context = await buildDatabaseDropContext(context);
 
+    if (!context.options) {
+        throw OptionsError.undeterminable();
+    }
+
     if (!context.options.type) {
-        throw new NotSupportedDriver(context.options.type);
+        throw DriverError.undeterminable();
     }
 
     switch (context.options.type) {
@@ -43,5 +48,5 @@ export async function dropDatabase(context?: DatabaseDropContext) {
             return dropMsSQLDatabase(context);
     }
 
-    throw new NotSupportedDriver(context.options.type);
+    throw DriverError.notSupported(context.options.type);
 }

@@ -8,7 +8,7 @@ import { isPromise } from '../utils';
 export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     public readonly context: SeederFactoryContext<O, Meta>;
 
-    public meta: Meta;
+    public meta: Meta | undefined;
 
     // --------------------------------------------------------------
 
@@ -38,7 +38,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         if (params) {
             const keys : (keyof O)[] = Object.keys(params);
             for (let i = 0; i < keys.length; i++) {
-                entity[keys[i]] = params[keys[i]];
+                entity[keys[i]] = (params as O)[keys[i]];
             }
         }
 
@@ -93,9 +93,9 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
                 value instanceof SeederFactory
             ) {
                 if (save) {
-                    entity[key] = await value.save();
+                    entity[key] = await (value as SeederFactory<any>).save();
                 } else {
-                    entity[key] = await value.make();
+                    entity[key] = await (value as SeederFactory<any>).make();
                 }
             }
 

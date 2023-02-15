@@ -8,14 +8,11 @@ export function setDataSourceOptions(
     options: DataSourceOptions,
     alias?: string,
 ) {
-    alias = alias || 'default';
-    instances[alias] = options;
+    instances[alias || 'default'] = options;
 }
 
 export function hasDataSourceOptions(alias?: string) : boolean {
-    alias = alias || 'default';
-
-    return Object.prototype.hasOwnProperty.call(instances, alias);
+    return Object.prototype.hasOwnProperty.call(instances, alias || 'default');
 }
 
 export async function useDataSourceOptions(alias?: string) : Promise<DataSourceOptions> {
@@ -29,7 +26,9 @@ export async function useDataSourceOptions(alias?: string) : Promise<DataSourceO
     if (!Object.prototype.hasOwnProperty.call(instancePromises, alias)) {
         instancePromises[alias] = buildDataSourceOptions()
             .catch((e) => {
-                delete instancePromises[alias];
+                if (alias) {
+                    delete instancePromises[alias];
+                }
 
                 throw e;
             });

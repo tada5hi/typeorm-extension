@@ -7,7 +7,9 @@ describe('src/utils/tsconfig.ts', () => {
         const tsConfig = await readTsConfig(rootPath);
 
         expect(tsConfig.compilerOptions).toBeDefined();
-        expect(tsConfig.compilerOptions.outDir).toEqual('output');
+        if(tsConfig.compilerOptions) {
+            expect(tsConfig.compilerOptions.outDir).toEqual('output');
+        }
     });
 
     it('should read empty tsconfig', async () => {

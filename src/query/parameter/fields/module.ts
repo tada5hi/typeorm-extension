@@ -16,10 +16,8 @@ import { QueryFieldsApplyOptions, QueryFieldsApplyOutput } from './type';
 export function applyQueryFieldsParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: QueryFieldsApplyOutput,
-    options?: QueryFieldsApplyOptions<T>,
+    options: QueryFieldsApplyOptions<T> = {},
 ) {
-    options = options || {};
-
     if (data.length === 0) {
         return data;
     }

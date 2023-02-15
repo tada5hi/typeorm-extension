@@ -24,7 +24,9 @@ describe('src/database/module.ts', () => {
         expect(driverOptions.password).toEqual('admin');
         expect(driverOptions.database).toEqual('test');
         expect(driverOptions.extra).toBeDefined();
-        expect(driverOptions.extra.socketPath).toEqual('/var/mysqld/mysqld.sock');
+        if(driverOptions.extra) {
+            expect(driverOptions.extra.socketPath).toEqual('/var/mysqld/mysqld.sock');
+        }
         expect(driverOptions.port).toEqual(3306);
         expect(driverOptions.charset).toEqual('UTF8_GENERAL_CI');
     });

@@ -1,3 +1,4 @@
+export * from './errors';
 export * from './query';
 export * from './cli/commands';
 export * from './data-source';

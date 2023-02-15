@@ -5,7 +5,7 @@ import { User } from '../entity/user';
 export default class UserSeeder implements Seeder {
     public async run(
         dataSource: DataSource,
-        factoryManager?: SeederFactoryManager
+        factoryManager: SeederFactoryManager
     ) : Promise<unknown> {
         const repository =  dataSource.getRepository(User);
 

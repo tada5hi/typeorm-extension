@@ -1,4 +1,4 @@
-import { ParseOutput, parseQuery } from 'rapiq';
+import { ParseInput, ParseOutput, parseQuery } from 'rapiq';
 import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import {
     applyQueryFieldsParseOutput,
@@ -47,7 +47,7 @@ export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
 
 export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
-    input: unknown,
+    input: ParseInput,
     options?: QueryApplyOptions<T>,
 ) : QueryApplyOutput {
     options = options || {};

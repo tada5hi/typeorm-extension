@@ -7,19 +7,27 @@ export class FakeSelectQueryBuilder<T extends ObjectLiteral = ObjectLiteral> ext
         } as DataSource);
     }
 
-    addSelect(selection: string|string[]|((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>), selectionAliasName?: string): this {
+    override addSelect(
+        _selection: string|string[]|((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
+        _selectionAliasName?: string
+    ): this {
         return this;
     }
 
-    leftJoinAndSelect(entityOrProperty: Function|string|((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>), alias: string, condition: string = "", parameters?: ObjectLiteral): this {
+    override leftJoinAndSelect(
+        _entityOrProperty: Function|string|((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
+        _alias: string,
+        _condition: string = "",
+        _parameters?: ObjectLiteral
+    ): this {
         return this;
     }
 
-    take(take?: number): this {
+    override take(_take?: number): this {
         return this;
     }
 
-    skip(skip?: number): this {
+    override skip(_skip?: number): this {
         return this;
     }
 }

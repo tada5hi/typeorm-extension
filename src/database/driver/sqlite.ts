@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { OptionsError } from '../../errors';
 import { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { buildDriverOptions } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
@@ -9,7 +10,14 @@ export async function createSQLiteDatabase(
 ) : Promise<void> {
     context = await buildDatabaseCreateContext(context);
 
+    if (!context.options) {
+        throw OptionsError.undeterminable();
+    }
+
     const options = buildDriverOptions(context.options);
+    if (!options.database) {
+        throw OptionsError.databaseNotDefined();
+    }
 
     const filePath : string = path.isAbsolute(options.database) ?
         options.database :
@@ -29,7 +37,14 @@ export async function dropSQLiteDatabase(
 ) {
     context = await buildDatabaseDropContext(context);
 
+    if (!context.options) {
+        throw OptionsError.undeterminable();
+    }
+
     const options = buildDriverOptions(context.options);
+    if (!options.database) {
+        throw OptionsError.databaseNotDefined();
+    }
 
     const filePath : string = path.isAbsolute(options.database) ?
         options.database :

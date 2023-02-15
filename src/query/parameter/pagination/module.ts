@@ -1,4 +1,4 @@
-import { parseQueryPagination } from 'rapiq';
+import { ObjectLiteral, parseQueryPagination } from 'rapiq';
 import { SelectQueryBuilder } from 'typeorm';
 import { QueryPaginationApplyOptions, QueryPaginationApplyOutput } from './type';
 
@@ -8,7 +8,7 @@ import { QueryPaginationApplyOptions, QueryPaginationApplyOutput } from './type'
  * @param query
  * @param data
  */
-export function applyQueryPaginationParseOutput<T>(
+export function applyQueryPaginationParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: QueryPaginationApplyOutput,
 ) {
@@ -36,7 +36,7 @@ export function applyQueryPaginationParseOutput<T>(
  * @param data
  * @param options
  */
-export function applyQueryPagination<T>(
+export function applyQueryPagination<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
     options?: QueryPaginationApplyOptions,
@@ -51,7 +51,7 @@ export function applyQueryPagination<T>(
  * @param data
  * @param options
  */
-export function applyPagination<T>(
+export function applyPagination<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
     options?: QueryPaginationApplyOptions,

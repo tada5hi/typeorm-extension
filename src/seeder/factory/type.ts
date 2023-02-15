@@ -11,5 +11,5 @@ export type SeederFactoryConfig = {
 export type SeederFactoryContext<O, Meta = unknown> = {
     name: string,
     entity: ObjectType<O> | EntitySchema<O>,
-    factoryFn: FactoryCallback<O, Meta>
+    factoryFn: FactoryCallback<O, Meta | undefined>
 };

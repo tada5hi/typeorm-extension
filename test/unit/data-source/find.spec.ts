@@ -8,7 +8,9 @@ describe('src/data-source/utils/find.ts', () => {
         });
 
         expect(dataSource).toBeDefined();
-        expect(dataSource.options).toBeDefined();
+        if(dataSource) {
+            expect(dataSource.options).toBeDefined();
+        }
     })
 
     it('should find data-source with default export', async () => {
@@ -18,6 +20,8 @@ describe('src/data-source/utils/find.ts', () => {
         });
 
         expect(dataSource).toBeDefined();
-        expect(dataSource.options).toBeDefined();
+        if(dataSource) {
+            expect(dataSource.options).toBeDefined();
+        }
     })
 })

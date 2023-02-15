@@ -1,3 +1,4 @@
+import { DriverError, OptionsError } from '../errors';
 import {
     DatabaseCreateContext,
 } from './type';
@@ -9,21 +10,25 @@ import {
     createPostgresDatabase,
     createSQLiteDatabase,
 } from './driver';
-import { NotSupportedDriver } from './error';
 import { buildDatabaseCreateContext } from './utils';
 
 /**
  * Create database for specified driver in ConnectionOptions.
  *
- * @throws NotSupportedDriver
+ * @throws DriverError
+ * @throws OptionsError
  *
  * @param context
  */
 export async function createDatabase(context?: DatabaseCreateContext) {
     context = await buildDatabaseCreateContext(context);
 
+    if (!context.options) {
+        throw OptionsError.undeterminable();
+    }
+
     if (!context.options.type) {
-        throw new NotSupportedDriver(context.options.type);
+        throw DriverError.undeterminable();
     }
 
     switch (context.options.type) {
@@ -43,5 +48,5 @@ export async function createDatabase(context?: DatabaseCreateContext) {
             return createMsSQLDatabase(context);
     }
 
-    throw new NotSupportedDriver(context.options.type);
+    throw DriverError.notSupported(context.options.type);
 }

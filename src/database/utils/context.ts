@@ -19,10 +19,7 @@ async function setDatabaseContextOptions<T extends DatabaseBaseContext>(context:
         synchronize: false,
         migrationsRun: false,
         dropSchema: false,
-        logging: [
-            ...(process.env.NODE_ENV !== 'test' ? ['query', 'error', 'schema'] : []),
-        ],
-    } as DataSourceOptions);
+    } satisfies Partial<DataSourceOptions>);
 
     return context;
 }
