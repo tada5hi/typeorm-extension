@@ -1,3 +1,16 @@
+# [2.5.0](https://github.com/tada5hi/typeorm-extension/compare/v2.4.2...v2.5.0) (2023-02-15)
+
+
+### Bug Fixes
+
+* **deps:** bump rapiq, better-sqlite(dev) & typeorm(dev) ([acff4f7](https://github.com/tada5hi/typeorm-extension/commit/acff4f74875bf565ceedb4f34c8b304d8646331c))
+
+
+### Features
+
+* lazy transpiling of seeder-/data-source-files ([5d092ad](https://github.com/tada5hi/typeorm-extension/commit/5d092ad9ed8e83f2c53a82c67b7b9e907a9a3e0a))
+* stricter typescript rules ([64a2868](https://github.com/tada5hi/typeorm-extension/commit/64a286861da49f6d6893c8c19c6ef18f7a02916d))
+
 ## [2.4.2](https://github.com/tada5hi/typeorm-extension/compare/v2.4.1...v2.4.2) (2023-01-17)
 
 

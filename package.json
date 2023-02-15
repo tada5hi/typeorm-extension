@@ -1,6 +1,6 @@
 {
     "name": "typeorm-extension",
-    "version": "2.4.2",
+    "version": "2.5.0",
     "description": "A library to create/drop database, simple seeding data sets, ...",
     "author": {
         "name": "Peter Placzek",
