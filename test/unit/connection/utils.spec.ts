@@ -35,6 +35,18 @@ describe('src/connection/utils.ts', () => {
         srcPath = '/src/entities.ts';
         expect(changeTSToJSPath(srcPath)).toEqual('/dist/entities.js');
 
+        srcPath = 'src/ts.{ts}';
+        expect(changeTSToJSPath(srcPath)).toEqual('dist/ts.{js}');
+
+        srcPath = 'src/ts.ts.{ts,cts}';
+        expect(changeTSToJSPath(srcPath)).toEqual('dist/ts.ts.{js,cjs}');
+
+        srcPath = 'src/*.{ts,cts}';
+        expect(changeTSToJSPath(srcPath)).toEqual('dist/*.{js,cjs}');
+
+        srcPath = 'src/ts.ts';
+        expect(changeTSToJSPath(srcPath)).toEqual('dist/ts.js');
+
         const srcPaths = ['src/entities.ts', './src/entities.ts'];
         for(let i=0; i<srcPaths.length; i++) {
             srcPath = srcPaths[i];

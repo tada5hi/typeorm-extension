@@ -83,10 +83,33 @@ export function changeTSToJSPath(
 
     const tsExtensions = ['ts', 'cts', 'mts'];
     for (let i = 0; i < tsExtensions.length; i++) {
-        const baseExtensionIndex = base.indexOf(tsExtensions[i]);
-        if (baseExtensionIndex !== -1) {
-            base = base.replace(tsExtensions[i], jsExtensions[i]);
+        const regex = new RegExp(`(\\.${tsExtensions[i]}|${tsExtensions[i]})`, 'g');
+        let matchesSum : number | undefined;
+        const matches = base.match(regex);
+        if (Array.isArray(matches)) {
+            matchesSum = matches.length;
         }
+
+        let matchesCounter = 0;
+
+        const bracketIndex = base.lastIndexOf('{');
+        base = base.replace(
+            regex,
+            (...args) => {
+                matchesCounter++;
+
+                // if the file extension name comes after the last bracket index,
+                // we can be pretty sure that the extension name is not part of a filename
+                if (
+                    (args[2] >= bracketIndex && bracketIndex !== -1) ||
+                    (bracketIndex === -1 && matchesCounter === matchesSum)
+                ) {
+                    return args[0].startsWith('.') ? `.${jsExtensions[i]}` : jsExtensions[i];
+                }
+
+                return args[0];
+            },
+        );
     }
 
     if (baseIndex !== -1) {
