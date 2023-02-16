@@ -16,12 +16,15 @@ const stripLeadingModifier = (text: string) => {
 };
 
 export function safeReplaceWindowsSeparator(input: string) {
-    if (
-        input.indexOf('*') !== -1 ||
-        input.indexOf('**') !== -1 ||
-        input.indexOf('{') !== -1
-    ) {
+    if (input.indexOf('\\') === -1) {
         return input;
+    }
+
+    const specialCharacters = ['[', '{', '(', '^', '$', '.', '|', '?', '*', '+'];
+    for (let i = 0; i < specialCharacters.length; i++) {
+        if (input.indexOf(specialCharacters[i]) !== -1) {
+            return input;
+        }
     }
 
     return input.replace(/\\/g, '/');
