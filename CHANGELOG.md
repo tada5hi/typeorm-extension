@@ -1,3 +1,11 @@
+## [2.5.1](https://github.com/tada5hi/typeorm-extension/compare/v2.5.0...v2.5.1) (2023-02-16)
+
+
+### Bug Fixes
+
+* enhance path replacement for ts -> js ([dd141ab](https://github.com/tada5hi/typeorm-extension/commit/dd141ab216940a3564d947866de2e3968fe2fa4a))
+* minor enhancements  for path replacing + enhanced find operation ([17160ea](https://github.com/tada5hi/typeorm-extension/commit/17160ea532d871f60e53355c95e3ddad253a65fe))
+
 # [2.5.0](https://github.com/tada5hi/typeorm-extension/compare/v2.4.2...v2.5.0) (2023-02-15)
 
 
