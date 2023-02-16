@@ -1,3 +1,10 @@
+## [2.5.2](https://github.com/tada5hi/typeorm-extension/compare/v2.5.1...v2.5.2) (2023-02-16)
+
+
+### Bug Fixes
+
+* more secure path extension replacement ([51f2056](https://github.com/tada5hi/typeorm-extension/commit/51f2056c899ac3023cd15893b9b8642f0ea50c74))
+
 ## [2.5.1](https://github.com/tada5hi/typeorm-extension/compare/v2.5.0...v2.5.1) (2023-02-16)
 
 
