@@ -106,11 +106,15 @@ import { createDatabase } from 'typeorm-extension';
 
 **`Example #2`**
 ```typescript
-import { getConnectionOptions } from 'typeorm';
-import { createDatabase } from 'typeorm-extension';
+import {
+    buildDataSourceOptions,
+    createDatabase
+} from 'typeorm-extension';
 
 (async () => {
-    const options = await getConnectionOptions();
+    const options = await buildDataSourceOptions();
+
+    // modify options
 
     // Create the database with specification of the DataSource options
     await createDatabase({
@@ -149,7 +153,10 @@ function, check out the documentation.
 
 **`Example #1`**
 ```typescript
-import { DataSource, DataSourceOptions } from 'typeorm';
+import {
+    DataSource,
+    DataSourceOptions
+} from 'typeorm';
 import { dropDatabase } from 'typeorm-extension';
 
 (async () => {
@@ -167,11 +174,15 @@ import { dropDatabase } from 'typeorm-extension';
 
 **`Example #2`**
 ```typescript
-import { getConnectionOptions } from 'typeorm';
-import { dropDatabase } from 'typeorm-extension';
+import {
+    buildDataSourceOptions,
+    dropDatabase
+} from 'typeorm-extension';
 
 (async () => {
-    const options = await getConnectionOptions();
+    const options = await buildDataSourceOptions();
+
+    // modify options
 
     // Drop the database with specification of the DataSource options
     await dropDatabase({

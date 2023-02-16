@@ -5,7 +5,10 @@ Therefore, provide the `DataSourceOptions` for the DataSource manually, or let i
 ## Create
 **`Example #1`**
 ```typescript
-import { DataSource, DataSourceOptions } from 'typeorm';
+import { 
+    DataSource, 
+    DataSourceOptions
+} from 'typeorm';
 import { createDatabase } from 'typeorm-extension';
 
 (async () => {
@@ -27,11 +30,15 @@ import { createDatabase } from 'typeorm-extension';
 
 **`Example #2`**
 ```typescript
-import { getConnectionOptions } from 'typeorm';
-import { createDatabase } from 'typeorm-extension';
+import {
+    buildDataSourceOptions,
+    createDatabase
+} from 'typeorm-extension';
 
 (async () => {
-    const options = await getConnectionOptions();
+    const options = await buildDataSourceOptions();
+
+    // modify options
 
     // Create the database with specification of the DataSource options
     await createDatabase({
@@ -68,7 +75,10 @@ To get a better overview and understanding of the [createDatabase](#createdataba
 
 **`Example #1`**
 ```typescript
-import { DataSource, DataSourceOptions } from 'typeorm';
+import {
+    DataSource, 
+    DataSourceOptions
+} from 'typeorm';
 import { dropDatabase } from 'typeorm-extension';
 
 (async () => {
@@ -86,13 +96,17 @@ import { dropDatabase } from 'typeorm-extension';
 
 **`Example #2`**
 ```typescript
-import { getConnectionOptions } from 'typeorm';
-import { dropDatabase } from 'typeorm-extension';
+import { 
+    buildDataSourceOptions,
+    dropDatabase 
+} from 'typeorm-extension';
 
 (async () => {
-    const options = await getConnectionOptions();
+    const options = await buildDataSourceOptions();
 
-    // Create the database with specification of the DataSource options
+    // modify options
+
+    // Drop the database with specification of the DataSource options
     await dropDatabase({
         options
     });
