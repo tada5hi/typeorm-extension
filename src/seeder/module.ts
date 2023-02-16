@@ -3,7 +3,10 @@ import { load } from 'locter';
 import { hasOwnProperty } from '../utils';
 import { SeederConstructor, SeederOptions } from './type';
 import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
-import { modifyDataSourceOptionForRuntimeEnvironment, setDataSource } from '../data-source';
+import {
+    modifyDataSourceOptionsForRuntimeEnvironment,
+    setDataSource,
+} from '../data-source';
 import { SeederFactoryConfig, useSeederFactoryManager } from './factory';
 
 async function prepareSeeder(
@@ -12,8 +15,9 @@ async function prepareSeeder(
     options = options ?? {};
 
     options = setDefaultSeederOptions(options);
-    options = modifyDataSourceOptionForRuntimeEnvironment(options, 'seeds');
-    options = modifyDataSourceOptionForRuntimeEnvironment(options, 'factories');
+    await modifyDataSourceOptionsForRuntimeEnvironment(options, {
+        keys: ['seeds', 'factories'],
+    });
 
     if (options.factories) {
         let factoryFiles : string[] = [];

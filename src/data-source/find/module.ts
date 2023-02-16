@@ -1,19 +1,20 @@
 import {
+    isObject,
     load,
     locate,
     removeFileNameExtension,
 } from 'locter';
-import path from 'path';
+import path from 'node:path';
 import { DataSource, InstanceChecker } from 'typeorm';
 import { DataSourceFindOptions } from './type';
-import { isTsNodeRuntimeEnvironment } from '../../utils';
+import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
 import { changeTSToJSPath } from '../options';
 
 export async function findDataSource(
     context?: DataSourceFindOptions,
 ) : Promise<DataSource | undefined> {
-    const fileNames : string[] = [
+    const files : string[] = [
         'data-source',
     ];
 
@@ -22,11 +23,11 @@ export async function findDataSource(
     if (context.fileName) {
         context.fileName = removeFileNameExtension(
             context.fileName,
-            ['.js', '.ts', '.mjs', '.cjs'],
+            ['.ts', '.mts', '.cts', '.js', '.mjs', '.cjs'],
         );
 
         if (context.fileName !== 'data-source') {
-            fileNames.unshift(context.fileName);
+            files.unshift(context.fileName);
         }
     }
 
@@ -45,19 +46,15 @@ export async function findDataSource(
         basePaths.unshift(context.directory);
     }
 
-    const directories = [
-        path.join('src', 'db'),
-        path.join('src', 'database'),
-        path.join('src'),
-    ];
-
-    let paths : string[] = [];
-    for (let i = 0; i < basePaths.length; i++) {
-        paths.push(basePaths[i]);
-        for (let j = 0; j < directories.length; j++) {
-            paths.push(path.join(basePaths[i], directories[j]));
-        }
+    const lookupPaths = [];
+    for (let j = 0; j < files.length; j++) {
+        lookupPaths.push(...[
+            path.posix.join('src', files[j]),
+            path.posix.join('src/{db,database}', files[j]),
+        ]);
     }
+
+    files.push(...lookupPaths);
 
     if (!isTsNodeRuntimeEnvironment()) {
         let tsConfigFound = false;
@@ -65,33 +62,49 @@ export async function findDataSource(
         for (let i = 0; i < basePaths.length; i++) {
             const { compilerOptions } = await readTsConfig(basePaths[i]);
             if (compilerOptions) {
-                paths = paths.map((item) => changeTSToJSPath(item, { dist: compilerOptions.outDir }));
+                for (let j = 0; j < files.length; j++) {
+                    files[j] = changeTSToJSPath(files[j], compilerOptions.outDir);
+                }
+
                 tsConfigFound = true;
                 break;
             }
         }
 
         if (!tsConfigFound) {
-            paths = paths.map((item) => changeTSToJSPath(item));
+            for (let j = 0; j < files.length; j++) {
+                files[j] = changeTSToJSPath(files[j]);
+            }
         }
     }
 
-    for (let i = 0; i < fileNames.length; i++) {
-        const info = await locate(`${fileNames[i]}.{cjs,js,mjs,ts}`, {
-            path: paths,
-            ignore: ['**/*.d.ts'],
-        });
+    for (let i = 0; i < files.length; i++) {
+        const info = await locate(
+            `${files[i]}.{ts,cts,mts,js,cjs,mjs}`,
+            {
+                path: basePaths,
+                ignore: ['**/*.d.ts'],
+            },
+        );
 
         if (info) {
             const fileExports = await load(info);
+
             if (InstanceChecker.isDataSource(fileExports)) {
                 return fileExports;
             }
 
-            if (typeof fileExports === 'object') {
+            if (
+                hasOwnProperty(fileExports, 'default') &&
+                InstanceChecker.isDataSource(fileExports.default)
+            ) {
+                return fileExports.default;
+            }
+
+            if (isObject(fileExports)) {
                 const keys = Object.keys(fileExports);
                 for (let j = 0; j < keys.length; j++) {
-                    const value = (fileExports as Record<string, any>)[keys[j]];
+                    const value = fileExports[keys[j]];
 
                     if (InstanceChecker.isDataSource(value)) {
                         return value;

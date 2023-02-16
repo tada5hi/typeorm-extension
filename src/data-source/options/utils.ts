@@ -1,99 +1,125 @@
-import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../../utils';
+import { DataSourceOptions } from 'typeorm';
+import { SeederOptions } from '../../seeder';
+import {
+    hasOwnProperty,
+    isTsNodeRuntimeEnvironment,
+    withoutTrailingSlash,
+} from '../../utils';
+import { readTsConfig } from '../../utils/tsconfig';
 
-type PathOptions = {
-    src?: string,
-    dist?: string,
+const stripLeadingModifier = (text: string) => {
+    if (text.startsWith('./')) {
+        text = text.substring(2);
+    }
+
+    return text;
 };
 
-export function changeTSToJSPath<T>(
-    raw: T,
-    options?: PathOptions,
-) : T {
-    const isArray : boolean = Array.isArray(raw);
-    const value = Array.isArray(raw) ? raw : [raw];
+export function changeTSToJSPath(
+    input: string,
+    dist?: string,
+    src?: string,
+) : string {
+    let base = input;
+    let baseIndex = input.lastIndexOf('/');
+    if (baseIndex !== -1) {
+        base = base.substring(baseIndex + 1);
+    }
 
-    options ??= {};
-    options.src = options.src || 'src';
-    options.dist = options.dist || 'dist';
-
-    for (let i = 0; i < value.length; i++) {
-        if (typeof value[i] === 'string') {
-            if (
-                value[i].indexOf(options.src) !== -1 &&
-                value[i].indexOf(options.dist) === -1
-            ) {
-                const lastIndex = value[i].lastIndexOf(options.src);
-
-                value[i] = value[i].substring(0, lastIndex) +
-                    options.dist +
-                    value[i].substring(lastIndex + options.src.length);
-            }
-
-            let lastPart : string;
-
-            if (value[i].indexOf('\\') !== -1) {
-                lastPart = value[i].split('\\').pop();
-            } else {
-                lastPart = value[i].split('/').pop();
-            }
-
-            if (
-                // ignore pattern paths
-                value[i].indexOf('*') === -1 &&
-                lastPart.indexOf('ts') !== -1 &&
-                lastPart.indexOf('js') === -1
-            ) {
-                value[i] = value[i]
-                    .replace('ts', 'js');
-            }
+    // if the path already contains a js file extension, we are done
+    const jsExtensions = ['js', 'cjs', 'mjs'];
+    for (let i = 0; i < jsExtensions.length; i++) {
+        if (base.indexOf(jsExtensions[i]) !== -1) {
+            return input;
         }
     }
 
-    return isArray ? value : value[0];
-}
+    if (src) {
+        src = withoutTrailingSlash(stripLeadingModifier(src));
+    }
+    src = src || 'src';
 
-export function modifyDataSourceOptionForRuntimeEnvironment<
-    T extends Record<string, any>,
-    K extends keyof T,
->(
-    options: T,
-    key: K,
-    pathOptions?: PathOptions,
-): T {
+    if (dist) {
+        dist = withoutTrailingSlash(stripLeadingModifier(dist));
+    }
+    dist = dist || 'dist';
+
     if (
-        !hasOwnProperty(options, key) ||
-        isTsNodeRuntimeEnvironment()
+        input.indexOf(src) !== -1 &&
+        input.indexOf(dist) === -1
     ) {
-        return options;
-    }
+        const lastIndex = input.lastIndexOf(src);
+        const prevCharacter = input.substring(lastIndex - 1, lastIndex);
+        if (!prevCharacter || prevCharacter === '/') {
+            input = input.substring(0, lastIndex) +
+                dist +
+                input.substring(lastIndex + src.length);
 
-    switch (key) {
-        case 'entities':
-        case 'migrations':
-        case 'subscribers':
-        case 'seeds':
-        case 'factories': {
-            options[key] = changeTSToJSPath(options[key], pathOptions);
-            break;
+            baseIndex = input.lastIndexOf('/');
         }
     }
 
-    return options;
+    const tsExtensions = ['ts', 'cts', 'mts'];
+    for (let i = 0; i < tsExtensions.length; i++) {
+        const baseExtensionIndex = base.indexOf(tsExtensions[i]);
+        if (baseExtensionIndex !== -1) {
+            base = base.replace(tsExtensions[i], jsExtensions[i]);
+        }
+    }
+
+    if (baseIndex !== -1) {
+        base = input.substring(0, baseIndex + 1) + base;
+    }
+
+    return stripLeadingModifier(base);
 }
 
-export function modifyDataSourceOptionsForRuntimeEnvironment<T extends Record<string, any>>(
-    connectionOptions: T,
-    options?: PathOptions,
-) : T {
-    const keys = Object.keys(connectionOptions);
+const keys = [
+    'entities',
+    'migrations',
+    'seeds',
+    'factories',
+    'subscribers',
+];
+
+export async function modifyDataSourceOptionsForRuntimeEnvironment<T extends Partial<DataSourceOptions> & SeederOptions>(
+    input: T,
+    options?: {
+        root?: string,
+        keys?: string[]
+    },
+) : Promise<T> {
+    if (isTsNodeRuntimeEnvironment()) {
+        return input;
+    }
+
+    options = options || {};
+
+    const { compilerOptions } = await readTsConfig(options.root);
 
     for (let i = 0; i < keys.length; i++) {
-        connectionOptions = modifyDataSourceOptionForRuntimeEnvironment(
-            connectionOptions,
-            keys[i] as keyof T,
-            options,
-        );
+        const key = keys[i] as keyof T;
+
+        if (
+            !hasOwnProperty(input, key) ||
+            (options.keys && options.keys.indexOf(key as string) === -1)
+        ) {
+            continue;
+        }
+
+        let value = input[key] as unknown;
+        if (typeof value === 'string') {
+            value = changeTSToJSPath(value, compilerOptions?.outDir);
+        } else if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i++) {
+                if (typeof value[i] === 'string') {
+                    value[i] = changeTSToJSPath(value[i], compilerOptions?.outDir);
+                }
+            }
+        }
+
+        input[key] = value as T[keyof T];
     }
 
-    return connectionOptions;
+    return input;
 }
