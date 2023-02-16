@@ -15,6 +15,18 @@ const stripLeadingModifier = (text: string) => {
     return text;
 };
 
+export function safeReplaceWindowsSeparator(input: string) {
+    if (
+        input.indexOf('*') !== -1 ||
+        input.indexOf('**') !== -1 ||
+        input.indexOf('{') !== -1
+    ) {
+        return input;
+    }
+
+    return input.replace(/\\/g, '/');
+}
+
 export function changeTSToJSPath(
     input: string,
     dist?: string,
@@ -26,21 +38,23 @@ export function changeTSToJSPath(
         base = base.substring(baseIndex + 1);
     }
 
-    // if the path already contains a js file extension, we are done
-    const jsExtensions = ['js', 'cjs', 'mjs'];
-    for (let i = 0; i < jsExtensions.length; i++) {
-        if (base.indexOf(jsExtensions[i]) !== -1) {
-            return input;
-        }
-    }
-
     if (src) {
-        src = withoutTrailingSlash(stripLeadingModifier(src));
+        src = withoutTrailingSlash(
+            stripLeadingModifier(
+                safeReplaceWindowsSeparator(src),
+            ),
+        );
     }
     src = src || 'src';
 
     if (dist) {
-        dist = withoutTrailingSlash(stripLeadingModifier(dist));
+        dist = withoutTrailingSlash(
+            stripLeadingModifier(
+                safeReplaceWindowsSeparator(
+                    dist,
+                ),
+            ),
+        );
     }
     dist = dist || 'dist';
 
@@ -56,6 +70,14 @@ export function changeTSToJSPath(
                 input.substring(lastIndex + src.length);
 
             baseIndex = input.lastIndexOf('/');
+        }
+    }
+
+    // if the path already contains a js file extension, we are done
+    const jsExtensions = ['js', 'cjs', 'mjs'];
+    for (let i = 0; i < jsExtensions.length; i++) {
+        if (base.indexOf(jsExtensions[i]) !== -1) {
+            return input;
         }
     }
 

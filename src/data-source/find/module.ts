@@ -9,7 +9,7 @@ import { DataSource, InstanceChecker } from 'typeorm';
 import { DataSourceFindOptions } from './type';
 import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
-import { changeTSToJSPath } from '../options';
+import { changeTSToJSPath, safeReplaceWindowsSeparator } from '../options';
 
 export async function findDataSource(
     context?: DataSourceFindOptions,
@@ -31,23 +31,26 @@ export async function findDataSource(
         }
     }
 
-    const basePaths = [
-        process.cwd(),
-    ];
-
-    if (
-        context.directory &&
-        context.directory !== process.cwd()
-    ) {
-        context.directory = path.isAbsolute(context.directory) ?
-            context.directory :
-            path.join(process.cwd(), context.directory);
-
-        basePaths.unshift(context.directory);
+    let { directory } = context;
+    let directoryIsPattern = false;
+    if (context.directory) {
+        if (path.isAbsolute(context.directory)) {
+            directory = context.directory;
+        } else {
+            directoryIsPattern = true;
+            directory = safeReplaceWindowsSeparator(context.directory);
+        }
     }
 
     const lookupPaths = [];
     for (let j = 0; j < files.length; j++) {
+        if (
+            directory &&
+            directoryIsPattern
+        ) {
+            lookupPaths.push(path.posix.join(directory, files[j]));
+        }
+
         lookupPaths.push(...[
             path.posix.join('src', files[j]),
             path.posix.join('src/{db,database}', files[j]),
@@ -57,32 +60,22 @@ export async function findDataSource(
     files.push(...lookupPaths);
 
     if (!isTsNodeRuntimeEnvironment()) {
-        let tsConfigFound = false;
+        const { compilerOptions } = await readTsConfig();
+        const outDir = compilerOptions ? compilerOptions.outDir : undefined;
 
-        for (let i = 0; i < basePaths.length; i++) {
-            const { compilerOptions } = await readTsConfig(basePaths[i]);
-            if (compilerOptions) {
-                for (let j = 0; j < files.length; j++) {
-                    files[j] = changeTSToJSPath(files[j], compilerOptions.outDir);
-                }
-
-                tsConfigFound = true;
-                break;
-            }
-        }
-
-        if (!tsConfigFound) {
-            for (let j = 0; j < files.length; j++) {
-                files[j] = changeTSToJSPath(files[j]);
-            }
+        for (let j = 0; j < files.length; j++) {
+            files[j] = changeTSToJSPath(files[j], outDir);
         }
     }
 
     for (let i = 0; i < files.length; i++) {
         const info = await locate(
-            `${files[i]}.{ts,cts,mts,js,cjs,mjs}`,
+            `${files[i]}.{js,cjs,mjs,ts,cts,mts}`,
             {
-                path: basePaths,
+                path: [
+                    process.cwd(),
+                    ...(directory && !directoryIsPattern ? [directory] : []),
+                ],
                 ignore: ['**/*.d.ts'],
             },
         );

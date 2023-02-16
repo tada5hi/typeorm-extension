@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import { SeederFactoryConfig, SeederFactoryManager } from './factory';
 
 export interface Seeder {
-    run(dataSource: DataSource, factoryManager: SeederFactoryManager) : Promise<unknown>;
+    run(dataSource: DataSource, factoryManager: SeederFactoryManager) : Promise<any>;
 }
 
 export type SeederConstructor = new () => Seeder;

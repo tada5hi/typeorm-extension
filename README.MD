@@ -49,21 +49,21 @@ The following commands are available in the terminal:
 - `typeorm-extension db:drop` to drop the database
 - `typeorm-extension seed` seed the database
 
+If the application has not yet been built or is to be tested with ts-node, the commands can be adapted as follows:
+
 ```
 "scripts": {
-  ...
-  "db:create": "typeorm-extension db:create",
-  "db:drop": "typeorm-extension db:drop",
-  "seed": "typeorm-extension seed"
-  ...
+    "db:create": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:create",
+    "db:drop": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:drop",
+    "seed": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js seed"
 }
 ```
 
-Ts-node is no longer needed due to the fact that TypeScript files are transpiled on the file as needed.
-The same applies to files from another module system (CJS / ESM) 🧙‍.
+It is also possible to use files (seeder,factories,entities,migrations,...) from another module system (CJS/ESM),
+as they will be transpiled if necessary 🧙.
 
-> Read the [Seeding Configuration](#configuration) section to find out how to specify the path,
-> for the seeder- & factory-location.
+Read the [Seeding Configuration](#configuration) section to find out how to specify the path,
+for the seeder- & factory-location.
 
 #### Options
 
