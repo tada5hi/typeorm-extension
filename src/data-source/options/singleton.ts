@@ -1,4 +1,4 @@
-import { DataSourceOptions } from 'typeorm';
+import type { DataSourceOptions } from 'typeorm';
 import { buildDataSourceOptions } from './module';
 
 const instances : Record<string, DataSourceOptions> = {};

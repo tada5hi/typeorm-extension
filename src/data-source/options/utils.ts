@@ -1,5 +1,5 @@
-import { DataSourceOptions } from 'typeorm';
-import { SeederOptions } from '../../seeder';
+import type { DataSourceOptions } from 'typeorm';
+import type { SeederOptions } from '../../seeder';
 import {
     hasOwnProperty,
     isTsNodeRuntimeEnvironment,

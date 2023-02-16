@@ -1,13 +1,14 @@
-import { DataSource, DataSourceOptions } from 'typeorm';
+import type { DataSource, DataSourceOptions } from 'typeorm';
 import { load } from 'locter';
 import { hasOwnProperty } from '../utils';
-import { SeederConstructor, SeederOptions } from './type';
+import type { SeederConstructor, SeederOptions } from './type';
 import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
 import {
     modifyDataSourceOptionsForRuntimeEnvironment,
     setDataSource,
 } from '../data-source';
-import { SeederFactoryConfig, useSeederFactoryManager } from './factory';
+import type { SeederFactoryConfig } from './factory';
+import { useSeederFactoryManager } from './factory';
 
 async function prepareSeeder(
     options?: SeederOptions,

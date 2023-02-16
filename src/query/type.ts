@@ -1,5 +1,5 @@
-import { ParseOptions, ParseOutput } from 'rapiq';
-import { ObjectLiteral } from 'typeorm';
+import type { ParseOptions, ParseOutput } from 'rapiq';
+import type { ObjectLiteral } from 'typeorm';
 
 export type QueryApplyOptions<
     T extends ObjectLiteral = ObjectLiteral,

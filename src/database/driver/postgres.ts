@@ -1,10 +1,10 @@
 import { isObject } from 'locter';
-import { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
-import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
+import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
+import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 import { OptionsError } from '../../errors';
-import { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { hasOwnProperty } from '../../utils';
-import { DriverOptions } from './type';
+import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
 

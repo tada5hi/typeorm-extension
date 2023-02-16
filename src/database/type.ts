@@ -1,5 +1,5 @@
-import { DataSource, DataSourceOptions, Migration } from 'typeorm';
-import { DataSourceFindOptions } from '../data-source';
+import type { DataSource, DataSourceOptions, Migration } from 'typeorm';
+import type { DataSourceFindOptions } from '../data-source';
 
 export type DatabaseBaseContext = {
     /**

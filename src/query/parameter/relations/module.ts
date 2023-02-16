@@ -1,7 +1,8 @@
-import { RelationsParseOutput, parseQueryRelations } from 'rapiq';
-import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import type { RelationsParseOutput } from 'rapiq';
+import { parseQueryRelations } from 'rapiq';
+import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix } from '../../utils';
-import { QueryRelationsApplyOptions, QueryRelationsApplyOutput } from './type';
+import type { QueryRelationsApplyOptions, QueryRelationsApplyOutput } from './type';
 
 /**
  * Apply parsed include/relation parameter data on the db query.

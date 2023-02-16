@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
 import { OptionsError } from '../../errors';
-import { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { buildDriverOptions } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
 

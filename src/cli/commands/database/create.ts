@@ -1,6 +1,7 @@
-import { Arguments, Argv, CommandModule } from 'yargs';
+import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
-import { DatabaseCreateContext, createDatabase } from '../../../database';
+import type { DatabaseCreateContext } from '../../../database';
+import { createDatabase } from '../../../database';
 
 export interface DatabaseCreateArguments extends Arguments {
     root: string;

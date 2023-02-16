@@ -1,7 +1,8 @@
-import { SortDirection, SortParseOutput, parseQuerySort } from 'rapiq';
-import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import type { SortDirection, SortParseOutput } from 'rapiq';
+import { parseQuerySort } from 'rapiq';
+import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix } from '../../utils';
-import { QuerySortApplyOptions, QuerySortApplyOutput } from './type';
+import type { QuerySortApplyOptions, QuerySortApplyOutput } from './type';
 
 // --------------------------------------------------
 

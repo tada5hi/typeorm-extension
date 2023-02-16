@@ -1,8 +1,10 @@
-import { FilterComparisonOperator, FiltersParseOutput, parseQueryFilters } from 'rapiq';
+import type { FiltersParseOutput } from 'rapiq';
+import { FilterComparisonOperator, parseQueryFilters } from 'rapiq';
 
-import { Brackets, ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import { Brackets } from 'typeorm';
 import { buildKeyWithPrefix, getAliasForPath } from '../../utils';
-import {
+import type {
     QueryFiltersApplyOptions,
     QueryFiltersApplyOutput,
     QueryFiltersOutput,

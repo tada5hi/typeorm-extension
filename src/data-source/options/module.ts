@@ -1,5 +1,6 @@
-import { ConnectionOptionsReader, DataSourceOptions } from 'typeorm';
-import { DataSourceOptionsBuildContext } from './type';
+import type { DataSourceOptions } from 'typeorm';
+import { ConnectionOptionsReader } from 'typeorm';
+import type { DataSourceOptionsBuildContext } from './type';
 import { setDefaultSeederOptions } from '../../seeder';
 import { modifyDataSourceOptionsForRuntimeEnvironment } from './utils';
 import { findDataSource } from '../find';

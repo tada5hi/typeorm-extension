@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
-import { SaveOptions } from 'typeorm';
-import { SeederFactoryContext } from './type';
+import type { SaveOptions } from 'typeorm';
+import type { SeederFactoryContext } from './type';
 import { hasOwnProperty } from '../../utils';
 import { useDataSource } from '../../data-source';
 import { isPromise } from '../utils';

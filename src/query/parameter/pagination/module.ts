@@ -1,6 +1,7 @@
-import { ObjectLiteral, parseQueryPagination } from 'rapiq';
-import { SelectQueryBuilder } from 'typeorm';
-import { QueryPaginationApplyOptions, QueryPaginationApplyOutput } from './type';
+import type { ObjectLiteral } from 'rapiq';
+import { parseQueryPagination } from 'rapiq';
+import type { SelectQueryBuilder } from 'typeorm';
+import type { QueryPaginationApplyOptions, QueryPaginationApplyOutput } from './type';
 
 /**
  * Apply parsed page/pagination parameter data on the db query.

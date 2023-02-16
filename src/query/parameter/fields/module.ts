@@ -2,9 +2,9 @@ import {
     parseQueryFields,
 } from 'rapiq';
 
-import { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
 import { buildKeyWithPrefix, getAliasForPath } from '../../utils';
-import { QueryFieldsApplyOptions, QueryFieldsApplyOutput } from './type';
+import type { QueryFieldsApplyOptions, QueryFieldsApplyOutput } from './type';
 
 /**
  * Apply parsed fields parameter data on the db query.

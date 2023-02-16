@@ -1,6 +1,7 @@
-import { Arguments, Argv, CommandModule } from 'yargs';
+import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
-import { DatabaseDropContext, dropDatabase } from '../../../database';
+import type { DatabaseDropContext } from '../../../database';
+import { dropDatabase } from '../../../database';
 
 export interface DatabaseDropArguments extends Arguments {
     root: string;

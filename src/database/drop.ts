@@ -1,5 +1,5 @@
 import { DriverError, OptionsError } from '../errors';
-import {
+import type {
     DatabaseDropContext,
 } from './type';
 import {

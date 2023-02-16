@@ -1,6 +1,6 @@
-import { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
+import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 import { OptionsError } from '../../errors';
-import { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { createSimplePostgresConnection } from './postgres';
 import { buildDriverOptions, createDriver } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';

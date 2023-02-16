@@ -1,4 +1,5 @@
-import { DataSource, DataSourceOptions, InstanceChecker } from 'typeorm';
+import type { DataSourceOptions } from 'typeorm';
+import { DataSource, InstanceChecker } from 'typeorm';
 
 export async function setupDatabaseSchema(input: DataSource | DataSourceOptions) {
     let dataSource: DataSource;

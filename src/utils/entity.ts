@@ -1,4 +1,5 @@
-import { EntitySchema, InstanceChecker, ObjectType } from 'typeorm';
+import type { EntitySchema, ObjectType } from 'typeorm';
+import { InstanceChecker } from 'typeorm';
 
 export function getEntityName<O>(entity: ObjectType<O> | EntitySchema<O>) : string {
     if (typeof entity === 'function') {

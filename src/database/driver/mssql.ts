@@ -1,7 +1,7 @@
-import { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
+import type { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 import { OptionsError } from '../../errors';
-import { DatabaseCreateContext, DatabaseDropContext } from '../type';
-import { DriverOptions } from './type';
+import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
 

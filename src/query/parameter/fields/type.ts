@@ -1,5 +1,5 @@
-import { FieldsParseOptions, FieldsParseOutput } from 'rapiq';
-import { ObjectLiteral } from 'typeorm';
+import type { FieldsParseOptions, FieldsParseOutput } from 'rapiq';
+import type { ObjectLiteral } from 'typeorm';
 
 export type QueryFieldsApplyOptions<
     T extends ObjectLiteral = ObjectLiteral,

@@ -1,4 +1,4 @@
-import { DataSourceOptions } from 'typeorm';
+import type { DataSourceOptions } from 'typeorm';
 import { hasOwnProperty } from '../../../utils';
 
 export function getCharacterSetFromDataSourceOptions(options: DataSourceOptions) : string | undefined {

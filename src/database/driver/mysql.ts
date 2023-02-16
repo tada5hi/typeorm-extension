@@ -1,7 +1,7 @@
-import { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
+import type { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 import { OptionsError } from '../../errors';
-import { DatabaseCreateContext, DatabaseDropContext } from '../type';
-import { DriverOptions } from './type';
+import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
 

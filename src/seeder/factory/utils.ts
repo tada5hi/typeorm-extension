@@ -1,6 +1,6 @@
-import { EntitySchema, ObjectType } from 'typeorm';
+import type { EntitySchema, ObjectType } from 'typeorm';
 import { SeederFactoryManager } from './manager';
-import { FactoryCallback, SeederFactoryConfig } from './type';
+import type { FactoryCallback, SeederFactoryConfig } from './type';
 
 let instance : SeederFactoryManager | undefined;
 

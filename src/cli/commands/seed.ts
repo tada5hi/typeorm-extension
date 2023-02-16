@@ -1,4 +1,4 @@
-import { Arguments, Argv, CommandModule } from 'yargs';
+import type { Arguments, Argv, CommandModule } from 'yargs';
 import {
     runSeeders,
 } from '../../seeder';

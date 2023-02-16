@@ -7,7 +7,7 @@ import {
     useDataSourceOptions,
 } from '../data-source';
 import { hasStringProperty } from '../utils';
-import { DatabaseCheckContext, DatabaseCheckResult } from './type';
+import type { DatabaseCheckContext, DatabaseCheckResult } from './type';
 
 /**
  * Check database setup progress.

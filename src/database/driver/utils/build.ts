@@ -1,8 +1,8 @@
-import { DataSourceOptions } from 'typeorm';
+import type { DataSourceOptions } from 'typeorm';
 import { DriverUtils } from 'typeorm/driver/DriverUtils';
 import { getCharsetFromDataSourceOptions } from './charset';
 import { getCharacterSetFromDataSourceOptions } from './character-set';
-import { DriverOptions } from '../type';
+import type { DriverOptions } from '../type';
 
 export function buildDriverOptions(options: DataSourceOptions): DriverOptions {
     let driverOptions: Record<string, any>;

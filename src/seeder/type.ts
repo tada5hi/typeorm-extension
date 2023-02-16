@@ -1,5 +1,5 @@
-import { DataSource } from 'typeorm';
-import { SeederFactoryConfig, SeederFactoryManager } from './factory';
+import type { DataSource } from 'typeorm';
+import type { SeederFactoryConfig, SeederFactoryManager } from './factory';
 
 export interface Seeder {
     run(dataSource: DataSource, factoryManager: SeederFactoryManager) : Promise<any>;

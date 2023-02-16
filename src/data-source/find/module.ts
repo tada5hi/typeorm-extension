@@ -5,8 +5,9 @@ import {
     removeFileNameExtension,
 } from 'locter';
 import path from 'node:path';
-import { DataSource, InstanceChecker } from 'typeorm';
-import { DataSourceFindOptions } from './type';
+import type { DataSource } from 'typeorm';
+import { InstanceChecker } from 'typeorm';
+import type { DataSourceFindOptions } from './type';
 import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
 import { changeTSToJSPath, safeReplaceWindowsSeparator } from '../options';
