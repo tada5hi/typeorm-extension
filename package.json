@@ -54,7 +54,7 @@
         "locter": "^1.0.3",
         "rapiq": "^0.8.0",
         "reflect-metadata": "^0.1.13",
-        "yargs": "^17.6.2"
+        "yargs": "^17.7.0"
     },
     "peerDependencies": {
         "typeorm": "~0.3.0"
