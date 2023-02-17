@@ -70,7 +70,7 @@
         "@semantic-release/github": "^8.0.6",
         "@semantic-release/npm": "^9.0.2",
         "@semantic-release/release-notes-generator": "^10.0.3",
-        "@tada5hi/eslint-config-typescript": "^1.1.3",
+        "@tada5hi/eslint-config-typescript": "^1.1.4",
         "@tada5hi/tsconfig": "^0.4.0",
         "@types/jest": "^27.5.0",
         "@types/node": "^18.13.0",
