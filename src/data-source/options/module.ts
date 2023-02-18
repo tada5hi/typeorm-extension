@@ -2,7 +2,7 @@ import type { DataSourceOptions } from 'typeorm';
 import { ConnectionOptionsReader } from 'typeorm';
 import type { DataSourceOptionsBuildContext } from './type';
 import { setDefaultSeederOptions } from '../../seeder';
-import { modifyDataSourceOptionsForRuntimeEnvironment } from './utils';
+import { adjustFilePathsForDataSourceOptions } from './utils';
 import { findDataSource } from '../find';
 
 export async function extendDataSourceOptions(
@@ -11,7 +11,7 @@ export async function extendDataSourceOptions(
 ) : Promise<DataSourceOptions> {
     options = setDefaultSeederOptions(options);
 
-    await modifyDataSourceOptionsForRuntimeEnvironment(options, { root: tsConfigDirectory });
+    await adjustFilePathsForDataSourceOptions(options, { root: tsConfigDirectory });
 
     return options;
 }

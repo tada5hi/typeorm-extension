@@ -5,8 +5,8 @@ import yargs from 'yargs';
 import {
     DatabaseCreateCommand,
     DatabaseDropCommand,
+    SeedCommand,
 } from './commands';
-import { SeedCommand } from './commands/seed';
 
 // eslint-disable-next-line no-unused-expressions,@typescript-eslint/no-unused-expressions
 yargs

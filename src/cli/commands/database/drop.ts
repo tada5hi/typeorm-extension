@@ -2,8 +2,10 @@ import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
 import type { DatabaseDropContext } from '../../../database';
 import { dropDatabase } from '../../../database';
+import { CodeTransformation, setCodeTransformation } from '../../../utils';
 
 export interface DatabaseDropArguments extends Arguments {
+    codeTransformation: string,
     root: string;
     connection: 'default' | string;
     config: 'ormconfig' | string;
@@ -17,6 +19,11 @@ export class DatabaseDropCommand implements CommandModule {
 
     builder(args: Argv) {
         return args
+            .option('codeTransformation', {
+                default: CodeTransformation.NONE,
+                choices: [CodeTransformation.NONE, CodeTransformation.JUST_IN_TIME],
+                describe: 'This option specifies how the code is transformed and how the library should behave as a result.',
+            })
             .option('root', {
                 alias: 'r',
                 default: process.cwd(),
@@ -46,6 +53,10 @@ export class DatabaseDropCommand implements CommandModule {
 
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseDropArguments = raw as DatabaseDropArguments;
+
+        if (args.codeTransformation) {
+            setCodeTransformation(args.codeTransformation);
+        }
 
         const dataSourceOptions = await buildDataSourceOptions({
             name: args.connection,

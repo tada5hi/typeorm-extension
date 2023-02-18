@@ -4,7 +4,7 @@ import { hasOwnProperty } from '../utils';
 import type { SeederConstructor, SeederOptions } from './type';
 import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
 import {
-    modifyDataSourceOptionsForRuntimeEnvironment,
+    adjustFilePathsForDataSourceOptions,
     setDataSource,
 } from '../data-source';
 import type { SeederFactoryConfig } from './factory';
@@ -16,7 +16,7 @@ async function prepareSeeder(
     options = options ?? {};
 
     options = setDefaultSeederOptions(options);
-    await modifyDataSourceOptionsForRuntimeEnvironment(options, {
+    await adjustFilePathsForDataSourceOptions(options, {
         keys: ['seeds', 'factories'],
     });
 

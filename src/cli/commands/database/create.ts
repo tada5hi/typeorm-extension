@@ -2,8 +2,10 @@ import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
 import type { DatabaseCreateContext } from '../../../database';
 import { createDatabase } from '../../../database';
+import { CodeTransformation, setCodeTransformation } from '../../../utils';
 
 export interface DatabaseCreateArguments extends Arguments {
+    codeTransformation: string,
     root: string;
     connection: 'default' | string;
     config: 'ormconfig' | string;
@@ -19,6 +21,11 @@ export class DatabaseCreateCommand implements CommandModule {
 
     builder(args: Argv) {
         return args
+            .option('codeTransformation', {
+                default: CodeTransformation.NONE,
+                choices: [CodeTransformation.NONE, CodeTransformation.JUST_IN_TIME],
+                describe: 'This option specifies how the code is transformed and how the library should behave as a result.',
+            })
             .option('root', {
                 alias: 'r',
                 default: process.cwd(),
@@ -54,6 +61,10 @@ export class DatabaseCreateCommand implements CommandModule {
 
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
+
+        if (args.codeTransformation) {
+            setCodeTransformation(args.codeTransformation);
+        }
 
         const dataSourceOptions = await buildDataSourceOptions({
             name: args.connection,

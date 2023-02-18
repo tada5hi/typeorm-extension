@@ -6,5 +6,5 @@
  */
 
 module.exports = {
-    extends: ['@commitlint/config-angular'],
+    extends: ['@tada5hi/commitlint-config'],
 };

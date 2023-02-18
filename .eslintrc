@@ -3,7 +3,7 @@
         "@tada5hi/eslint-config-typescript"
     ],
     "parserOptions": {
-        "project": "./tsconfig.json"
+        "project": "./tsconfig.eslint.json"
     },
     "ignorePatterns": ["**/dist/*", "**/*.d.ts", "**/test/*"],
     "globals": {

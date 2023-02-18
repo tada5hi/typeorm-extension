@@ -1,14 +1,10 @@
 import type { Arguments, Argv, CommandModule } from 'yargs';
-import {
-    runSeeders,
-} from '../../seeder';
-import {
-    buildDataSourceOptions,
-    setDataSourceOptions,
-    useDataSource,
-} from '../../data-source';
+import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../data-source';
+import { runSeeders } from '../../seeder';
+import { CodeTransformation, setCodeTransformation } from '../../utils';
 
 export interface DatabaseSeedArguments extends Arguments {
+    codeTransformation: string,
     root: string;
     connection: 'default' | string;
     config: 'ormconfig' | string;
@@ -23,6 +19,11 @@ export class SeedCommand implements CommandModule {
 
     builder(args: Argv) {
         return args
+            .option('codeTransformation', {
+                default: CodeTransformation.NONE,
+                choices: [CodeTransformation.NONE, CodeTransformation.JUST_IN_TIME],
+                describe: 'This option specifies how the code is transformed and how the library should behave as a result.',
+            })
             .option('root', {
                 alias: 'r',
                 default: process.cwd(),
@@ -53,6 +54,10 @@ export class SeedCommand implements CommandModule {
 
     async handler(raw: Arguments, exitProcess = true) {
         const args : DatabaseSeedArguments = raw as DatabaseSeedArguments;
+
+        if (args.codeTransformation) {
+            setCodeTransformation(args.codeTransformation);
+        }
 
         const dataSourceOptions = await buildDataSourceOptions({
             name: args.connection,

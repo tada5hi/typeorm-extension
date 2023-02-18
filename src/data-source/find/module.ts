@@ -7,10 +7,11 @@ import {
 import path from 'node:path';
 import type { DataSource } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
+import {
+    CodeTransformation, hasOwnProperty, isCodeTransformation, safeReplaceWindowsSeparator, transformFilePath,
+} from '../../utils';
 import type { DataSourceFindOptions } from './type';
-import { hasOwnProperty, isTsNodeRuntimeEnvironment } from '../../utils';
 import { readTsConfig } from '../../utils/tsconfig';
-import { changeTSToJSPath, safeReplaceWindowsSeparator } from '../options';
 
 export async function findDataSource(
     context?: DataSourceFindOptions,
@@ -60,12 +61,12 @@ export async function findDataSource(
 
     files.push(...lookupPaths);
 
-    if (!isTsNodeRuntimeEnvironment()) {
+    if (!isCodeTransformation(CodeTransformation.JUST_IN_TIME)) {
         const { compilerOptions } = await readTsConfig();
         const outDir = compilerOptions ? compilerOptions.outDir : undefined;
 
         for (let j = 0; j < files.length; j++) {
-            files[j] = changeTSToJSPath(files[j], outDir);
+            files[j] = transformFilePath(files[j], outDir);
         }
     }
 

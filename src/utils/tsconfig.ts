@@ -1,4 +1,5 @@
-import path from 'path';
+import { load } from 'locter';
+import path from 'node:path';
 
 type Tsconfig = {
     compilerOptions?: {
@@ -16,7 +17,7 @@ export async function readTsConfig(directory?: string) : Promise<Tsconfig> {
         path.join(directory, 'tsconfig.json') :
         directory;
     try {
-        const tsConfig = await import(filePath);
+        const tsConfig = await load(filePath);
 
         // todo: maybe follow extends chain ;)
 
