@@ -62,7 +62,7 @@
     "devDependencies": {
         "@commitlint/cli": "^17.4.3",
         "@commitlint/config-angular": "^17.4.3",
-        "@commitlint/config-conventional": "^17.4.3",
+        "@commitlint/config-conventional": "^17.4.4",
         "@commitlint/cz-commitlint": "^17.4.2",
         "@semantic-release/changelog": "^6.0.2",
         "@semantic-release/commit-analyzer": "^9.0.2",
