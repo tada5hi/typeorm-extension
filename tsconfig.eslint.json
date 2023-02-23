@@ -1,7 +1,9 @@
 {
     "extends": "./tsconfig.json",
     "include": [
+        "commitlint.config.js",
+        "release.config.js",
         "src/**/*.ts",
-        "test/**/*.spec.ts"
+        "test/**/*.{js,ts}"
     ]
 }
