@@ -91,9 +91,11 @@ export async function findDataSource(
             }
 
             const defaultExport = getModuleExport(fileExports);
-
-            if (InstanceChecker.isDataSource(defaultExport.value)) {
-                return fileExports.default;
+            if (
+                defaultExport &&
+                InstanceChecker.isDataSource(defaultExport.value)
+            ) {
+                return defaultExport.value;
             }
 
             if (isObject(fileExports)) {
