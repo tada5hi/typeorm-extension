@@ -1,5 +1,5 @@
 import type { DataSource, DataSourceOptions } from 'typeorm';
-import { load } from 'locter';
+import { getModuleExport, load } from 'locter';
 import { hasOwnProperty } from '../utils';
 import type { SeederConstructor, SeederOptions } from './type';
 import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
@@ -74,13 +74,11 @@ async function prepareSeeder(
             seedFiles = resolveFilePaths(seedFiles);
 
             for (let i = 0; i < seedFiles.length; i++) {
-                let fileExport = await load(seedFiles[i]);
-                if (hasOwnProperty(fileExport, 'default')) {
-                    fileExport = fileExport.default;
-                }
+                const moduleExports = await load(seedFiles[i]);
+                const moduleDefault = getModuleExport(moduleExports);
 
-                if (fileExport) {
-                    const item = fileExport as SeederConstructor;
+                if (moduleDefault.value) {
+                    const item = moduleDefault.value as SeederConstructor;
 
                     if (!options.seedName || options.seedName === item.name) {
                         items.push(item);

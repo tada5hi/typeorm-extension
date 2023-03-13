@@ -1,5 +1,5 @@
 import {
-    adjustFilePathsForDataSourceOptions
+    adjustFilePathsForDataSourceOptions, transformFilePath
 } from "../../../src";
 
 describe('src/connection/utils.ts', () => {

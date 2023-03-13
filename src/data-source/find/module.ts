@@ -1,4 +1,5 @@
 import {
+    getModuleExport,
     isObject,
     load,
     locate,
@@ -8,7 +9,7 @@ import path from 'node:path';
 import type { DataSource } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
 import {
-    CodeTransformation, hasOwnProperty, isCodeTransformation, safeReplaceWindowsSeparator, transformFilePath,
+    CodeTransformation, isCodeTransformation, safeReplaceWindowsSeparator, transformFilePath,
 } from '../../utils';
 import type { DataSourceFindOptions } from './type';
 import { readTsConfig } from '../../utils/tsconfig';
@@ -89,10 +90,9 @@ export async function findDataSource(
                 return fileExports;
             }
 
-            if (
-                hasOwnProperty(fileExports, 'default') &&
-                InstanceChecker.isDataSource(fileExports.default)
-            ) {
+            const defaultExport = getModuleExport(fileExports);
+
+            if (InstanceChecker.isDataSource(defaultExport.value)) {
                 return fileExports.default;
             }
 
