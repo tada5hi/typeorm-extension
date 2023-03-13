@@ -1,3 +1,10 @@
+## [2.5.4](https://github.com/tada5hi/typeorm-extension/compare/v2.5.3...v2.5.4) (2023-03-13)
+
+
+### Bug Fixes
+
+* use of default export for data-source search ([66eddf0](https://github.com/tada5hi/typeorm-extension/commit/66eddf036a2b2f2ea1b100d2d08de994c37dd6ab))
+
 ## [2.5.3](https://github.com/tada5hi/typeorm-extension/compare/v2.5.2...v2.5.3) (2023-03-13)
 
 
