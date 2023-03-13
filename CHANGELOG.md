@@ -1,3 +1,12 @@
+## [2.5.3](https://github.com/tada5hi/typeorm-extension/compare/v2.5.2...v2.5.3) (2023-03-13)
+
+
+### Bug Fixes
+
+* **deps:** bump locter to v1.0.9 ([ce0abc0](https://github.com/tada5hi/typeorm-extension/commit/ce0abc077a21b779cc889a18ddd26244c2fd44f2))
+* **deps:** bump yargs from 17.6.2 to 17.7.1 ([#492](https://github.com/tada5hi/typeorm-extension/issues/492)) ([0850571](https://github.com/tada5hi/typeorm-extension/commit/085057174260f09a2b72ef3d7da2005bca31f51d))
+* safer strategy for replacing windows separator ([8839b57](https://github.com/tada5hi/typeorm-extension/commit/8839b57319efd5966e67b6d4986bf582ddb99ed0))
+
 ## [2.5.2](https://github.com/tada5hi/typeorm-extension/compare/v2.5.1...v2.5.2) (2023-02-16)
 
 
