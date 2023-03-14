@@ -1,0 +1,1 @@
+import{_ as s,c as a,o as n,N as l}from"./chunks/framework.a618ffea.js";const A=JSON.parse('{"title":"Instances","description":"","frontmatter":{},"headers":[],"relativePath":"guide/instances.md"}'),o={name:"guide/instances.md"},p=l("",11),e=[p];function t(c,r,y,D,F,i){return n(),a("div",null,e)}const u=s(o,[["render",t]]);export{A as __pageData,u as default};
