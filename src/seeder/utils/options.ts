@@ -1,22 +1,33 @@
-import { hasOwnProperty } from '../../utils';
+import type { DataSourceOptions } from 'typeorm';
+import { useEnv } from '../../env';
+import type { SeederOptions } from '../type';
 
-export function setDefaultSeederOptions<T extends Record<string, any>>(options: T) : T {
-    if (!hasOwnProperty(options, 'factories')) {
+export function setDefaultSeederOptions<T extends Partial<DataSourceOptions> & SeederOptions>(options: T) : T {
+    if (
+        !Array.isArray(options.factories) ||
+        options.factories.length === 0
+    ) {
+        let factories = useEnv('factories');
+        if (factories.length === 0) {
+            factories = ['src/database/factories/**/*{.ts,.js}'];
+        }
+
         Object.assign(options, {
-            factories: [
-                process.env.TYPEORM_SEEDING_FACTORIES ||
-                'src/database/factories/**/*{.ts,.js}',
-            ],
+            factories,
         });
     }
 
-    if (!hasOwnProperty(options, 'seeds')) {
+    if (
+        !Array.isArray(options.seeds) ||
+        options.seeds.length === 0
+    ) {
+        let seeds = useEnv('seeds');
+        if (seeds.length === 0) {
+            seeds = ['src/database/seeds/**/*{.ts,.js}'];
+        }
+
         Object.assign(options, {
-            seeds: [
-                process.env.TYPEORM_SEEDS ||
-                process.env.TYPEORM_SEEDING_SEEDS ||
-                'src/database/seeds/**/*{.ts,.js}',
-            ],
+            seeds,
         });
     }
 
