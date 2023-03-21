@@ -70,7 +70,7 @@
         "@tada5hi/eslint-config-typescript": "^1.1.5",
         "@tada5hi/tsconfig": "^0.4.0",
         "@types/jest": "^27.5.0",
-        "@types/node": "^18.15.3",
+        "@types/node": "^18.15.5",
         "@types/yargs": "^17.0.22",
         "better-sqlite3": "^8.2.0",
         "cross-env": "^7.0.3",
