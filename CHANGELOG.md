@@ -1,3 +1,12 @@
+# [2.6.0](https://github.com/tada5hi/typeorm-extension/compare/v2.5.4...v2.6.0) (2023-03-25)
+
+
+### Features
+
+* add generate migraiton helper utility ([c9e3736](https://github.com/tada5hi/typeorm-extension/commit/c9e37362eb9a75b95525c68e5dbf941d8641b8af))
+* add mongodb driver support ([5ef4d74](https://github.com/tada5hi/typeorm-extension/commit/5ef4d74e4e35db01a20984f4f36ed4d7f0e387ca))
+* better env variable(s) handling ([fea6bf7](https://github.com/tada5hi/typeorm-extension/commit/fea6bf7c015f20a419f3d2354c38c701b10e1cf4))
+
 ## [2.5.4](https://github.com/tada5hi/typeorm-extension/compare/v2.5.3...v2.5.4) (2023-03-13)
 
 
