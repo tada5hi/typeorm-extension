@@ -52,6 +52,7 @@
     "dependencies": {
         "@faker-js/faker": "^7.6.0",
         "locter": "^1.0.9",
+        "pascal-case": "^3.1.2",
         "rapiq": "^0.8.0",
         "reflect-metadata": "^0.1.13",
         "yargs": "^17.7.1"

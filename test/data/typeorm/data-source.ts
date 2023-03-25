@@ -1,5 +1,5 @@
 import {DataSource, DataSourceOptions} from "typeorm";
-import path from "path";
+import path from "node:path";
 import {User} from "../entity/user";
 import {SeederOptions} from "../../../src";
 
