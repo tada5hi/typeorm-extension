@@ -1,0 +1,1 @@
+import{_ as e,c as t,o,N as d}from"./chunks/framework.cd9250a1.js";const b=JSON.parse('{"title":"CLI","description":"","frontmatter":{},"headers":[],"relativePath":"guide/cli.md"}'),c={name:"guide/cli.md"},a=d("",8),s=[a];function n(i,r,l,p,h,u){return o(),t("div",null,s)}const f=e(c,[["render",n]]);export{b as __pageData,f as default};

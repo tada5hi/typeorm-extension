@@ -1,1 +1,0 @@
-import{_ as a,c as s,o as t,N as n}from"./chunks/framework.a618ffea.js";const m=JSON.parse('{"title":"Installation","description":"","frontmatter":{},"headers":[],"relativePath":"guide/installation.md"}'),e={name:"guide/installation.md"},o=n("",3),l=[o];function p(i,c,r,_,d,h){return t(),s("div",null,l)}const u=a(e,[["render",p]]);export{m as __pageData,u as default};
