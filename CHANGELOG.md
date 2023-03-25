@@ -1,3 +1,10 @@
+## [2.6.2](https://github.com/tada5hi/typeorm-extension/compare/v2.6.1...v2.6.2) (2023-03-25)
+
+
+### Bug Fixes
+
+* typo in mongo-db connection creation ([f828f26](https://github.com/tada5hi/typeorm-extension/commit/f828f26634616b7110c3ba075262ad18be82a873))
+
 ## [2.6.1](https://github.com/tada5hi/typeorm-extension/compare/v2.6.0...v2.6.1) (2023-03-25)
 
 
