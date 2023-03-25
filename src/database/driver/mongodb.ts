@@ -26,7 +26,7 @@ export async function createSimpleMongoDBConnection(
 
     const client = new MongoClient(url);
     await client.connect();
-    return client();
+    return client;
 }
 
 export async function createMongoDBDatabase(

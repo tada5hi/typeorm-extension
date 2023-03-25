@@ -3,7 +3,8 @@ import type {
     DatabaseDropContext,
 } from './type';
 import {
-    dropCockroachDBDatabase, dropMongoDBDatabase,
+    dropCockroachDBDatabase,
+    dropMongoDBDatabase,
     dropMsSQLDatabase,
     dropMySQLDatabase,
     dropOracleDatabase,
