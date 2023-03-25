@@ -3,7 +3,7 @@ import type {
     DatabaseCreateContext,
 } from './type';
 import {
-    createCockroachDBDatabase,
+    createCockroachDBDatabase, createMongoDBDatabase,
     createMsSQLDatabase,
     createMySQLDatabase,
     createOracleDatabase,
@@ -32,6 +32,8 @@ export async function createDatabase(context?: DatabaseCreateContext) {
     }
 
     switch (context.options.type) {
+        case 'mongodb':
+            return createMongoDBDatabase(context);
         case 'mysql':
         case 'mariadb':
             return createMySQLDatabase(context);

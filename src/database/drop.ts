@@ -3,7 +3,7 @@ import type {
     DatabaseDropContext,
 } from './type';
 import {
-    dropCockroachDBDatabase,
+    dropCockroachDBDatabase, dropMongoDBDatabase,
     dropMsSQLDatabase,
     dropMySQLDatabase,
     dropOracleDatabase,
@@ -32,6 +32,8 @@ export async function dropDatabase(context?: DatabaseDropContext) {
     }
 
     switch (context.options.type) {
+        case 'mongodb':
+            return dropMongoDBDatabase(context);
         case 'mysql':
         case 'mariadb':
             return dropMySQLDatabase(context);
