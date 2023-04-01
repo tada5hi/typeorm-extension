@@ -22,8 +22,8 @@ export enum EnvironmentVariableName {
     FACTORIES_ALT = 'TYPEORM_SEEDING_FACTORIES',
 
     // Database
-    CONNECTION = 'DB_CONNECTION',
-    CONNECTION_ALT = 'TYPEORM_CONNECTION',
+    TYPE = 'DB_TYPE',
+    TYPE_ALT = 'TYPEORM_CONNECTION',
 
     URL = 'DB_URL',
     URL_ALT = 'TYPEORM_URL',

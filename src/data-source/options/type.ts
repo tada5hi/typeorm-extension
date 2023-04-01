@@ -27,5 +27,11 @@ export type DataSourceOptionsBuildContext = {
      * Directory path to the tsconfig.json file
      * Default: process.cwd()
      */
-    tsconfigDirectory?: string
+    tsconfigDirectory?: string,
+
+    /**
+     * Use experimental features,
+     * like merging env and file data-source options.
+     */
+    experimental?: boolean
 };

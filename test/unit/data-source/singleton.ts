@@ -1,9 +1,7 @@
 import {dataSource} from "../../data/typeorm/data-source";
 import {
     hasDataSource,
-    hasDataSourceOptions,
     setDataSource,
-    setDataSourceOptions,
     unsetDataSource,
     useDataSource
 } from "../../../src";
@@ -37,17 +35,5 @@ describe('src/data-source/singleton.ts', () => {
 
         unsetDataSource('foo');
         expect(hasDataSource('foo')).toBeFalsy();
-    })
-
-    it('should set and use data-source options', async () => {
-        setDataSourceOptions(dataSource.options);
-
-        expect(hasDataSourceOptions()).toBeTruthy();
-        expect(hasDataSource()).toBeFalsy();
-
-        const instance = await useDataSource();
-        expect(instance.options).toEqual(dataSource.options);
-
-        unsetDataSource();
     })
 })

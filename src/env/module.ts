@@ -1,3 +1,4 @@
+import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import { EnvironmentName, EnvironmentVariableName } from './constants';
 import type { Environment } from './type';
 import {
@@ -115,7 +116,7 @@ export function useEnv(key?: string) : any {
             EnvironmentVariableName.ENTITY_PREFIX,
             EnvironmentVariableName.ENTITY_PREFIX_ALT,
         ]),
-        maxQueryExecutionTime: readFromProcessEnv([
+        maxQueryExecutionTime: readIntFromProcessEnv([
             EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME,
             EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME_ALT,
         ]),
@@ -139,8 +140,8 @@ export function useEnv(key?: string) : any {
     }
 
     let type : string | undefined;
-    if (hasProcessEnv([EnvironmentVariableName.CONNECTION, EnvironmentVariableName.CONNECTION_ALT])) {
-        type = readFromProcessEnv([EnvironmentVariableName.CONNECTION, EnvironmentVariableName.CONNECTION_ALT]);
+    if (hasProcessEnv([EnvironmentVariableName.TYPE, EnvironmentVariableName.TYPE_ALT])) {
+        type = readFromProcessEnv([EnvironmentVariableName.TYPE, EnvironmentVariableName.TYPE_ALT]);
     } else if (hasProcessEnv([EnvironmentVariableName.URL, EnvironmentVariableName.URL_ALT])) {
         const temp = readFromProcessEnv([EnvironmentVariableName.URL, EnvironmentVariableName.URL_ALT]);
         if (temp) {
@@ -152,7 +153,7 @@ export function useEnv(key?: string) : any {
         }
     }
     if (type) {
-        output.type = type;
+        output.type = type as DatabaseType; // todo: maybe validation here
     }
 
     instance = output;
@@ -162,4 +163,10 @@ export function useEnv(key?: string) : any {
     }
 
     return instance;
+}
+
+export function resetEnv() {
+    if (typeof instance !== 'undefined') {
+        instance = undefined;
+    }
 }

@@ -2,7 +2,11 @@ import type { DataSourceOptions } from 'typeorm';
 import { ConnectionOptionsReader } from 'typeorm';
 import type { DataSourceOptionsBuildContext } from './type';
 import { setDefaultSeederOptions } from '../../seeder';
-import { adjustFilePathsForDataSourceOptions } from './utils';
+import {
+    adjustFilePathsForDataSourceOptions,
+    mergeDataSourceOptionsWithEnv,
+    readDataSourceOptionsFromEnv,
+} from './utils';
 import { findDataSource } from '../find';
 
 export async function extendDataSourceOptions(
@@ -57,10 +61,23 @@ export async function buildDataSourceOptions(
     });
 
     if (dataSource) {
-        return extendDataSourceOptions(
+        const options = await extendDataSourceOptions(
             dataSource.options,
             tsconfigDirectory,
         );
+
+        if (context.experimental) {
+            return mergeDataSourceOptionsWithEnv(options);
+        }
+
+        return options;
+    }
+
+    if (context.experimental) {
+        const options = readDataSourceOptionsFromEnv();
+        if (options) {
+            return options;
+        }
     }
 
     return buildLegacyDataSourceOptions(context);

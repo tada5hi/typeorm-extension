@@ -1,12 +1,12 @@
 import type { DataSourceOptions } from 'typeorm';
-import type { SeederOptions } from '../../seeder';
+import type { SeederOptions } from '../../../seeder';
 import {
     CodeTransformation,
     hasOwnProperty,
     isCodeTransformation,
     transformFilePath,
-} from '../../utils';
-import { readTsConfig } from '../../utils/tsconfig';
+} from '../../../utils';
+import { readTsConfig } from '../../../utils/tsconfig';
 
 const keys = [
     'entities',

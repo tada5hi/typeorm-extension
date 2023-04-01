@@ -1,3 +1,4 @@
+import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { DataSourceCacheOption } from '../data-source';
 import type { EnvironmentName } from './constants';
 
@@ -9,7 +10,7 @@ export interface Environment {
     factories: string[],
 
     // DataSource
-    type?: string,
+    type?: DatabaseType,
     url?: string,
     host?: string,
     port?: number,
@@ -33,7 +34,7 @@ export interface Environment {
     subscribers: string[],
     logging: string[] | boolean | string,
     logger?: string,
-    maxQueryExecutionTime?: string,
+    maxQueryExecutionTime?: number,
     debug?: string,
     cache?: DataSourceCacheOption,
     uuidExtension?: string
