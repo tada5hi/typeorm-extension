@@ -1,3 +1,31 @@
+## v2.7.0
+
+[compare changes](https://github.com/tada5hi/typeorm-extension/compare/v2.6.2...v2.7.0)
+
+
+### 🚀 Enhancements
+
+  - Prepare & extend env reading for env data-source otions reading ([c3a401c](https://github.com/tada5hi/typeorm-extension/commit/c3a401c))
+  - Experimental read env data-source options and merge them with file based options ([e5c4e1b](https://github.com/tada5hi/typeorm-extension/commit/e5c4e1b))
+  - Add extra utility to merge data-source options ([df5637c](https://github.com/tada5hi/typeorm-extension/commit/df5637c))
+
+### 🩹 Fixes
+
+  - **deps:** Bump locter from 1.0.10 to 1.1.0 ([#523](https://github.com/tada5hi/typeorm-extension/pull/523))
+  - Export env sub module ([fc9090d](https://github.com/tada5hi/typeorm-extension/commit/fc9090d))
+
+### 📦 Build
+
+  - Replaced semantic-release with changelogen for release management ([66e3997](https://github.com/tada5hi/typeorm-extension/commit/66e3997))
+  - **deps-dev:** Bump vitepress from 1.0.0-alpha.61 to 1.0.0-alpha.64 ([#529](https://github.com/tada5hi/typeorm-extension/pull/529))
+  - **deps-dev:** Bump @tada5hi/eslint-config-typescript ([#526](https://github.com/tada5hi/typeorm-extension/pull/526))
+  - **deps-dev:** Bump @types/yargs from 17.0.22 to 17.0.24 ([#527](https://github.com/tada5hi/typeorm-extension/pull/527))
+  - **deps-dev:** Bump @types/node from 18.15.7 to 18.15.11 ([#528](https://github.com/tada5hi/typeorm-extension/pull/528))
+
+### ❤️  Contributors
+
+- Tada5hi <peter.placzek1996@gmail.com>
+
 ## [2.6.2](https://github.com/tada5hi/typeorm-extension/compare/v2.6.1...v2.6.2) (2023-03-25)
 
 

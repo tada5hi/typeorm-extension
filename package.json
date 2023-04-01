@@ -1,84 +1,84 @@
 {
-    "name": "typeorm-extension",
-    "version": "2.6.2",
-    "description": "A library to create/drop database, simple seeding data sets, ...",
-    "author": {
-        "name": "Peter Placzek",
-        "email": "contact@tada5hi.net",
-        "url": "https://github.com/tada5hi"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/tada5hi/typeorm-extension.git"
-    },
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist/"
-    ],
-    "engines": {
-        "node": ">=14.0.0"
-    },
-    "scripts": {
-        "build": "rm -rf ./dist && tsc",
-        "build:watch": "npm run build -- --watch",
-        "commit": "npx git-cz",
-        "test": "jest --config ./test/jest.config.js",
-        "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage",
-        "lint": "eslint --ext .js,.vue,.ts ./src",
-        "lint:fix": "npm run lint -- --fix",
-        "docs:dev": "vitepress dev docs --temp .temp",
-        "docs:build": "vitepress build docs --temp .temp",
-        "docs:help": "vitepress --help",
-        "prepare": "husky install",
-        "release": "npm run build && changelogen --release --push && npm publish"
-    },
-    "keywords": [
-        "database",
-        "create",
-        "drop",
-        "api",
-        "json-api",
-        "jsonapi",
-        "migration",
-        "seeder",
-        "seeding",
-        "cli"
-    ],
-    "bin": {
-        "typeorm-extension": "dist/cli/index.js"
-    },
-    "license": "MIT",
-    "dependencies": {
-        "@faker-js/faker": "^7.6.0",
-        "locter": "^1.1.0",
-        "pascal-case": "^3.1.2",
-        "rapiq": "^0.8.0",
-        "reflect-metadata": "^0.1.13",
-        "smob": "^1.0.0",
-        "yargs": "^17.7.1"
-    },
-    "peerDependencies": {
-        "typeorm": "~0.3.0"
-    },
-    "devDependencies": {
-        "@tada5hi/commitlint-config": "^1.0.0",
-        "@tada5hi/eslint-config-typescript": "^1.1.6",
-        "@tada5hi/tsconfig": "^0.4.0",
-        "@types/jest": "^27.5.0",
-        "@types/node": "^18.15.11",
-        "@types/yargs": "^17.0.24",
-        "better-sqlite3": "^8.2.0",
-        "changelogen": "^0.5.2",
-        "cross-env": "^7.0.3",
-        "eslint": "^8.36.0",
-        "husky": "^8.0.3",
-        "jest": "^27.5.1",
-        "semantic-release": "^19.0.5",
-        "ts-jest": "^27.1.4",
-        "typeorm": "^0.3.12",
-        "typescript": "^4.9.5",
-        "vitepress": "^1.0.0-alpha.64",
-        "vue": "^3.2.47"
-    }
+  "name": "typeorm-extension",
+  "version": "2.7.0",
+  "description": "A library to create/drop database, simple seeding data sets, ...",
+  "author": {
+    "name": "Peter Placzek",
+    "email": "contact@tada5hi.net",
+    "url": "https://github.com/tada5hi"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tada5hi/typeorm-extension.git"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "scripts": {
+    "build": "rm -rf ./dist && tsc",
+    "build:watch": "npm run build -- --watch",
+    "commit": "npx git-cz",
+    "test": "jest --config ./test/jest.config.js",
+    "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage",
+    "lint": "eslint --ext .js,.vue,.ts ./src",
+    "lint:fix": "npm run lint -- --fix",
+    "docs:dev": "vitepress dev docs --temp .temp",
+    "docs:build": "vitepress build docs --temp .temp",
+    "docs:help": "vitepress --help",
+    "prepare": "husky install",
+    "release": "npm run build && changelogen --release --push && npm publish"
+  },
+  "keywords": [
+    "database",
+    "create",
+    "drop",
+    "api",
+    "json-api",
+    "jsonapi",
+    "migration",
+    "seeder",
+    "seeding",
+    "cli"
+  ],
+  "bin": {
+    "typeorm-extension": "dist/cli/index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@faker-js/faker": "^7.6.0",
+    "locter": "^1.1.0",
+    "pascal-case": "^3.1.2",
+    "rapiq": "^0.8.0",
+    "reflect-metadata": "^0.1.13",
+    "smob": "^1.0.0",
+    "yargs": "^17.7.1"
+  },
+  "peerDependencies": {
+    "typeorm": "~0.3.0"
+  },
+  "devDependencies": {
+    "@tada5hi/commitlint-config": "^1.0.0",
+    "@tada5hi/eslint-config-typescript": "^1.1.6",
+    "@tada5hi/tsconfig": "^0.4.0",
+    "@types/jest": "^27.5.0",
+    "@types/node": "^18.15.11",
+    "@types/yargs": "^17.0.24",
+    "better-sqlite3": "^8.2.0",
+    "changelogen": "^0.5.2",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.36.0",
+    "husky": "^8.0.3",
+    "jest": "^27.5.1",
+    "semantic-release": "^19.0.5",
+    "ts-jest": "^27.1.4",
+    "typeorm": "^0.3.12",
+    "typescript": "^4.9.5",
+    "vitepress": "^1.0.0-alpha.64",
+    "vue": "^3.2.47"
+  }
 }
