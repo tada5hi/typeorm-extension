@@ -22,6 +22,8 @@ module.exports = {
         '!src/**/*.d.ts',
         '!src/cli/**/*.{ts,js}',
         '!src/database/**/*.{ts,js}',
+        '!src/env/utils.ts',
+        '!src/errors/*.{ts,js}',
         '!src/utils/**/*.{ts,js}',
         '!src/seeder/**/*.{ts,js}',
     ],

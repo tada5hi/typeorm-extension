@@ -4,9 +4,9 @@ import {
     hasEnvDataSourceOptions,
     mergeDataSourceOptionsWithEnv,
     readDataSourceOptionsFromEnv
-} from "../../../src";
-import {EnvironmentVariableName, resetEnv, } from "../../../src/env";
-import {User} from "../../data/entity/user";
+} from "../../../../src";
+import {EnvironmentVariableName, resetEnv, } from "../../../../src/env";
+import {User} from "../../../data/entity/user";
 
 describe('src/data-source/options/env', function () {
     it('should read env data-source options', () => {
@@ -60,7 +60,7 @@ describe('src/data-source/options/env', function () {
         process.env = {
             ...process.env,
             [EnvironmentVariableName.TYPE]: 'better-sqlite3',
-            [EnvironmentVariableName.DATABASE]: 'db.sqlite',
+            [EnvironmentVariableName.DATABASE]: 'test.sqlite',
         };
 
         const options = await buildDataSourceOptions({
@@ -70,6 +70,16 @@ describe('src/data-source/options/env', function () {
 
         expect(options).toBeDefined();
         expect(options.type).toEqual('better-sqlite3');
-        expect(options.database).toEqual('db.sqlite');
+        expect(options.database).toEqual('test.sqlite');
+
+        delete process.env[EnvironmentVariableName.TYPE];
+        delete process.env[EnvironmentVariableName.DATABASE];
+
+        resetEnv();
+    });
+
+    it('should not read from env', () => {
+        const options = readDataSourceOptionsFromEnv();
+        expect(options).toBeUndefined();
     })
 });

@@ -5,8 +5,8 @@ import {
     setDataSourceOptions,
     unsetDataSource,
     useDataSource
-} from "../../../src";
-import {dataSource} from "../../data/typeorm/data-source";
+} from "../../../../src";
+import {dataSource} from "../../../data/typeorm/data-source";
 
 describe('src/data-source/options', function () {
     it('should set and use data-source options', async () => {

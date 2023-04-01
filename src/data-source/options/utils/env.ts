@@ -1,4 +1,3 @@
-import { merge } from 'smob';
 import type { DataSourceOptions } from 'typeorm';
 import type { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions';
 import type { BetterSqlite3ConnectionOptions } from 'typeorm/driver/better-sqlite3/BetterSqlite3ConnectionOptions';
@@ -8,11 +7,13 @@ import type { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlSer
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
+import { mergeDataSourceOptions } from './merge';
 
 export function hasEnvDataSourceOptions() : boolean {
     return !!useEnv('type');
 }
 
+/* istanbul ignore next */
 export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
     if (!hasEnvDataSourceOptions()) {
         return undefined;
@@ -121,9 +122,5 @@ export function mergeDataSourceOptionsWithEnv(options: DataSourceOptions) {
         return options;
     }
 
-    if (env.type !== options.type) {
-        return options;
-    }
-
-    return merge({}, env, options);
+    return mergeDataSourceOptions(env, options);
 }

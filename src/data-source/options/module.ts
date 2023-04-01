@@ -76,7 +76,7 @@ export async function buildDataSourceOptions(
     if (context.experimental) {
         const options = readDataSourceOptionsFromEnv();
         if (options) {
-            return options;
+            return extendDataSourceOptions(options);
         }
     }
 
