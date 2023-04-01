@@ -88,10 +88,12 @@ export function useEnv(key?: string) : any {
         ]),
         entities: transformStringToArray(readFromProcessEnv([
             EnvironmentVariableName.ENTITIES,
-            EnvironmentVariableName.ENTITIES_ALT])),
+            EnvironmentVariableName.ENTITIES_ALT,
+        ])),
         migrations: transformStringToArray(readFromProcessEnv([
             EnvironmentVariableName.MIGRATIONS,
-            EnvironmentVariableName.MIGRATIONS_ALT])),
+            EnvironmentVariableName.MIGRATIONS_ALT,
+        ])),
         migrationsTableName: readFromProcessEnv([
             EnvironmentVariableName.MIGRATIONS_TABLE_NAME,
             EnvironmentVariableName.MIGRATIONS_TABLE_NAME_ALT,
