@@ -7,7 +7,6 @@ on:
     push:
         branches: [master, next, beta, alpha]
     pull_request:
-        branches: [master, next, beta, alpha]
 
 permissions:
     packages: write
@@ -45,10 +44,3 @@ jobs:
             - name: Test package
               run: |
                   npm run test
-
-            - name: Release
-              if: ${{ matrix.node-version == '16.x' }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-              run: npx semantic-release

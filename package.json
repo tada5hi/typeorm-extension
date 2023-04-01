@@ -31,7 +31,7 @@
         "docs:build": "vitepress build docs --temp .temp",
         "docs:help": "vitepress --help",
         "prepare": "husky install",
-        "prepublishOnly": "npm run build"
+        "release": "npm run build && changelogen --release --push && npm publish"
     },
     "keywords": [
         "database",
@@ -61,12 +61,6 @@
         "typeorm": "~0.3.0"
     },
     "devDependencies": {
-        "@semantic-release/changelog": "^6.0.2",
-        "@semantic-release/commit-analyzer": "^9.0.2",
-        "@semantic-release/git": "^10.0.1",
-        "@semantic-release/github": "^8.0.6",
-        "@semantic-release/npm": "^9.0.2",
-        "@semantic-release/release-notes-generator": "^10.0.3",
         "@tada5hi/commitlint-config": "^1.0.0",
         "@tada5hi/eslint-config-typescript": "^1.1.5",
         "@tada5hi/tsconfig": "^0.4.0",
@@ -74,6 +68,7 @@
         "@types/node": "^18.15.7",
         "@types/yargs": "^17.0.22",
         "better-sqlite3": "^8.2.0",
+        "changelogen": "^0.5.2",
         "cross-env": "^7.0.3",
         "eslint": "^8.36.0",
         "husky": "^8.0.3",
