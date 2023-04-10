@@ -71,7 +71,7 @@
     "better-sqlite3": "^8.2.0",
     "changelogen": "^0.5.2",
     "cross-env": "^7.0.3",
-    "eslint": "^8.36.0",
+    "eslint": "^8.38.0",
     "husky": "^8.0.3",
     "jest": "^27.5.1",
     "semantic-release": "^19.0.5",
