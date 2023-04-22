@@ -18,16 +18,27 @@ This is a library to
 
 **Table of Contents**
 
-- [Installation](#installation)
-- [Documentation](#documentation)
-- [Usage](#usage)
+- [Typeorm Extension 🚀](#typeorm-extension-)
+  - [Installation](#installation)
+  - [Documentation](#documentation)
+  - [Usage](#usage)
     - [CLI](#cli)
+      - [Options](#options)
     - [Database](#database)
+      - [Create](#create)
+      - [Drop](#drop)
     - [Instances](#instances)
+      - [Single](#single)
+      - [Multiple](#multiple)
     - [Seeding](#seeding)
+      - [Configuration](#configuration)
+      - [Entity](#entity)
+      - [Factory](#factory)
+      - [Seed](#seed)
+      - [Execute](#execute)
     - [Query](#query)
-- [Contributing](#contributing)
-- [License](#license)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Installation
 
@@ -286,6 +297,8 @@ The seeder- & factory-location, can be specified via:
 The following values are assumed by default:
 - factory path: `src/database/factories/**/*{.ts,.js}`
 - seed path: `src/database/seeds/**/*{.ts,.js}`
+
+Note: When seeder paths are configured as **glob patterns**, the paths are resolved and sorted in alphabetical order using filenames. This helps to ensure that the seeders are executed in the correct order.
 
 `data-source.ts`
 
