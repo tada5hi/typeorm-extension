@@ -69,7 +69,7 @@
     "@types/node": "^18.15.11",
     "@types/yargs": "^17.0.24",
     "better-sqlite3": "^8.3.0",
-    "changelogen": "^0.5.2",
+    "changelogen": "^0.5.3",
     "cross-env": "^7.0.3",
     "eslint": "^8.38.0",
     "husky": "^8.0.3",
