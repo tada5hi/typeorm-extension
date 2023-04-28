@@ -56,7 +56,7 @@
     "rapiq": "^0.8.0",
     "reflect-metadata": "^0.1.13",
     "smob": "^1.0.0",
-    "yargs": "^17.7.1"
+    "yargs": "^17.7.2"
   },
   "peerDependencies": {
     "typeorm": "~0.3.0"
