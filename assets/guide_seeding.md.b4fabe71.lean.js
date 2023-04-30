@@ -1,1 +1,0 @@
-import{_ as s,c as a,o as n,O as l}from"./chunks/framework.97fbe135.js";const A=JSON.parse('{"title":"Seeding","description":"","frontmatter":{},"headers":[],"relativePath":"guide/seeding.md"}'),o={name:"guide/seeding.md"},p=l("",36),e=[p];function t(c,r,y,F,D,i){return n(),a("div",null,e)}const d=s(o,[["render",t]]);export{A as __pageData,d as default};
