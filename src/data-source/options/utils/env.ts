@@ -1,9 +1,6 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions';
-import type { BetterSqlite3ConnectionOptions } from 'typeorm/driver/better-sqlite3/BetterSqlite3ConnectionOptions';
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
-import type { SqliteConnectionOptions } from 'typeorm/driver/sqlite/SqliteConnectionOptions';
-import type { SqlServerConnectionOptions } from 'typeorm/driver/sqlserver/SqlServerConnectionOptions';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
@@ -20,7 +17,7 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
     }
 
     // todo: include seeder options
-    const base : BaseDataSourceOptions = {
+    const base : Omit<BaseDataSourceOptions, 'poolSize'> = {
         type: useEnv('type') as DatabaseType,
         entities: useEnv('entities'),
         subscribers: useEnv('subscribers'),
@@ -80,16 +77,16 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
         return {
             ...base,
             type: base.type,
-            database: useEnv('database'),
-        } as SqliteConnectionOptions;
+            database: useEnv('database') || 'db.sqlite',
+        };
     }
 
     if (base.type === 'better-sqlite3') {
         return {
             ...base,
             type: base.type,
-            database: useEnv('database'),
-        } as BetterSqlite3ConnectionOptions;
+            database: useEnv('database') || 'db.sqlite',
+        };
     }
 
     if (base.type === 'mssql') {
@@ -98,7 +95,7 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
             ...credentialOptions,
             type: base.type,
             schema: useEnv('schema'),
-        } as SqlServerConnectionOptions;
+        };
     }
 
     if (base.type === 'oracle') {

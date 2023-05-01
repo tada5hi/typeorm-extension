@@ -1,4 +1,5 @@
-import { buildFilePathname } from '../../../../src/seeder/utils/file-path';
+import path from "node:path";
+import { buildFilePathname } from '../../../../src';
 
 describe('src/seeder/utils/file-path.ts', function () {
     describe('buildFilePathname', function () {
@@ -22,9 +23,9 @@ describe('src/seeder/utils/file-path.ts', function () {
             ];
             const result = buildFilePathname(files);
             expect(result).toEqual([
-                '/path/to/dir/0_file.ts',
-                '/path/to/dir/1_file.ts',
-                '/path/to/dir/2_file.ts',
+                path.join(path.sep, 'path', 'to', 'dir', '0_file.ts'),
+                path.join(path.sep, 'path', 'to', 'dir', '1_file.ts'),
+                path.join(path.sep, 'path', 'to', 'dir', '2_file.ts'),
             ]);
         });
     });
