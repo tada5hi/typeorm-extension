@@ -1,10 +1,8 @@
-import {DataSource, ObjectLiteral, SelectQueryBuilder} from "typeorm";
-
+import { ObjectLiteral, SelectQueryBuilder} from "typeorm";
+import { dataSource } from './data-source';
 export class FakeSelectQueryBuilder<T extends ObjectLiteral = ObjectLiteral> extends SelectQueryBuilder<T> {
     constructor() {
-        super({
-            options: {}
-        } as DataSource);
+        super(dataSource);
     }
 
     override addSelect(
