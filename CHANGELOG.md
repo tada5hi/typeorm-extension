@@ -1,3 +1,42 @@
+## v2.8.0
+
+[compare changes](https://github.com/tada5hi/typeorm-extension/compare/v2.7.0...v2.8.0)
+
+
+### 🚀 Enhancements
+
+  - Sort by filename when using seed pattern ([#546](https://github.com/tada5hi/typeorm-extension/pull/546))
+
+### 🩹 Fixes
+
+  - **deps:** Bump yargs from 17.7.1 to 17.7.2 ([#554](https://github.com/tada5hi/typeorm-extension/pull/554))
+
+### 📦 Build
+
+  - **deps-dev:** Bump typeorm from 0.3.12 to 0.3.13 ([#534](https://github.com/tada5hi/typeorm-extension/pull/534))
+  - **deps-dev:** Bump @tada5hi/commitlint-config from 1.0.0 to 1.0.1 ([#530](https://github.com/tada5hi/typeorm-extension/pull/530))
+  - **deps:** Bump codecov/codecov-action from 3.1.1 to 3.1.3 ([#547](https://github.com/tada5hi/typeorm-extension/pull/547))
+  - **deps-dev:** Bump better-sqlite3 from 8.2.0 to 8.3.0 ([#535](https://github.com/tada5hi/typeorm-extension/pull/535))
+  - **deps-dev:** Bump eslint from 8.36.0 to 8.38.0 ([#537](https://github.com/tada5hi/typeorm-extension/pull/537))
+  - **deps-dev:** Bump vitepress from 1.0.0-alpha.64 to 1.0.0-alpha.73 ([#545](https://github.com/tada5hi/typeorm-extension/pull/545))
+  - **deps-dev:** Bump changelogen from 0.5.2 to 0.5.3 ([#549](https://github.com/tada5hi/typeorm-extension/pull/549))
+  - **deps-dev:** Bump eslint from 8.38.0 to 8.39.0 ([#550](https://github.com/tada5hi/typeorm-extension/pull/550))
+  - **deps-dev:** Bump @types/node from 18.15.11 to 18.16.0 ([#548](https://github.com/tada5hi/typeorm-extension/pull/548))
+  - **deps-dev:** Bump vitepress from 1.0.0-alpha.73 to 1.0.0-alpha.74 ([#551](https://github.com/tada5hi/typeorm-extension/pull/551))
+  - **deps-dev:** Bump @types/node from 18.16.0 to 18.16.2 ([#553](https://github.com/tada5hi/typeorm-extension/pull/553))
+  - **deps-dev:** Bump @types/node from 18.16.2 to 18.16.3 ([#556](https://github.com/tada5hi/typeorm-extension/pull/556))
+  - **deps-dev:** Bump typeorm to v0.3.15 ([33c34b1](https://github.com/tada5hi/typeorm-extension/commit/33c34b1))
+  - **deps-dev:** Remove semantic release dependency ([5b9047e](https://github.com/tada5hi/typeorm-extension/commit/5b9047e))
+
+### ✅ Tests
+
+  - Fix file-path sort test for windows os ([30971e3](https://github.com/tada5hi/typeorm-extension/commit/30971e3))
+
+### ❤️  Contributors
+
+- Tada5hi <peter.placzek1996@gmail.com>
+- LuisK Ruiz
+
 ## v2.7.0
 
 [compare changes](https://github.com/tada5hi/typeorm-extension/compare/v2.6.2...v2.7.0)
