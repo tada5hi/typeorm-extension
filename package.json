@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@tada5hi/commitlint-config": "^1.0.1",
-    "@tada5hi/eslint-config-typescript": "^1.1.6",
+    "@tada5hi/eslint-config-typescript": "^1.1.8",
     "@tada5hi/tsconfig": "^0.4.0",
     "@types/jest": "^27.5.0",
     "@types/node": "^18.16.3",
