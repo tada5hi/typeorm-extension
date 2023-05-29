@@ -1,3 +1,12 @@
+## [2.8.1](https://github.com/tada5hi/typeorm-extension/compare/v2.8.0...v2.8.1) (2023-05-29)
+
+
+### Bug Fixes
+
+* **deps:** bump @faker-js/faker from 7.6.0 to 8.0.2 ([#589](https://github.com/tada5hi/typeorm-extension/issues/589)) ([1cc418b](https://github.com/tada5hi/typeorm-extension/commit/1cc418b6f403c11580b93faa96e098f939a16822))
+* **deps:** bump rapiq from 0.8.0 to 0.8.1 ([#590](https://github.com/tada5hi/typeorm-extension/issues/590)) ([ae669c8](https://github.com/tada5hi/typeorm-extension/commit/ae669c8b4c9b5666d94b350a49772895e1e41ae8))
+* **deps:** bump smob from 1.0.0 to 1.4.0 ([#588](https://github.com/tada5hi/typeorm-extension/issues/588)) ([7b0d094](https://github.com/tada5hi/typeorm-extension/commit/7b0d094f8c6da754397ab7367d4836242b43dda6))
+
 ## v2.8.0
 
 [compare changes](https://github.com/tada5hi/typeorm-extension/compare/v2.7.0...v2.8.0)
