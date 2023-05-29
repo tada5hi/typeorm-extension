@@ -1,3 +1,10 @@
+# [3.0.0-alpha.3](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.2...v3.0.0-alpha.3) (2023-05-29)
+
+
+### Bug Fixes
+
+* keepÃ bin directory + updated .gitignore ([58aebad](https://github.com/tada5hi/typeorm-extension/commit/58aebad44982969eb14c905a601537204741baa5))
+
 # [3.0.0-alpha.2](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.1...v3.0.0-alpha.2) (2023-05-29)
 
 
