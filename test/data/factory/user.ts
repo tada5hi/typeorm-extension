@@ -10,10 +10,10 @@ function isMeta(input: unknown) : input is { foo: string, [key: string]: any } {
 
 export default setSeederFactory(User, async (faker, meta) => {
     const user = new User();
-    user.firstName = faker.name.firstName('male');
-    user.lastName = faker.name.lastName('male');
-    user.email = faker.internet.email(user.firstName, user.lastName);
-    user.foo = faker.random.word();
+    user.firstName = faker.person.firstName('male');
+    user.lastName = faker.person.lastName('male');
+    user.email = faker.internet.email({firstName: user.firstName, lastName: user.lastName});
+    user.foo = faker.lorem.word();
 
     if(isMeta(meta)) {
         user.foo = meta.foo;
