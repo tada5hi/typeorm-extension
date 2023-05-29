@@ -3,6 +3,7 @@ updates:
     # Maintain dependencies for GitHub Actions
     - package-ecosystem: "github-actions"
       directory: "/"
+      target-branch: "develop"
       schedule:
           interval: "daily"
 
@@ -11,7 +12,8 @@ updates:
       directory: "/"
       schedule:
           interval: "daily"
-      versioning-strategy: increase
+      versioning-strategy: "increase"
+      target-branch: "develop"
       commit-message:
           prefix: "fix"
           prefix-development: "build"
