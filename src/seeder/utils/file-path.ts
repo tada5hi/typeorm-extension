@@ -1,7 +1,7 @@
 /* istanbul ignore next */
 import type { LocatorInfo } from 'locter';
 import { locateMany } from 'locter';
-import path from 'path';
+import path from 'node:path';
 
 export async function resolveFilePatterns(
     filesPattern: string[],
