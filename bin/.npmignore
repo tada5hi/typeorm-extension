@@ -1,0 +1,5 @@
+*
+*/
+!.gitignore
+!cli.cjs
+!cli.mjs
