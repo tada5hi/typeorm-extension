@@ -8,7 +8,9 @@ runs:
             id: 'cache'
             uses: actions/cache@v3
             with:
-                path: '**/dist/**'
+                path: |
+                    **/dist/**
+                    **/bin/**
                 key: ${{ runner.os }}-build-${{ github.sha }}
 
         -   name: Build
