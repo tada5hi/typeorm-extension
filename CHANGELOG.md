@@ -1,3 +1,10 @@
+# [3.0.0-alpha.2](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.1...v3.0.0-alpha.2) (2023-05-29)
+
+
+### Bug Fixes
+
+* include bin directory in package-json file list ([327ce47](https://github.com/tada5hi/typeorm-extension/commit/327ce47416df15f22406a5f69250f80feecf45db))
+
 # [3.0.0-alpha.1](https://github.com/tada5hi/typeorm-extension/compare/v2.8.1...v3.0.0-alpha.1) (2023-05-29)
 
 
