@@ -1,6 +1,5 @@
 .DS_Store
 dist
-bin
 doc
 node_modules
 .vscode

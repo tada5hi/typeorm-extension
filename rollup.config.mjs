@@ -82,11 +82,11 @@ export default [
         ],
         output: [
             {
-                file: './bin/cli.cjs',
+                file: 'bin/cli.cjs',
                 format: 'cjs',
                 banner: '#!/usr/bin/env node'
             }, {
-                file: './bin/cli.mjs',
+                file: 'bin/cli.mjs',
                 format: 'esm',
                 banner: '#!/usr/bin/env node'
             }
