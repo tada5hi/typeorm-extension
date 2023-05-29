@@ -1,3 +1,10 @@
+# [3.0.0-alpha.5](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.4...v3.0.0-alpha.5) (2023-05-29)
+
+
+### Bug Fixes
+
+* adjust build action to cache bin and dist dir ([9afa905](https://github.com/tada5hi/typeorm-extension/commit/9afa9053b58de5736299f86aafd5054f7baff5ce))
+
 # [3.0.0-alpha.4](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.3...v3.0.0-alpha.4) (2023-05-29)
 
 
