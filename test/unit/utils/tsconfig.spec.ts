@@ -1,5 +1,5 @@
-import {readTsConfig} from "../../../src/utils/tsconfig";
-import path from "path";
+import path from 'node:path';
+import { readTsConfig } from '../../../src/utils/tsconfig';
 
 describe('src/utils/tsconfig.ts', () => {
     it('should read tsconfig file', async () => {
@@ -7,7 +7,7 @@ describe('src/utils/tsconfig.ts', () => {
         const tsConfig = await readTsConfig(rootPath);
 
         expect(tsConfig.compilerOptions).toBeDefined();
-        if(tsConfig.compilerOptions) {
+        if (tsConfig.compilerOptions) {
             expect(tsConfig.compilerOptions.outDir).toEqual('output');
         }
     });
@@ -18,5 +18,5 @@ describe('src/utils/tsconfig.ts', () => {
 
         expect(tsConfig).toBeDefined();
         expect(tsConfig).toEqual({});
-    })
-})
+    });
+});

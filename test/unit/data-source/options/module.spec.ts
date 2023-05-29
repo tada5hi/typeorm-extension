@@ -4,11 +4,11 @@ import {
     hasDataSourceOptions,
     setDataSourceOptions,
     unsetDataSource,
-    useDataSource
-} from "../../../../src";
-import {dataSource} from "../../../data/typeorm/data-source";
+    useDataSource,
+} from '../../../../src';
+import { dataSource } from '../../../data/typeorm/data-source';
 
-describe('src/data-source/options', function () {
+describe('src/data-source/options', () => {
     it('should set and use data-source options', async () => {
         setDataSourceOptions(dataSource.options);
 
@@ -23,12 +23,12 @@ describe('src/data-source/options', function () {
 
     it('should build data-source options', async () => {
         const options = await buildDataSourceOptions({
-            directory: 'test/data/typeorm'
+            directory: 'test/data/typeorm',
         });
 
         expect(options).toBeDefined();
         expect(options.type).toEqual('better-sqlite3');
         expect(options.database).toBeDefined();
         expect(options.extra).toBeDefined();
-    })
+    });
 });

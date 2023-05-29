@@ -1,26 +1,26 @@
-import {DataSourceOptions} from "typeorm";
+import type { DataSourceOptions } from 'typeorm';
 import {
+    EnvironmentVariableName,
     buildDataSourceOptions,
     hasEnvDataSourceOptions,
     mergeDataSourceOptionsWithEnv,
-    readDataSourceOptionsFromEnv
-} from "../../../../src";
-import {EnvironmentVariableName, resetEnv, } from "../../../../src";
-import {User} from "../../../data/entity/user";
+    readDataSourceOptionsFromEnv, resetEnv,
+} from '../../../../src';
+import { User } from '../../../data/entity/user';
 
-describe('src/data-source/options/env', function () {
+describe('src/data-source/options/env', () => {
     it('should read env data-source options', () => {
         process.env[
             EnvironmentVariableName.URL
-            ] = 'mysql://admin:start123@localhost:3306';
+        ] = 'mysql://admin:start123@localhost:3306';
 
         expect(hasEnvDataSourceOptions()).toEqual(true);
 
         const env = readDataSourceOptionsFromEnv();
         expect(env).toBeDefined();
-        if(env) {
+        if (env) {
             expect(env.type).toEqual('mysql');
-            if(env.type === 'mysql') {
+            if (env.type === 'mysql') {
                 expect(env.url).toEqual('mysql://admin:start123@localhost:3306');
             } else {
                 expect(true).toEqual(false);
@@ -38,8 +38,8 @@ describe('src/data-source/options/env', function () {
             entities: [User],
             database: ':memory:',
             extra: {
-                charset: "UTF8_GENERAL_CI"
-            }
+                charset: 'UTF8_GENERAL_CI',
+            },
         };
 
         process.env = {
@@ -64,7 +64,7 @@ describe('src/data-source/options/env', function () {
         };
 
         const options = await buildDataSourceOptions({
-            directory: 'test/data/typeorm'
+            directory: 'test/data/typeorm',
         });
 
         expect(options).toBeDefined();
@@ -80,5 +80,5 @@ describe('src/data-source/options/env', function () {
     it('should not read from env', () => {
         const options = readDataSourceOptionsFromEnv();
         expect(options).toBeUndefined();
-    })
+    });
 });

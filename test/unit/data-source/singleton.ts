@@ -1,10 +1,10 @@
-import {dataSource} from "../../data/typeorm/data-source";
+import { dataSource } from '../../data/typeorm/data-source';
 import {
     hasDataSource,
     setDataSource,
     unsetDataSource,
-    useDataSource
-} from "../../../src";
+    useDataSource,
+} from '../../../src';
 
 describe('src/data-source/singleton.ts', () => {
     it('should set and use datasource', async () => {
@@ -35,5 +35,5 @@ describe('src/data-source/singleton.ts', () => {
 
         unsetDataSource('foo');
         expect(hasDataSource('foo')).toBeFalsy();
-    })
-})
+    });
+});

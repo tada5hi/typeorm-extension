@@ -1,9 +1,9 @@
-import path from "node:path";
+import path from 'node:path';
 import { buildFilePathname } from '../../../../src';
 
-describe('src/seeder/utils/file-path.ts', function () {
-    describe('buildFilePathname', function () {
-        it('should build file path name', function () {
+describe('src/seeder/utils/file-path.ts', () => {
+    describe('buildFilePathname', () => {
+        it('should build file path name', () => {
             const files = [
                 {
                     path: '/path/to/dir',

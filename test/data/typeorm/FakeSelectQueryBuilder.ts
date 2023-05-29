@@ -1,22 +1,26 @@
-import { ObjectLiteral, SelectQueryBuilder} from "typeorm";
+import type { ObjectLiteral } from 'typeorm';
+import { SelectQueryBuilder } from 'typeorm';
 import { dataSource } from './data-source';
+
 export class FakeSelectQueryBuilder<T extends ObjectLiteral = ObjectLiteral> extends SelectQueryBuilder<T> {
     constructor() {
         super(dataSource);
     }
 
     override addSelect(
-        _selection: string|string[]|((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
-        _selectionAliasName?: string
+        _selection: string | string[] | ((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
+        _selectionAliasName?: string,
     ): this {
         return this;
     }
 
     override leftJoinAndSelect(
-        _entityOrProperty: Function|string|((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
+        // eslint-disable-next-line @typescript-eslint/ban-types
+        _entityOrProperty: Function | string | ((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
         _alias: string,
-        _condition: string = "",
-        _parameters?: ObjectLiteral
+        // eslint-disable-next-line default-param-last
+        _condition = '',
+        _parameters?: ObjectLiteral,
     ): this {
         return this;
     }

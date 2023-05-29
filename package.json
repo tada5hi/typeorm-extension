@@ -36,7 +36,7 @@
         "commit": "npx git-cz",
         "test": "jest --config ./test/jest.config.js",
         "test:coverage": "cross-env NODE_ENV=test jest --config ./test/jest.config.js --coverage",
-        "lint": "eslint --ext .js,.vue,.ts ./src",
+        "lint": "eslint --ext .js,.vue,.ts ./src ./test",
         "lint:fix": "npm run lint -- --fix",
         "docs:dev": "vitepress dev docs --temp .temp",
         "docs:build": "vitepress build docs --temp .temp",

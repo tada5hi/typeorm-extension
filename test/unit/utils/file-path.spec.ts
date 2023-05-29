@@ -1,6 +1,6 @@
 import {
-    adjustFilePathsForDataSourceOptions, transformFilePath
-} from "../../../src";
+    adjustFilePathsForDataSourceOptions, transformFilePath,
+} from '../../../src';
 
 describe('src/connection/utils.ts', () => {
     it('should change ts to js path', () => {
@@ -22,7 +22,7 @@ describe('src/connection/utils.ts', () => {
         srcPath = 'my-src/entities.js';
         expect(transformFilePath(srcPath)).toEqual('my-src/entities.js');
 
-        srcPath = 'my-src/entities.ts'
+        srcPath = 'my-src/entities.ts';
         expect(transformFilePath(srcPath)).toEqual('my-src/entities.js');
 
         srcPath = './src/entities.ts';
@@ -47,7 +47,7 @@ describe('src/connection/utils.ts', () => {
         expect(transformFilePath(srcPath)).toEqual('dist/ts.js');
 
         const srcPaths = ['src/entities.ts', './src/entities.ts'];
-        for(let i=0; i<srcPaths.length; i++) {
+        for (let i = 0; i < srcPaths.length; i++) {
             srcPath = srcPaths[i];
 
             expect(transformFilePath(srcPath, 'dist')).toEqual('dist/entities.js');
@@ -78,38 +78,38 @@ describe('src/connection/utils.ts', () => {
 
         srcPath = 'src/ts/*.ts';
         expect(transformFilePath(srcPath)).toEqual('dist/ts/*.js');
-    })
+    });
 
     it('should not change ts to js path', () => {
-        let srcPath = 'src/entities.ts';
+        const srcPath = 'src/entities.ts';
         expect(transformFilePath(srcPath, undefined, 'dummySrc')).toEqual('src/entities.js');
 
         expect(transformFilePath(srcPath, undefined, '../src')).toEqual('src/entities.js');
-    })
+    });
 
     it('should modify connection option(s) for runtime environment', async () => {
         const modifiedConnectionOptions = await adjustFilePathsForDataSourceOptions({
             factories: ['src/factories.ts'],
             seeds: ['src/seeds.ts'],
             entities: ['src/entities.ts'],
-            subscribers: ['src/subscribers.ts']
+            subscribers: ['src/subscribers.ts'],
         });
 
         expect(modifiedConnectionOptions).toEqual({
             factories: ['dist/factories.js'],
             seeds: ['dist/seeds.js'],
             entities: ['dist/entities.js'],
-            subscribers: ['dist/subscribers.js']
+            subscribers: ['dist/subscribers.js'],
         });
 
-        let modifiedConnectionOption = await adjustFilePathsForDataSourceOptions({
-            entities: ['./src/entities.ts']
+        const modifiedConnectionOption = await adjustFilePathsForDataSourceOptions({
+            entities: ['./src/entities.ts'],
         });
-        expect(modifiedConnectionOption).toEqual({entities: ['dist/entities.js']});
+        expect(modifiedConnectionOption).toEqual({ entities: ['dist/entities.js'] });
 
         const modifiedConnectionOptionAlt = await adjustFilePathsForDataSourceOptions({
-            entities: ['src/entities.ts']
+            entities: ['src/entities.ts'],
         });
-        expect(modifiedConnectionOptionAlt).toEqual({entities: ['dist/entities.js']});
-    })
+        expect(modifiedConnectionOptionAlt).toEqual({ entities: ['dist/entities.js'] });
+    });
 });

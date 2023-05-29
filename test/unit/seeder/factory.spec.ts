@@ -1,9 +1,9 @@
-import {useSeederFactory} from "../../../src";
-import {User} from "../../data/entity/user";
-import {destroyTestDatabase, setupTestDatabase} from "../../data/typeorm/utils";
+import { useSeederFactory } from '../../../src';
+import { User } from '../../data/entity/user';
+import { destroyTestDatabase, setupTestDatabase } from '../../data/typeorm/utils';
 import '../../data/factory/user';
 
-describe('src/seeder/factory/index.ts', function () {
+describe('src/seeder/factory/index.ts', () => {
     beforeEach(async () => {
         await setupTestDatabase();
     });
@@ -23,8 +23,8 @@ describe('src/seeder/factory/index.ts', function () {
         expect(users).toBeDefined();
         expect(users.length).toEqual(3);
 
-        for(let i=0; i<users.length; i++) {
+        for (let i = 0; i < users.length; i++) {
             expect(users[i].id).toBeDefined();
         }
-    })
+    });
 });

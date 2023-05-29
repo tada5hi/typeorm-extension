@@ -4,6 +4,8 @@
         "commitlint.config.js",
         "release.config.js",
         "src/**/*.ts",
-        "test/**/*.{js,ts}"
+        "test/**/*.ts",
+        "test/**/*.js",
+        "test/**/*.spec.ts"
     ]
 }

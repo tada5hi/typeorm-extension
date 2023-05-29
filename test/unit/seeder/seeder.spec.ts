@@ -1,10 +1,10 @@
-import {runSeeder, runSeeders, useDataSource} from "../../../src";
-import {User} from "../../data/entity/user";
-import {destroyTestDatabase, setupTestDatabase} from "../../data/typeorm/utils";
+import { runSeeder, runSeeders, useDataSource } from '../../../src';
+import { User } from '../../data/entity/user';
+import { destroyTestDatabase, setupTestDatabase } from '../../data/typeorm/utils';
 import '../../data/factory/user';
-import UserSeeder from "../../data/seed/user";
+import UserSeeder from '../../data/seed/user';
 
-describe('src/seeder/index.ts', function () {
+describe('src/seeder/index.ts', () => {
     beforeEach(async () => {
         await setupTestDatabase();
     });
@@ -28,7 +28,7 @@ describe('src/seeder/index.ts', function () {
         const dataSource = await useDataSource();
 
         await runSeeders(dataSource, {
-            seeds: [UserSeeder]
+            seeds: [UserSeeder],
         });
 
         const repository = dataSource.getRepository(User);
@@ -44,7 +44,7 @@ describe('src/seeder/index.ts', function () {
         const response = await runSeeder(dataSource, UserSeeder);
         expect(response).toBeDefined();
         expect(Array.isArray(response)).toBeTruthy();
-        if(Array.isArray(response)) {
+        if (Array.isArray(response)) {
             expect(response.length).toEqual(6);
         }
         expect((response as Record<string, any>[])[0].foo).toEqual('bar');
@@ -54,5 +54,5 @@ describe('src/seeder/index.ts', function () {
 
         expect(entities).toBeDefined();
         expect(entities.length).toBeGreaterThanOrEqual(7);
-    })
+    });
 });

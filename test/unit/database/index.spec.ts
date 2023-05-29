@@ -1,8 +1,8 @@
-import path from "node:path";
+import path from 'node:path';
 import {
     buildDataSourceOptions,
-} from "../../../src";
-import {checkTestDatabase, destroyTestDatabase} from "../../data/typeorm/utils";
+} from '../../../src';
+import { checkTestDatabase, destroyTestDatabase } from '../../data/typeorm/utils';
 
 describe('src/database/module.ts', () => {
     const rootPath : string = path.resolve(process.cwd(), 'test/data/typeorm');
@@ -15,13 +15,13 @@ describe('src/database/module.ts', () => {
         expect(options).toBeDefined();
     });
 
-    it('should check database',  async () => {
-        let check = await checkTestDatabase();
+    it('should check database', async () => {
+        const check = await checkTestDatabase();
 
         expect(check).toBeDefined();
         // special case, only for sqlite/file driver
         expect(check.exists).toBeTruthy();
 
         await destroyTestDatabase();
-    })
-})
+    });
+});

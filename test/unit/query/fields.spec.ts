@@ -1,9 +1,9 @@
 import {
     applyFields,
     applyQueryFields,
-} from "../../../src";
+} from '../../../src';
 
-import {FakeSelectQueryBuilder} from "../../data/typeorm/FakeSelectQueryBuilder";
+import { FakeSelectQueryBuilder } from '../../data/typeorm/FakeSelectQueryBuilder';
 
 describe('src/api/fields.ts', () => {
     it('should apply query fields', () => {
