@@ -530,14 +530,22 @@ export class Profile {
 }
 ```
 
-In the following example [express](https://www.npmjs.com/package/express) is used to handle the HTTP request.
+In this example [routup](https://www.npmjs.com/package/routup) and the
+plugin [@routup/query](https://www.npmjs.com/package/@routup/query) is used to handle HTTP requests,
+but there is also a guide available for [express](https://typeorm-extension.tada5hi.net/guide/query.html).
 
 ```typescript
-import { Request, Response } from 'express';
+import type { Request, Response } from 'routup';
+import { Router, send } from 'routup';
+import { createHandler, useQuery } from '@routup/query';
+
 import {
     applyQuery,
     useDataSource
 } from 'typeorm-extension';
+
+const router = new Router();
+router.use(createHandler());
 
 /**
  * Get many users.
@@ -559,22 +567,22 @@ import {
  * @param req
  * @param res
  */
-export async function getUsers(req: Request, res: Response) {
+router.get('users', async (req: Request, res: Response) => {
     const dataSource = await useDataSource();
     const repository = dataSource.getRepository(User);
     const query = repository.createQueryBuilder('user');
 
     // -----------------------------------------------------
 
-    const { pagination } = applyQuery(query, req.query, {
+    const { pagination } = applyQuery(query, useQuery(req), {
         defaultAlias: 'user',
         fields: {
-            // profile fields can only be included,
+            // porfile fields can only be included,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         },
         filters: {
-            // profile.id can only be used as a filter,
+            // porfile.id can only be used as a filter,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id'],
         },
@@ -596,16 +604,16 @@ export async function getUsers(req: Request, res: Response) {
 
     const [entities, total] = await query.getManyAndCount();
 
-    return res.json({
-        data: {
-            data: entities,
-            meta: {
-                total,
-                ...pagination
-            }
+    send(res, {
+        data: entities,
+        meta: {
+            total,
+            ...pagination
         }
     });
-}
+});
+
+router.listen(80);
 ```
 
 ## Contributing

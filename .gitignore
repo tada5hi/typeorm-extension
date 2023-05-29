@@ -11,3 +11,4 @@ npm-debug.log*
 reports
 db.sqlite
 .env
+cache

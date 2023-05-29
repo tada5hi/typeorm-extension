@@ -9,8 +9,9 @@ the typeorm query builder.
 For more details, get in touch with the rapiq [documentation](https://rapiq.tada5hi.net/).
 :::
 
-For explanation proposes,
-two simple entities with a relation between them are declared to demonstrate the usage of the query utils:
+## Entities
+
+For explanation proposes, two simple entities with a relation between them are declared to demonstrate the usage of the query utils:
 
 ```typescript
 import {
@@ -54,14 +55,29 @@ export class Profile {
 }
 ```
 
-In the following example [express](https://www.npmjs.com/package/express) is used to handle the HTTP request.
+## HTTP
+
+In the following, two routing frameworks are used to demonstrate how incoming
+http requests are processed and can be used in combination with [rapiq](https://www.npmjs.com/package/rapiq) and this library.
+
+
+### Routup
+
+In this example [routup](https://www.npmjs.com/package/routup) and the
+plugin [@routup/query](https://www.npmjs.com/package/@routup/query) is used to handle HTTP requests.
 
 ```typescript
-import { Request, Response } from 'express';
+import type { Request, Response } from 'routup';
+import { Router, send } from 'routup';
+import { createHandler, useQuery } from '@routup/query';
+
 import {
     applyQuery,
     useDataSource
 } from 'typeorm-extension';
+
+const router = new Router();
+router.use(createHandler());
 
 /**
  * Get many users.
@@ -83,7 +99,91 @@ import {
  * @param req
  * @param res
  */
-export async function getUsers(req: Request, res: Response) {
+router.get('users', async (req: Request, res: Response) => {
+    const dataSource = await useDataSource();
+    const repository = dataSource.getRepository(User);
+    const query = repository.createQueryBuilder('user');
+
+    // -----------------------------------------------------
+
+    const { pagination } = applyQuery(query, useQuery(req), {
+        defaultAlias: 'user',
+        fields: {
+            // porfile fields can only be included,
+            // if the relation 'profile' is included.
+            allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
+        },
+        filters: {
+            // porfile.id can only be used as a filter,
+            // if the relation 'profile' is included.
+            allowed: ['id', 'name', 'profile.id'],
+        },
+        pagination: {
+            // only allow to select 20 items at maximum.
+            maxLimit: 20
+        },
+        relations: {
+            allowed: ['profile']
+        },
+        sort: {
+            // profile.id can only be used as sorting key, 
+            // if the relation 'profile' is included.
+            allowed: ['id', 'name', 'profile.id']
+        },
+    });
+
+    // -----------------------------------------------------
+
+    const [entities, total] = await query.getManyAndCount();
+
+    send(res, {
+        data: entities,
+        meta: {
+            total,
+            ...pagination
+        }
+    });
+});
+
+router.listen(80);
+```
+
+## Express
+
+In this example [express](https://www.npmjs.com/package/express) is used to handle HTTP requests.
+
+```typescript
+import type { Request, Response } from 'express';
+import express from 'express';
+
+import {
+    applyQuery,
+    useDataSource
+} from 'typeorm-extension';
+
+const app = express();
+
+/**
+ * Get many users.
+ *
+ * Request example
+ * - url: /users?page[limit]=10&page[offset]=0&include=profile&filter[id]=1&fields[user]=id,name
+ *
+ * Return Example:
+ * {
+ *     data: [
+ *         {id: 1, name: 'tada5hi', profile: {avatar: 'avatar.jpg', cover: 'cover.jpg'}}
+ *      ],
+ *     meta: {
+ *        total: 1,
+ *        limit: 20,
+ *        offset: 0
+ *    }
+ * }
+ * @param req
+ * @param res
+ */
+app.get('users', async (req: Request, res: Response) => {
     const dataSource = await useDataSource();
     const repository = dataSource.getRepository(User);
     const query = repository.createQueryBuilder('user');
@@ -129,5 +229,7 @@ export async function getUsers(req: Request, res: Response) {
             }
         }
     });
-}
+});
+
+app.listen(80);
 ```
