@@ -52,6 +52,7 @@ To read the docs, visit [https://typeorm-extension.tada5hi.net](https://typeorm-
 
 ### CLI
 
+If you use esm, the executable must be changed from `typeorm-extension` to `typeorm-extension-esm`.
 The following commands are available in the terminal:
 - `typeorm-extension db:create` to create the database
 - `typeorm-extension db:drop` to drop the database
@@ -61,14 +62,14 @@ If the application has not yet been built or is to be tested with ts-node, the c
 
 ```
 "scripts": {
-    "db:create": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:create",
-    "db:drop": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js db:drop",
-    "seed": "ts-node ./node_modules/typeorm-extension/dist/cli/index.js seed"
+    "db:create": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:create",
+    "db:drop": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:drop",
+    "seed": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed"
 }
 ```
-
-It is also possible to use files (seeder,factories,entities,migrations,...) from another module system (CJS/ESM),
-as they will be transpiled if necessary 🧙.
+To test the application in the context of an esm project, the following adjustments must be made:
+- executable `ts-node` to `ts-node-esm`
+- library path `cli.cjs` to `cli.mjs`
 
 Read the [Seeding Configuration](#configuration) section to find out how to specify the path,
 for the seeder- & factory-location.
@@ -82,9 +83,6 @@ for the seeder- & factory-location.
 | `--synchronize` or `-s` | `db:create` & `db:drop`         | `yes`           | `no`       | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                         |
 | `--initialDatabase`     | `db:create`                     | `undefined`     | `no`       | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always to connect to a database. If no database is provided, the database name will be equal to the connection user name. |
 | `--seed`                | `seed`                          | `undefined`     | `no`       | Specify a specific seed class to run.                                                                                                                                                                                                    |
-| `--connection` or `-c`  | `db:create`, `db:drop` & `seed` | `default`       | `yes`      | Name of the connection. Required if there are multiple connections.                                                                                                                                                                      |
-| `--config` or `-f`      | `db:create`, `db:drop` & `seed` | `ormconfig.js`  | `yes`      | Name to the config file.                                                                                                                                                                                                                 |
-
 ### Database
 An alternative to the CLI variant, is to `create` the database in the code base during the runtime of the application.
 Therefore, provide the `DataSourceOptions` for the DataSource manually, or let it be created automatically:
