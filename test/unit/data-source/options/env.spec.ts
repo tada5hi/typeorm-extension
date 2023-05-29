@@ -5,7 +5,7 @@ import {
     mergeDataSourceOptionsWithEnv,
     readDataSourceOptionsFromEnv
 } from "../../../../src";
-import {EnvironmentVariableName, resetEnv, } from "../../../../src/env";
+import {EnvironmentVariableName, resetEnv, } from "../../../../src";
 import {User} from "../../../data/entity/user";
 
 describe('src/data-source/options/env', function () {
@@ -64,8 +64,7 @@ describe('src/data-source/options/env', function () {
         };
 
         const options = await buildDataSourceOptions({
-            directory: 'test/data/typeorm',
-            experimental: true
+            directory: 'test/data/typeorm'
         });
 
         expect(options).toBeDefined();

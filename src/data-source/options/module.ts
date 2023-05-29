@@ -1,6 +1,6 @@
 import type { DataSourceOptions } from 'typeorm';
-import { ConnectionOptionsReader } from 'typeorm';
 import { useEnv } from '../../env';
+import { OptionsError } from '../../errors';
 import type { SeederOptions } from '../../seeder';
 import { findDataSource } from '../find';
 import type { DataSourceOptionsBuildContext } from './type';
@@ -54,28 +54,6 @@ export async function extendDataSourceOptions(
 }
 
 /**
- * Build DataSourceOptions from configuration.
- *
- * @deprecated
- * @param context
- */
-export async function buildLegacyDataSourceOptions(
-    context: DataSourceOptionsBuildContext,
-) : Promise<DataSourceOptions> {
-    const directory : string = context.directory || process.cwd();
-    const tsconfigDirectory : string = context.tsconfigDirectory || process.cwd();
-
-    const connectionOptionsReader = new ConnectionOptionsReader({
-        root: directory,
-        configName: context.configName,
-    });
-
-    const dataSourceOptions = await connectionOptionsReader.get(context.name || 'default');
-
-    return extendDataSourceOptions(dataSourceOptions, tsconfigDirectory);
-}
-
-/**
  * Build DataSourceOptions from DataSource or from configuration.
  *
  * @param context
@@ -99,19 +77,13 @@ export async function buildDataSourceOptions(
             tsconfigDirectory,
         );
 
-        if (context.experimental) {
-            return mergeDataSourceOptionsWithEnv(options);
-        }
-
-        return options;
+        return mergeDataSourceOptionsWithEnv(options);
     }
 
-    if (context.experimental) {
-        const options = readDataSourceOptionsFromEnv();
-        if (options) {
-            return extendDataSourceOptions(options);
-        }
+    const options = readDataSourceOptionsFromEnv();
+    if (options) {
+        return extendDataSourceOptions(options);
     }
 
-    return buildLegacyDataSourceOptions(context);
+    throw OptionsError.notFound();
 }

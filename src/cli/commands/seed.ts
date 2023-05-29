@@ -6,8 +6,6 @@ import { CodeTransformation, setCodeTransformation } from '../../utils';
 export interface DatabaseSeedArguments extends Arguments {
     codeTransformation: string,
     root: string;
-    connection: 'default' | string;
-    config: 'ormconfig' | string;
     dataSource: 'data-source' | string;
     seed: undefined | string,
 }
@@ -29,18 +27,6 @@ export class SeedCommand implements CommandModule {
                 default: process.cwd(),
                 describe: 'Path to the data-source / config file.',
             })
-            .option('connection', {
-                alias: 'c',
-                default: 'default',
-                describe: 'Name of the connection on which run a query.',
-                deprecated: true,
-            })
-            .option('config', {
-                alias: 'f',
-                default: 'ormconfig',
-                describe: 'Name of the file with the data-source configuration.',
-                deprecated: true,
-            })
             .option('dataSource', {
                 alias: 'd',
                 default: 'data-source',
@@ -60,8 +46,6 @@ export class SeedCommand implements CommandModule {
         }
 
         const dataSourceOptions = await buildDataSourceOptions({
-            name: args.connection,
-            configName: args.config,
             directory: args.root,
             dataSourceName: args.dataSource,
         });

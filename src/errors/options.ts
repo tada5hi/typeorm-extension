@@ -9,6 +9,10 @@ export class OptionsError extends TypeormExtensionError {
         return new OptionsError('The database options could not be determined.');
     }
 
+    static notFound() {
+        return new OptionsError('The database options could not be located/loaded.');
+    }
+
     static databaseNotDefined() {
         return new OptionsError('The database name to connect to is not defined.');
     }

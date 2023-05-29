@@ -7,8 +7,6 @@ import { CodeTransformation, setCodeTransformation } from '../../../utils';
 export interface DatabaseCreateArguments extends Arguments {
     codeTransformation: string,
     root: string;
-    connection: 'default' | string;
-    config: 'ormconfig' | string;
     dataSource: 'data-source' | string;
     synchronize: string;
     initialDatabase?: unknown;
@@ -30,18 +28,6 @@ export class DatabaseCreateCommand implements CommandModule {
                 alias: 'r',
                 default: process.cwd(),
                 describe: 'Path to the data-source / config file.',
-            })
-            .option('connection', {
-                alias: 'c',
-                default: 'default',
-                describe: 'Name of the connection on which run a query.',
-                deprecated: true,
-            })
-            .option('config', {
-                alias: 'f',
-                default: 'ormconfig',
-                describe: 'Name of the file with the data-source configuration.',
-                deprecated: true,
             })
             .option('dataSource', {
                 alias: 'd',
@@ -67,8 +53,6 @@ export class DatabaseCreateCommand implements CommandModule {
         }
 
         const dataSourceOptions = await buildDataSourceOptions({
-            name: args.connection,
-            configName: args.config,
             directory: args.root,
             dataSourceName: args.dataSource,
         });
