@@ -1,3 +1,10 @@
+# [3.0.0-alpha.4](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.3...v3.0.0-alpha.4) (2023-05-29)
+
+
+### Bug Fixes
+
+* preserve bin/cli.{mjs,cjs} for publishing ([7b175e9](https://github.com/tada5hi/typeorm-extension/commit/7b175e92bd8db5b71d07d279d2fbc76dc0c4a03e))
+
 # [3.0.0-alpha.3](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.2...v3.0.0-alpha.3) (2023-05-29)
 
 
