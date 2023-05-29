@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import 'reflect-metadata';
+import process from 'node:process';
 import yargs from 'yargs';
+import { hideBin } from 'yargs/helpers';
 
 import {
     DatabaseCreateCommand,
@@ -8,8 +10,7 @@ import {
     SeedCommand,
 } from './commands';
 
-// eslint-disable-next-line no-unused-expressions,@typescript-eslint/no-unused-expressions
-yargs
+yargs(hideBin(process.argv))
     .scriptName('typeorm-extension')
     .usage('Usage: $0 <command> [options]')
     .demandCommand(1)
@@ -20,4 +21,4 @@ yargs
     .alias('v', 'version')
     .help('h')
     .alias('h', 'help')
-    .argv;
+    .parse();

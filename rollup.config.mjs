@@ -6,7 +6,7 @@
  */
 
 import resolve from '@rollup/plugin-node-resolve';
-import { transform } from "@swc/core";
+import {transform} from "@swc/core";
 import pkg from './package.json' assert {type: 'json'};
 import path from "node:path";
 
@@ -42,15 +42,14 @@ const swc = () => {
     }
 }
 
-const external = [
-    ...Object.keys(pkg.dependencies || {}),
-    ...Object.keys(pkg.peerDependencies || {}),
-    /^typeorm/,
-]
 export default [
     {
         input: './src/cli/index.ts',
-        external,
+        external: [
+            ...Object.keys(pkg.dependencies || {}),
+            ...Object.keys(pkg.peerDependencies || {}),
+            /^yargs/
+        ],
         plugins: [
             {
                 resolveId(source, importer, options) {
@@ -80,7 +79,6 @@ export default [
 
             // Compile TypeScript/JavaScript files
             swc()
-
         ],
         output: [
             {
@@ -99,8 +97,11 @@ export default [
 
         // Specify here external modules which you don't want to include in your bundle (for instance: 'lodash', 'moment' etc.)
         // https://rollupjs.org/guide/en/#external
-        external,
-
+        external: [
+            ...Object.keys(pkg.dependencies || {}),
+            ...Object.keys(pkg.peerDependencies || {}),
+            /^typeorm/,
+        ],
         plugins: [
             // Allows node_modules resolution
             resolve({ extensions}),
@@ -116,7 +117,22 @@ export default [
             }, {
                 file: pkg.module,
                 format: 'esm',
-                sourcemap: true
+                sourcemap: true,
+                plugins: [
+                    {
+                        generateBundle(outputOptions, bundle, isWrite) {
+                            for (const fileName in bundle) {
+                                const chunk = bundle[fileName];
+                                if (chunk.type === 'chunk') {
+                                    chunk.code = chunk.code.replace(
+                                        /import\s*{([\w\s,]+)}\s*from\s*(['"])typeorm([^'"]+)(['"])/g,
+                                        "import {$1} from $2typeorm$3.js$4"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                ]
             }
         ]
     }
