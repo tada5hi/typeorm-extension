@@ -1,19 +1,52 @@
 import type { DataSourceOptions } from 'typeorm';
 import { ConnectionOptionsReader } from 'typeorm';
+import { useEnv } from '../../env';
+import type { SeederOptions } from '../../seeder';
+import { findDataSource } from '../find';
 import type { DataSourceOptionsBuildContext } from './type';
-import { setDefaultSeederOptions } from '../../seeder';
 import {
     adjustFilePathsForDataSourceOptions,
     mergeDataSourceOptionsWithEnv,
     readDataSourceOptionsFromEnv,
 } from './utils';
-import { findDataSource } from '../find';
+
+export function extendDataSourceOptionsWithSeederOptions<T extends Partial<DataSourceOptions> & SeederOptions>(options: T): T {
+    if (
+        !Array.isArray(options.factories) ||
+        options.factories.length === 0
+    ) {
+        let factories = useEnv('factories');
+        if (factories.length === 0) {
+            factories = ['src/database/factories/**/*{.ts,.js}'];
+        }
+
+        Object.assign(options, {
+            factories,
+        });
+    }
+
+    if (
+        !Array.isArray(options.seeds) ||
+        options.seeds.length === 0
+    ) {
+        let seeds = useEnv('seeds');
+        if (seeds.length === 0) {
+            seeds = ['src/database/seeds/**/*{.ts,.js}'];
+        }
+
+        Object.assign(options, {
+            seeds,
+        });
+    }
+
+    return options;
+}
 
 export async function extendDataSourceOptions(
     options: DataSourceOptions,
     tsConfigDirectory?: string,
 ) : Promise<DataSourceOptions> {
-    options = setDefaultSeederOptions(options);
+    options = extendDataSourceOptionsWithSeederOptions(options);
 
     await adjustFilePathsForDataSourceOptions(options, { root: tsConfigDirectory });
 

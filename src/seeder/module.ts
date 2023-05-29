@@ -2,9 +2,9 @@ import type { DataSource, DataSourceOptions } from 'typeorm';
 import { getModuleExport, load } from 'locter';
 import { hasOwnProperty } from '../utils';
 import type { SeederConstructor, SeederOptions } from './type';
-import { resolveFilePaths, resolveFilePatterns, setDefaultSeederOptions } from './utils';
+import { resolveFilePaths, resolveFilePatterns } from './utils';
 import {
-    adjustFilePathsForDataSourceOptions,
+    adjustFilePathsForDataSourceOptions, extendDataSourceOptionsWithSeederOptions,
     setDataSource,
 } from '../data-source';
 import type { SeederFactoryConfig } from './factory';
@@ -15,7 +15,7 @@ async function prepareSeeder(
 ) : Promise<SeederConstructor[]> {
     options = options ?? {};
 
-    options = setDefaultSeederOptions(options);
+    options = extendDataSourceOptionsWithSeederOptions(options);
     await adjustFilePathsForDataSourceOptions(options, {
         keys: ['seeds', 'factories'],
     });

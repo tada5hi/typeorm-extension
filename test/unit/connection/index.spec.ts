@@ -1,4 +1,4 @@
-import { buildLegacyDataSourceOptions, setDefaultSeederOptions } from "../../../src";
+import { buildLegacyDataSourceOptions } from "../../../src";
 import * as path from "path";
 
 describe('src/connection/index.ts', () => {
@@ -10,7 +10,7 @@ describe('src/connection/index.ts', () => {
         });
 
         let ormConfig = require('../../data/typeorm/ormconfig.json');
-        ormConfig = setDefaultSeederOptions(ormConfig);
+        ormConfig = extendDataSourceOptionsWithSeederOptions(ormConfig);
 
         expect(connectionOptions).toEqual(ormConfig);
     })
