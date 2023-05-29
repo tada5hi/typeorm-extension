@@ -148,7 +148,7 @@ router.get('users', async (req: Request, res: Response) => {
 router.listen(80);
 ```
 
-## Express
+### Express
 
 In this example [express](https://www.npmjs.com/package/express) is used to handle HTTP requests.
 
