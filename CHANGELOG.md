@@ -1,3 +1,24 @@
+# [3.0.0-alpha.1](https://github.com/tada5hi/typeorm-extension/compare/v2.8.1...v3.0.0-alpha.1) (2023-05-29)
+
+
+### Bug Fixes
+
+* circular dependencies between seder and data-source-options ([c5d1d09](https://github.com/tada5hi/typeorm-extension/commit/c5d1d09ec2a0903d1257599b61ba609b76921171))
+* yargs import for esm cli entry-point ([3d46dff](https://github.com/tada5hi/typeorm-extension/commit/3d46dffc5a4dbfa95ecb77b84149352299519cfa))
+
+
+### Features
+
+* generate cli entry point for cjs/esm ([0cc73b6](https://github.com/tada5hi/typeorm-extension/commit/0cc73b608f9782da25db89e1f6786e964a7cbcd3))
+* remove legacy data-source options building ([6cb4d77](https://github.com/tada5hi/typeorm-extension/commit/6cb4d775e1684ec395b03be6ab96e46f73e165f6))
+* use rollup and swc to create bundles for cjs & esm ([46016e8](https://github.com/tada5hi/typeorm-extension/commit/46016e83afb9bfb7731f113aea298b9d16fad9fe))
+
+
+### BREAKING CHANGES
+
+* ormconfig no longer supported
+* CLI path changed
+
 ## [2.8.1](https://github.com/tada5hi/typeorm-extension/compare/v2.8.0...v2.8.1) (2023-05-29)
 
 
