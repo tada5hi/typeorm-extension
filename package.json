@@ -88,7 +88,7 @@
         "eslint": "^8.41.0",
         "husky": "^8.0.3",
         "jest": "^27.5.1",
-        "rollup": "^3.23.0",
+        "rollup": "^3.25.3",
         "semantic-release": "^21.0.2",
         "ts-jest": "^27.1.4",
         "typeorm": "^0.3.16",
