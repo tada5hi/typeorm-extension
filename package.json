@@ -65,7 +65,7 @@
         "@faker-js/faker": "^8.0.2",
         "locter": "^1.1.2",
         "pascal-case": "^3.1.2",
-        "rapiq": "^0.8.1",
+        "rapiq": "^0.9.0",
         "reflect-metadata": "^0.1.13",
         "smob": "^1.4.0",
         "yargs": "^17.7.2"
