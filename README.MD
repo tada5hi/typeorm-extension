@@ -16,6 +16,10 @@ This is a library to
     - `sort` resources according to one or more criteria,
     - limit the number of resources returned in a response by `page` limit & offset
 
+> **Warning**
+> This readme includes the documentation for the upcoming version 3.
+> This is the [link](https://github.com/tada5hi/typeorm-extension/tree/master) for the v2.
+
 **Table of Contents**
 - [Installation](#installation)
 - [Documentation](#documentation)

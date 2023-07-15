@@ -13,7 +13,7 @@ export default class UserSeeder implements Seeder {
 
         await repository.insert([
             {
-                firstName: 'Caleb', lastName: 'Barrows', email: 'caleb.barrows@gmail.com', foo: 'bar',
+                firstName: 'Caleb', lastName: 'Barrows', email: 'caleb.barrows@gmail.com', foo: 'bar', phoneNumber: '+49 000000000',
             },
         ]);
 
