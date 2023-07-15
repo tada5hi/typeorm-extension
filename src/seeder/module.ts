@@ -1,7 +1,8 @@
+import path from 'node:path';
 import type { DataSource, DataSourceOptions } from 'typeorm';
 import { getModuleExport, load } from 'locter';
 import { hasOwnProperty } from '../utils';
-import type { SeederConstructor, SeederOptions } from './type';
+import type { SeederConstructor, SeederOptions, SeederPrepareElement } from './type';
 import { resolveFilePaths, resolveFilePatterns } from './utils';
 import {
     adjustFilePathsForDataSourceOptions, extendDataSourceOptionsWithSeederOptions,
@@ -10,9 +11,9 @@ import {
 import type { SeederFactoryConfig } from './factory';
 import { useSeederFactoryManager } from './factory';
 
-async function prepareSeeder(
+export async function prepareSeeder(
     options?: SeederOptions,
-) : Promise<SeederConstructor[]> {
+) : Promise<SeederPrepareElement[]> {
     options = options ?? {};
 
     options = extendDataSourceOptionsWithSeederOptions(options);
@@ -54,7 +55,7 @@ async function prepareSeeder(
         }
     }
 
-    const items : SeederConstructor[] = [];
+    const items : SeederPrepareElement[] = [];
 
     if (options.seeds) {
         let seedFiles : string[] = [];
@@ -81,7 +82,20 @@ async function prepareSeeder(
                     const item = moduleDefault.value as SeederConstructor;
 
                     if (!options.seedName || options.seedName === item.name) {
-                        items.push(item);
+                        const fileName = path.basename(seedFiles[i]);
+                        const match = fileName.match(/^([0-9]{13,})-(.*)$/);
+                        if (match) {
+                            items.push({
+                                constructor: item,
+                                timestamp: parseInt(match[1], 10),
+                                fileName,
+                            });
+                        } else {
+                            items.push({
+                                constructor: item,
+                                fileName,
+                            });
+                        }
                     }
                 }
             }
@@ -90,7 +104,9 @@ async function prepareSeeder(
         if (seedConstructors.length > 0) {
             for (let i = 0; i < seedConstructors.length; i++) {
                 if (!options.seedName || options.seedName === seedConstructors[i].name) {
-                    items.push(seedConstructors[i]);
+                    items.push({
+                        constructor: seedConstructors[i],
+                    });
                 }
             }
         }
@@ -161,7 +177,7 @@ export async function runSeeders(
     const results : unknown[] = [];
 
     for (let i = 0; i < items.length; i++) {
-        const promise = runSeeder(dataSource, items[i], {
+        const promise = runSeeder(dataSource, items[i].constructor, {
             factoriesLoad: false,
         });
 

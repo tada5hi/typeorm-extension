@@ -1,6 +1,6 @@
 import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../data-source';
-import { runSeeders } from '../../seeder';
+import { SeederExecutor } from '../../seeder/executor';
 import { CodeTransformation, setCodeTransformation } from '../../utils';
 
 export interface DatabaseSeedArguments extends Arguments {
@@ -53,10 +53,8 @@ export class SeedCommand implements CommandModule {
         setDataSourceOptions(dataSourceOptions);
 
         const dataSource = await useDataSource();
-
-        await runSeeders(dataSource, {
-            seedName: args.seed,
-        });
+        const executor = new SeederExecutor(dataSource);
+        await executor.execute(args.seed);
 
         if (exitProcess) {
             process.exit(0);

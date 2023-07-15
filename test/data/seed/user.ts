@@ -3,6 +3,8 @@ import type { Seeder, SeederFactoryManager } from '../../../src';
 import { User } from '../entity/user';
 
 export default class UserSeeder implements Seeder {
+    oneTimeOnly = true;
+
     public async run(
         dataSource: DataSource,
         factoryManager: SeederFactoryManager,
