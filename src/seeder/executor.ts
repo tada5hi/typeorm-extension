@@ -115,7 +115,6 @@ export class SeederExecutor {
             ...(seedName ? { seedName } : {}),
         });
 
-        const timestampFallback = Date.now();
         let timestampCounter = 0;
         const entities = seeds.map((element) => {
             const {
@@ -138,7 +137,7 @@ export class SeederExecutor {
 
             const entity = new SeederEntity({
                 fileName,
-                timestamp: timestamp || timestampFallback + timestampCounter,
+                timestamp: timestamp || timestampCounter,
                 name: className,
                 constructor: seed,
             });
@@ -150,7 +149,7 @@ export class SeederExecutor {
 
         this.checkForDuplicateMigrations(entities);
 
-        // sort them by timestamp
+        // sort them by file name than by timestamp
         return entities.sort((a, b) => {
             if (
                 typeof a.fileName !== 'undefined' &&
@@ -159,14 +158,7 @@ export class SeederExecutor {
                 return a.name > b.name ? 1 : -1;
             }
 
-            if (
-                typeof a.timestamp !== 'undefined' &&
-                typeof b.timestamp !== 'undefined'
-            ) {
-                return a.timestamp - b.timestamp;
-            }
-
-            return 1;
+            return a.timestamp - b.timestamp;
         });
     }
 
