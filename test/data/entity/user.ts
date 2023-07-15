@@ -16,4 +16,7 @@ export class User {
 
     @Column()
         foo: string;
+
+    @Column()
+        phoneNumber: string;
 }

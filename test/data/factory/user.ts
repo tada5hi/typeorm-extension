@@ -14,6 +14,7 @@ export default setSeederFactory(User, async (faker, meta) => {
     user.lastName = faker.person.lastName('male');
     user.email = faker.internet.email({ firstName: user.firstName, lastName: user.lastName });
     user.foo = faker.lorem.word();
+    user.phoneNumber = faker.phone.number();
 
     if (isMeta(meta)) {
         user.foo = meta.foo;

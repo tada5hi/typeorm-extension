@@ -3,7 +3,7 @@ import type { EntitySchema, ObjectType } from 'typeorm';
 
 export type FactoryCallback<O, Meta = unknown> = (faker: Faker, meta: Meta) => O | Promise<O>;
 
-export type SeederFactoryConfig = {
+export type SeederFactoryItem = {
     factoryFn: FactoryCallback<any, any>,
     entity: ObjectType<any> | EntitySchema<any>
 };

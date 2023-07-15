@@ -1,5 +1,5 @@
 import type { DataSource } from 'typeorm';
-import type { SeederFactoryConfig, SeederFactoryManager } from './factory';
+import type { SeederFactoryItem, SeederFactoryManager } from './factory';
 
 export interface Seeder {
     /**
@@ -17,7 +17,7 @@ export type SeederOptions = {
     seedName?: string,
     seedTableName?: string,
 
-    factories?: SeederFactoryConfig[] | string[],
+    factories?: SeederFactoryItem[] | string[],
     factoriesLoad?: boolean,
 
     parallelExecution?: boolean

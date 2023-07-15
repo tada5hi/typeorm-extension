@@ -1,15 +1,15 @@
 import type { EntitySchema, ObjectType } from 'typeorm';
-import type { FactoryCallback, SeederFactoryConfig } from './type';
+import type { FactoryCallback, SeederFactoryItem } from './type';
 import { getEntityName, hasOwnProperty } from '../../utils';
 import { SeederFactory } from './module';
 
 export class SeederFactoryManager {
-    public readonly items : Record<string, SeederFactoryConfig> = {};
+    public readonly items : Record<string, SeederFactoryItem> = {};
 
     set<O extends Record<string, any>, Meta = unknown>(
         entity: ObjectType<O> | EntitySchema<O>,
         factoryFn: FactoryCallback<O, Meta>,
-    ) : SeederFactoryConfig {
+    ) : SeederFactoryItem {
         const name = getEntityName(entity);
 
         this.items[name] = {

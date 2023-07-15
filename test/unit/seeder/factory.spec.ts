@@ -27,4 +27,14 @@ describe('src/seeder/factory/index.ts', () => {
             expect(users[i].id).toBeDefined();
         }
     });
+
+    it('should create with different locales', async () => {
+        const factory = useSeederFactory(User);
+        let user = await factory.save();
+        expect(user).toBeDefined();
+
+        factory.setLocale('de');
+        user = await factory.save();
+        expect(user).toBeDefined();
+    });
 });

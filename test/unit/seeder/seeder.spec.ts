@@ -14,7 +14,7 @@ describe('src/seeder/index.ts', () => {
         await destroyTestDatabase();
     });
 
-    fit('should seed with data-source options', async () => {
+    it('should seed with data-source options', async () => {
         const dataSource = await useDataSource();
 
         const executor = new SeederExecutor(dataSource);

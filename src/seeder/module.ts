@@ -5,10 +5,11 @@ import { hasOwnProperty } from '../utils';
 import type { SeederConstructor, SeederOptions, SeederPrepareElement } from './type';
 import { resolveFilePaths, resolveFilePatterns } from './utils';
 import {
-    adjustFilePathsForDataSourceOptions, extendDataSourceOptionsWithSeederOptions,
+    adjustFilePathsForDataSourceOptions,
+    extendDataSourceOptionsWithSeederOptions,
     setDataSource,
 } from '../data-source';
-import type { SeederFactoryConfig } from './factory';
+import type { SeederFactoryItem } from './factory';
 import { useSeederFactoryManager } from './factory';
 
 export async function prepareSeeder(
@@ -23,7 +24,7 @@ export async function prepareSeeder(
 
     if (options.factories) {
         let factoryFiles : string[] = [];
-        const factoryConfigs : SeederFactoryConfig[] = [];
+        const factoryConfigs : SeederFactoryItem[] = [];
 
         for (let i = 0; i < options.factories.length; i++) {
             const value = options.factories[i];
