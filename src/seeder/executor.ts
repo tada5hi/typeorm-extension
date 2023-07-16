@@ -2,11 +2,11 @@ import type { ObjectLiteral } from 'rapiq';
 import { MssqlParameter, Table } from 'typeorm';
 import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
-import { setDataSource } from '../data-source';
+import { adjustFilePathsForDataSourceOptions, setDataSource } from '../data-source';
 import { SeederEntity } from './entity';
 import { useSeederFactoryManager } from './factory';
-import { prepareSeeder } from './module';
-import type { SeederOptions } from './type';
+import type { SeederOptions, SeederPrepareElement } from './type';
+import { extendSeederOptions, prepareSeederFactories, prepareSeederSeeds } from './utils';
 
 export class SeederExecutor {
     protected dataSource : DataSource;
@@ -21,14 +21,32 @@ export class SeederExecutor {
         this.tableName = this.options.seedTableName || 'seeds';
     }
 
-    async execute(seedName?: string) : Promise<SeederEntity[]> {
+    async execute(input: SeederOptions = {}) : Promise<SeederEntity[]> {
         const queryRunner = this.dataSource.createQueryRunner();
         await this.createTableIfNotExist(queryRunner);
 
+        const options = await this.buildOptions(input);
+        if (!options.seeds || options.seeds.length === 0) {
+            return [];
+        }
+
+        if (options.factories) {
+            await prepareSeederFactories(options.factories);
+        }
+
+        const seederElements = await prepareSeederSeeds(options.seeds);
+
         const existing = await this.loadExisting(queryRunner);
-        const all = await this.loadAll(seedName);
+        const all = await this.buildEntities(seederElements);
 
         const pending = all.filter((seed) => {
+            if (
+                options.seedName &&
+                options.seedName !== seed.name
+            ) {
+                return false;
+            }
+
             const index = existing.findIndex(
                 (el) => el.name === seed.name,
             );
@@ -60,7 +78,7 @@ export class SeederExecutor {
                     continue;
                 }
 
-                await seeder.run(this.dataSource, factoryManager);
+                pending[i].result = await seeder.run(this.dataSource, factoryManager);
 
                 await this.track(queryRunner, pending[i]);
 
@@ -105,15 +123,10 @@ export class SeederExecutor {
     /**
      * Gets all migrations that setup for this connection.
      */
-    protected async loadAll(seedName?: string): Promise<SeederEntity[]> {
-        if (!this.options.seeds) {
+    protected async buildEntities(seeds?: SeederPrepareElement[]): Promise<SeederEntity[]> {
+        if (!seeds) {
             return [];
         }
-
-        const seeds = await prepareSeeder({
-            ...this.options,
-            ...(seedName ? { seedName } : {}),
-        });
 
         let timestampCounter = 0;
         const entities = seeds.map((element) => {
@@ -129,10 +142,7 @@ export class SeederExecutor {
             const className = seed.name || (seed.constructor as any).name;
 
             if (!timestamp) {
-                const match = className.match(/^(.*)([0-9]{13,})$/);
-                if (match) {
-                    [,, timestamp] = match;
-                }
+                timestamp = this.classNameToTimestamp(className);
             }
 
             const entity = new SeederEntity({
@@ -147,7 +157,7 @@ export class SeederExecutor {
             return entity;
         });
 
-        this.checkForDuplicateMigrations(entities);
+        this.checkForDuplicates(entities);
 
         // sort them by file name than by timestamp
         return entities.sort((a, b) => {
@@ -162,7 +172,7 @@ export class SeederExecutor {
         });
     }
 
-    protected checkForDuplicateMigrations(entities: SeederEntity[]) {
+    protected checkForDuplicates(entities: SeederEntity[]) {
         const names = entities.map((migration) => migration.name);
         const duplicates = Array.from(
             new Set(
@@ -223,15 +233,6 @@ export class SeederExecutor {
         }
     }
 
-    protected getLatest(
-        migrations: SeederEntity[],
-    ): SeederEntity | undefined {
-        const entities = migrations
-            .map((migration) => migration)
-            .sort((a, b) => (a.timestamp - b.timestamp) * -1);
-        return entities.length > 0 ? entities[0] : undefined;
-    }
-
     protected async track(
         queryRunner: QueryRunner,
         migration: SeederEntity,
@@ -290,5 +291,37 @@ export class SeederExecutor {
             this.schema,
             this.database,
         );
+    }
+
+    protected async buildOptions(input: SeederOptions = {}) {
+        let options : SeederOptions = {
+            seeds: input.seeds || [],
+            factories: input.factories || [],
+        };
+
+        if (!options.seeds || options.seeds.length === 0) {
+            options.seeds = this.options.seeds;
+        }
+
+        if (!options.factories || options.factories.length === 0) {
+            options.factories = this.options.factories;
+        }
+
+        options = extendSeederOptions(options);
+
+        await adjustFilePathsForDataSourceOptions(options, {
+            keys: ['seeds', 'factories'],
+        });
+
+        return options;
+    }
+
+    protected classNameToTimestamp(className: string) {
+        const match = className.match(/^(.*)([0-9]{13,})$/);
+        if (match) {
+            return parseInt(match[2], 10);
+        }
+
+        return undefined;
     }
 }

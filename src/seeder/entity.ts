@@ -2,23 +2,24 @@ import type { Seeder, SeederConstructor } from './type';
 
 export class SeederEntity {
     /**
-     * Seeder id.
-     * Indicates order of the executed migrations.
+     * ID of the seeder.
+     *
+     * Indicates order of the executed seeders.
      */
     id?: number;
 
     /**
-     * Timestamp of the seed.
+     * Timestamp of the seeder.
      */
     timestamp: number;
 
     /**
-     * Name of the seed (class name).
+     * Name of the seeder (class name).
      */
     name: string;
 
     /**
-     * Constructor that needs to be run.
+     * Instance of seeder constructor.
      */
     instance?: Seeder;
 
@@ -26,6 +27,11 @@ export class SeederEntity {
      * File name of the seeder.
      */
     fileName?: string;
+
+    /**
+     * Result of the executed seeder.
+     */
+    result?: unknown;
 
     constructor(ctx: {
         id?: number,
@@ -45,8 +51,8 @@ export class SeederEntity {
         this.fileName = ctx.fileName;
     }
 
-    isOneTime() {
-        return this.instance &&
+    isOneTime() : boolean {
+        return !!this.instance &&
             typeof this.instance.oneTimeOnly === 'boolean' &&
             this.instance.oneTimeOnly;
     }

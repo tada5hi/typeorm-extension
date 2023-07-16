@@ -1,4 +1,5 @@
 import { runSeeder, runSeeders, useDataSource } from '../../../src';
+import type { SeederEntity } from '../../../src/seeder/entity';
 import { SeederExecutor } from '../../../src/seeder/executor';
 import { User } from '../../data/entity/user';
 import { destroyTestDatabase, setupTestDatabase } from '../../data/typeorm/utils';
@@ -50,11 +51,13 @@ describe('src/seeder/index.ts', () => {
 
         const response = await runSeeder(dataSource, UserSeeder);
         expect(response).toBeDefined();
-        expect(Array.isArray(response)).toBeTruthy();
-        if (Array.isArray(response)) {
-            expect(response.length).toEqual(6);
+
+        const { result } = (response as SeederEntity);
+        expect(Array.isArray(result)).toBeTruthy();
+        if (Array.isArray(result)) {
+            expect(result.length).toEqual(6);
         }
-        expect((response as Record<string, any>[])[0].foo).toEqual('bar');
+        expect((result as Record<string, any>[])[0].foo).toEqual('bar');
 
         const repository = dataSource.getRepository(User);
         const entities = await repository.find();

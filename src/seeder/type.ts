@@ -18,9 +18,7 @@ export type SeederOptions = {
     seedTableName?: string,
 
     factories?: SeederFactoryItem[] | string[],
-    factoriesLoad?: boolean,
-
-    parallelExecution?: boolean
+    factoriesLoad?: boolean
 };
 
 export type SeederPrepareElement = {

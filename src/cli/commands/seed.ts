@@ -54,7 +54,7 @@ export class SeedCommand implements CommandModule {
 
         const dataSource = await useDataSource();
         const executor = new SeederExecutor(dataSource);
-        await executor.execute(args.seed);
+        await executor.execute({ seedName: args.seed });
 
         if (exitProcess) {
             process.exit(0);

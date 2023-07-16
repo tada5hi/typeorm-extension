@@ -1,197 +1,29 @@
-import path from 'node:path';
-import type { DataSource, DataSourceOptions } from 'typeorm';
-import { getModuleExport, load } from 'locter';
-import { hasOwnProperty } from '../utils';
-import type { SeederConstructor, SeederOptions, SeederPrepareElement } from './type';
-import { resolveFilePaths, resolveFilePatterns } from './utils';
-import {
-    adjustFilePathsForDataSourceOptions,
-    extendDataSourceOptionsWithSeederOptions,
-    setDataSource,
-} from '../data-source';
-import type { SeederFactoryItem } from './factory';
-import { useSeederFactoryManager } from './factory';
-
-export async function prepareSeeder(
-    options?: SeederOptions,
-) : Promise<SeederPrepareElement[]> {
-    options = options ?? {};
-
-    options = extendDataSourceOptionsWithSeederOptions(options);
-    await adjustFilePathsForDataSourceOptions(options, {
-        keys: ['seeds', 'factories'],
-    });
-
-    if (options.factories) {
-        let factoryFiles : string[] = [];
-        const factoryConfigs : SeederFactoryItem[] = [];
-
-        for (let i = 0; i < options.factories.length; i++) {
-            const value = options.factories[i];
-            if (typeof value === 'string') {
-                factoryFiles.push(value);
-            } else {
-                factoryConfigs.push(value);
-            }
-        }
-
-        if (factoryFiles.length > 0) {
-            factoryFiles = await resolveFilePatterns(factoryFiles);
-            factoryFiles = resolveFilePaths(factoryFiles);
-
-            for (let i = 0; i < factoryFiles.length; i++) {
-                await load(factoryFiles[i]);
-            }
-        }
-
-        if (factoryConfigs.length > 0) {
-            const factoryManager = useSeederFactoryManager();
-
-            for (let i = 0; i < factoryConfigs.length; i++) {
-                factoryManager.set(
-                    factoryConfigs[i].entity,
-                    factoryConfigs[i].factoryFn,
-                );
-            }
-        }
-    }
-
-    const items : SeederPrepareElement[] = [];
-
-    if (options.seeds) {
-        let seedFiles : string[] = [];
-        const seedConstructors : SeederConstructor[] = [];
-
-        for (let i = 0; i < options.seeds.length; i++) {
-            const value = options.seeds[i];
-            if (typeof value === 'string') {
-                seedFiles.push(value);
-            } else {
-                seedConstructors.push(value);
-            }
-        }
-
-        if (seedFiles.length > 0) {
-            seedFiles = await resolveFilePatterns(seedFiles);
-            seedFiles = resolveFilePaths(seedFiles);
-
-            for (let i = 0; i < seedFiles.length; i++) {
-                const moduleExports = await load(seedFiles[i]);
-                const moduleDefault = getModuleExport(moduleExports);
-
-                if (moduleDefault.value) {
-                    const item = moduleDefault.value as SeederConstructor;
-
-                    if (!options.seedName || options.seedName === item.name) {
-                        const fileName = path.basename(seedFiles[i]);
-                        const match = fileName.match(/^([0-9]{13,})-(.*)$/);
-                        if (match) {
-                            items.push({
-                                constructor: item,
-                                timestamp: parseInt(match[1], 10),
-                                fileName,
-                            });
-                        } else {
-                            items.push({
-                                constructor: item,
-                                fileName,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-
-        if (seedConstructors.length > 0) {
-            for (let i = 0; i < seedConstructors.length; i++) {
-                if (!options.seedName || options.seedName === seedConstructors[i].name) {
-                    items.push({
-                        constructor: seedConstructors[i],
-                    });
-                }
-            }
-        }
-    }
-
-    return items;
-}
+import type { DataSource } from 'typeorm';
+import type { SeederEntity } from './entity';
+import { SeederExecutor } from './executor';
+import type { SeederConstructor, SeederOptions } from './type';
 
 export async function runSeeder(
     dataSource: DataSource,
-    seeder: SeederConstructor,
-    options?: SeederOptions,
-) : Promise<unknown> {
-    if (hasOwnProperty(seeder, 'default')) {
-        seeder = seeder.default as SeederConstructor;
+    seeder: SeederConstructor | string,
+    options: SeederOptions = {},
+) : Promise<SeederEntity | undefined> {
+    if (typeof seeder === 'string') {
+        options.seedName = seeder;
+    } else {
+        options.seeds = [seeder];
     }
 
-    options = options || {};
-    options.seeds = [seeder];
-    options.factoriesLoad = options.factoriesLoad ?? true;
+    const executor = new SeederExecutor(dataSource);
+    const output = await executor.execute(options);
 
-    if (
-        options.factoriesLoad &&
-        !options.factories
-    ) {
-        const { factories: dataSourceFactories } = dataSource.options as DataSourceOptions & SeederOptions;
-
-        if (typeof dataSourceFactories !== 'undefined') {
-            options.factories = dataSourceFactories;
-        }
-    }
-
-    await prepareSeeder(options);
-
-    setDataSource(dataSource);
-
-    // eslint-disable-next-line new-cap
-    const clazz = new seeder();
-
-    const factoryManager = useSeederFactoryManager();
-    return clazz.run(dataSource, factoryManager);
+    return output.pop();
 }
 
 export async function runSeeders(
     dataSource: DataSource,
     options?: SeederOptions,
-) : Promise<unknown[]> {
-    options = options || {};
-
-    const { seeds, factories } = dataSource.options as DataSourceOptions & SeederOptions;
-
-    if (
-        typeof options.seeds === 'undefined' &&
-        typeof seeds !== 'undefined'
-    ) {
-        options.seeds = seeds;
-    }
-
-    if (
-        typeof options.factories === 'undefined' &&
-        typeof factories !== 'undefined'
-    ) {
-        options.factories = factories;
-    }
-
-    const items = await prepareSeeder(options);
-    const promises : Promise<unknown>[] = [];
-    const results : unknown[] = [];
-
-    for (let i = 0; i < items.length; i++) {
-        const promise = runSeeder(dataSource, items[i].constructor, {
-            factoriesLoad: false,
-        });
-
-        if (options.parallelExecution) {
-            promises.push(promise);
-        } else {
-            await promise;
-        }
-    }
-
-    if (promises.length > 0) {
-        return Promise.all(promises);
-    }
-
-    return results;
+) : Promise<SeederEntity[]> {
+    const executor = new SeederExecutor(dataSource);
+    return executor.execute(options);
 }
