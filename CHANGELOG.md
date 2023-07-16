@@ -1,3 +1,19 @@
+# [3.0.0-alpha.6](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.5...v3.0.0-alpha.6) (2023-07-16)
+
+
+### Bug Fixes
+
+* adjust runSeeder(s) method to use seeder executor ([3f55d49](https://github.com/tada5hi/typeorm-extension/commit/3f55d4919d23b75d0f2cb0d62958feafd25db597))
+* **deps:** bump rapiq from 0.8.1 to 0.9.0 ([#618](https://github.com/tada5hi/typeorm-extension/issues/618)) ([e2d9d1b](https://github.com/tada5hi/typeorm-extension/commit/e2d9d1bbbc7b018c735039ca2b11ead48acce570))
+* only track one time seeder ([8edf6cf](https://github.com/tada5hi/typeorm-extension/commit/8edf6cf082ea0da8deb3ebd0b7e7dd4cf18e9151))
+* seeds without timestamp should be considered older ([f511978](https://github.com/tada5hi/typeorm-extension/commit/f511978cf23e5d02eb949710471d282b48d79bab))
+
+
+### Features
+
+* allow setting (faker) locale for seeder factories ([5387d44](https://github.com/tada5hi/typeorm-extension/commit/5387d4422efe0768e81312091f4f162d2fc6b734))
+* option to execute seeds only once ([5f6d98f](https://github.com/tada5hi/typeorm-extension/commit/5f6d98f0e2b6c8935a1b5d1177b6563950009863))
+
 # [3.0.0-alpha.5](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.4...v3.0.0-alpha.5) (2023-05-29)
 
 
