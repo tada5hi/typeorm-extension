@@ -235,26 +235,30 @@ export class SeederExecutor {
 
     protected async track(
         queryRunner: QueryRunner,
-        migration: SeederEntity,
+        seederEntity: SeederEntity,
     ): Promise<void> {
+        if (!seederEntity.isOneTime()) {
+            return;
+        }
+
         const values: ObjectLiteral = {};
         if (this.dataSource.driver.options.type === 'mssql') {
             values.timestamp = new MssqlParameter(
-                migration.timestamp,
+                seederEntity.timestamp,
                 this.dataSource.driver.normalizeType({
                     type: this.dataSource.driver.mappedDataTypes
                         .migrationTimestamp,
                 }) as any,
             );
             values.name = new MssqlParameter(
-                migration.name,
+                seederEntity.name,
                 this.dataSource.driver.normalizeType({
                     type: this.dataSource.driver.mappedDataTypes.migrationName,
                 }) as any,
             );
         } else {
-            values.timestamp = migration.timestamp;
-            values.name = migration.name;
+            values.timestamp = seederEntity.timestamp;
+            values.name = seederEntity.name;
         }
 
         if (this.dataSource.driver.options.type === 'mongodb') {
