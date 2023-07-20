@@ -1,3 +1,11 @@
+# [3.0.0-alpha.7](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.6...v3.0.0-alpha.7) (2023-07-20)
+
+
+### Bug Fixes
+
+* circular dependencies ([23b8d6c](https://github.com/tada5hi/typeorm-extension/commit/23b8d6c2c08ecb00358aae5276ff93ee9911a063))
+* cleanup file path adjustment ([01332c5](https://github.com/tada5hi/typeorm-extension/commit/01332c5f3b645c194d71b11639781e8b8d45c650))
+
 # [3.0.0-alpha.6](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.5...v3.0.0-alpha.6) (2023-07-16)
 
 
