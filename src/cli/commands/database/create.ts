@@ -1,13 +1,20 @@
+import { consola } from 'consola';
 import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
 import type { DatabaseCreateContext } from '../../../database';
 import { createDatabase } from '../../../database';
-import { CodeTransformation, setCodeTransformation } from '../../../utils';
+import {
+    CodeTransformation,
+    parseFilePath,
+    resolveFilePath,
+    setCodeTransformation,
+} from '../../../utils';
 
 export interface DatabaseCreateArguments extends Arguments {
     codeTransformation: string,
     root: string;
-    dataSource: 'data-source' | string;
+    tsconfig: string,
+    dataSource: string;
     synchronize: string;
     initialDatabase?: unknown;
 }
@@ -27,12 +34,17 @@ export class DatabaseCreateCommand implements CommandModule {
             .option('root', {
                 alias: 'r',
                 default: process.cwd(),
-                describe: 'Path to the data-source / config file.',
+                describe: 'Root directory of the project.',
+            })
+            .option('tsconfig', {
+                alias: 'tc',
+                default: 'tsconfig.json',
+                describe: 'Name (incl. relative path) of the tsconfig file.',
             })
             .option('dataSource', {
                 alias: 'd',
                 default: 'data-source',
-                describe: 'Name of the file with the data-source.',
+                describe: 'Name (incl. relative path) of the data-source file.',
             })
             .option('synchronize', {
                 alias: 's',
@@ -45,16 +57,22 @@ export class DatabaseCreateCommand implements CommandModule {
             });
     }
 
-    async handler(raw: Arguments, exitProcess = true) {
+    async handler(raw: Arguments) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
 
         if (args.codeTransformation) {
             setCodeTransformation(args.codeTransformation);
         }
 
+        const source = parseFilePath(args.dataSource, args.root);
+        consola.info(`DataSource Directory: ${source.directory}`);
+        consola.info(`DataSource Name: ${source.name}`);
+
+        const tsconfig = resolveFilePath(args.root, args.tsconfig);
         const dataSourceOptions = await buildDataSourceOptions({
-            directory: args.root,
-            dataSourceName: args.dataSource,
+            directory: source.directory,
+            dataSourceName: source.name,
+            tsconfig,
         });
 
         const context : DatabaseCreateContext = {
@@ -71,10 +89,14 @@ export class DatabaseCreateCommand implements CommandModule {
 
         context.synchronize = args.synchronize === 'yes';
 
-        await createDatabase(context);
-
-        if (exitProcess) {
+        try {
+            await createDatabase(context);
+            consola.success('Created database.');
             process.exit(0);
+        } catch (e) {
+            consola.warn('Failed to create database.');
+            consola.error(e);
+            process.exit(1);
         }
     }
 }

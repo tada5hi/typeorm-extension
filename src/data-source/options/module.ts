@@ -19,7 +19,7 @@ export async function buildDataSourceOptions(
     context = context ?? {};
 
     const directory : string = context.directory || process.cwd();
-    const tsconfigDirectory : string = context.tsconfigDirectory || process.cwd();
+    const tsconfig : string = context.tsconfig || process.cwd();
 
     const dataSource = await findDataSource({
         directory,
@@ -34,7 +34,7 @@ export async function buildDataSourceOptions(
                 'migrations',
                 'subscribers',
             ],
-            tsconfigDirectory,
+            tsconfig,
         );
 
         return mergeDataSourceOptionsWithEnv(options);
@@ -45,7 +45,7 @@ export async function buildDataSourceOptions(
         return adjustFilePaths(
             options,
             ['entities', 'migrations', 'subscribers'],
-            tsconfigDirectory,
+            tsconfig,
         );
     }
 

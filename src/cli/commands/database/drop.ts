@@ -1,13 +1,17 @@
+import { consola } from 'consola';
 import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
 import type { DatabaseDropContext } from '../../../database';
 import { dropDatabase } from '../../../database';
-import { CodeTransformation, setCodeTransformation } from '../../../utils';
+import {
+    CodeTransformation, parseFilePath, resolveFilePath, setCodeTransformation,
+} from '../../../utils';
 
 export interface DatabaseDropArguments extends Arguments {
     codeTransformation: string,
     root: string;
-    dataSource: 'data-source' | string;
+    tsconfig: string,
+    dataSource: string;
 }
 
 export class DatabaseDropCommand implements CommandModule {
@@ -25,28 +29,39 @@ export class DatabaseDropCommand implements CommandModule {
             .option('root', {
                 alias: 'r',
                 default: process.cwd(),
-                describe: 'Path to the data-source / config file.',
+                describe: 'Root directory of the project.',
+            })
+            .option('tsconfig', {
+                alias: 'tc',
+                default: 'tsconfig.json',
+                describe: 'Name (incl. relative path) of the tsconfig file.',
             })
             .option('dataSource', {
                 alias: 'd',
                 default: 'data-source',
-                describe: 'Name of the file with the data-source.',
+                describe: 'Name (incl. relative path) of the data-source file.',
             })
             .option('initialDatabase', {
                 describe: 'Specify the initial database to connect to.',
             });
     }
 
-    async handler(raw: Arguments, exitProcess = true) {
+    async handler(raw: Arguments) {
         const args : DatabaseDropArguments = raw as DatabaseDropArguments;
 
         if (args.codeTransformation) {
             setCodeTransformation(args.codeTransformation);
         }
 
+        const source = parseFilePath(args.dataSource, args.root);
+        consola.info(`DataSource Directory: ${source.directory}`);
+        consola.info(`DataSource Name: ${source.name}`);
+
+        const tsconfig = resolveFilePath(args.root, args.tsconfig);
         const dataSourceOptions = await buildDataSourceOptions({
-            directory: args.root,
-            dataSourceName: args.dataSource,
+            directory: source.directory,
+            dataSourceName: source.name,
+            tsconfig,
         });
 
         const context : DatabaseDropContext = {
@@ -61,10 +76,14 @@ export class DatabaseDropCommand implements CommandModule {
             context.initialDatabase = args.initialDatabase;
         }
 
-        await dropDatabase(context);
-
-        if (exitProcess) {
+        try {
+            await dropDatabase(context);
+            consola.success('Dropped database.');
             process.exit(0);
+        } catch (e) {
+            consola.warn('Failed to drop database.');
+            consola.error(e);
+            process.exit(1);
         }
     }
 }

@@ -1,13 +1,17 @@
 import { consola } from 'consola';
-import path from 'node:path';
 import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../../data-source';
-import { SeederExecutor } from '../../../seeder/executor';
-import { CodeTransformation, setCodeTransformation } from '../../../utils';
+import { SeederExecutor } from '../../../seeder';
+import {
+    CodeTransformation,
+    parseFilePath, resolveFilePath,
+    setCodeTransformation,
+} from '../../../utils';
 
 export interface SeedRunArguments extends Arguments {
     codeTransformation: string,
     root: string;
+    tsconfig: string,
     dataSource: string;
     name?: string,
 }
@@ -29,14 +33,19 @@ export class SeedRunCommand implements CommandModule {
                 default: process.cwd(),
                 describe: 'Root directory of the project.',
             })
+            .option('tsconfig', {
+                alias: 'tc',
+                default: 'tsconfig.json',
+                describe: 'Name (incl. relative path) of the tsconfig file.',
+            })
             .option('dataSource', {
                 alias: 'd',
                 default: 'data-source',
-                describe: 'Name or relative path of the data-source file.',
+                describe: 'Name (incl. relative path) of the data-source file.',
             })
             .option('name', {
                 alias: 'n',
-                describe: 'Specify the seed class to run.',
+                describe: 'Name of the seeder class.',
             });
     }
 
@@ -47,25 +56,29 @@ export class SeedRunCommand implements CommandModule {
             setCodeTransformation(args.codeTransformation);
         }
 
-        const fullPath = args.dataSource.startsWith('/') ?
-            args.dataSource :
-            path.resolve(args.root, args.dataSource);
+        const source = parseFilePath(args.dataSource, args.root);
+        consola.info(`DataSource Directory: ${source.directory}`);
+        consola.info(`DataSource Name: ${source.name}`);
 
-        const dirPath = path.dirname(fullPath);
-        const name = path.basename(fullPath);
-
-        consola.info(`Looking for ${name} in directory ${dirPath}`);
-
+        const tsconfig = resolveFilePath(args.root, args.tsconfig);
         const dataSourceOptions = await buildDataSourceOptions({
-            dataSourceName: name,
-            directory: dirPath,
-            tsconfigDirectory: args.root,
+            dataSourceName: source.name,
+            directory: source.directory,
+            tsconfig,
         });
 
         setDataSourceOptions(dataSourceOptions);
 
+        if (args.name) {
+            consola.info(`Seed Name: ${args.name}`);
+        }
+
         const dataSource = await useDataSource();
-        const executor = new SeederExecutor(dataSource);
+        const executor = new SeederExecutor(dataSource, {
+            root: args.root,
+            tsconfig,
+        });
+
         await executor.execute({ seedName: args.name });
 
         process.exit(0);

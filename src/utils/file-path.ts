@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { CodeTransformation, isCodeTransformation } from './code-transformation';
 import { safeReplaceWindowsSeparator } from './separator';
 import { withoutTrailingSlash } from './slash';
@@ -135,4 +136,26 @@ export async function adjustFilePaths<T extends Record<string, any>>(
     }
 
     return input;
+}
+
+export function resolveFilePath(filePath: string, root?: string) {
+    if (path.isAbsolute(filePath)) {
+        return filePath;
+    }
+
+    return filePath.startsWith('/') ?
+        filePath :
+        path.resolve(root || process.cwd(), filePath);
+}
+
+export function parseFilePath(filePath: string, root?: string) {
+    const fullPath = resolveFilePath(filePath, root);
+
+    const directory = path.dirname(fullPath);
+    const name = path.basename(fullPath);
+
+    return {
+        directory,
+        name,
+    };
 }

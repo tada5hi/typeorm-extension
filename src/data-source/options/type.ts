@@ -14,7 +14,7 @@ export type DataSourceOptionsBuildContext = {
     /**
      * Directory path to the tsconfig.json file
      *
-     * Default: process.cwd()
+     * Default: process.cwd() + path.sep + tsconfig.json
      */
-    tsconfigDirectory?: string
+    tsconfig?: string
 };

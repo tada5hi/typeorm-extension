@@ -1,9 +1,11 @@
+import { getFileNameExtension, removeFileNameExtension } from 'locter';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pascalCase } from 'pascal-case';
 import type { Arguments, Argv, CommandModule } from 'yargs';
 import { consola } from 'consola';
 import { buildSeederFileTemplate } from '../../../seeder';
-import { isDirectory } from '../../../utils';
+import { isDirectory, parseFilePath } from '../../../utils';
 
 export interface SeedCreateArguments extends Arguments {
     root: string;
@@ -27,13 +29,13 @@ export class SeedCreateCommand implements CommandModule {
             .option('timestamp', {
                 alias: 't',
                 type: 'number',
-                describe: 'Custom timestamp for the seeder name',
+                describe: 'Custom timestamp for the seeder name.',
             })
             .option('javascript', {
                 alias: 'j',
                 type: 'boolean',
                 default: false,
-                describe: 'Generate a seeder file for Javascript instead of Typescript',
+                describe: 'Generate a seeder file for JavaScript instead of TypeScript.',
             });
     }
 
@@ -47,26 +49,37 @@ export class SeedCreateCommand implements CommandModule {
             timestamp = args.timestamp;
         }
 
-        const fullPath = args.path.startsWith('/') ?
-            args.path :
-            path.resolve(args.root, args.path);
-        const dirName = path.dirname(fullPath);
-        const dirNameIsDirectory = await isDirectory(dirName);
+        const sourcePath = parseFilePath(args.path, args.root);
+
+        const dirNameIsDirectory = await isDirectory(sourcePath.directory);
         if (!dirNameIsDirectory) {
-            consola.warn(`The output directory ${dirName} does not exist.`);
+            consola.warn(`The output directory ${sourcePath.directory} does not exist.`);
             process.exit(1);
         }
 
-        const extension = args.javascript ? '.js' : '.ts';
-        const name = path.basename(fullPath);
-        const filename = `${timestamp}-${name}${extension}`;
-        const filePath = dirName + path.sep + filename;
-        const template = buildSeederFileTemplate(name, timestamp);
+        const extension = args.javascript ?
+            '.js' :
+            '.ts';
+
+        const nameExtension = getFileNameExtension(sourcePath.name);
+
+        let fileName: string;
+        if (nameExtension) {
+            fileName = `${timestamp}-${sourcePath.name}`;
+        } else {
+            fileName = `${timestamp}-${sourcePath.name}${extension}`;
+        }
+        const filePath = sourcePath.directory + path.sep + fileName;
+        const template = buildSeederFileTemplate(removeFileNameExtension(sourcePath.name), timestamp);
+
+        consola.info(`Seed Directory: ${sourcePath.directory}`);
+        consola.info(`Seed FileName: ${fileName}`);
+        consola.info(`Seed Name: ${pascalCase(sourcePath.name)}`);
 
         try {
             await fs.promises.writeFile(filePath, template, { encoding: 'utf-8' });
         } catch (e) {
-            consola.warn(`The file could not be written to the path ${filePath}`);
+            consola.warn(`The seed could not be written to the path ${filePath}.`);
             process.exit(1);
         }
 

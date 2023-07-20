@@ -21,6 +21,11 @@ export type SeederOptions = {
     factoriesLoad?: boolean
 };
 
+export type SeederExecutorOptions = {
+    root?: string,
+    tsconfig?: string
+};
+
 export type SeederPrepareElement = {
     constructor: SeederConstructor,
     timestamp?: number,
