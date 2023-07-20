@@ -1,5 +1,6 @@
 import {
-    adjustFilePathsForDataSourceOptions, transformFilePath,
+    adjustFilePaths,
+    transformFilePath,
 } from '../../../src';
 
 describe('src/connection/utils.ts', () => {
@@ -88,7 +89,7 @@ describe('src/connection/utils.ts', () => {
     });
 
     it('should modify connection option(s) for runtime environment', async () => {
-        const modifiedConnectionOptions = await adjustFilePathsForDataSourceOptions({
+        const modifiedConnectionOptions = await adjustFilePaths({
             factories: ['src/factories.ts'],
             seeds: ['src/seeds.ts'],
             entities: ['src/entities.ts'],
@@ -102,12 +103,12 @@ describe('src/connection/utils.ts', () => {
             subscribers: ['dist/subscribers.js'],
         });
 
-        const modifiedConnectionOption = await adjustFilePathsForDataSourceOptions({
+        const modifiedConnectionOption = await adjustFilePaths({
             entities: ['./src/entities.ts'],
         });
         expect(modifiedConnectionOption).toEqual({ entities: ['dist/entities.js'] });
 
-        const modifiedConnectionOptionAlt = await adjustFilePathsForDataSourceOptions({
+        const modifiedConnectionOptionAlt = await adjustFilePaths({
             entities: ['src/entities.ts'],
         });
         expect(modifiedConnectionOptionAlt).toEqual({ entities: ['dist/entities.js'] });

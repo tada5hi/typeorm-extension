@@ -1,21 +1,12 @@
 import type { DataSourceOptions } from 'typeorm';
 import { OptionsError } from '../../errors';
+import { adjustFilePaths } from '../../utils';
 import { findDataSource } from '../find';
 import type { DataSourceOptionsBuildContext } from './type';
 import {
-    adjustFilePathsForDataSourceOptions,
     mergeDataSourceOptionsWithEnv,
     readDataSourceOptionsFromEnv,
 } from './utils';
-
-export async function extendDataSourceOptions(
-    options: DataSourceOptions,
-    tsConfigDirectory?: string,
-) : Promise<DataSourceOptions> {
-    await adjustFilePathsForDataSourceOptions(options, { root: tsConfigDirectory });
-
-    return options;
-}
 
 /**
  * Build DataSourceOptions from DataSource or from configuration.
@@ -36,8 +27,13 @@ export async function buildDataSourceOptions(
     });
 
     if (dataSource) {
-        const options = await extendDataSourceOptions(
+        const options = await adjustFilePaths(
             dataSource.options,
+            [
+                'entities',
+                'migrations',
+                'subscribers',
+            ],
             tsconfigDirectory,
         );
 
@@ -46,7 +42,11 @@ export async function buildDataSourceOptions(
 
     const options = readDataSourceOptionsFromEnv();
     if (options) {
-        return extendDataSourceOptions(options);
+        return adjustFilePaths(
+            options,
+            ['entities', 'migrations', 'subscribers'],
+            tsconfigDirectory,
+        );
     }
 
     throw OptionsError.notFound();

@@ -4,7 +4,8 @@ import {
     buildDataSourceOptions,
     hasEnvDataSourceOptions,
     mergeDataSourceOptionsWithEnv,
-    readDataSourceOptionsFromEnv, resetEnv,
+    readDataSourceOptionsFromEnv,
+    resetEnv,
 } from '../../../../src';
 import { User } from '../../../data/entity/user';
 

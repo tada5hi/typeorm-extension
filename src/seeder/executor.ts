@@ -2,8 +2,9 @@ import type { ObjectLiteral } from 'rapiq';
 import { MssqlParameter, Table } from 'typeorm';
 import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
-import { adjustFilePathsForDataSourceOptions, setDataSource } from '../data-source';
+import { setDataSource } from '../data-source';
 import { useEnv } from '../env';
+import { adjustFilePaths } from '../utils';
 import { SeederEntity } from './entity';
 import { prepareSeederFactories, useSeederFactoryManager } from './factory';
 import type { SeederOptions, SeederPrepareElement } from './type';
@@ -328,9 +329,7 @@ export class SeederExecutor {
             options.factories = ['src/database/factories/**/*{.ts,.js}'];
         }
 
-        await adjustFilePathsForDataSourceOptions(options, {
-            keys: ['seeds', 'factories'],
-        });
+        await adjustFilePaths(options, ['seeds', 'factories']);
 
         return options;
     }

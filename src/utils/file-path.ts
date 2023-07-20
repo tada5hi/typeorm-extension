@@ -1,5 +1,7 @@
+import { CodeTransformation, isCodeTransformation } from './code-transformation';
 import { safeReplaceWindowsSeparator } from './separator';
 import { withoutTrailingSlash } from './slash';
+import { readTsConfig } from './tsconfig';
 
 const stripLeadingModifier = (text: string) => {
     if (text.startsWith('./')) {
@@ -99,4 +101,38 @@ export function transformFilePath(
     }
 
     return stripLeadingModifier(base);
+}
+
+export async function adjustFilePaths<T extends Record<string, any>>(
+    input: T,
+    keys?: (keyof T)[],
+    rootDirectory?: string,
+): Promise<T> {
+    if (isCodeTransformation(CodeTransformation.JUST_IN_TIME)) {
+        return input;
+    }
+
+    const { compilerOptions } = await readTsConfig(rootDirectory);
+
+    keys = keys || Object.keys(input);
+
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+
+        let value = input[key] as unknown;
+
+        if (typeof value === 'string') {
+            value = transformFilePath(value, compilerOptions?.outDir);
+        } else if (Array.isArray(value)) {
+            for (let i = 0; i < value.length; i++) {
+                if (typeof value[i] === 'string') {
+                    value[i] = transformFilePath(value[i], compilerOptions?.outDir);
+                }
+            }
+        }
+
+        input[key] = value as T[keyof T];
+    }
+
+    return input;
 }
