@@ -1,6 +1,5 @@
 import type { DataSourceOptions } from 'typeorm';
 import { OptionsError } from '../../errors';
-import { extendSeederOptions } from '../../seeder';
 import { findDataSource } from '../find';
 import type { DataSourceOptionsBuildContext } from './type';
 import {
@@ -13,8 +12,6 @@ export async function extendDataSourceOptions(
     options: DataSourceOptions,
     tsConfigDirectory?: string,
 ) : Promise<DataSourceOptions> {
-    options = extendSeederOptions(options);
-
     await adjustFilePathsForDataSourceOptions(options, { root: tsConfigDirectory });
 
     return options;

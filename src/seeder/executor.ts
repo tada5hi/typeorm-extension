@@ -3,10 +3,11 @@ import { MssqlParameter, Table } from 'typeorm';
 import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
 import { adjustFilePathsForDataSourceOptions, setDataSource } from '../data-source';
+import { useEnv } from '../env';
 import { SeederEntity } from './entity';
-import { useSeederFactoryManager } from './factory';
+import { prepareSeederFactories, useSeederFactoryManager } from './factory';
 import type { SeederOptions, SeederPrepareElement } from './type';
-import { extendSeederOptions, prepareSeederFactories, prepareSeederSeeds } from './utils';
+import { prepareSeederSeeds } from './utils';
 
 export class SeederExecutor {
     protected dataSource : DataSource;
@@ -298,7 +299,7 @@ export class SeederExecutor {
     }
 
     protected async buildOptions(input: SeederOptions = {}) {
-        let options : SeederOptions = {
+        const options : SeederOptions = {
             seeds: input.seeds || [],
             factories: input.factories || [],
         };
@@ -307,11 +308,25 @@ export class SeederExecutor {
             options.seeds = this.options.seeds;
         }
 
+        if (!options.seeds || options.seeds.length === 0) {
+            options.seeds = useEnv('seeds');
+        }
+
+        if (!options.seeds || options.seeds.length === 0) {
+            options.seeds = ['src/database/seeds/**/*{.ts,.js}'];
+        }
+
         if (!options.factories || options.factories.length === 0) {
             options.factories = this.options.factories;
         }
 
-        options = extendSeederOptions(options);
+        if (!options.factories || options.factories.length === 0) {
+            options.factories = useEnv('factories');
+        }
+
+        if (!options.factories || options.factories.length === 0) {
+            options.factories = ['src/database/factories/**/*{.ts,.js}'];
+        }
 
         await adjustFilePathsForDataSourceOptions(options, {
             keys: ['seeds', 'factories'],

@@ -1,6 +1,7 @@
 import type { DataSourceOptions } from 'typeorm';
+import { buildDataSourceOptions } from '../../data-source/options';
 import type { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
-import { buildDataSourceOptions, findDataSource } from '../../data-source';
+import { findDataSource } from '../../data-source';
 
 async function setDatabaseContextOptions<T extends DatabaseBaseContext>(context: T) : Promise<T> {
     if (!context.options) {
