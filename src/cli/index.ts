@@ -9,7 +9,7 @@ import {
     DatabaseDropCommand,
     SeedRunCommand,
 } from './commands';
-import {SeedCreateCommand} from "./commands/seed/create";
+import { SeedCreateCommand } from './commands/seed/create';
 
 yargs(hideBin(process.argv))
     .scriptName('typeorm-extension')

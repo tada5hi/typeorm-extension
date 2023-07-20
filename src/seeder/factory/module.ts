@@ -2,7 +2,7 @@ import type { FakerOptions, LocaleDefinition } from '@faker-js/faker';
 import { Faker } from '@faker-js/faker';
 import type { SaveOptions } from 'typeorm';
 import { isObject, load } from 'locter';
-import type { SeederFactoryContext } from './type';
+import { SeederFactoryContext } from './type';
 import { hasOwnProperty } from '../../utils';
 import { useDataSource } from '../../data-source';
 import { isPromise } from '../utils';
