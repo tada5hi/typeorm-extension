@@ -26,9 +26,6 @@ export async function readTsConfig(input?: string) : Promise<Tsconfig> {
             return tsConfig;
         }
     } catch (e) {
-        if (input !== process.cwd()) {
-            return readTsConfig(input);
-        }
         // don't do anything ;)
     }
 

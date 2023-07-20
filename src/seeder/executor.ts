@@ -1,13 +1,14 @@
 import type { ObjectLiteral } from 'rapiq';
-import { MssqlParameter, Table } from 'typeorm';
-import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
+import { DataSource, MssqlParameter, Table } from 'typeorm';
+import type { DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
 import { setDataSource } from '../data-source';
 import { useEnv } from '../env';
 import { adjustFilePaths, resolveFilePath } from '../utils';
 import { SeederEntity } from './entity';
 import { prepareSeederFactories, useSeederFactoryManager } from './factory';
-import type { SeederExecutorOptions, SeederOptions, SeederPrepareElement } from './type';
+import { SeederExecutorOptions } from './type';
+import type { SeederOptions, SeederPrepareElement } from './type';
 import { prepareSeederSeeds } from './utils';
 
 export class SeederExecutor {
@@ -56,7 +57,7 @@ export class SeederExecutor {
                 (el) => el.name === seed.name,
             );
 
-            return index === -1 || !seed.isOneTime();
+            return index === -1 || !seed.trackExecution();
         });
 
         if (pending.length === 0) {
@@ -85,10 +86,12 @@ export class SeederExecutor {
 
                 pending[i].result = await seeder.run(this.dataSource, factoryManager);
 
-                await this.track(queryRunner, pending[i]);
+                if (options.seedTracking || pending[i].trackExecution()) {
+                    await this.track(queryRunner, pending[i]);
+                }
 
                 this.dataSource.logger.logSchemaBuild(
-                    `Migration ${pending[i].name} has been executed successfully.`,
+                    `Seed ${pending[i].name} has been executed successfully.`,
                 );
 
                 executed.push(pending[i]);
@@ -242,10 +245,6 @@ export class SeederExecutor {
         queryRunner: QueryRunner,
         seederEntity: SeederEntity,
     ): Promise<void> {
-        if (!seederEntity.isOneTime()) {
-            return;
-        }
-
         const values: ObjectLiteral = {};
         if (this.dataSource.driver.options.type === 'mssql') {
             values.timestamp = new MssqlParameter(
@@ -306,6 +305,7 @@ export class SeederExecutor {
         const options : SeederOptions = {
             seeds: input.seeds || [],
             factories: input.factories || [],
+            seedTracking: input.seedTracking ?? false,
         };
 
         if (!options.seeds || options.seeds.length === 0) {
@@ -330,6 +330,10 @@ export class SeederExecutor {
 
         if (!options.factories || options.factories.length === 0) {
             options.factories = ['src/database/factories/**/*{.ts,.js}'];
+        }
+
+        if (typeof options.seedTracking === 'undefined') {
+            options.seedTracking = this.dataSourceOptions.seedTracking;
         }
 
         await adjustFilePaths(

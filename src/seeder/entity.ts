@@ -51,9 +51,9 @@ export class SeederEntity {
         this.fileName = ctx.fileName;
     }
 
-    isOneTime() : boolean {
+    trackExecution() : boolean {
         return !!this.instance &&
-            typeof this.instance.oneTimeOnly === 'boolean' &&
-            this.instance.oneTimeOnly;
+            typeof this.instance.track === 'boolean' &&
+            this.instance.track;
     }
 }

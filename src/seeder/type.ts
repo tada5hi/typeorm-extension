@@ -3,9 +3,11 @@ import type { SeederFactoryItem, SeederFactoryManager } from './factory';
 
 export interface Seeder {
     /**
+     * Track seeder execution.
+     *
      * Default: false
      */
-    oneTimeOnly?: boolean;
+    track?: boolean;
 
     run(dataSource: DataSource, factoryManager: SeederFactoryManager) : Promise<any>;
 }
@@ -16,6 +18,7 @@ export type SeederOptions = {
     seeds?: SeederConstructor[] | string[],
     seedName?: string,
     seedTableName?: string,
+    seedTracking?: boolean
 
     factories?: SeederFactoryItem[] | string[],
     factoriesLoad?: boolean
