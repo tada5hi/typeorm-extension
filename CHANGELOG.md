@@ -1,3 +1,18 @@
+# [3.0.0-alpha.8](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.7...v3.0.0-alpha.8) (2023-07-21)
+
+
+### Bug Fixes
+
+* align cli options with README ([4f3432c](https://github.com/tada5hi/typeorm-extension/commit/4f3432c2d18197c74de4579e83ac02ba3372e7da))
+* **deps:** bump locter from 1.1.2 to 1.1.3 ([#633](https://github.com/tada5hi/typeorm-extension/issues/633)) ([90ce900](https://github.com/tada5hi/typeorm-extension/commit/90ce9006896901c05a140785d0e56b290e24a965))
+* rename seeder property oneTimeOnly to track + global seedTracking option ([b8c4b35](https://github.com/tada5hi/typeorm-extension/commit/b8c4b355b4872479e716d24d9eed56527e2d3cb2))
+
+
+### Features
+
+* implemented seed:craete cli command + adjusted seed run command ([7cc56bc](https://github.com/tada5hi/typeorm-extension/commit/7cc56bcc30179497f451b5069fe3690696d511de))
+* refactored cli options + enhanced commands ([637250b](https://github.com/tada5hi/typeorm-extension/commit/637250be1e760fb10cd791ebfa30cc5dcf12d7d6))
+
 # [3.0.0-alpha.7](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.6...v3.0.0-alpha.7) (2023-07-20)
 
 
