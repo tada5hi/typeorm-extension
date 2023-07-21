@@ -11,13 +11,13 @@ export interface SeedCreateArguments extends Arguments {
     root: string;
     javascript: boolean;
     timestamp?: number,
-    path: string
+    name: string
 }
 
 export class SeedCreateCommand implements CommandModule {
-    command = 'seed:create <path>';
+    command = 'seed:create';
 
-    describe = 'Create a seeder file';
+    describe = 'Create a seeder file.';
 
     builder(args: Argv) {
         return args
@@ -36,6 +36,11 @@ export class SeedCreateCommand implements CommandModule {
                 type: 'boolean',
                 default: false,
                 describe: 'Generate a seeder file for JavaScript instead of TypeScript.',
+            })
+            .option('name', {
+                alias: 'n',
+                describe: 'Name (or relative path incl. name) of the seeder.',
+                demandOption: true,
             });
     }
 
@@ -49,7 +54,7 @@ export class SeedCreateCommand implements CommandModule {
             timestamp = args.timestamp;
         }
 
-        const sourcePath = parseFilePath(args.path, args.root);
+        const sourcePath = parseFilePath(args.name, args.root);
 
         const dirNameIsDirectory = await isDirectory(sourcePath.directory);
         if (!dirNameIsDirectory) {

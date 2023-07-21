@@ -39,12 +39,12 @@ export class DatabaseCreateCommand implements CommandModule {
             .option('tsconfig', {
                 alias: 'tc',
                 default: 'tsconfig.json',
-                describe: 'Name (incl. relative path) of the tsconfig file.',
+                describe: 'Name (or relative path incl. name) of the tsconfig file.',
             })
             .option('dataSource', {
                 alias: 'd',
                 default: 'data-source',
-                describe: 'Name (incl. relative path) of the data-source file.',
+                describe: 'Name (or relative path incl. name) of the data-source file.',
             })
             .option('synchronize', {
                 alias: 's',
