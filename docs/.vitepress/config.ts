@@ -27,14 +27,12 @@ export default defineConfig({
             '/guide/': [
                 {
                     text: 'Introduction',
-                    collapsible: false,
                     items: [
                         {text: 'What is it?', link: '/guide/'},
                     ]
                 },
                 {
                     text: 'Getting Started',
-                    collapsible: false,
                     items: [
                         {text: 'Installation', link: '/guide/installation'},
                         {text: 'CLI', link: '/guide/cli'},
@@ -46,7 +44,6 @@ export default defineConfig({
                 },
                 {
                     text: 'API Reference',
-                    collapsible: false,
                     items: [
                         {text: 'Database', link: '/guide/database-api-reference'},
                         {text: 'DataSource', link: '/guide/datasource-api-reference'},
@@ -54,6 +51,12 @@ export default defineConfig({
                         {text: 'Query', link: '/guide/query-api-reference'},
                     ]
                 },
+                {
+                    text: 'Upgrading',
+                    items: [
+                        {text: 'Version 3', link: '/guide/migration-guide-v3' }
+                    ]
+                }
             ]
         }
     }
