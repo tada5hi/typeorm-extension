@@ -29,6 +29,11 @@ export class SeederEntity {
     fileName?: string;
 
     /**
+     * File path of the seeder.
+     */
+    filePath?: string;
+
+    /**
      * Result of the executed seeder.
      */
     result?: unknown;
@@ -38,7 +43,8 @@ export class SeederEntity {
         timestamp: number,
         name: string,
         constructor?: SeederConstructor,
-        fileName?: string
+        fileName?: string,
+        filePath?: string
     }) {
         this.id = ctx.id;
         this.timestamp = ctx.timestamp;
@@ -49,6 +55,7 @@ export class SeederEntity {
         }
 
         this.fileName = ctx.fileName;
+        this.filePath = ctx.filePath;
     }
 
     trackExecution() : boolean {

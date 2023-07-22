@@ -32,5 +32,6 @@ export type SeederExecutorOptions = {
 export type SeederPrepareElement = {
     constructor: SeederConstructor,
     timestamp?: number,
-    fileName?: string
+    fileName?: string,
+    filePath?: string
 };

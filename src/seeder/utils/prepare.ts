@@ -33,17 +33,20 @@ export async function prepareSeederSeeds(
                 const item = moduleDefault.value as SeederConstructor;
 
                 const fileName = path.basename(seedFiles[i]);
+                const filePath = seedFiles[i];
                 const match = fileName.match(/^([0-9]{13,})-(.*)$/);
                 if (match) {
                     items.push({
                         constructor: item,
                         timestamp: parseInt(match[1], 10),
                         fileName,
+                        filePath,
                     });
                 } else {
                     items.push({
                         constructor: item,
                         fileName,
+                        filePath,
                     });
                 }
             }

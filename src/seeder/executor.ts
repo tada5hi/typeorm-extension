@@ -48,11 +48,32 @@ export class SeederExecutor {
         const existing = await this.loadExisting(queryRunner);
         const all = await this.buildEntities(seederElements);
 
-        const pending = all.filter((seed) => {
+        const isMatch = (seed: SeederEntity) : boolean => {
+            if (!options.seedName) {
+                return true;
+            }
+
             if (
-                options.seedName &&
-                options.seedName !== seed.name
+                seed.name === options.seedName ||
+                seed.fileName === options.seedName
             ) {
+                return true;
+            }
+
+            if (!seed.filePath) {
+                return false;
+            }
+
+            if (seed.filePath === options.seedName) {
+                return true;
+            }
+
+            // todo: adjust file path
+            return resolveFilePath(options.seedName, this.options.root) === seed.filePath;
+        };
+
+        const pending = all.filter((seed) => {
+            if (!isMatch(seed)) {
                 return false;
             }
 
@@ -144,6 +165,7 @@ export class SeederExecutor {
             const {
                 constructor: seed,
                 fileName,
+                filePath,
             } = element;
 
             let {
@@ -158,6 +180,7 @@ export class SeederExecutor {
 
             const entity = new SeederEntity({
                 fileName,
+                filePath,
                 timestamp: timestamp || timestampCounter,
                 name: className,
                 constructor: seed,
@@ -306,6 +329,7 @@ export class SeederExecutor {
 
     protected async buildOptions(input: SeederOptions = {}) {
         const options : SeederOptions = {
+            ...input,
             seeds: input.seeds || [],
             factories: input.factories || [],
             seedTracking: input.seedTracking ?? false,
