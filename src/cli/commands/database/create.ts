@@ -4,14 +4,15 @@ import { buildDataSourceOptions } from '../../../data-source';
 import type { DatabaseCreateContext } from '../../../database';
 import { createDatabase } from '../../../database';
 import {
-    CodeTransformation,
+    adjustFilePath,
     parseFilePath,
+    readTSConfig,
     resolveFilePath,
-    setCodeTransformation,
 } from '../../../utils';
+import type { TSConfig } from '../../../utils';
 
 export interface DatabaseCreateArguments extends Arguments {
-    codeTransformation: string,
+    preserveFilePaths: boolean,
     root: string;
     tsconfig: string,
     dataSource: string;
@@ -26,10 +27,10 @@ export class DatabaseCreateCommand implements CommandModule {
 
     builder(args: Argv) {
         return args
-            .option('codeTransformation', {
-                default: CodeTransformation.NONE,
-                choices: [CodeTransformation.NONE, CodeTransformation.JUST_IN_TIME],
-                describe: 'This option specifies how the code is transformed and how the library should behave as a result.',
+            .option('preserveFilePaths', {
+                default: false,
+                type: 'boolean',
+                describe: 'This option indicates if file paths should be preserved.',
             })
             .option('root', {
                 alias: 'r',
@@ -60,19 +61,23 @@ export class DatabaseCreateCommand implements CommandModule {
     async handler(raw: Arguments) {
         const args : DatabaseCreateArguments = raw as DatabaseCreateArguments;
 
-        if (args.codeTransformation) {
-            setCodeTransformation(args.codeTransformation);
+        let tsconfig : TSConfig | undefined;
+        let sourcePath = resolveFilePath(args.dataSource, args.root);
+        if (!args.preserveFilePaths) {
+            tsconfig = await readTSConfig(resolveFilePath(args.root, args.tsconfig));
+            sourcePath = await adjustFilePath(sourcePath, tsconfig);
         }
 
-        const source = parseFilePath(args.dataSource, args.root);
+        const source = parseFilePath(sourcePath);
+
         consola.info(`DataSource Directory: ${source.directory}`);
         consola.info(`DataSource Name: ${source.name}`);
 
-        const tsconfig = resolveFilePath(args.root, args.tsconfig);
         const dataSourceOptions = await buildDataSourceOptions({
             directory: source.directory,
             dataSourceName: source.name,
             tsconfig,
+            preserveFilePaths: args.preserveFilePaths,
         });
 
         const context : DatabaseCreateContext = {

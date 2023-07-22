@@ -1,10 +1,12 @@
+import { isObject } from 'locter';
 import type { ObjectLiteral } from 'rapiq';
 import { DataSource, MssqlParameter, Table } from 'typeorm';
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
 import { setDataSource } from '../data-source';
 import { useEnv } from '../env';
-import { adjustFilePaths, resolveFilePath } from '../utils';
+import { adjustFilePaths, readTSConfig, resolveFilePath } from '../utils';
+import type { TSConfig } from '../utils';
 import { SeederEntity } from './entity';
 import { prepareSeederFactories, useSeederFactoryManager } from './factory';
 import { SeederExecutorOptions } from './type';
@@ -68,7 +70,6 @@ export class SeederExecutor {
                 return true;
             }
 
-            // todo: adjust file path
             return resolveFilePath(options.seedName, this.options.root) === seed.filePath;
         };
 
@@ -363,14 +364,27 @@ export class SeederExecutor {
             options.seedTracking = this.dataSourceOptions.seedTracking;
         }
 
-        await adjustFilePaths(
-            options,
-            [
-                'seeds',
-                'factories',
-            ],
-            resolveFilePath(this.options.tsconfig || 'tsconfig.json', this.options.root),
-        );
+        if (!this.options.preserveFilePaths) {
+            let tsConfig : TSConfig;
+
+            if (isObject(this.options.tsconfig)) {
+                tsConfig = this.options.tsconfig;
+            } else {
+                tsConfig = await readTSConfig(
+                    resolveFilePath(this.options.tsconfig || 'tsconfig.json', this.options.root),
+                );
+            }
+
+            await adjustFilePaths(
+                options,
+                [
+                    'seeds',
+                    'seedName',
+                    'factories',
+                ],
+                tsConfig,
+            );
+        }
 
         return options;
     }

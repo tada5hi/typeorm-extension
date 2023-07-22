@@ -5,3 +5,4 @@ export * from './file-system';
 export * from './has-property';
 export * from './separator';
 export * from './slash';
+export * from './tsconfig';

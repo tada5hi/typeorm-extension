@@ -3,13 +3,15 @@ import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../../data-source';
 import { SeederExecutor } from '../../../seeder';
 import {
-    CodeTransformation,
-    parseFilePath, resolveFilePath,
-    setCodeTransformation,
+    adjustFilePath,
+    parseFilePath,
+    readTSConfig,
+    resolveFilePath,
 } from '../../../utils';
+import type { TSConfig } from '../../../utils';
 
 export interface SeedRunArguments extends Arguments {
-    codeTransformation: string,
+    preserveFilePaths: boolean,
     root: string;
     tsconfig: string,
     dataSource: string;
@@ -23,10 +25,10 @@ export class SeedRunCommand implements CommandModule {
 
     builder(args: Argv) {
         return args
-            .option('codeTransformation', {
-                default: CodeTransformation.NONE,
-                choices: [CodeTransformation.NONE, CodeTransformation.JUST_IN_TIME],
-                describe: 'This option specifies how the code is transformed and how the library should behave as a result.',
+            .option('preserveFilePaths', {
+                default: false,
+                type: 'boolean',
+                describe: 'This option indicates if file paths should be preserved.',
             })
             .option('root', {
                 alias: 'r',
@@ -52,19 +54,24 @@ export class SeedRunCommand implements CommandModule {
     async handler(raw: Arguments) {
         const args = raw as SeedRunArguments;
 
-        if (args.codeTransformation) {
-            setCodeTransformation(args.codeTransformation);
+        let tsconfig : TSConfig | undefined;
+        let sourcePath = resolveFilePath(args.dataSource, args.root);
+        if (!args.preserveFilePaths) {
+            tsconfig = await readTSConfig(args.root);
+            sourcePath = await adjustFilePath(sourcePath, tsconfig);
+            args.name = await adjustFilePath(args.name, tsconfig);
         }
 
-        const source = parseFilePath(args.dataSource, args.root);
+        const source = parseFilePath(sourcePath);
+
         consola.info(`DataSource Directory: ${source.directory}`);
         consola.info(`DataSource Name: ${source.name}`);
 
-        const tsconfig = resolveFilePath(args.root, args.tsconfig);
         const dataSourceOptions = await buildDataSourceOptions({
             dataSourceName: source.name,
             directory: source.directory,
             tsconfig,
+            preserveFilePaths: args.preserveFilePaths,
         });
 
         setDataSourceOptions(dataSourceOptions);
@@ -77,6 +84,7 @@ export class SeedRunCommand implements CommandModule {
         const executor = new SeederExecutor(dataSource, {
             root: args.root,
             tsconfig,
+            preserveFilePaths: args.preserveFilePaths,
         });
 
         await executor.execute({ seedName: args.name });

@@ -89,6 +89,33 @@ for the seeder- & factory-location.
 | `--synchronize` or `-s` | `db:create` & `db:drop`                            | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                         |
 | `--initialDatabase`     | `db:create`                                        | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always to connect to a database. If no database is provided, the database name will be equal to the connection user name. |
 | `--name`                | `seed:create` & `seed:run`                         | `undefined`     | Name (or relative path incl. name) of the seeder.                                                                                                                                                                                        |
+| `--preserveFilePaths`   | `db:create`, `db:drop`, `seed:create` & `seed:run` | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                          |
+
+#### Examples
+**`Database Create`**
+```shell
+ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:create  -d src/data-source.ts
+```
+**`Database Drop`**
+```shell
+ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:drop  -d src/data-source.ts
+```
+
+**`Seed Run`**
+```shell
+ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/data-source.ts
+```
+
+**`Seed Run Explicit`**
+```shell
+ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/data-source.ts --name src/database/seeds/user.ts
+```
+
+**`Seed Create`**
+```shell
+ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:create  -d src/data-source.ts --name src/database/seeds/user.ts
+```
+
 ### Database
 An alternative to the CLI variant, is to `create` the database in the code base during the runtime of the application.
 Therefore, provide the `DataSourceOptions` for the DataSource manually, or let it be created automatically:

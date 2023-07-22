@@ -1,6 +1,8 @@
+import { isObject } from 'locter';
 import type { DataSourceOptions } from 'typeorm';
 import { OptionsError } from '../../errors';
-import { adjustFilePaths } from '../../utils';
+import { adjustFilePaths, readTSConfig } from '../../utils';
+import type { TSConfig } from '../../utils';
 import { findDataSource } from '../find';
 import type { DataSourceOptionsBuildContext } from './type';
 import {
@@ -19,14 +21,27 @@ export async function buildDataSourceOptions(
     context = context ?? {};
 
     const directory : string = context.directory || process.cwd();
-    const tsconfig : string = context.tsconfig || process.cwd();
+
+    let tsconfig : TSConfig | undefined;
+    if (!context.preserveFilePaths) {
+        if (isObject(context.tsconfig)) {
+            tsconfig = context.tsconfig;
+        } else {
+            tsconfig = await readTSConfig(context.tsconfig);
+        }
+    }
 
     const dataSource = await findDataSource({
         directory,
         fileName: context.dataSourceName,
+        tsconfig,
     });
 
     if (dataSource) {
+        if (context.preserveFilePaths) {
+            return mergeDataSourceOptionsWithEnv(dataSource.options);
+        }
+
         const options = await adjustFilePaths(
             dataSource.options,
             [
@@ -42,6 +57,10 @@ export async function buildDataSourceOptions(
 
     const options = readDataSourceOptionsFromEnv();
     if (options) {
+        if (context.preserveFilePaths) {
+            return options;
+        }
+
         return adjustFilePaths(
             options,
             ['entities', 'migrations', 'subscribers'],

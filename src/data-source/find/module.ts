@@ -9,19 +9,32 @@ import path from 'node:path';
 import type { DataSource } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
 import {
-    CodeTransformation, isCodeTransformation, safeReplaceWindowsSeparator, transformFilePath,
+    CodeTransformation,
+    adjustFilePath,
+    isCodeTransformation,
+    safeReplaceWindowsSeparator,
 } from '../../utils';
 import type { DataSourceFindOptions } from './type';
-import { readTsConfig } from '../../utils/tsconfig';
+import type { TSConfig } from '../../utils/tsconfig';
+import { readTSConfig } from '../../utils/tsconfig';
 
 export async function findDataSource(
     context?: DataSourceFindOptions,
 ) : Promise<DataSource | undefined> {
+    context = context || {};
+
+    let tsconfig : TSConfig | undefined;
+    if (!context.preserveFilePaths) {
+        if (isObject(context.tsconfig)) {
+            tsconfig = context.tsconfig;
+        } else {
+            tsconfig = await readTSConfig(context.tsconfig);
+        }
+    }
+
     const files : string[] = [
         'data-source',
     ];
-
-    context = context || {};
 
     if (context.fileName) {
         context.fileName = removeFileNameExtension(
@@ -43,6 +56,10 @@ export async function findDataSource(
             directoryIsPattern = true;
             directory = safeReplaceWindowsSeparator(context.directory);
         }
+
+        if (!context.preserveFilePaths) {
+            directory = await adjustFilePath(directory);
+        }
     }
 
     const lookupPaths = [];
@@ -62,12 +79,12 @@ export async function findDataSource(
 
     files.push(...lookupPaths);
 
-    if (!isCodeTransformation(CodeTransformation.JUST_IN_TIME)) {
-        const { compilerOptions } = await readTsConfig();
-        const outDir = compilerOptions ? compilerOptions.outDir : undefined;
-
+    if (
+        !context.preserveFilePaths &&
+        !isCodeTransformation(CodeTransformation.JUST_IN_TIME)
+    ) {
         for (let j = 0; j < files.length; j++) {
-            files[j] = transformFilePath(files[j], outDir);
+            files[j] = await adjustFilePath(files[j], tsconfig);
         }
     }
 

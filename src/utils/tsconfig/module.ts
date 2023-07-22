@@ -1,15 +1,8 @@
 import { isObject, load } from 'locter';
 import path from 'node:path';
+import type { TSConfig } from './type';
 
-type Tsconfig = {
-    compilerOptions?: {
-        outDir?: string,
-        [key: string]: any
-    },
-    [key: string]: any
-};
-
-export async function readTsConfig(input?: string) : Promise<Tsconfig> {
+export async function readTSConfig(input?: string) : Promise<TSConfig> {
     input = input || process.cwd();
     input = path.isAbsolute(input) ?
         input :

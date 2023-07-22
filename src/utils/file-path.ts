@@ -1,8 +1,10 @@
+import { isObject } from 'locter';
 import path from 'node:path';
 import { CodeTransformation, isCodeTransformation } from './code-transformation';
-import { safeReplaceWindowsSeparator } from './separator';
+import { canReplaceWindowsSeparator, replaceWindowSeparator } from './separator';
 import { withoutTrailingSlash } from './slash';
-import { readTsConfig } from './tsconfig';
+import type { TSConfig } from './tsconfig';
+import { readTSConfig } from './tsconfig';
 
 const stripLeadingModifier = (text: string) => {
     if (text.startsWith('./')) {
@@ -17,29 +19,34 @@ export function transformFilePath(
     dist?: string,
     src?: string,
 ): string {
+    let separator = path.sep;
+    const windowsSeparatorReplaceable = canReplaceWindowsSeparator(input);
+    if (windowsSeparatorReplaceable) {
+        separator = '/';
+        input = replaceWindowSeparator(input);
+    }
+
     let base = input;
-    let baseIndex = input.lastIndexOf('/');
+    let baseIndex = input.lastIndexOf(separator);
     if (baseIndex !== -1) {
         base = base.substring(baseIndex + 1);
     }
 
     if (src) {
-        src = withoutTrailingSlash(
-            stripLeadingModifier(
-                safeReplaceWindowsSeparator(src),
-            ),
-        );
+        if (windowsSeparatorReplaceable) {
+            src = replaceWindowSeparator(src);
+        }
+
+        src = withoutTrailingSlash(stripLeadingModifier(src));
     }
     src = src || 'src';
 
     if (dist) {
-        dist = withoutTrailingSlash(
-            stripLeadingModifier(
-                safeReplaceWindowsSeparator(
-                    dist,
-                ),
-            ),
-        );
+        if (windowsSeparatorReplaceable) {
+            dist = replaceWindowSeparator(dist);
+        }
+
+        dist = withoutTrailingSlash(stripLeadingModifier(dist));
     }
     dist = dist || 'dist';
 
@@ -49,12 +56,12 @@ export function transformFilePath(
     ) {
         const lastIndex = input.lastIndexOf(src);
         const prevCharacter = input.substring(lastIndex - 1, lastIndex);
-        if (!prevCharacter || prevCharacter === '/') {
+        if (!prevCharacter || prevCharacter === separator) {
             input = input.substring(0, lastIndex) +
                 dist +
                 input.substring(lastIndex + src.length);
 
-            baseIndex = input.lastIndexOf('/');
+            baseIndex = input.lastIndexOf(separator);
         }
     }
 
@@ -103,36 +110,52 @@ export function transformFilePath(
 
     return stripLeadingModifier(base);
 }
-
-export async function adjustFilePaths<T extends Record<string, any>>(
+export async function adjustFilePath<T extends unknown | unknown[]>(
     input: T,
-    keys?: (keyof T)[],
-    rootDirectory?: string,
+    tsconfig?: string | TSConfig,
 ): Promise<T> {
     if (isCodeTransformation(CodeTransformation.JUST_IN_TIME)) {
         return input;
     }
 
-    const { compilerOptions } = await readTsConfig(rootDirectory);
+    if (!isObject(tsconfig)) {
+        tsconfig = await readTSConfig(tsconfig);
+    }
+
+    const { compilerOptions } = tsconfig;
+
+    if (typeof input === 'string') {
+        return transformFilePath(input, compilerOptions?.outDir) as T;
+    }
+
+    if (Array.isArray(input)) {
+        for (let i = 0; i < input.length; i++) {
+            if (typeof input[i] === 'string') {
+                input[i] = transformFilePath(input[i], compilerOptions?.outDir);
+            }
+        }
+    }
+
+    return input;
+}
+
+export async function adjustFilePaths<T extends Record<string, any>>(
+    input: T,
+    keys?: (keyof T)[],
+    tsconfig?: string | TSConfig,
+): Promise<T> {
+    if (isCodeTransformation(CodeTransformation.JUST_IN_TIME)) {
+        return input;
+    }
+
+    if (!isObject(tsconfig)) {
+        tsconfig = await readTSConfig(tsconfig);
+    }
 
     keys = keys || Object.keys(input);
 
     for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-
-        let value = input[key] as unknown;
-
-        if (typeof value === 'string') {
-            value = transformFilePath(value, compilerOptions?.outDir);
-        } else if (Array.isArray(value)) {
-            for (let i = 0; i < value.length; i++) {
-                if (typeof value[i] === 'string') {
-                    value[i] = transformFilePath(value[i], compilerOptions?.outDir);
-                }
-            }
-        }
-
-        input[key] = value as T[keyof T];
+        input[keys[i]] = await adjustFilePath(input[keys[i]], tsconfig);
     }
 
     return input;
