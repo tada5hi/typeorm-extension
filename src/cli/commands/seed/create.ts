@@ -67,6 +67,7 @@ export class SeedCreateCommand implements CommandModule {
             '.ts';
 
         const nameExtension = getFileNameExtension(sourcePath.name);
+        const nameWithoutExtension = removeFileNameExtension(sourcePath.name);
 
         let fileName: string;
         if (nameExtension) {
@@ -75,11 +76,11 @@ export class SeedCreateCommand implements CommandModule {
             fileName = `${timestamp}-${sourcePath.name}${extension}`;
         }
         const filePath = sourcePath.directory + path.sep + fileName;
-        const template = buildSeederFileTemplate(removeFileNameExtension(sourcePath.name), timestamp);
+        const template = buildSeederFileTemplate(nameWithoutExtension, timestamp);
 
         consola.info(`Seed Directory: ${sourcePath.directory}`);
         consola.info(`Seed FileName: ${fileName}`);
-        consola.info(`Seed Name: ${pascalCase(sourcePath.name)}`);
+        consola.info(`Seed Name: ${pascalCase(nameWithoutExtension)}`);
 
         try {
             await fs.promises.writeFile(filePath, template, { encoding: 'utf-8' });
