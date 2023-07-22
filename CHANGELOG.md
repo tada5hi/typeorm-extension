@@ -1,3 +1,22 @@
+# [3.0.0-alpha.9](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.8...v3.0.0-alpha.9) (2023-07-22)
+
+
+### Bug Fixes
+
+* logging of seed file name on creation ([8bb0ec5](https://github.com/tada5hi/typeorm-extension/commit/8bb0ec55eb838ed595fed4b8a67ea2651b5da8e1))
+* resolve seeder/factory file patterns & paths relative to root directory ([622aec9](https://github.com/tada5hi/typeorm-extension/commit/622aec9b77de999c8b22b26a1336bbf47f7076c0))
+
+
+### Features
+
+* explicit seed execution, comparison by file-name/path ([61de8dd](https://github.com/tada5hi/typeorm-extension/commit/61de8dd4e6a27782191f22a65e1881747f95f353))
+* refactor and optimized file path modification ([5bdfd0a](https://github.com/tada5hi/typeorm-extension/commit/5bdfd0a09e216662947f733f4e432ccfaf7047f7))
+
+
+### BREAKING CHANGES
+
+* public api changed
+
 # [3.0.0-alpha.8](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.7...v3.0.0-alpha.8) (2023-07-21)
 
 
