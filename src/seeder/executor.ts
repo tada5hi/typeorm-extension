@@ -37,10 +37,13 @@ export class SeederExecutor {
         }
 
         if (options.factories) {
-            await prepareSeederFactories(options.factories);
+            await prepareSeederFactories(options.factories, this.options.root);
         }
 
-        const seederElements = await prepareSeederSeeds(options.seeds);
+        const seederElements = await prepareSeederSeeds(
+            options.seeds,
+            this.options.root,
+        );
 
         const existing = await this.loadExisting(queryRunner);
         const all = await this.buildEntities(seederElements);

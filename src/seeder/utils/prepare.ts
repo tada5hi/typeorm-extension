@@ -5,6 +5,7 @@ import { resolveFilePaths, resolveFilePatterns } from './file-path';
 
 export async function prepareSeederSeeds(
     input: SeederConstructor[] | string[],
+    root?: string,
 ): Promise<SeederPrepareElement[]> {
     const items: SeederPrepareElement[] = [];
 
@@ -21,8 +22,8 @@ export async function prepareSeederSeeds(
     }
 
     if (seedFiles.length > 0) {
-        seedFiles = await resolveFilePatterns(seedFiles);
-        seedFiles = resolveFilePaths(seedFiles);
+        seedFiles = await resolveFilePatterns(seedFiles, root);
+        seedFiles = resolveFilePaths(seedFiles, root);
 
         for (let i = 0; i < seedFiles.length; i++) {
             const moduleExports = await load(seedFiles[i]);

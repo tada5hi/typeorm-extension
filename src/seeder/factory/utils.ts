@@ -33,6 +33,7 @@ export function useSeederFactory<O extends Record<string, any>>(
 
 export async function prepareSeederFactories(
     items: SeederFactoryItem[] | string[],
+    root?: string,
 ) {
     let factoryFiles: string[] = [];
     const factoryConfigs: SeederFactoryItem[] = [];
@@ -47,8 +48,8 @@ export async function prepareSeederFactories(
     }
 
     if (factoryFiles.length > 0) {
-        factoryFiles = await resolveFilePatterns(factoryFiles);
-        factoryFiles = resolveFilePaths(factoryFiles);
+        factoryFiles = await resolveFilePatterns(factoryFiles, root);
+        factoryFiles = resolveFilePaths(factoryFiles, root);
 
         for (let i = 0; i < factoryFiles.length; i++) {
             await load(factoryFiles[i]);
