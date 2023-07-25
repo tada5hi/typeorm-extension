@@ -30,9 +30,6 @@ export class SeederExecutor {
     }
 
     async execute(input: SeederOptions = {}) : Promise<SeederEntity[]> {
-        const queryRunner = this.dataSource.createQueryRunner();
-        await this.createTableIfNotExist(queryRunner);
-
         const options = await this.buildOptions(input);
         if (!options.seeds || options.seeds.length === 0) {
             return [];
@@ -46,9 +43,21 @@ export class SeederExecutor {
             options.seeds,
             this.options.root,
         );
-
-        const existing = await this.loadExisting(queryRunner);
         const all = await this.buildEntities(seederElements);
+
+        let tracking = !!options.seedTracking;
+        if (!tracking) {
+            tracking = all.some((seed) => seed.trackExecution());
+        }
+
+        let queryRunner : QueryRunner | undefined;
+        let existing : SeederEntity[] = [];
+
+        if (tracking) {
+            queryRunner = this.dataSource.createQueryRunner();
+            await this.createTableIfNotExist(queryRunner);
+            existing = await this.loadExisting(queryRunner);
+        }
 
         const isMatch = (seed: SeederEntity) : boolean => {
             if (!options.seedName) {
@@ -86,7 +95,9 @@ export class SeederExecutor {
         });
 
         if (pending.length === 0) {
-            await queryRunner.release();
+            if (queryRunner) {
+                await queryRunner.release();
+            }
 
             return [];
         }
@@ -111,7 +122,7 @@ export class SeederExecutor {
 
                 pending[i].result = await seeder.run(this.dataSource, factoryManager);
 
-                if (options.seedTracking || pending[i].trackExecution()) {
+                if (queryRunner && (options.seedTracking || pending[i].trackExecution())) {
                     await this.track(queryRunner, pending[i]);
                 }
 
@@ -122,7 +133,9 @@ export class SeederExecutor {
                 executed.push(pending[i]);
             }
         } finally {
-            await queryRunner.release();
+            if (queryRunner) {
+                await queryRunner.release();
+            }
         }
 
         return executed;
