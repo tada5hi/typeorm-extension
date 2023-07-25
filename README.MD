@@ -25,7 +25,8 @@ This is a library to
 - [Documentation](#documentation)
 - [Usage](#usage)
   - [CLI](#cli)
-    - [Options](#options)
+    - [Options](#cli-options)
+    - [Examples](#cli-examples)
   - [Database](#database)
     - [Create](#create)
     - [Drop](#drop)
@@ -80,7 +81,7 @@ To test the application in the context of an esm project, the following adjustme
 Read the [Seeding Configuration](#configuration) section to find out how to specify the path,
 for the seeder- & factory-location.
 
-#### Options
+#### CLI Options
 
 | Option                  | Commands                                           | Default         | Description                                                                                                                                                                                                                              |
 |-------------------------|----------------------------------------------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -91,7 +92,7 @@ for the seeder- & factory-location.
 | `--name`                | `seed:create` & `seed:run`                         | `undefined`     | Name (or relative path incl. name) of the seeder.                                                                                                                                                                                        |
 | `--preserveFilePaths`   | `db:create`, `db:drop`, `seed:create` & `seed:run` | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                          |
 
-#### Examples
+#### CLI Examples
 **`Database Create`**
 ```shell
 ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:create  -d src/data-source.ts
