@@ -1,3 +1,49 @@
+# [3.0.0](https://github.com/tada5hi/typeorm-extension/compare/v2.8.1...v3.0.0) (2023-07-25)
+
+
+### Bug Fixes
+
+* adjust build action to cache bin and dist dir ([9afa905](https://github.com/tada5hi/typeorm-extension/commit/9afa9053b58de5736299f86aafd5054f7baff5ce))
+* adjust runSeeder(s) method to use seeder executor ([3f55d49](https://github.com/tada5hi/typeorm-extension/commit/3f55d4919d23b75d0f2cb0d62958feafd25db597))
+* align cli options with README ([4f3432c](https://github.com/tada5hi/typeorm-extension/commit/4f3432c2d18197c74de4579e83ac02ba3372e7da))
+* circular dependencies ([23b8d6c](https://github.com/tada5hi/typeorm-extension/commit/23b8d6c2c08ecb00358aae5276ff93ee9911a063))
+* circular dependencies between seder and data-source-options ([c5d1d09](https://github.com/tada5hi/typeorm-extension/commit/c5d1d09ec2a0903d1257599b61ba609b76921171))
+* cleanup file path adjustment ([01332c5](https://github.com/tada5hi/typeorm-extension/commit/01332c5f3b645c194d71b11639781e8b8d45c650))
+* **deps:** bump locter from 1.1.2 to 1.1.3 ([#633](https://github.com/tada5hi/typeorm-extension/issues/633)) ([90ce900](https://github.com/tada5hi/typeorm-extension/commit/90ce9006896901c05a140785d0e56b290e24a965))
+* **deps:** bump locter from 1.2.0 to 1.2.1 ([#637](https://github.com/tada5hi/typeorm-extension/issues/637)) ([47ffdac](https://github.com/tada5hi/typeorm-extension/commit/47ffdacce6b3d237ea8d4368a9ab625e4f32259a))
+* **deps:** bump rapiq from 0.8.1 to 0.9.0 ([#618](https://github.com/tada5hi/typeorm-extension/issues/618)) ([e2d9d1b](https://github.com/tada5hi/typeorm-extension/commit/e2d9d1bbbc7b018c735039ca2b11ead48acce570))
+* include bin directory in package-json file list ([327ce47](https://github.com/tada5hi/typeorm-extension/commit/327ce47416df15f22406a5f69250f80feecf45db))
+* keepÃ bin directory + updated .gitignore ([58aebad](https://github.com/tada5hi/typeorm-extension/commit/58aebad44982969eb14c905a601537204741baa5))
+* logging of seed file name on creation ([8bb0ec5](https://github.com/tada5hi/typeorm-extension/commit/8bb0ec55eb838ed595fed4b8a67ea2651b5da8e1))
+* minor cleanup ([8773e02](https://github.com/tada5hi/typeorm-extension/commit/8773e028ba9c046f13d714d9b705bfd4a6e413a3))
+* only track one time seeder ([8edf6cf](https://github.com/tada5hi/typeorm-extension/commit/8edf6cf082ea0da8deb3ebd0b7e7dd4cf18e9151))
+* preserve bin/cli.{mjs,cjs} for publishing ([7b175e9](https://github.com/tada5hi/typeorm-extension/commit/7b175e92bd8db5b71d07d279d2fbc76dc0c4a03e))
+* rename seeder property oneTimeOnly to track + global seedTracking option ([b8c4b35](https://github.com/tada5hi/typeorm-extension/commit/b8c4b355b4872479e716d24d9eed56527e2d3cb2))
+* resolve seeder/factory file patterns & paths relative to root directory ([622aec9](https://github.com/tada5hi/typeorm-extension/commit/622aec9b77de999c8b22b26a1336bbf47f7076c0))
+* seeds without timestamp should be considered older ([f511978](https://github.com/tada5hi/typeorm-extension/commit/f511978cf23e5d02eb949710471d282b48d79bab))
+* yargs import for esm cli entry-point ([3d46dff](https://github.com/tada5hi/typeorm-extension/commit/3d46dffc5a4dbfa95ecb77b84149352299519cfa))
+
+
+### Features
+
+* allow setting (faker) locale for seeder factories ([5387d44](https://github.com/tada5hi/typeorm-extension/commit/5387d4422efe0768e81312091f4f162d2fc6b734))
+* explicit seed execution, comparison by file-name/path ([61de8dd](https://github.com/tada5hi/typeorm-extension/commit/61de8dd4e6a27782191f22a65e1881747f95f353))
+* generate cli entry point for cjs/esm ([0cc73b6](https://github.com/tada5hi/typeorm-extension/commit/0cc73b608f9782da25db89e1f6786e964a7cbcd3))
+* implemented seed:craete cli command + adjusted seed run command ([7cc56bc](https://github.com/tada5hi/typeorm-extension/commit/7cc56bcc30179497f451b5069fe3690696d511de))
+* only create seeder table if trackable seed found or global flag is set ([379c296](https://github.com/tada5hi/typeorm-extension/commit/379c29677bd8541407bfd5ef60b3b35d3b58d40a))
+* option to execute seeds only once ([5f6d98f](https://github.com/tada5hi/typeorm-extension/commit/5f6d98f0e2b6c8935a1b5d1177b6563950009863))
+* refactor and optimized file path modification ([5bdfd0a](https://github.com/tada5hi/typeorm-extension/commit/5bdfd0a09e216662947f733f4e432ccfaf7047f7))
+* refactored cli options + enhanced commands ([637250b](https://github.com/tada5hi/typeorm-extension/commit/637250be1e760fb10cd791ebfa30cc5dcf12d7d6))
+* remove legacy data-source options building ([6cb4d77](https://github.com/tada5hi/typeorm-extension/commit/6cb4d775e1684ec395b03be6ab96e46f73e165f6))
+* use rollup and swc to create bundles for cjs & esm ([46016e8](https://github.com/tada5hi/typeorm-extension/commit/46016e83afb9bfb7731f113aea298b9d16fad9fe))
+
+
+### BREAKING CHANGES
+
+* public api changed
+* ormconfig no longer supported
+* CLI path changed
+
 # [3.0.0-alpha.9](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0-alpha.8...v3.0.0-alpha.9) (2023-07-22)
 
 
