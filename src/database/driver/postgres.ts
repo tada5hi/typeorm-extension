@@ -6,7 +6,7 @@ import type { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } 
 import { hasOwnProperty } from '../../utils';
 import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
@@ -94,7 +94,7 @@ export async function createPostgresDatabase(
     const result = await executeSimplePostgresQuery(connection, query);
 
     if (context.synchronize) {
-        await setupDatabaseSchema(context.options);
+        await synchronizeDatabaseSchema(context.options);
     }
 
     return result;

@@ -1,7 +1,9 @@
-import type { DataSourceOptions } from 'typeorm';
+import type { DataSourceOptions, Migration } from 'typeorm';
 import { DataSource, InstanceChecker } from 'typeorm';
 
-export async function setupDatabaseSchema(input: DataSource | DataSourceOptions) {
+export async function synchronizeDatabaseSchema(
+    input: DataSource | DataSourceOptions,
+) : Promise<Migration[]> {
     let dataSource: DataSource;
     let options: DataSourceOptions;
 
@@ -24,8 +26,12 @@ export async function setupDatabaseSchema(input: DataSource | DataSourceOptions)
             Object.keys(input.migrations).length;
     }
 
+    let migrations : Migration[] = [];
+
     if (migrationsCount > 0) {
-        await dataSource.runMigrations({ transaction: options.migrationsTransactionMode });
+        migrations = await dataSource.runMigrations({
+            transaction: options.migrationsTransactionMode,
+        });
     } else {
         await dataSource.synchronize(false);
     }
@@ -33,4 +39,6 @@ export async function setupDatabaseSchema(input: DataSource | DataSourceOptions)
     if (!InstanceChecker.isDataSource(input)) {
         await dataSource.destroy();
     }
+
+    return migrations;
 }

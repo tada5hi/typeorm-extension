@@ -3,7 +3,7 @@ import { OptionsError } from '../../errors';
 import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
@@ -79,7 +79,7 @@ export async function createMySQLDatabase(
     const result = await executeSimpleMysqlQuery(connection, query);
 
     if (context.synchronize) {
-        await setupDatabaseSchema(context.options);
+        await synchronizeDatabaseSchema(context.options);
     }
 
     return result;

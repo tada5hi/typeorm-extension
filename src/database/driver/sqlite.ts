@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { OptionsError } from '../../errors';
 import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import { buildDriverOptions } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSQLiteDatabase(
     context?: DatabaseCreateContext,
@@ -28,7 +28,7 @@ export async function createSQLiteDatabase(
     await fs.promises.access(directoryPath, fs.constants.W_OK);
 
     if (context.synchronize) {
-        await setupDatabaseSchema(context.options);
+        await synchronizeDatabaseSchema(context.options);
     }
 }
 

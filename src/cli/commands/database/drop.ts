@@ -6,10 +6,10 @@ import { dropDatabase } from '../../../database';
 import {
     adjustFilePath,
     parseFilePath,
+    readTSConfig,
     resolveFilePath,
 } from '../../../utils';
-import type { TSConfig } from '../../../utils/tsconfig';
-import { readTSConfig } from '../../../utils/tsconfig';
+import type { TSConfig } from '../../../utils';
 
 export interface DatabaseDropArguments extends Arguments {
     preserveFilePaths: boolean,

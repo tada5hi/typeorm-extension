@@ -3,7 +3,7 @@ import { OptionsError } from '../../errors';
 import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
@@ -49,7 +49,7 @@ export async function createMsSQLDatabase(
     const result = await connection.query(query);
 
     if (context.synchronize) {
-        await setupDatabaseSchema(context.options);
+        await synchronizeDatabaseSchema(context.options);
     }
 
     return result;

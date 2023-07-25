@@ -7,9 +7,9 @@ import { hideBin } from 'yargs/helpers';
 import {
     DatabaseCreateCommand,
     DatabaseDropCommand,
+    SeedCreateCommand,
     SeedRunCommand,
 } from './commands';
-import { SeedCreateCommand } from './commands/seed/create';
 
 yargs(hideBin(process.argv))
     .scriptName('typeorm-extension')

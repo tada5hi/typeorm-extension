@@ -3,7 +3,7 @@ import { OptionsError } from '../../errors';
 import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, setupDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimpleMongoDBConnection(
     driver: MongoDriver,
@@ -45,7 +45,7 @@ export async function createMongoDBDatabase(
     await client.close();
 
     if (context.synchronize) {
-        await setupDatabaseSchema(context.options);
+        await synchronizeDatabaseSchema(context.options);
     }
 }
 

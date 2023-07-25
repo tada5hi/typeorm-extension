@@ -3,7 +3,7 @@ import { OptionsError } from '../../errors';
 import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
 import type { DriverOptions } from './type';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, setupDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, synchronizeDatabaseSchema } from '../utils';
 
 export function createSimpleOracleConnection(
     driver: OracleDriver,
@@ -63,7 +63,7 @@ export async function createOracleDatabase(
     const result = await connection.execute(query);
 
     if (context.synchronize) {
-        await setupDatabaseSchema(context.options);
+        await synchronizeDatabaseSchema(context.options);
     }
 
     return result;

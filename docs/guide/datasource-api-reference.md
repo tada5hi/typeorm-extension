@@ -263,26 +263,6 @@ declare async function buildDataSourceOptions(
 **References**
 - [DataSourceOptionsBuildContext](#datasourceoptionsbuildcontext)
 
-## `extendDataSourceOptions`
-
-```typescript
-declare async function extendDataSourceOptions(
-    options: DataSourceOptions,
-    tsConfigDirectory?: string,
-) : Promise<DataSourceOptions>;
-```
-
-**Parameters**
-
-| Name                | Type                        | Description                                                        |
-|:--------------------|:----------------------------|:-------------------------------------------------------------------|
-| `options`           | `DataSourceOptions`         | Alias for receiving the typeorm options object. Default: `default` |
-| `tsConfigDirectory` | `string` or `undefined`     | Directory path of tsconfig.json. Default: `process.cwd()`          |
-
-**Returns**
-
-`Promise`<`DataSourceOptions`>
-
 ## `DataSourceFindOptions`
 
 ```typescript
@@ -297,33 +277,27 @@ export type DataSourceFindOptions = {
 ```typescript
 export type DataSourceOptionsBuildContext = {
     /**
-     * Database connection name
-     * Default: default
-     *
-     * @deprecated
-     */
-    name?: string,
-    /**
-     * Configuration file name without extension
-     * Default: ormconfig
-     *
-     * @deprecated
-     */
-    configName?: string,
-    /**
      * Data source file name without extension
      * Default: data-source
      */
     dataSourceName?: string,
+    
     /**
      * Directory where to find dataSource + config
      * Default: process.cwd()
      */
     directory?: string,
+    
     /**
      * Directory path to the tsconfig.json file
      * Default: process.cwd()
      */
-    tsconfigDirectory?: string
+    tsconfig?: string | TSConfig,
+
+    /**
+     * This option indicates if file paths should be preserved,
+     * and treated as if the just-in-time compilation environment is detected.
+     */
+    preserveFilePaths?: boolean
 };
 ```
