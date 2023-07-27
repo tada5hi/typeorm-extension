@@ -18,7 +18,7 @@ This is a library to
 
 > **Warning**
 > This readme includes the documentation for the upcoming version 3.
-> This is the [link](https://github.com/tada5hi/typeorm-extension/tree/master) for the v2.
+> This is the [link](https://github.com/tada5hi/typeorm-extension/tree/v2) for the v2.
 
 **Table of Contents**
 - [Installation](#installation)
