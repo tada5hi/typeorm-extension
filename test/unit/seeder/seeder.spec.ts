@@ -1,6 +1,10 @@
-import { runSeeder, runSeeders, useDataSource } from '../../../src';
-import type { SeederEntity } from '../../../src/seeder/entity';
-import { SeederExecutor } from '../../../src/seeder/executor';
+import {
+    SeederExecutor,
+    runSeeder,
+    runSeeders,
+    useDataSource,
+} from '../../../src';
+import type { SeederEntity } from '../../../src';
 import { User } from '../../data/entity/user';
 import { destroyTestDatabase, setupTestDatabase } from '../../data/typeorm/utils';
 import '../../data/factory/user';
