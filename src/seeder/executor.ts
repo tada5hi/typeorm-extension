@@ -213,7 +213,7 @@ export class SeederExecutor {
                 typeof a.fileName !== 'undefined' &&
                 typeof b.fileName !== 'undefined'
             ) {
-                return a.name > b.name ? 1 : -1;
+                return a.fileName > b.fileName ? 1 : -1;
             }
 
             return a.timestamp - b.timestamp;
