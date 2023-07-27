@@ -1,3 +1,11 @@
+## [3.0.1](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0...v3.0.1) (2023-07-27)
+
+
+### Bug Fixes
+
+* export seeder entity ([4f728fd](https://github.com/tada5hi/typeorm-extension/commit/4f728fd1c302ace11b5940cb868241140186449c))
+* **seeder:** ensure SeederExecutor properly sort seed file on fileName ([#642](https://github.com/tada5hi/typeorm-extension/issues/642)) ([a9c4f92](https://github.com/tada5hi/typeorm-extension/commit/a9c4f9219ee768ea13bb85dd1425c18c9cfd9fcd))
+
 # [3.0.0](https://github.com/tada5hi/typeorm-extension/compare/v2.8.1...v3.0.0) (2023-07-25)
 
 
