@@ -114,7 +114,7 @@ ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/data-sourc
 
 **`Seed Create`**
 ```shell
-ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:create  -d src/data-source.ts --name src/database/seeds/user.ts
+ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:create  --name src/database/seeds/user.ts
 ```
 
 ### Database
