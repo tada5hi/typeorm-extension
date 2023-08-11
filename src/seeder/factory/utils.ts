@@ -1,4 +1,4 @@
-import { load } from 'locter';
+import { getModuleExport, load } from 'locter';
 import type { EntitySchema, ObjectType } from 'typeorm';
 import { resolveFilePaths, resolveFilePatterns } from '../utils';
 import { SeederFactoryManager } from './manager';
@@ -47,18 +47,27 @@ export async function prepareSeederFactories(
         }
     }
 
+    const factoryManager = useSeederFactoryManager();
+
     if (factoryFiles.length > 0) {
         factoryFiles = await resolveFilePatterns(factoryFiles, root);
         factoryFiles = resolveFilePaths(factoryFiles, root);
 
         for (let i = 0; i < factoryFiles.length; i++) {
-            await load(factoryFiles[i]);
+            const moduleExports = await load(factoryFiles[i]);
+            const moduleDefault = getModuleExport(moduleExports);
+            const factory = moduleDefault.value;
+
+            if (factory) {
+                factoryManager.set(
+                    factory.entity,
+                    factory.factoryFn,
+                );
+            }
         }
     }
 
     if (factoryConfigs.length > 0) {
-        const factoryManager = useSeederFactoryManager();
-
         for (let i = 0; i < factoryConfigs.length; i++) {
             factoryManager.set(
                 factoryConfigs[i].entity,
