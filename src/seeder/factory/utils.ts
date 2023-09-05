@@ -56,7 +56,7 @@ export async function prepareSeederFactories(
         for (let i = 0; i < factoryFiles.length; i++) {
             const moduleExports = await load(factoryFiles[i]);
             const moduleDefault = getModuleExport(moduleExports);
-            const factory = moduleDefault.value;
+            const factory: SeederFactoryItem = moduleDefault.value;
 
             if (factory) {
                 factoryManager.set(
