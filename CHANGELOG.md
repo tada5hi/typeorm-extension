@@ -1,3 +1,10 @@
+## [3.0.2](https://github.com/tada5hi/typeorm-extension/compare/v3.0.1...v3.0.2) (2023-09-15)
+
+
+### Bug Fixes
+
+* **deps:** bump locter from 1.2.1 to 1.2.2 ([#687](https://github.com/tada5hi/typeorm-extension/issues/687)) ([3c26fdd](https://github.com/tada5hi/typeorm-extension/commit/3c26fdd1d8ae9c67e485783a9fcb4a449a55c911))
+
 ## [3.0.1](https://github.com/tada5hi/typeorm-extension/compare/v3.0.0...v3.0.1) (2023-07-27)
 
 
