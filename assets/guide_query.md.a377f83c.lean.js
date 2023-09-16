@@ -1,1 +1,0 @@
-import{_ as s,o as n,c as a,U as l}from"./chunks/framework.adbdbaa5.js";const A=JSON.parse('{"title":"Query","description":"","frontmatter":{},"headers":[],"relativePath":"guide/query.md","filePath":"guide/query.md"}'),p={name:"guide/query.md"},o=l("",15),e=[o];function t(c,r,y,F,D,i){return n(),a("div",null,e)}const f=s(p,[["render",t]]);export{A as __pageData,f as default};
