@@ -567,8 +567,9 @@ plugin [@routup/query](https://www.npmjs.com/package/@routup/query) is used to h
 but there is also a guide available for [express](https://typeorm-extension.tada5hi.net/guide/query.html).
 
 ```typescript
+import { createServer } from 'node:http';
 import type { Request, Response } from 'routup';
-import { Router, send } from 'routup';
+import { createNodeDispatcher, Router } from 'routup';
 import { createHandler, useQuery } from '@routup/query';
 
 import {
@@ -636,16 +637,17 @@ router.get('users', async (req: Request, res: Response) => {
 
     const [entities, total] = await query.getManyAndCount();
 
-    send(res, {
+    return {
         data: entities,
         meta: {
             total,
             ...pagination
         }
-    });
+    };
 });
 
-router.listen(80);
+const server = createServer(createNodeDispatcher(router));
+server.listen(80);
 ```
 
 ## Contributing
