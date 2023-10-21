@@ -1,3 +1,16 @@
+# [3.1.0](https://github.com/tada5hi/typeorm-extension/compare/v3.0.2...v3.1.0) (2023-10-21)
+
+
+### Bug Fixes
+
+* **deps:** bump @faker-js/faker from 8.0.2 to 8.2.0 ([#734](https://github.com/tada5hi/typeorm-extension/issues/734)) ([f3e5054](https://github.com/tada5hi/typeorm-extension/commit/f3e5054485c3568e0ff712c34326de0ac467b3a8))
+* **deps:** bump smob from 1.4.0 to 1.4.1 ([#732](https://github.com/tada5hi/typeorm-extension/issues/732)) ([fb71fae](https://github.com/tada5hi/typeorm-extension/commit/fb71fae38ace23558c482cb1d3d8027b94adb65a))
+
+
+### Features
+
+* async data-source exports ([a2cdb9d](https://github.com/tada5hi/typeorm-extension/commit/a2cdb9d27c3e6f1d451286d20db626cce2f101f4))
+
 ## [3.0.2](https://github.com/tada5hi/typeorm-extension/compare/v3.0.1...v3.0.2) (2023-09-15)
 
 
