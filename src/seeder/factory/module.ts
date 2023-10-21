@@ -2,10 +2,9 @@ import type { FakerOptions, LocaleDefinition } from '@faker-js/faker';
 import { Faker } from '@faker-js/faker';
 import type { SaveOptions } from 'typeorm';
 import { isObject, load } from 'locter';
-import { SeederFactoryContext } from './type';
-import { hasOwnProperty } from '../../utils';
+import type { SeederFactoryContext } from './type';
+import { hasOwnProperty, isPromise } from '../../utils';
 import { useDataSource } from '../../data-source';
-import { isPromise } from '../utils';
 
 export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     public readonly context: SeederFactoryContext<O, Meta>;

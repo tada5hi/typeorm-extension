@@ -12,11 +12,11 @@ import {
     CodeTransformation,
     adjustFilePath,
     isCodeTransformation,
+    isPromise, readTSConfig,
     safeReplaceWindowsSeparator,
 } from '../../utils';
 import type { DataSourceFindOptions } from './type';
-import type { TSConfig } from '../../utils/tsconfig';
-import { readTSConfig } from '../../utils/tsconfig';
+import type { TSConfig } from '../../utils';
 
 export async function findDataSource(
     context?: DataSourceFindOptions,
@@ -101,13 +101,21 @@ export async function findDataSource(
         );
 
         if (info) {
-            const fileExports = await load(info);
+            let fileExports = await load(info);
+
+            if (isPromise(fileExports)) {
+                fileExports = await fileExports;
+            }
 
             if (InstanceChecker.isDataSource(fileExports)) {
                 return fileExports;
             }
 
             const defaultExport = getModuleExport(fileExports);
+            if (isPromise(defaultExport.value)) {
+                defaultExport.value = await defaultExport.value;
+            }
+
             if (
                 defaultExport &&
                 InstanceChecker.isDataSource(defaultExport.value)
@@ -118,7 +126,11 @@ export async function findDataSource(
             if (isObject(fileExports)) {
                 const keys = Object.keys(fileExports);
                 for (let j = 0; j < keys.length; j++) {
-                    const value = fileExports[keys[j]];
+                    let value = fileExports[keys[j]];
+
+                    if (isPromise(value)) {
+                        value = await value;
+                    }
 
                     if (InstanceChecker.isDataSource(value)) {
                         return value;
