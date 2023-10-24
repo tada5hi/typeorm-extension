@@ -1,3 +1,10 @@
+## [3.1.1](https://github.com/tada5hi/typeorm-extension/compare/v3.1.0...v3.1.1) (2023-10-24)
+
+
+### Bug Fixes
+
+* multiple shebangs in cli entrypoint ([c227c66](https://github.com/tada5hi/typeorm-extension/commit/c227c664cd6fb80c193f8e3e2e33d31b7c80d6a0))
+
 # [3.1.0](https://github.com/tada5hi/typeorm-extension/compare/v3.0.2...v3.1.0) (2023-10-21)
 
 
