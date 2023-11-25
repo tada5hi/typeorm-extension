@@ -1,0 +1,1 @@
+import{_ as s,o as i,c as a,R as n}from"./chunks/framework.-3ULgdun.js";const F=JSON.parse('{"title":"Query","description":"","frontmatter":{},"headers":[],"relativePath":"guide/query.md","filePath":"guide/query.md"}'),l={name:"guide/query.md"},p=n("",15),h=[p];function k(t,e,E,r,d,y){return i(),a("div",null,h)}const c=s(l,[["render",k]]);export{F as __pageData,c as default};
