@@ -1,7 +1,7 @@
 import { isObject } from 'locter';
 import type { ObjectLiteral } from 'rapiq';
-import { DataSource, MssqlParameter, Table } from 'typeorm';
-import type { DataSourceOptions, QueryRunner } from 'typeorm';
+import { MssqlParameter, Table } from 'typeorm';
+import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
 import { setDataSource } from '../data-source';
 import { useEnv } from '../env';
@@ -9,8 +9,7 @@ import { adjustFilePaths, readTSConfig, resolveFilePath } from '../utils';
 import type { TSConfig } from '../utils';
 import { SeederEntity } from './entity';
 import { prepareSeederFactories, useSeederFactoryManager } from './factory';
-import { SeederExecutorOptions } from './type';
-import type { SeederOptions, SeederPrepareElement } from './type';
+import type { SeederExecutorOptions, SeederOptions, SeederPrepareElement } from './type';
 import { prepareSeederSeeds } from './utils';
 
 export class SeederExecutor {
