@@ -1,3 +1,16 @@
+# [3.2.0](https://github.com/tada5hi/typeorm-extension/compare/v3.1.1...v3.2.0) (2023-11-25)
+
+
+### Bug Fixes
+
+* **deps:** bump @faker-js/faker from 8.2.0 to 8.3.1 ([#782](https://github.com/tada5hi/typeorm-extension/issues/782)) ([fa7a114](https://github.com/tada5hi/typeorm-extension/commit/fa7a114d7508e635377fbf7c19bd9cfbaaf4ab05))
+* **deps:** bump locter from 1.2.2 to 1.2.3 ([#779](https://github.com/tada5hi/typeorm-extension/issues/779)) ([e89daea](https://github.com/tada5hi/typeorm-extension/commit/e89daeab5bd2c0d08ee2503dc259b7e601d790c1))
+
+
+### Features
+
+* seeder with non default export ([#776](https://github.com/tada5hi/typeorm-extension/issues/776)) ([e1fe651](https://github.com/tada5hi/typeorm-extension/commit/e1fe651397b9f217ca5321db407aca255e5ae5ad))
+
 ## [3.1.1](https://github.com/tada5hi/typeorm-extension/compare/v3.1.0...v3.1.1) (2023-10-24)
 
 
