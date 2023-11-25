@@ -1,8 +1,8 @@
+import type { DataSource } from 'typeorm';
 import {
     SeederExecutor,
     runSeeder,
     runSeeders,
-    useDataSource,
 } from '../../../src';
 import type { SeederEntity } from '../../../src';
 import { User } from '../../data/entity/user';
@@ -11,8 +11,10 @@ import '../../data/factory/user';
 import UserSeeder from '../../data/seed/user';
 
 describe('src/seeder/index.ts', () => {
+    let dataSource : DataSource;
+
     beforeEach(async () => {
-        await setupTestDatabase();
+        dataSource = await setupTestDatabase();
     });
 
     afterEach(async () => {
@@ -20,11 +22,9 @@ describe('src/seeder/index.ts', () => {
     });
 
     it('should seed with data-source options', async () => {
-        const dataSource = await useDataSource();
-
         const executor = new SeederExecutor(dataSource);
         let output = await executor.execute();
-        expect(output.length).toEqual(1);
+        expect(output.length).toEqual(2);
 
         output = await executor.execute();
         expect(output.length).toEqual(0);
@@ -37,8 +37,6 @@ describe('src/seeder/index.ts', () => {
     });
 
     it('should seed with explicit definitions', async () => {
-        const dataSource = await useDataSource();
-
         await runSeeders(dataSource, {
             seeds: [UserSeeder],
         });
@@ -51,8 +49,6 @@ describe('src/seeder/index.ts', () => {
     });
 
     it('should seed with explicit definition', async () => {
-        const dataSource = await useDataSource();
-
         const response = await runSeeder(dataSource, UserSeeder);
         expect(response).toBeDefined();
 

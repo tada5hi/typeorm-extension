@@ -1,4 +1,4 @@
-import { getModuleExport, load } from 'locter';
+import { load } from 'locter';
 import path from 'node:path';
 import type { SeederConstructor, SeederPrepareElement } from '../type';
 import { resolveFilePaths, resolveFilePatterns } from './file-path';
@@ -27,28 +27,36 @@ export async function prepareSeederSeeds(
 
         for (let i = 0; i < seedFiles.length; i++) {
             const moduleExports = await load(seedFiles[i]);
-            const moduleDefault = getModuleExport(moduleExports);
 
-            if (moduleDefault.value) {
-                const item = moduleDefault.value as SeederConstructor;
+            let clazzConstructor : SeederConstructor | undefined;
 
+            const exportKeys = Object.keys(moduleExports);
+            for (let j = 0; j < exportKeys.length; j++) {
+                const moduleExport = moduleExports[exportKeys[j]];
+                if (
+                    typeof moduleExport === 'function' &&
+                    moduleExport.prototype
+                ) {
+                    clazzConstructor = moduleExport;
+                }
+            }
+
+            if (clazzConstructor) {
                 const fileName = path.basename(seedFiles[i]);
                 const filePath = seedFiles[i];
                 const match = fileName.match(/^([0-9]{13,})-(.*)$/);
+
+                let timestamp : number | undefined;
                 if (match) {
-                    items.push({
-                        constructor: item,
-                        timestamp: parseInt(match[1], 10),
-                        fileName,
-                        filePath,
-                    });
-                } else {
-                    items.push({
-                        constructor: item,
-                        fileName,
-                        filePath,
-                    });
+                    timestamp = parseInt(match[1], 10);
                 }
+
+                items.push({
+                    constructor: clazzConstructor,
+                    fileName,
+                    filePath,
+                    ...(timestamp ? { timestamp } : {}),
+                });
             }
         }
     }
