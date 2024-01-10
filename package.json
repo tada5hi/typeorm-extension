@@ -82,7 +82,7 @@
         "@tada5hi/semantic-release": "^0.3.0",
         "@tada5hi/tsconfig": "^0.5.0",
         "@types/jest": "^27.5.0",
-        "@types/node": "^20.10.0",
+        "@types/node": "^20.10.8",
         "@types/yargs": "^17.0.32",
         "better-sqlite3": "^8.7.0",
         "cross-env": "^7.0.3",
