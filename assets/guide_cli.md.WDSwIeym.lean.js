@@ -1,1 +1,0 @@
-import{_ as e,o as t,c as o,R as d}from"./chunks/framework.-3ULgdun.js";const b=JSON.parse('{"title":"CLI","description":"","frontmatter":{},"headers":[],"relativePath":"guide/cli.md","filePath":"guide/cli.md"}'),a={name:"guide/cli.md"},c=d("",10),s=[c];function n(i,r,l,p,h,u){return t(),o("div",null,s)}const f=e(a,[["render",n]]);export{b as __pageData,f as default};
