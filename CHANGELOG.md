@@ -1,3 +1,19 @@
+# [3.2.0](https://github.com/tada5hi/typeorm-extension/compare/v3.1.1...v3.2.0) (2024-01-11)
+
+
+### Bug Fixes
+
+* **deps:** bump @faker-js/faker from 8.2.0 to 8.3.1 ([#782](https://github.com/tada5hi/typeorm-extension/issues/782)) ([fa7a114](https://github.com/tada5hi/typeorm-extension/commit/fa7a114d7508e635377fbf7c19bd9cfbaaf4ab05))
+* **deps:** bump locter from 1.2.2 to 1.2.3 ([#779](https://github.com/tada5hi/typeorm-extension/issues/779)) ([e89daea](https://github.com/tada5hi/typeorm-extension/commit/e89daeab5bd2c0d08ee2503dc259b7e601d790c1))
+* **deps:** bump locter from 1.2.3 to 1.3.0 ([#826](https://github.com/tada5hi/typeorm-extension/issues/826)) ([00cb9c7](https://github.com/tada5hi/typeorm-extension/commit/00cb9c755acfddb630ae91c3e65e362b0eb52ef8))
+* **deps:** bump reflect-metadata from 0.1.13 to 0.2.1 ([#825](https://github.com/tada5hi/typeorm-extension/issues/825)) ([1805a49](https://github.com/tada5hi/typeorm-extension/commit/1805a49fc8f681c1e920156aca47eea679be44fa))
+* merging data-source options ([#829](https://github.com/tada5hi/typeorm-extension/issues/829)) ([1d0261a](https://github.com/tada5hi/typeorm-extension/commit/1d0261a8696b0e4f0c723b5fd35bc218c700819b)), closes [#782](https://github.com/tada5hi/typeorm-extension/issues/782) [#779](https://github.com/tada5hi/typeorm-extension/issues/779) [#776](https://github.com/tada5hi/typeorm-extension/issues/776)
+
+
+### Features
+
+* seeder with non default export ([#776](https://github.com/tada5hi/typeorm-extension/issues/776)) ([e1fe651](https://github.com/tada5hi/typeorm-extension/commit/e1fe651397b9f217ca5321db407aca255e5ae5ad))
+
 # [3.2.0](https://github.com/tada5hi/typeorm-extension/compare/v3.1.1...v3.2.0) (2023-11-25)
 
 
