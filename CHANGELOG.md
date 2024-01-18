@@ -1,3 +1,10 @@
+# [3.4.0-beta.1](https://github.com/tada5hi/typeorm-extension/compare/v3.3.0...v3.4.0-beta.1) (2024-01-18)
+
+
+### Features
+
+* simplify data-source options detection ([328b4f0](https://github.com/tada5hi/typeorm-extension/commit/328b4f065beb8c47096e7f1abd92b5d55e6a24dd))
+
 # [3.3.0](https://github.com/tada5hi/typeorm-extension/compare/v3.2.0...v3.3.0) (2024-01-11)
 
 
