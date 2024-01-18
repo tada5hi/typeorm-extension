@@ -8,20 +8,17 @@ import path from 'node:path';
 import type { DataSource } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
 import {
-    CodeTransformation,
     adjustFilePath,
-    isCodeTransformation,
-    isPromise, readTSConfig,
+    isPromise,
+    readTSConfig,
     safeReplaceWindowsSeparator,
 } from '../../utils';
 import type { DataSourceFindOptions } from './type';
 import type { TSConfig } from '../../utils';
 
 export async function findDataSource(
-    context?: DataSourceFindOptions,
+    context: DataSourceFindOptions = {},
 ) : Promise<DataSource | undefined> {
-    context = context || {};
-
     let tsconfig : TSConfig | undefined;
     if (!context.preserveFilePaths) {
         if (isObject(context.tsconfig)) {
@@ -57,7 +54,7 @@ export async function findDataSource(
         }
 
         if (!context.preserveFilePaths) {
-            directory = await adjustFilePath(directory);
+            directory = await adjustFilePath(directory, tsconfig);
         }
     }
 
@@ -78,10 +75,7 @@ export async function findDataSource(
 
     files.push(...lookupPaths);
 
-    if (
-        !context.preserveFilePaths &&
-        !isCodeTransformation(CodeTransformation.JUST_IN_TIME)
-    ) {
+    if (!context.preserveFilePaths) {
         for (let j = 0; j < files.length; j++) {
             files[j] = await adjustFilePath(files[j], tsconfig);
         }

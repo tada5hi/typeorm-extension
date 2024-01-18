@@ -16,10 +16,8 @@ import {
  * @param context
  */
 export async function buildDataSourceOptions(
-    context?: DataSourceOptionsBuildContext,
+    context: DataSourceOptionsBuildContext = {},
 ) : Promise<DataSourceOptions> {
-    context = context ?? {};
-
     const directory : string = context.directory || process.cwd();
 
     let tsconfig : TSConfig | undefined;
