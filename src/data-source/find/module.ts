@@ -1,5 +1,4 @@
 import {
-    getModuleExport,
     isObject,
     load,
     locate,
@@ -101,40 +100,30 @@ export async function findDataSource(
         );
 
         if (info) {
-            let fileExports = await load(info);
+            let moduleRecord = await load(info);
 
-            if (isPromise(fileExports)) {
-                fileExports = await fileExports;
+            if (isPromise(moduleRecord)) {
+                moduleRecord = await moduleRecord;
             }
 
-            if (InstanceChecker.isDataSource(fileExports)) {
-                return fileExports;
+            if (InstanceChecker.isDataSource(moduleRecord)) {
+                return moduleRecord;
             }
 
-            const defaultExport = getModuleExport(fileExports);
-            if (isPromise(defaultExport.value)) {
-                defaultExport.value = await defaultExport.value;
+            if (!isObject(moduleRecord)) {
+                continue;
             }
 
-            if (
-                defaultExport &&
-                InstanceChecker.isDataSource(defaultExport.value)
-            ) {
-                return defaultExport.value;
-            }
+            const keys = Object.keys(moduleRecord);
+            for (let j = 0; j < keys.length; j++) {
+                let value = moduleRecord[keys[j]];
 
-            if (isObject(fileExports)) {
-                const keys = Object.keys(fileExports);
-                for (let j = 0; j < keys.length; j++) {
-                    let value = fileExports[keys[j]];
+                if (isPromise(value)) {
+                    value = await value;
+                }
 
-                    if (isPromise(value)) {
-                        value = await value;
-                    }
-
-                    if (InstanceChecker.isDataSource(value)) {
-                        return value;
-                    }
+                if (InstanceChecker.isDataSource(value)) {
+                    return value;
                 }
             }
         }
