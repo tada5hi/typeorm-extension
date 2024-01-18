@@ -1,3 +1,16 @@
+# [3.4.0-beta.2](https://github.com/tada5hi/typeorm-extension/compare/v3.4.0-beta.1...v3.4.0-beta.2) (2024-01-18)
+
+
+### Bug Fixes
+
+* remove duplicate runtime environment checks ([25db92a](https://github.com/tada5hi/typeorm-extension/commit/25db92a9b21af04ae9132e4a885b5fec0e99dce0))
+
+
+### Features
+
+* add bin directory as export ([#849](https://github.com/tada5hi/typeorm-extension/issues/849)) ([d0e83e6](https://github.com/tada5hi/typeorm-extension/commit/d0e83e6bc80831f99fc58bdb4279254694944514))
+* prioritize seeder track property over global option ([b21bb6f](https://github.com/tada5hi/typeorm-extension/commit/b21bb6f02531c3743df19b1fdfe38e5bb3983948))
+
 # [3.4.0-beta.1](https://github.com/tada5hi/typeorm-extension/compare/v3.3.0...v3.4.0-beta.1) (2024-01-18)
 
 
