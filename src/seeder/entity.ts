@@ -58,9 +58,11 @@ export class SeederEntity {
         this.filePath = ctx.filePath;
     }
 
-    trackExecution() : boolean {
-        return !!this.instance &&
-            typeof this.instance.track === 'boolean' &&
-            this.instance.track;
+    get trackExecution() : boolean | undefined {
+        if (typeof this.instance === 'undefined') {
+            return undefined;
+        }
+
+        return this.instance.track;
     }
 }

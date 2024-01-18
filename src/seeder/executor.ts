@@ -46,7 +46,7 @@ export class SeederExecutor {
 
         let tracking = !!options.seedTracking;
         if (!tracking) {
-            tracking = all.some((seed) => seed.trackExecution());
+            tracking = all.some((seed) => !!seed.trackExecution);
         }
 
         let queryRunner : QueryRunner | undefined;
@@ -90,7 +90,18 @@ export class SeederExecutor {
                 (el) => el.name === seed.name,
             );
 
-            return index === -1 || !seed.trackExecution();
+            if (index === -1) {
+                return true;
+            }
+
+            let seedTracking : boolean | undefined;
+            if (typeof seed.trackExecution !== 'undefined') {
+                seedTracking = seed.trackExecution;
+            } else {
+                seedTracking = options.seedTracking;
+            }
+
+            return !seedTracking;
         });
 
         if (pending.length === 0) {
@@ -121,7 +132,14 @@ export class SeederExecutor {
 
                 pending[i].result = await seeder.run(this.dataSource, factoryManager);
 
-                if (queryRunner && (options.seedTracking || pending[i].trackExecution())) {
+                let seedTracking : boolean | undefined;
+                if (typeof pending[i].trackExecution !== 'undefined') {
+                    seedTracking = pending[i].trackExecution;
+                } else {
+                    seedTracking = options.seedTracking;
+                }
+
+                if (queryRunner && seedTracking) {
                     await this.track(queryRunner, pending[i]);
                 }
 
