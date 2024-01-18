@@ -330,6 +330,9 @@ The following values are assumed by default:
 
 Note: When seeder paths are configured as **glob patterns**, the paths are resolved and sorted in alphabetical order using filenames. This helps to ensure that the seeders are executed in the correct order.
 
+It is possible to define that a seeder is only executed once.
+This can either be set globally using the seedTacking option or locally using the track property of a seeder class.
+
 `data-source.ts`
 
 ```typescript
@@ -341,7 +344,8 @@ const options: DataSourceOptions & SeederOptions = {
     database: 'db.sqlite',
 
     seeds: ['src/database/seeds/**/*{.ts,.js}'],
-    factories: ['src/database/factories/**/*{.ts,.js}']
+    seedTracking: false,
+    factories: ['src/database/factories/**/*{.ts,.js}'],
 };
 
 export const dataSource = new DataSource(options);
@@ -433,6 +437,13 @@ import { DataSource } from 'typeorm';
 import { User } from './user';
 
 export default class UserSeeder implements Seeder {
+    /**
+     * Track seeder execution.
+     *
+     * Default: false
+     */
+    track = false;
+
     public async run(
         dataSource: DataSource,
         factoryManager: SeederFactoryManager
