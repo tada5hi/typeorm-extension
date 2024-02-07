@@ -1,3 +1,11 @@
+## [3.4.1-beta.1](https://github.com/tada5hi/typeorm-extension/compare/v3.4.0...v3.4.1-beta.1) (2024-02-07)
+
+
+### Bug Fixes
+
+* **deps:** bump @faker-js/faker from 8.3.1 to 8.4.0 ([#859](https://github.com/tada5hi/typeorm-extension/issues/859)) ([7d505d4](https://github.com/tada5hi/typeorm-extension/commit/7d505d4c2f9db4eb109e62c3d456f5bf1281c57a))
+* don't export bin path ([3f9708d](https://github.com/tada5hi/typeorm-extension/commit/3f9708d4754d3ba3fa9ff9b954b32870f6565064))
+
 # [3.4.0](https://github.com/tada5hi/typeorm-extension/compare/v3.3.0...v3.4.0) (2024-01-18)
 
 
