@@ -1,1 +1,0 @@
-import{_ as s,c as i,o as a,V as n}from"./chunks/framework.l0MLLx4M.js";const F=JSON.parse('{"title":"Query","description":"","frontmatter":{},"headers":[],"relativePath":"guide/query.md","filePath":"guide/query.md"}'),l={name:"guide/query.md"},p=n("",15),h=[p];function k(t,e,E,r,d,y){return a(),i("div",null,h)}const c=s(l,[["render",k]]);export{F as __pageData,c as default};
