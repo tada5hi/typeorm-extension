@@ -1,14 +1,12 @@
+import {
+    oneOf, read, readArray, readBool, readInt,
+} from 'envix';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import { EnvironmentName, EnvironmentVariableName } from './constants';
 import type { Environment } from './type';
 import {
-    hasProcessEnv,
-    readBoolFromProcessEnv,
-    readFromProcessEnv,
-    readIntFromProcessEnv,
     transformCache,
     transformLogging,
-    transformStringToArray,
 } from './utils';
 
 let instance : Environment | undefined;
@@ -25,114 +23,114 @@ export function useEnv(key?: string) : any {
     }
 
     const output: Environment = {
-        env: readFromProcessEnv(EnvironmentVariableName.ENV, EnvironmentName.DEVELOPMENT) as `${EnvironmentName}`,
+        env: read(EnvironmentVariableName.ENV, EnvironmentName.DEVELOPMENT) as `${EnvironmentName}`,
 
         // Seeder
-        seeds: transformStringToArray(readFromProcessEnv([
-            EnvironmentVariableName.SEEDS,
-            EnvironmentVariableName.SEEDS_ALT,
-        ])),
-        factories: transformStringToArray(readFromProcessEnv([
-            EnvironmentVariableName.FACTORIES,
-            EnvironmentVariableName.FACTORIES_ALT,
-        ])),
+        seeds: oneOf([
+            readArray(EnvironmentVariableName.SEEDS),
+            readArray(EnvironmentVariableName.SEEDS_ALT),
+        ]) ?? [],
+        factories: oneOf([
+            readArray(EnvironmentVariableName.FACTORIES),
+            readArray(EnvironmentVariableName.FACTORIES_ALT),
+        ]) ?? [],
 
         // Database
-        url: readFromProcessEnv([
-            EnvironmentVariableName.URL,
-            EnvironmentVariableName.URL_ALT,
+        url: oneOf([
+            read(EnvironmentVariableName.URL),
+            read(EnvironmentVariableName.URL_ALT),
         ]),
-        host: readFromProcessEnv([
-            EnvironmentVariableName.HOST,
-            EnvironmentVariableName.HOST_ALT,
+        host: oneOf([
+            read(EnvironmentVariableName.HOST),
+            read(EnvironmentVariableName.HOST_ALT),
         ]),
-        port: readIntFromProcessEnv([
-            EnvironmentVariableName.PORT,
-            EnvironmentVariableName.PORT_ALT,
+        port: oneOf([
+            readInt(EnvironmentVariableName.PORT),
+            readInt(EnvironmentVariableName.PORT_ALT),
         ]),
-        username: readFromProcessEnv([
-            EnvironmentVariableName.USERNAME,
-            EnvironmentVariableName.USERNAME_ALT,
+        username: oneOf([
+            read(EnvironmentVariableName.USERNAME),
+            read(EnvironmentVariableName.USERNAME_ALT),
         ]),
-        password: readFromProcessEnv([
-            EnvironmentVariableName.PASSWORD,
-            EnvironmentVariableName.PASSWORD_ALT,
+        password: oneOf([
+            read(EnvironmentVariableName.PASSWORD),
+            read(EnvironmentVariableName.PASSWORD_ALT),
         ]),
-        database: readFromProcessEnv([
-            EnvironmentVariableName.DATABASE,
-            EnvironmentVariableName.DATABASE_ALT,
+        database: oneOf([
+            read(EnvironmentVariableName.DATABASE),
+            read(EnvironmentVariableName.DATABASE_ALT),
         ]),
-        sid: readFromProcessEnv([
-            EnvironmentVariableName.SID,
-            EnvironmentVariableName.SID_ALT,
+        sid: oneOf([
+            read(EnvironmentVariableName.SID),
+            read(EnvironmentVariableName.SID_ALT),
         ]),
-        schema: readFromProcessEnv([
-            EnvironmentVariableName.SCHEMA,
-            EnvironmentVariableName.SCHEMA_ALT,
+        schema: oneOf([
+            read(EnvironmentVariableName.SCHEMA),
+            read(EnvironmentVariableName.SCHEMA_ALT),
         ]),
-        extra: readFromProcessEnv([
-            EnvironmentVariableName.DRIVER_EXTRA,
-            EnvironmentVariableName.DRIVER_EXTRA_ALT,
+        extra: oneOf([
+            read(EnvironmentVariableName.DRIVER_EXTRA),
+            read(EnvironmentVariableName.DRIVER_EXTRA_ALT),
         ]),
-        synchronize: readBoolFromProcessEnv([
-            EnvironmentVariableName.SYNCHRONIZE,
-            EnvironmentVariableName.SYNCHRONIZE_ALT,
+        synchronize: oneOf([
+            readBool(EnvironmentVariableName.SYNCHRONIZE),
+            readBool(EnvironmentVariableName.SYNCHRONIZE_ALT),
         ]),
-        schemaDrop: readBoolFromProcessEnv([
-            EnvironmentVariableName.SCHEMA_DROP,
-            EnvironmentVariableName.SCHEMA_DROP_ALT,
+        schemaDrop: oneOf([
+            readBool(EnvironmentVariableName.SCHEMA_DROP),
+            readBool(EnvironmentVariableName.SCHEMA_DROP_ALT),
         ]),
-        migrationsRun: readBoolFromProcessEnv([
-            EnvironmentVariableName.MIGRATIONS_RUN,
-            EnvironmentVariableName.MIGRATIONS_RUN_ALT,
+        migrationsRun: oneOf([
+            readBool(EnvironmentVariableName.MIGRATIONS_RUN),
+            readBool(EnvironmentVariableName.MIGRATIONS_RUN_ALT),
         ]),
-        entities: transformStringToArray(readFromProcessEnv([
-            EnvironmentVariableName.ENTITIES,
-            EnvironmentVariableName.ENTITIES_ALT,
+        entities: oneOf([
+            readArray(EnvironmentVariableName.ENTITIES),
+            readArray(EnvironmentVariableName.ENTITIES_ALT),
+        ]) ?? [],
+        migrations: oneOf([
+            readArray(EnvironmentVariableName.MIGRATIONS),
+            readArray(EnvironmentVariableName.MIGRATIONS_ALT),
+        ]) ?? [],
+        migrationsTableName: oneOf([
+            read(EnvironmentVariableName.MIGRATIONS_TABLE_NAME),
+            read(EnvironmentVariableName.MIGRATIONS_TABLE_NAME_ALT),
+        ]),
+        metadataTableName: oneOf([
+            read(EnvironmentVariableName.METADATA_TABLE_NAME),
+            read(EnvironmentVariableName.METADATA_TABLE_NAME_ALT),
+        ]),
+        subscribers: oneOf([
+            readArray(EnvironmentVariableName.SUBSCRIBERS),
+            readArray(EnvironmentVariableName.SUBSCRIBERS_ALT),
+        ]) ?? [],
+        logging: transformLogging(oneOf([
+            read(EnvironmentVariableName.LOGGING),
+            read(EnvironmentVariableName.LOGGING_ALT),
         ])),
-        migrations: transformStringToArray(readFromProcessEnv([
-            EnvironmentVariableName.MIGRATIONS,
-            EnvironmentVariableName.MIGRATIONS_ALT,
+        logger: oneOf([
+            read(EnvironmentVariableName.LOGGER),
+            read(EnvironmentVariableName.LOGGER_ALT),
+        ]),
+        entityPrefix: oneOf([
+            read(EnvironmentVariableName.ENTITY_PREFIX),
+            read(EnvironmentVariableName.ENTITY_PREFIX_ALT),
+        ]),
+        maxQueryExecutionTime: oneOf([
+            readInt(EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME),
+            readInt(EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME_ALT),
+        ]),
+        debug: oneOf([
+            read(EnvironmentVariableName.DEBUG),
+            read(EnvironmentVariableName.DEBUG_ALT),
+        ]),
+        cache: transformCache(oneOf([
+            read(EnvironmentVariableName.CACHE),
+            read(EnvironmentVariableName.CACHE_ALT),
         ])),
-        migrationsTableName: readFromProcessEnv([
-            EnvironmentVariableName.MIGRATIONS_TABLE_NAME,
-            EnvironmentVariableName.MIGRATIONS_TABLE_NAME_ALT,
-        ]),
-        metadataTableName: readFromProcessEnv([
-            EnvironmentVariableName.METADATA_TABLE_NAME,
-            EnvironmentVariableName.METADATA_TABLE_NAME_ALT,
-        ]),
-        subscribers: transformStringToArray(readFromProcessEnv([
-            EnvironmentVariableName.SUBSCRIBERS,
-            EnvironmentVariableName.SUBSCRIBERS_ALT,
-        ])),
-        logging: transformLogging(readFromProcessEnv([
-            EnvironmentVariableName.LOGGING,
-            EnvironmentVariableName.LOGGING_ALT,
-        ])),
-        logger: readFromProcessEnv([
-            EnvironmentVariableName.LOGGER,
-            EnvironmentVariableName.LOGGER_ALT,
-        ]),
-        entityPrefix: readFromProcessEnv([
-            EnvironmentVariableName.ENTITY_PREFIX,
-            EnvironmentVariableName.ENTITY_PREFIX_ALT,
-        ]),
-        maxQueryExecutionTime: readIntFromProcessEnv([
-            EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME,
-            EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME_ALT,
-        ]),
-        debug: readFromProcessEnv([
-            EnvironmentVariableName.DEBUG,
-            EnvironmentVariableName.DEBUG_ALT,
-        ]),
-        cache: transformCache(readFromProcessEnv([
-            EnvironmentVariableName.CACHE,
-            EnvironmentVariableName.CACHE_ALT,
-        ])),
-        uuidExtension: readFromProcessEnv([
-            EnvironmentVariableName.UUID_EXTENSION,
-            EnvironmentVariableName.UUID_EXTENSION_ALT,
+        uuidExtension: oneOf([
+            read(EnvironmentVariableName.UUID_EXTENSION),
+            read(EnvironmentVariableName.UUID_EXTENSION_ALT),
         ]),
 
     };
@@ -142,10 +140,18 @@ export function useEnv(key?: string) : any {
     }
 
     let type : string | undefined;
-    if (hasProcessEnv([EnvironmentVariableName.TYPE, EnvironmentVariableName.TYPE_ALT])) {
-        type = readFromProcessEnv([EnvironmentVariableName.TYPE, EnvironmentVariableName.TYPE_ALT]);
-    } else if (hasProcessEnv([EnvironmentVariableName.URL, EnvironmentVariableName.URL_ALT])) {
-        const temp = readFromProcessEnv([EnvironmentVariableName.URL, EnvironmentVariableName.URL_ALT]);
+    const envType = oneOf([
+        read(EnvironmentVariableName.TYPE),
+        read(EnvironmentVariableName.TYPE_ALT),
+    ]);
+    const envURL = oneOf([
+        read(EnvironmentVariableName.URL),
+        read(EnvironmentVariableName.URL_ALT),
+    ]);
+    if (envType) {
+        type = envType;
+    } else if (envURL) {
+        const temp = envURL;
         if (temp) {
             const parts = temp.split('://');
             if (parts.length > 0) {
