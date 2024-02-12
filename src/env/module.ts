@@ -144,22 +144,20 @@ export function useEnv(key?: string) : any {
         read(EnvironmentVariableName.TYPE),
         read(EnvironmentVariableName.TYPE_ALT),
     ]);
-    const envURL = oneOf([
-        read(EnvironmentVariableName.URL),
-        read(EnvironmentVariableName.URL_ALT),
-    ]);
+
     if (envType) {
         type = envType;
-    } else if (envURL) {
-        const temp = envURL;
-        if (temp) {
-            const parts = temp.split('://');
-            if (parts.length > 0) {
-                // eslint-disable-next-line prefer-destructuring
-                type = parts[0];
-            }
+    } else {
+        const envURL = oneOf([
+            read(EnvironmentVariableName.URL),
+            read(EnvironmentVariableName.URL_ALT),
+        ]);
+
+        if (envURL) {
+            [type] = envURL.split('://');
         }
     }
+
     if (type) {
         output.type = type as DatabaseType; // todo: maybe validation here
     }
