@@ -1,3 +1,17 @@
+# [3.5.0](https://github.com/tada5hi/typeorm-extension/compare/v3.4.0...v3.5.0) (2024-02-12)
+
+
+### Bug Fixes
+
+* **deps:** bump @faker-js/faker from 8.3.1 to 8.4.0 ([#859](https://github.com/tada5hi/typeorm-extension/issues/859)) ([7d505d4](https://github.com/tada5hi/typeorm-extension/commit/7d505d4c2f9db4eb109e62c3d456f5bf1281c57a))
+* **deps:** bump @faker-js/faker from 8.4.0 to 8.4.1 ([#885](https://github.com/tada5hi/typeorm-extension/issues/885)) ([e9585f6](https://github.com/tada5hi/typeorm-extension/commit/e9585f6bcb7620a0c53fa62c1bc1090ee07f72d8))
+* optimized useEnv singleton fn ([a7f08d1](https://github.com/tada5hi/typeorm-extension/commit/a7f08d147d9bc153a102747c1b90444de59d36a8))
+
+
+### Features
+
+* use envix for environment management ([883b9d4](https://github.com/tada5hi/typeorm-extension/commit/883b9d4d9779c8807eaf6170642f14fe5f951b59))
+
 ## [3.4.1-beta.1](https://github.com/tada5hi/typeorm-extension/compare/v3.4.0...v3.4.1-beta.1) (2024-02-07)
 
 
