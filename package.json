@@ -84,7 +84,7 @@
         "@tada5hi/semantic-release": "^0.3.1",
         "@tada5hi/tsconfig": "^0.5.0",
         "@types/jest": "^27.5.0",
-        "@types/node": "^20.11.5",
+        "@types/node": "^20.12.3",
         "@types/yargs": "^17.0.32",
         "better-sqlite3": "^9.4.0",
         "cross-env": "^7.0.3",
