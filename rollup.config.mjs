@@ -123,7 +123,7 @@ export default [
                                 const chunk = bundle[fileName];
                                 if (chunk.type === 'chunk') {
                                     chunk.code = chunk.code.replace(
-                                        /import\s*{([\w\s,]+)}\s*from\s*(['"])typeorm([^'"]+)(['"])/g,
+                                        /import\s*{([\w\s,]+)}\s*from\s*(['"])typeorm([^'\-"]+)(['"])/g,
                                         "import {$1} from $2typeorm$3.js$4"
                                     );
                                 }
