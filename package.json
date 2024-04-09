@@ -80,7 +80,7 @@
         "@rollup/plugin-node-resolve": "^15.2.3",
         "@swc/core": "^1.4.13",
         "@tada5hi/commitlint-config": "^1.2.0",
-        "@tada5hi/eslint-config-typescript": "^1.2.9",
+        "@tada5hi/eslint-config-typescript": "^1.2.10",
         "@tada5hi/semantic-release": "^0.3.1",
         "@tada5hi/tsconfig": "^0.5.1",
         "@types/jest": "^27.5.0",
