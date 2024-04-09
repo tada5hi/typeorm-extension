@@ -1,10 +1,10 @@
 import type { FakerOptions, LocaleDefinition } from '@faker-js/faker';
 import { Faker } from '@faker-js/faker';
-import type { SaveOptions } from 'typeorm';
 import { isObject, load } from 'locter';
-import type { SeederFactoryContext } from './type';
-import { hasOwnProperty, isPromise } from '../../utils';
+import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
+import { hasOwnProperty, isPromise } from '../../utils';
+import type { SeederFactoryContext } from './type';
 
 export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     public readonly context: SeederFactoryContext<O, Meta>;
@@ -78,13 +78,13 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         params?: Partial<O>,
         options?: SaveOptions,
     ) : Promise<O[]> {
-        const items : O[] = [];
+        const promises : Promise<O>[] = [];
         for (let i = 0; i < amount; i++) {
-            const item = await this.save(params, options);
-            items.push(item);
+            const item = this.save(params, options);
+            promises.push(item);
         }
 
-        return items;
+        return Promise.all(promises);
     }
 
     // --------------------------------------------------------------
