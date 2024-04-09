@@ -1,3 +1,18 @@
+## [3.5.1](https://github.com/tada5hi/typeorm-extension/compare/v3.5.0...v3.5.1) (2024-04-09)
+
+
+### Bug Fixes
+
+* **deps:** bump locter from 2.0.2 to 2.1.0 ([#957](https://github.com/tada5hi/typeorm-extension/issues/957)) ([34d491f](https://github.com/tada5hi/typeorm-extension/commit/34d491f685e80c696bce7a00bda64a1a3c886e87))
+* **deps:** bump reflect-metadata from 0.2.1 to 0.2.2 ([#958](https://github.com/tada5hi/typeorm-extension/issues/958)) ([7e8e885](https://github.com/tada5hi/typeorm-extension/commit/7e8e885e6994d6e1bd16e15110be3f0b2df3b941))
+* **deps:** bump smob from 1.4.1 to 1.5.0 ([#961](https://github.com/tada5hi/typeorm-extension/issues/961)) ([d14f79a](https://github.com/tada5hi/typeorm-extension/commit/d14f79a10968b5a1006ad81b4d05058134b3cc5d))
+* remove extension in typeorm-extension import in seeder template file ([#954](https://github.com/tada5hi/typeorm-extension/issues/954)) ([4ccb4b6](https://github.com/tada5hi/typeorm-extension/commit/4ccb4b6c554f9cf53adc401a1bb44f11cd0101fa))
+
+
+### Performance Improvements
+
+* opimized seeder-factory save-many fn ([#955](https://github.com/tada5hi/typeorm-extension/issues/955)) ([a4dfce5](https://github.com/tada5hi/typeorm-extension/commit/a4dfce505d300739ddc23c301bc8b85b270cd397))
+
 # [3.5.0](https://github.com/tada5hi/typeorm-extension/compare/v3.4.0...v3.5.0) (2024-02-12)
 
 
