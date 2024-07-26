@@ -1,7 +1,7 @@
 import type { FiltersParseOutput } from 'rapiq';
 import { FilterComparisonOperator, parseQueryFilters } from 'rapiq';
 
-import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import type { ObjectLiteral, SelectQueryBuilder, WhereExpressionBuilder } from 'typeorm';
 import { Brackets } from 'typeorm';
 import { buildKeyWithPrefix, getAliasForPath } from '../../utils';
 import type {
@@ -16,8 +16,6 @@ export function transformParsedFilters<T extends ObjectLiteral = ObjectLiteral>(
     data: FiltersParseOutput,
     options: QueryFiltersApplyOptions<T> = {},
 ) : QueryFiltersOutput {
-    options = options || {};
-
     const items : QueryFiltersOutput = [];
 
     for (let i = 0; i < data.length; i++) {
@@ -33,11 +31,11 @@ export function transformParsedFilters<T extends ObjectLiteral = ObjectLiteral>(
             fullKey,
         ];
 
-        let bindingKey : string | undefined = typeof options.bindingKey === 'function' ?
-            options.bindingKey(fullKey) :
-            undefined;
-
-        if (typeof bindingKey === 'undefined') {
+        let bindingKey : string;
+        if (options.bindingKey) {
+            bindingKey = options.bindingKey(fullKey)
+                .replace('.', '_');
+        } else {
             bindingKey = `filter_${fullKey.replace('.', '_')}`;
         }
 
@@ -153,7 +151,7 @@ export function transformParsedFilters<T extends ObjectLiteral = ObjectLiteral>(
  * @param data
  */
 export function applyFiltersTransformed<T extends ObjectLiteral = ObjectLiteral>(
-    query: SelectQueryBuilder<T>,
+    query: SelectQueryBuilder<T> | WhereExpressionBuilder,
     data: QueryFiltersOutput,
 ) : QueryFiltersOutput {
     if (data.length === 0) {
@@ -182,7 +180,7 @@ export function applyFiltersTransformed<T extends ObjectLiteral = ObjectLiteral>
  * @param options
  */
 export function applyQueryFiltersParseOutput<T extends ObjectLiteral = ObjectLiteral>(
-    query: SelectQueryBuilder<T>,
+    query: SelectQueryBuilder<T> | WhereExpressionBuilder,
     data: FiltersParseOutput,
     options?: QueryFiltersApplyOptions<T>,
 ) : QueryFiltersApplyOutput {

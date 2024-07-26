@@ -1,16 +1,16 @@
 import { DataSource } from 'typeorm';
 import {
-    buildDataSourceOptions, checkDatabase,
     createDatabase,
-    dropDatabase, hasDataSource,
+    dropDatabase,
     setDataSource,
     unsetDataSource,
-    useDataSource,
 } from '../../../src';
+import { createDataSourceOptions } from './factory';
 
 export async function setupTestDatabase() : Promise<DataSource> {
-    const options = await buildDataSourceOptions({
-        directory: __dirname,
+    const options = createDataSourceOptions();
+    Object.assign(options, {
+        database: 'test/data/typeorm/db.sqlite',
     });
 
     await createDatabase({
@@ -25,27 +25,7 @@ export async function setupTestDatabase() : Promise<DataSource> {
     return dataSource;
 }
 
-export async function checkTestDatabase() {
-    const options = await buildDataSourceOptions({
-        directory: __dirname,
-    });
-
-    return checkDatabase({
-        options,
-    });
-}
-
-export async function destroyTestDatabase() {
-    if (!hasDataSource()) {
-        const options = await buildDataSourceOptions({
-            directory: __dirname,
-        });
-        await dropDatabase({ options });
-
-        return;
-    }
-
-    const dataSource = await useDataSource();
+export async function destroyTestDatabase(dataSource: DataSource) {
     await dataSource.destroy();
 
     const { options } = dataSource;

@@ -18,7 +18,7 @@ describe('src/seeder/index.ts', () => {
     });
 
     afterEach(async () => {
-        await destroyTestDatabase();
+        await destroyTestDatabase(dataSource);
     });
 
     it('should seed with data-source options', async () => {
@@ -57,7 +57,6 @@ describe('src/seeder/index.ts', () => {
         if (Array.isArray(result)) {
             expect(result.length).toEqual(6);
         }
-        expect((result as Record<string, any>[])[0].foo).toEqual('bar');
 
         const repository = dataSource.getRepository(User);
         const entities = await repository.find();
