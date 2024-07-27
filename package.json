@@ -88,7 +88,7 @@
         "@types/yargs": "^17.0.32",
         "better-sqlite3": "^9.4.5",
         "cross-env": "^7.0.3",
-        "eslint": "^8.56.0",
+        "eslint": "^9.8.0",
         "husky": "^9.0.11",
         "jest": "^27.5.1",
         "rollup": "^4.19.1",
