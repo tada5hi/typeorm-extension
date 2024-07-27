@@ -13,7 +13,7 @@ export default class UserSeeder implements Seeder {
 
         await repository.insert([
             {
-                firstName: 'Caleb', lastName: 'Barrows', email: 'caleb.barrows@gmail.com', foo: 'bar', phoneNumber: '+49 000000000',
+                firstName: 'Caleb', lastName: 'Barrows', email: 'caleb.barrows@gmail.com',
             },
         ]);
 
@@ -21,7 +21,7 @@ export default class UserSeeder implements Seeder {
 
         const items : User[] = [];
 
-        const userFactory = await factoryManager.get(User);
+        const userFactory = factoryManager.get(User);
         userFactory.setMeta({ foo: 'bar' });
 
         // save 1 factory generated entity, to the database

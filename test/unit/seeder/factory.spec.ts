@@ -1,15 +1,17 @@
+import type { DataSource } from 'typeorm';
 import { useSeederFactory } from '../../../src';
 import { User } from '../../data/entity/user';
 import { destroyTestDatabase, setupTestDatabase } from '../../data/typeorm/utils';
 import '../../data/factory/user';
 
 describe('src/seeder/factory/index.ts', () => {
+    let dataSource : DataSource;
     beforeEach(async () => {
-        await setupTestDatabase();
+        dataSource = await setupTestDatabase();
     });
 
     afterEach(async () => {
-        await destroyTestDatabase();
+        await destroyTestDatabase(dataSource);
     });
 
     it('should create & save seed', async () => {

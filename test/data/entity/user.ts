@@ -1,5 +1,10 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+    Column, Entity, JoinColumn, ManyToOne,
+    PrimaryGeneratedColumn, Unique,
+} from 'typeorm';
+import { Role } from './role';
 
+@Unique(['firstName', 'lastName'])
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
@@ -14,9 +19,10 @@ export class User {
     @Column()
         email: string;
 
-    @Column()
-        foo: string;
+    @Column({ nullable: true })
+        roleId: number | null;
 
-    @Column()
-        phoneNumber: string;
+    @ManyToOne(() => Role, (role: Role) => role.id, { nullable: true })
+    @JoinColumn({ name: 'roleId' })
+        role: Role;
 }
