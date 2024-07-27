@@ -7,10 +7,10 @@ import {
 } from '../../../src';
 import { createDataSourceOptions } from './factory';
 
-export async function setupTestDatabase() : Promise<DataSource> {
+export async function setupFsDataSource(name: string) : Promise<DataSource> {
     const options = createDataSourceOptions();
     Object.assign(options, {
-        database: 'test/data/typeorm/db.sqlite',
+        database: `writable/${name}.sqlite`,
     });
 
     await createDatabase({
@@ -25,7 +25,7 @@ export async function setupTestDatabase() : Promise<DataSource> {
     return dataSource;
 }
 
-export async function destroyTestDatabase(dataSource: DataSource) {
+export async function destroyTestFsDataSource(dataSource: DataSource) {
     await dataSource.destroy();
 
     const { options } = dataSource;
