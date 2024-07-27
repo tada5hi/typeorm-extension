@@ -1,6 +1,7 @@
 import type { ObjectLiteral } from 'rapiq';
 import type { DataSource, EntityTarget, FindOptionsWhere } from 'typeorm';
 import { useDataSource } from '../../data-source';
+import { EntityRelationLookupError } from './error';
 import { getEntityMetadata } from './metadata';
 
 type EntityRelationColumnsValidateOptions<T> = {
@@ -8,7 +9,15 @@ type EntityRelationColumnsValidateOptions<T> = {
     entityTarget: EntityTarget<T>,
 };
 
-export async function validateEntityRelationColumns<T extends ObjectLiteral>(
+/**
+ * Validate join columns of a given entity.
+ * It will look up and append the referenced entities to the input entity.
+ *
+ * @experimental
+ * @param entity
+ * @param options
+ */
+export async function validateEntityJoinColumns<T extends ObjectLiteral>(
     entity: Partial<T>,
     options: EntityRelationColumnsValidateOptions<T>,
 ) {
@@ -31,7 +40,10 @@ export async function validateEntityRelationColumns<T extends ObjectLiteral>(
                 where[joinColumn.referencedColumn.propertyName] = entity[joinColumn.propertyName];
                 columns.push(joinColumn.propertyName);
             } else {
-                throw new Error(`Can not lookup foreign ${relation.propertyName} entity.`);
+                throw EntityRelationLookupError.notReferenced(
+                    relation.propertyName,
+                    [joinColumn.propertyName],
+                );
             }
         }
 
@@ -45,8 +57,7 @@ export async function validateEntityRelationColumns<T extends ObjectLiteral>(
         });
 
         if (!item) {
-            // todo: append columns as dedicated property
-            throw new Error(columns.join(','));
+            throw EntityRelationLookupError.notFound(relation.propertyName, columns);
         }
 
         relations[relation.propertyName as keyof T] = item as T[keyof T];

@@ -1,4 +1,4 @@
-import { validateEntityRelationColumns } from '../../../src';
+import { EntityRelationLookupError, validateEntityJoinColumns } from '../../../src';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import { createDataSource } from '../../data/typeorm/factory';
@@ -24,9 +24,11 @@ describe('entity-relation-columns', () => {
             roleId: role.id,
         });
 
-        await validateEntityRelationColumns(user, { dataSource, entityTarget: User });
+        await validateEntityJoinColumns(user, { dataSource, entityTarget: User });
 
         expect(user.role).toBeDefined();
+
+        await dataSource.destroy();
     });
 
     it('should not validate entity relation columns', async () => {
@@ -42,12 +44,17 @@ describe('entity-relation-columns', () => {
             roleId: 1000,
         });
 
-        expect.assertions(1);
+        expect.assertions(3);
 
         try {
-            await validateEntityRelationColumns(user, { dataSource, entityTarget: User });
+            await validateEntityJoinColumns(user, { dataSource, entityTarget: User });
         } catch (e) {
             expect(e).toBeDefined();
+
+            if (e instanceof EntityRelationLookupError) {
+                expect(e.relation).toEqual('role');
+                expect(e.columns).toEqual(['roleId']);
+            }
         }
 
         await dataSource.destroy();

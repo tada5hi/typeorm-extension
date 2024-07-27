@@ -57,6 +57,13 @@ function applyWhereExpression(
     return queryFilters;
 }
 
+/**
+ * Check if a given entity does not already exist.
+ * Composite unique keys on a null column can only be present once.
+ *
+ * @experimental
+ * @param options
+ */
 export async function isEntityUnique<T extends ObjectLiteral>(
     options: EntityUniquenessCheckOptions<T>,
 ) : Promise<boolean> {

@@ -5,6 +5,13 @@ import type {
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
 
+/**
+ * Receive metadata for a given repository or entity-target.
+ *
+ * @experimental
+ * @param input
+ * @param dataSource
+ */
 export async function getEntityMetadata<T extends ObjectLiteral>(
     input: Repository<T> | EntityTarget<T>,
     dataSource?: DataSource,

@@ -3,6 +3,13 @@ import { Repository } from 'typeorm';
 import type { DataSource, EntityMetadata, EntityTarget } from 'typeorm';
 import { getEntityMetadata } from './metadata';
 
+/**
+ * Get (relation-) property names of a given entity.
+ *
+ * @experimental
+ * @param input
+ * @param dataSource
+ */
 export async function getEntityPropertyNames<T extends ObjectLiteral>(
     input: EntityTarget<T> | Repository<T>,
     dataSource?: DataSource,
