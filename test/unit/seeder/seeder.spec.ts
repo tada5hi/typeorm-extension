@@ -6,7 +6,7 @@ import {
 } from '../../../src';
 import type { SeederEntity } from '../../../src';
 import { User } from '../../data/entity/user';
-import { destroyTestDatabase, setupTestDatabase } from '../../data/typeorm/utils';
+import { destroyTestFsDataSource, setupFsDataSource } from '../../data/typeorm/utils';
 import '../../data/factory/user';
 import UserSeeder from '../../data/seed/user';
 
@@ -14,11 +14,11 @@ describe('src/seeder/index.ts', () => {
     let dataSource : DataSource;
 
     beforeEach(async () => {
-        dataSource = await setupTestDatabase();
+        dataSource = await setupFsDataSource('seeder');
     });
 
     afterEach(async () => {
-        await destroyTestDatabase(dataSource);
+        await destroyTestFsDataSource(dataSource);
     });
 
     it('should seed with data-source options', async () => {
