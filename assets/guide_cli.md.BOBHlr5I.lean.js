@@ -1,0 +1,1 @@
+import{_ as e,c as t,o,a2 as d}from"./chunks/framework.BLHWSx9w.js";const b=JSON.parse('{"title":"CLI","description":"","frontmatter":{},"headers":[],"relativePath":"guide/cli.md","filePath":"guide/cli.md"}'),a={name:"guide/cli.md"},c=d("",10),s=[c];function n(i,r,l,p,h,u){return o(),t("div",null,s)}const f=e(a,[["render",n]]);export{b as __pageData,f as default};
