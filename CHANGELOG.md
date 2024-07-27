@@ -1,3 +1,10 @@
+# [3.6.0](https://github.com/tada5hi/typeorm-extension/compare/v3.5.1...v3.6.0) (2024-07-27)
+
+
+### Features
+
+* add experimental entity-{uniqueness,property-names,join-columns} helpers ([#1062](https://github.com/tada5hi/typeorm-extension/issues/1062)) ([9ab61cc](https://github.com/tada5hi/typeorm-extension/commit/9ab61cc76fc1ffa03fe2f11b6f91b23eb01640d7))
+
 ## [3.5.1](https://github.com/tada5hi/typeorm-extension/compare/v3.5.0...v3.5.1) (2024-04-09)
 
 
