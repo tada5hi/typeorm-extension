@@ -107,7 +107,7 @@ Drop a database.
 
 **Example: Simple**
 ```typescript
-import { createDatabase } from 'typeorm-extension';
+import { dropDatabase } from 'typeorm-extension';
 
 (async () => {
     await dropDatabase();
