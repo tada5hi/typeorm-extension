@@ -9,16 +9,16 @@ This the migration guide for upgrading from **v2** to **v3**.
 **Old**
 
 ```shell
-ts-node ./node-modules/typeorm-extension/dist/cli/index.js 
+ts-node ./node_modules/typeorm-extension/dist/cli/index.js 
 ```
 
 **New**
 ```shell
 // CommonJS
-ts-node ./node-modules/typeorm-extension/bin/cli.cjs 
+ts-node ./node_modules/typeorm-extension/bin/cli.cjs 
 
 // ESM
-ts-node-esm ./node-modules/typeorm-extension/bin/cli.mjs
+ts-node-esm ./node_modules/typeorm-extension/bin/cli.mjs
 ```
 
 ### General
