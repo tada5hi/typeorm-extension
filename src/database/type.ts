@@ -57,8 +57,8 @@ export type DatabaseCheckResult = {
     exists: boolean,
 
     /**
-     * Indicates whether the database's schema was lazy
-     * synchronized or created using migrations.
+     * Indicates whether the database's schema
+     * is up-to-date.
      *
      * default: false
      */

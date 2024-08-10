@@ -14,8 +14,7 @@ import type { DatabaseCheckContext, DatabaseCheckResult } from './type';
  *
  * @param context
  */
-export async function checkDatabase(context?: DatabaseCheckContext) : Promise<DatabaseCheckResult> {
-    context = context || {};
+export async function checkDatabase(context: DatabaseCheckContext = {}) : Promise<DatabaseCheckResult> {
     context.dataSourceCleanup = context.dataSourceCleanup ?? true;
 
     const result : DatabaseCheckResult = {
@@ -70,9 +69,7 @@ export async function checkDatabase(context?: DatabaseCheckContext) : Promise<Da
         const migrationExecutor = new MigrationExecutor(dataSource, queryRunner);
         result.migrationsPending = await migrationExecutor.getPendingMigrations();
 
-        if (result.migrationsPending.length === 0) {
-            result.schema = true;
-        }
+        result.schema = result.migrationsPending.length === 0;
     } else {
         let schema : string | undefined;
         if (hasStringProperty(dataSource.driver.options, 'schema')) {
@@ -88,10 +85,19 @@ export async function checkDatabase(context?: DatabaseCheckContext) : Promise<Da
         if (migrationsTableExists) {
             result.schema = dataSource.entityMetadatas.length === 0;
         } else {
-            const tableNames = dataSource.entityMetadatas.map((entityMetadata) => entityMetadata.tablePath);
+            const tableNames = dataSource.entityMetadatas.map(
+                (entityMetadata) => entityMetadata.tablePath,
+            );
             const tables = await queryRunner.getTables(tableNames);
 
-            result.schema = tables.length === dataSource.entityMetadatas.length;
+            if (tables.length === dataSource.entityMetadatas.length) {
+                const { upQueries } = await dataSource.driver.createSchemaBuilder()
+                    .log();
+
+                result.schema = upQueries.length === 0;
+            } else {
+                result.schema = false;
+            }
         }
     }
 
