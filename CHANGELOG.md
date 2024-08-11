@@ -1,3 +1,11 @@
+## [3.6.1](https://github.com/tada5hi/typeorm-extension/compare/v3.6.0...v3.6.1) (2024-08-11)
+
+
+### Bug Fixes
+
+* adjust data source cleanup behaviour to jsdoc description ([e27f42e](https://github.com/tada5hi/typeorm-extension/commit/e27f42e620c171c39db8a8e989a9f078fd22b297))
+* schema detection in check-database fn ([39dcc92](https://github.com/tada5hi/typeorm-extension/commit/39dcc92e87de61c9082332559af7f2fa76af24df))
+
 # [3.6.0](https://github.com/tada5hi/typeorm-extension/compare/v3.5.1...v3.6.0) (2024-07-27)
 
 
