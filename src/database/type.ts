@@ -22,7 +22,14 @@ export type DatabaseBaseContext = {
     initialDatabase?: string,
 };
 
-export type DatabaseCheckContext = Omit<DatabaseBaseContext, 'initialDatabase'> & {
+export type DatabaseCheckContext = {
+    /**
+     * Options for finding the typeorm DataSource.
+     *
+     * Default: undefined
+     */
+    options?: DataSourceOptions,
+
     /**
      * Use alias to access already registered DataSource / DataSourceOptions.
      *
@@ -32,7 +39,7 @@ export type DatabaseCheckContext = Omit<DatabaseBaseContext, 'initialDatabase'> 
 
     /**
      * Indicates whether to destroy the data-source
-     * afterwards or not.
+     * afterward or not.
      * If a datasource previously existed, this option will be ignored.
      *
      * default: true

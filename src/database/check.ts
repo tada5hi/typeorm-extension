@@ -1,8 +1,7 @@
+import type { DataSourceOptions } from 'typeorm';
 import { DataSource, MigrationExecutor } from 'typeorm';
 import {
     hasDataSource,
-    setDataSource,
-    unsetDataSource,
     useDataSource,
     useDataSourceOptions,
 } from '../data-source';
@@ -15,39 +14,37 @@ import type { DatabaseCheckContext, DatabaseCheckResult } from './type';
  * @param context
  */
 export async function checkDatabase(context: DatabaseCheckContext = {}) : Promise<DatabaseCheckResult> {
-    context.dataSourceCleanup = context.dataSourceCleanup ?? true;
-
     const result : DatabaseCheckResult = {
         exists: true,
         schema: false,
         migrationsPending: [],
     };
 
-    let { dataSource } = context;
+    let dataSource : DataSource;
+    let dataSourceCleanup : boolean;
 
     if (
-        typeof dataSource === 'undefined' &&
+        typeof context.dataSource === 'undefined' &&
+        typeof context.options === 'undefined' &&
         hasDataSource(context.alias)
     ) {
         // todo: data-source might get initialized here
+
         dataSource = await useDataSource(context.alias);
-    }
-
-    const dataSourceExisted = !!dataSource;
-
-    if (typeof dataSource === 'undefined') {
+        dataSourceCleanup = false;
+    } else {
+        let dataSourceOptions : DataSourceOptions;
         if (context.options) {
-            dataSource = new DataSource({
-                ...context.options,
-                synchronize: false,
-            });
+            dataSourceOptions = context.options;
         } else {
-            const options = await useDataSourceOptions(context.alias);
-            dataSource = new DataSource({
-                ...options,
-                synchronize: false,
-            });
+            dataSourceOptions = await useDataSourceOptions(context.alias);
         }
+
+        dataSource = new DataSource({
+            ...dataSourceOptions,
+            synchronize: true,
+        });
+        dataSourceCleanup = context.dataSourceCleanup ?? true;
     }
 
     try {
@@ -103,16 +100,8 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
 
     await queryRunner.release();
 
-    if (!dataSourceExisted) {
-        if (context.dataSourceCleanup) {
-            await dataSource.destroy();
-
-            if (!context.dataSource) {
-                unsetDataSource(context.alias);
-            }
-        } else {
-            setDataSource(dataSource, context.alias);
-        }
+    if (dataSourceCleanup) {
+        await dataSource.destroy();
     }
 
     return result;
