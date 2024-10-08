@@ -28,10 +28,22 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
         typeof context.options === 'undefined' &&
         hasDataSource(context.alias)
     ) {
-        // todo: data-source might get initialized here
-
         dataSource = await useDataSource(context.alias);
-        dataSourceCleanup = false;
+
+        if (
+            dataSource.options.synchronize ||
+            dataSource.options.migrationsRun
+        ) {
+            dataSource = new DataSource({
+                ...dataSource.options,
+                synchronize: false,
+                migrationsRun: false,
+            });
+
+            dataSourceCleanup = true;
+        } else {
+            dataSourceCleanup = false;
+        }
     } else {
         let dataSourceOptions : DataSourceOptions;
         if (context.options) {
@@ -42,7 +54,8 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
 
         dataSource = new DataSource({
             ...dataSourceOptions,
-            synchronize: true,
+            synchronize: false,
+            migrationsRun: false,
         });
         dataSourceCleanup = context.dataSourceCleanup ?? true;
     }

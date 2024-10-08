@@ -20,10 +20,10 @@ export async function synchronizeDatabaseSchema(
     }
 
     let migrationsCount = 0;
-    if (input.migrations) {
-        migrationsCount = Array.isArray(input.migrations) ?
-            input.migrations.length :
-            Object.keys(input.migrations).length;
+    if (options.migrations) {
+        migrationsCount = Array.isArray(options.migrations) ?
+            options.migrations.length :
+            Object.keys(options.migrations).length;
     }
 
     let migrations : Migration[] = [];
