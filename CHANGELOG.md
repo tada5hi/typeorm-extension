@@ -1,3 +1,11 @@
+## [3.6.2](https://github.com/tada5hi/typeorm-extension/compare/v3.6.1...v3.6.2) (2024-10-08)
+
+
+### Bug Fixes
+
+* consider runSchema- & synchronize-option in checkDatabase fn ([b90a127](https://github.com/tada5hi/typeorm-extension/commit/b90a1276e2ac3495249b9935fb20bb74e396c71e))
+* **deps:** bump locter from 2.1.0 to 2.1.3 ([#1155](https://github.com/tada5hi/typeorm-extension/issues/1155)) ([48752e7](https://github.com/tada5hi/typeorm-extension/commit/48752e7c2005e7cc99cdf46b460166f2cfdf813d))
+
 ## [3.6.1](https://github.com/tada5hi/typeorm-extension/compare/v3.6.0...v3.6.1) (2024-08-11)
 
 
