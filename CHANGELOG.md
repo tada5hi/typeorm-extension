@@ -1,3 +1,12 @@
+## [3.6.3](https://github.com/tada5hi/typeorm-extension/compare/v3.6.2...v3.6.3) (2024-11-06)
+
+
+### Bug Fixes
+
+* **deps:** bump locter from 2.1.3 to 2.1.5 ([#1191](https://github.com/tada5hi/typeorm-extension/issues/1191)) ([ee4d5d0](https://github.com/tada5hi/typeorm-extension/commit/ee4d5d0c1dcf990e4b217f370bdc2aeba3f668bb))
+* enhance skipRelation check in validate entity join columns fn ([3120433](https://github.com/tada5hi/typeorm-extension/commit/312043389c1309ecd0525b70e4d63596f340e86a))
+* validate entity join columns - respect nullable join columns ([ab87659](https://github.com/tada5hi/typeorm-extension/commit/ab8765957b70d6d779216ded66e27f30c387e7d9))
+
 ## [3.6.2](https://github.com/tada5hi/typeorm-extension/compare/v3.6.1...v3.6.2) (2024-10-08)
 
 
