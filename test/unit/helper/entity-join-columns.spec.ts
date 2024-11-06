@@ -31,6 +31,25 @@ describe('entity-relation-columns', () => {
         await dataSource.destroy();
     });
 
+    it('should validate entity nullable relation columns', async () => {
+        const dataSource = createDataSource();
+        await dataSource.initialize();
+        await dataSource.synchronize();
+
+        const userRepository = dataSource.getRepository(User);
+        const user = userRepository.create({
+            firstName: 'foo',
+            lastName: 'bar',
+            email: 'foo@gmail.com',
+            roleId: null,
+        });
+
+        await validateEntityJoinColumns(user, { dataSource, entityTarget: User });
+
+        expect(user.roleId).toBeFalsy();
+        expect(user.role).toBeUndefined();
+    });
+
     it('should not validate entity relation columns', async () => {
         const dataSource = createDataSource();
         await dataSource.initialize();

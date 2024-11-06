@@ -28,6 +28,8 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
     for (let i = 0; i < entityMetadata.relations.length; i++) {
         const relation = entityMetadata.relations[i];
 
+        let isOptional : boolean = false;
+
         const where : FindOptionsWhere<ObjectLiteral> = {};
         const columns : string[] = [];
         for (let j = 0; j < relation.joinColumns.length; j++) {
@@ -38,6 +40,14 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
 
             if (joinColumn.referencedColumn) {
                 where[joinColumn.referencedColumn.propertyName] = entity[joinColumn.propertyName];
+
+                if (
+                    joinColumn.isNullable &&
+                    (entity[joinColumn.propertyName] === null || entity[joinColumn.propertyName] === undefined)
+                ) {
+                    isOptional = true;
+                }
+
                 columns.push(joinColumn.propertyName);
             } else {
                 throw EntityRelationLookupError.notReferenced(
@@ -57,6 +67,10 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
         });
 
         if (!item) {
+            if (isOptional) {
+                continue;
+            }
+
             throw EntityRelationLookupError.notFound(relation.propertyName, columns);
         }
 
