@@ -90,8 +90,12 @@ export async function createPostgresDatabase(
     if (typeof options.characterSet === 'string') {
         query += ` WITH ENCODING '${options.characterSet}'`;
     }
-
     const result = await executeSimplePostgresQuery(connection, query);
+
+    if (typeof options.schema === 'string' && options.schema !== 'public') {
+        const schemaQuery = `CREATE SCHEMA IF NOT EXISTS "${options.schema}"`;
+        await executeSimplePostgresQuery(connection, schemaQuery);
+    }
 
     if (context.synchronize) {
         await synchronizeDatabaseSchema(context.options);
