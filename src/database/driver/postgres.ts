@@ -24,6 +24,7 @@ export async function createSimplePostgresConnection(
         user: options.user,
         password: options.password,
         ssl: options.ssl,
+        schema: options.schema,
         ...(options.extra ? options.extra : {}),
     };
 
@@ -92,8 +93,16 @@ export async function createPostgresDatabase(
     } else if (typeof options.characterSet === 'string') {
         query += ` WITH ENCODING '${options.characterSet}'`;
     }
-
     const result = await executeSimplePostgresQuery(connection, query);
+
+    if (typeof options.schema === 'string' && options.schema !== 'public') {
+        const schemaConnection = await createSimplePostgresConnection(driver, options, {
+            ...context,
+            initialDatabase: options.database,
+        });
+        const schemaQuery = `CREATE SCHEMA IF NOT EXISTS "${options.schema}"`;
+        await executeSimplePostgresQuery(schemaConnection, schemaQuery);
+    }
 
     if (context.synchronize) {
         await synchronizeDatabaseSchema(context.options);

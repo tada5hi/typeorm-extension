@@ -9,13 +9,34 @@ updates:
 
     # Maintain dependencies for npm
     - package-ecosystem: "npm"
+      target-branch: "develop"
       directory: "/"
       schedule:
           interval: "daily"
       versioning-strategy: "increase"
-      open-pull-requests-limit: 10
-      target-branch: "develop"
+      open-pull-requests-limit: 20
       commit-message:
           prefix: "fix"
           prefix-development: "build"
           include: "scope"
+      groups:
+          majorProd:
+              applies-to: version-updates
+              dependency-type: production
+              update-types:
+                  - "major"
+          majorDev:
+              applies-to: version-updates
+              dependency-type: development
+              exclude-patterns:
+                  - "eslint"
+                  - "@faker-js/faker"
+                  - "better-sqlite3"
+                  - "semantic-release"
+              update-types:
+                  - "major"
+          minorAndPatch:
+              applies-to: version-updates
+              update-types:
+                  - "patch"
+                  - "minor"

@@ -18,6 +18,9 @@ export type DriverOptions = {
     charset?: string,
     characterSet?: string,
 
+    // postgres specific
+    schema?: string,
+
     // only for postgres 13+, see https://www.postgresql.org/docs/current/manage-ag-templatedbs.html
     template?: string,
 
