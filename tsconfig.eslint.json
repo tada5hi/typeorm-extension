@@ -1,5 +1,9 @@
 {
     "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "allowJs": true,
+        "checkJs": true
+    },
     "include": [
         "commitlint.config.js",
         "release.config.js",
