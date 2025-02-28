@@ -63,11 +63,11 @@
     },
     "license": "MIT",
     "dependencies": {
-        "@faker-js/faker": "^8.4.1",
+        "@faker-js/faker": "^9.5.1",
         "consola": "^3.4.0",
         "envix": "^1.5.0",
         "locter": "^2.1.6",
-        "pascal-case": "^3.1.2",
+        "pascal-case": "^4.0.0",
         "rapiq": "^0.9.0",
         "reflect-metadata": "^0.2.2",
         "smob": "^1.5.0",
