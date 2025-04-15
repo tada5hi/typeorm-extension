@@ -1,3 +1,10 @@
+## [3.7.1](https://github.com/tada5hi/typeorm-extension/compare/v3.7.0...v3.7.1) (2025-04-15)
+
+
+### Bug Fixes
+
+* isUnique check - use indicies if ownUniques columns are not populated ([7f4aed4](https://github.com/tada5hi/typeorm-extension/commit/7f4aed42f72de4bb40a8540858d9576bfc3c365c))
+
 # [3.7.0](https://github.com/tada5hi/typeorm-extension/compare/v3.6.3...v3.7.0) (2025-02-27)
 
 
