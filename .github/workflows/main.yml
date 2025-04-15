@@ -16,7 +16,7 @@ permissions:
     pull-requests: write
 
 env:
-    PRIMARY_NODE_VERSION: 20
+    PRIMARY_NODE_VERSION: 22
 
 jobs:
     install:

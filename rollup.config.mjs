@@ -7,7 +7,7 @@
 
 import resolve from '@rollup/plugin-node-resolve';
 import {transform} from "@swc/core";
-import pkg from './package.json' assert {type: 'json'};
+import pkg from './package.json' with {type: 'json'};
 import path from "node:path";
 
 const extensions = [

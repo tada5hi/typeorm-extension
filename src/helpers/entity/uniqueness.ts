@@ -75,21 +75,40 @@ export async function isEntityUnique<T extends ObjectLiteral>(
 
     const primaryColumnNames = metadata.primaryColumns.map((c) => c.propertyName);
 
-    for (let i = 0; i < metadata.ownUniques.length; i++) {
-        const uniqueColumnNames = metadata.ownUniques[i].columns.map(
-            (column) => column.propertyName,
-        );
+    const columnGroups : string[][] = [];
+    if (
+        metadata.ownUniques &&
+        metadata.ownUniques.length > 0
+    ) {
+        for (let i = 0; i < metadata.ownUniques.length; i++) {
+            columnGroups.push(metadata.ownUniques[i].columns.map(
+                (column) => column.propertyName,
+            ));
+        }
+    } else {
+        for (let i = 0; i < metadata.indices.length; i++) {
+            const index = metadata.indices[i];
+            if (!index.isUnique || index.entityMetadata.target !== metadata.target) {
+                continue;
+            }
 
+            columnGroups.push(index.columns.map(
+                (column) => column.propertyName,
+            ));
+        }
+    }
+
+    for (let i = 0; i < columnGroups.length; i++) {
         const queryBuilder = repository.createQueryBuilder('entity');
         queryBuilder.where(new Brackets((qb) => {
-            applyWhereExpression(qb, pickRecord(options.entity, uniqueColumnNames), 'target');
+            applyWhereExpression(qb, pickRecord(options.entity, columnGroups[i]), 'target');
         }));
 
-        queryBuilder.andWhere(new Brackets((qb) => {
-            if (options.entityExisting) {
-                applyWhereExpression(qb, pickRecord(options.entityExisting, primaryColumnNames), 'source');
-            }
-        }));
+        if (options.entityExisting) {
+            queryBuilder.andWhere(new Brackets((qb) => {
+                applyWhereExpression(qb, pickRecord(options.entityExisting!, primaryColumnNames), 'source');
+            }));
+        }
 
         const entity = await queryBuilder.getOne();
         if (entity) {
