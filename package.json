@@ -78,9 +78,9 @@
     },
     "devDependencies": {
         "@rollup/plugin-node-resolve": "^16.0.1",
-        "@swc/core": "^1.11.13",
-        "@tada5hi/commitlint-config": "^1.2.4",
-        "@tada5hi/eslint-config-typescript": "^1.2.15",
+        "@swc/core": "^1.11.31",
+        "@tada5hi/commitlint-config": "^1.2.5",
+        "@tada5hi/eslint-config-typescript": "^1.2.16",
         "@tada5hi/semantic-release": "^0.3.2",
         "@tada5hi/tsconfig": "^0.6.0",
         "@types/jest": "^29.5.14",
@@ -91,12 +91,12 @@
         "eslint": "^8.56.0",
         "husky": "^9.1.7",
         "jest": "^29.7.0",
-        "rollup": "^4.37.0",
+        "rollup": "^4.42.0",
         "semantic-release": "^22.0.12",
-        "ts-jest": "^29.3.0",
-        "typeorm": "^0.3.21",
+        "ts-jest": "^29.3.4",
+        "typeorm": "^0.3.24",
         "typescript": "^5.8.2",
         "vitepress": "^1.6.3",
-        "vue": "^3.4.31"
+        "vue": "^3.5.16"
     }
 }
