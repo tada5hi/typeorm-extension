@@ -9,7 +9,7 @@ updates:
 
     # Maintain dependencies for npm
     - package-ecosystem: "npm"
-      target-branch: "develop"
+      target-branch: "master"
       directory: "/"
       schedule:
           interval: "daily"
@@ -30,9 +30,8 @@ updates:
               dependency-type: development
               exclude-patterns:
                   - "eslint"
-                  - "@faker-js/faker"
-                  - "better-sqlite3"
-                  - "semantic-release"
+                  - "rapiq"
+                  - "pascal-case"
               update-types:
                   - "major"
           minorAndPatch:
