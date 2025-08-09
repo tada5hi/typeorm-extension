@@ -1,0 +1,92 @@
+name: Release
+
+on:
+    push:
+        branches:
+            - master
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+env:
+    NODE_VERSION: 22
+
+permissions:
+    issues: write
+    packages: write
+    contents: write
+    pull-requests: write
+
+defaults:
+    run:
+        shell: bash
+
+jobs:
+    release:
+        name: Release
+        runs-on: ubuntu-latest
+
+        steps:
+            -   uses: google-github-actions/release-please-action@v4
+                id: release
+                with:
+                    token: ${{ secrets.GITHUB_TOKEN }}
+
+            -   name: Checkout
+                if: steps.release.outputs.releases_created == 'true'
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
+
+            -   name: Configure Git
+                if: steps.release.outputs.releases_created == 'true'
+                run: |
+                    git config user.name "$GITHUB_ACTOR"
+                    git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+            -   name: Install
+                if: steps.release.outputs.releases_created == 'true'
+                uses: ./.github/actions/install
+                with:
+                    node-version: ${{ env.NODE_VERSION }}
+
+            -   name: Build
+                if: steps.release.outputs.releases_created == 'true'
+                uses: ./.github/actions/build
+
+            -   name: Publish
+                if: steps.release.outputs.releases_created == 'true'
+                run: npx workspaces-publish
+                env:
+                    NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+            -   name: Coverage
+                if: steps.release.outputs.releases_created == 'true'
+                run: |
+                    npm run test:coverage
+
+            -   name: Upload report
+                if: steps.release.outputs.releases_created == 'true'
+                uses: codecov/codecov-action@v5.4.2
+                with:
+                    token: ${{ secrets.codecov }}
+                    directory: ./coverage/
+
+            -   name: Build docs package
+                if: steps.release.outputs.releases_created == 'true'
+                run: npm run docs:build
+
+            -   name: Set docs CNAME
+                if: steps.release.outputs.releases_created == 'true'
+                run: |
+                    cd ./docs/.vitepress/dist/
+                    touch CNAME
+                    echo "typeorm-extension.tada5hi.net" > CNAME
+
+            -   name: Deploy docs
+                if: steps.release.outputs.releases_created == 'true'
+                uses: peaceiris/actions-gh-pages@v4
+                with:
+                    github_token: ${{ secrets.GITHUB_TOKEN }}
+                    publish_dir: ./docs/.vitepress/dist
+
+
