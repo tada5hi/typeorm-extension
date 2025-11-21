@@ -33,7 +33,7 @@ jobs:
 
             -   name: Checkout
                 if: steps.release.outputs.releases_created == 'true'
-                uses: actions/checkout@v5
+                uses: actions/checkout@v6
                 with:
                     fetch-depth: 0
 
