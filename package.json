@@ -70,7 +70,7 @@
         "rapiq": "^0.9.0",
         "reflect-metadata": "^0.2.2",
         "smob": "^1.5.0",
-        "yargs": "^17.7.2"
+        "yargs": "^18.0.0"
     },
     "peerDependencies": {
         "@faker-js/faker": ">=8.4.1",
@@ -85,7 +85,6 @@
         "@tada5hi/tsconfig": "^0.6.0",
         "@types/jest": "^30.0.0",
         "@types/node": "^24.10.1",
-        "@types/yargs": "^17.0.33",
         "better-sqlite3": "^12.4.5",
         "cross-env": "^10.1.0",
         "eslint": "^8.56.0",
