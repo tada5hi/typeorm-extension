@@ -77,7 +77,7 @@
         "typeorm": "~0.3.0"
     },
     "devDependencies": {
-        "@faker-js/faker": "^9.9.0",
+        "@faker-js/faker": "^10.1.0",
         "@rollup/plugin-node-resolve": "^16.0.3",
         "@swc/core": "^1.15.3",
         "@tada5hi/commitlint-config": "^1.2.6",
