@@ -1,6 +1,5 @@
 import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import { OptionsError } from '../../errors';
-import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DatabaseCreateContextInput, DatabaseDropContextInput } from '../methods';
 import { createSimplePostgresConnection } from './postgres';
 import { buildDriverOptions, createDriver } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
@@ -22,13 +21,9 @@ export async function executeSimpleCockroachDBQuery(connection: any, query: stri
 }
 
 export async function createCockroachDBDatabase(
-    context?: DatabaseCreateContext,
+    input: DatabaseCreateContextInput = {},
 ) {
-    context = await buildDatabaseCreateContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
+    const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as CockroachDriver;
 
@@ -52,13 +47,9 @@ export async function createCockroachDBDatabase(
 }
 
 export async function dropCockroachDBDatabase(
-    context?: DatabaseDropContext,
+    input: DatabaseDropContextInput = {},
 ) {
-    context = await buildDatabaseDropContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
+    const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as CockroachDriver;
 

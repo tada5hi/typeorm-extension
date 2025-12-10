@@ -1,7 +1,7 @@
 import { consola } from 'consola';
 import type { Arguments, Argv, CommandModule } from 'yargs';
 import { buildDataSourceOptions } from '../../../data-source';
-import type { DatabaseCreateContext } from '../../../database';
+import type { DatabaseCreateContextInput } from '../../../database';
 import { createDatabase } from '../../../database';
 import {
     adjustFilePath,
@@ -80,9 +80,10 @@ export class DatabaseCreateCommand implements CommandModule {
             preserveFilePaths: args.preserveFilePaths,
         });
 
-        const context : DatabaseCreateContext = {
+        const context : DatabaseCreateContextInput = {
             ifNotExist: true,
             options: dataSourceOptions,
+            synchronize: args.synchronize === 'yes',
         };
 
         if (
@@ -91,8 +92,6 @@ export class DatabaseCreateCommand implements CommandModule {
         ) {
             context.initialDatabase = args.initialDatabase;
         }
-
-        context.synchronize = args.synchronize === 'yes';
 
         try {
             await createDatabase(context);

@@ -1,57 +1,61 @@
 import type { DataSourceOptions } from 'typeorm';
-import { buildDataSourceOptions } from '../../data-source/options';
-import type { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
-import { findDataSource } from '../../data-source';
+import { buildDataSourceOptions, findDataSource } from '../../data-source';
+import type {
+    DatabaseBaseContextInput,
+    DatabaseCreateContext,
+    DatabaseCreateContextInput,
+    DatabaseDropContext,
+    DatabaseDropContextInput,
+} from '../methods';
 
-async function setDatabaseContextOptions<T extends DatabaseBaseContext>(context: T) : Promise<T> {
-    if (!context.options) {
+async function normalizeDataSourceOptions(context: DatabaseBaseContextInput) : Promise<DataSourceOptions> {
+    let options : DataSourceOptions | undefined;
+    if (context.options) {
+        options = {
+            ...context.options,
+        };
+    } else {
         const dataSource = await findDataSource(context.findOptions);
         if (dataSource) {
-            context.options = dataSource.options;
+            options = {
+                ...dataSource.options,
+            };
         }
 
-        if (!context.options) {
-            context.options = await buildDataSourceOptions();
+        if (!options) {
+            options = {
+                ...await buildDataSourceOptions(),
+            };
         }
     }
 
-    Object.assign(context.options, {
+    return {
+        ...options,
+
         subscribers: [],
         synchronize: false,
         migrationsRun: false,
         dropSchema: false,
-    } satisfies Partial<DataSourceOptions>);
-
-    return context;
+    };
 }
 
 export async function buildDatabaseCreateContext(
-    context?: DatabaseCreateContext,
+    input: DatabaseCreateContextInput = {},
 ) : Promise<DatabaseCreateContext> {
-    context = context || {};
-
-    context = await setDatabaseContextOptions(context);
-
-    if (typeof context.synchronize === 'undefined') {
-        context.synchronize = true;
-    }
-
-    if (typeof context.ifNotExist === 'undefined') {
-        context.ifNotExist = true;
-    }
-
-    return context;
+    return {
+        ...input,
+        options: await normalizeDataSourceOptions(input),
+        synchronize: input.synchronize ?? true,
+        ifNotExist: input.ifNotExist ?? true,
+    };
 }
 
 export async function buildDatabaseDropContext(
-    context?: DatabaseDropContext,
+    input: DatabaseDropContextInput = {},
 ) : Promise<DatabaseDropContext> {
-    context = context || {};
-    context = await setDatabaseContextOptions(context);
-
-    if (typeof context.ifExist === 'undefined') {
-        context.ifExist = true;
-    }
-
-    return context;
+    return {
+        ...input,
+        options: await normalizeDataSourceOptions(input),
+        ifExist: input.ifExist ?? true,
+    };
 }
