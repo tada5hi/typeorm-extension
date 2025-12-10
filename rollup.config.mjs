@@ -30,7 +30,7 @@ const swc = () => {
         transform(code) {
             return transform(code, {
                 jsc: {
-                    target: 'es2020',
+                    target: 'es2022',
                     parser: {
                         syntax: 'typescript'
                     },
