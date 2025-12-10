@@ -9,7 +9,7 @@ import { buildDriverOptions } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSQLiteDatabase(
-    input: DatabaseCreateContextInput,
+    input: DatabaseCreateContextInput = {},
 ) : Promise<void> {
     const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
@@ -31,7 +31,7 @@ export async function createSQLiteDatabase(
 }
 
 export async function dropSQLiteDatabase(
-    input: DatabaseDropContextInput,
+    input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);

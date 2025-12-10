@@ -32,7 +32,7 @@ export async function createSimpleMongoDBConnection(
 }
 
 export async function createMongoDBDatabase(
-    input: DatabaseCreateContextInput,
+    input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
@@ -48,7 +48,7 @@ export async function createMongoDBDatabase(
 }
 
 export async function dropMongoDBDatabase(
-    input: DatabaseDropContextInput,
+    input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);

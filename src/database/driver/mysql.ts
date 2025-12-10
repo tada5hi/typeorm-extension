@@ -43,7 +43,7 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 }
 
 export async function createMySQLDatabase(
-    input: DatabaseCreateContextInput,
+    input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
@@ -84,7 +84,7 @@ export async function createMySQLDatabase(
 }
 
 export async function dropMySQLDatabase(
-    input: DatabaseDropContextInput,
+    input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);

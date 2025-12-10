@@ -26,7 +26,7 @@ export async function createSimpleMsSQLConnection(
 }
 
 export async function createMsSQLDatabase(
-    input: DatabaseCreateContextInput,
+    input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
@@ -54,7 +54,7 @@ export async function createMsSQLDatabase(
 }
 
 export async function dropMsSQLDatabase(
-    input: DatabaseDropContextInput,
+    input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);

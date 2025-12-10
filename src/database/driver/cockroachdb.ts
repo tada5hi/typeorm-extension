@@ -1,5 +1,5 @@
 import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import type { DatabaseCreateContextInput, DatabaseDropContext } from '../methods';
+import type { DatabaseCreateContextInput, DatabaseDropContextInput } from '../methods';
 import { createSimplePostgresConnection } from './postgres';
 import { buildDriverOptions, createDriver } from './utils';
 import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
@@ -21,7 +21,7 @@ export async function executeSimpleCockroachDBQuery(connection: any, query: stri
 }
 
 export async function createCockroachDBDatabase(
-    input: DatabaseCreateContextInput,
+    input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
@@ -47,7 +47,7 @@ export async function createCockroachDBDatabase(
 }
 
 export async function dropCockroachDBDatabase(
-    input: DatabaseDropContext,
+    input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);

@@ -59,7 +59,7 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 }
 
 export async function createPostgresDatabase(
-    input: DatabaseCreateContextInput,
+    input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
@@ -111,7 +111,7 @@ export async function createPostgresDatabase(
 }
 
 export async function dropPostgresDatabase(
-    input: DatabaseDropContextInput,
+    input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);

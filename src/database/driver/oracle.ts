@@ -46,7 +46,7 @@ export function createSimpleOracleConnection(
 }
 
 export async function createOracleDatabase(
-    input: DatabaseCreateContextInput,
+    input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
@@ -68,7 +68,7 @@ export async function createOracleDatabase(
 }
 
 export async function dropOracleDatabase(
-    _context: DatabaseDropContextInput,
+    _context: DatabaseDropContextInput = {},
 ) {
     /**
      * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295
