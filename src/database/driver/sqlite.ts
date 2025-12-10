@@ -1,19 +1,13 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { OptionsError } from '../../errors';
-import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DatabaseCreateContext, DatabaseDropContext } from '../methods';
 import { buildDriverOptions } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
+import { synchronizeDatabaseSchema } from '../utils';
 
 export async function createSQLiteDatabase(
-    context?: DatabaseCreateContext,
+    context: DatabaseCreateContext,
 ) : Promise<void> {
-    context = await buildDatabaseCreateContext(context);
-
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     if (!options.database) {
         throw OptionsError.databaseNotDefined();
@@ -35,12 +29,6 @@ export async function createSQLiteDatabase(
 export async function dropSQLiteDatabase(
     context: DatabaseDropContext,
 ) {
-    context = await buildDatabaseDropContext(context);
-
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     if (!options.database) {
         throw OptionsError.databaseNotDefined();

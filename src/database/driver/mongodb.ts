@@ -1,9 +1,8 @@
 import type { MongoDriver } from 'typeorm/driver/mongodb/MongoDriver';
-import { OptionsError } from '../../errors';
-import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
-import type { DriverOptions } from './type';
+import type { DatabaseCreateContext, DatabaseDropContext } from '../methods';
+import type { DriverOptions } from './types';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
+import { synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimpleMongoDBConnection(
     driver: MongoDriver,
@@ -30,13 +29,8 @@ export async function createSimpleMongoDBConnection(
 }
 
 export async function createMongoDBDatabase(
-    context?: DatabaseCreateContext,
+    context: DatabaseCreateContext,
 ) {
-    context = await buildDatabaseCreateContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MongoDriver;
 
@@ -50,13 +44,8 @@ export async function createMongoDBDatabase(
 }
 
 export async function dropMongoDBDatabase(
-    context?: DatabaseDropContext,
+    context: DatabaseDropContext,
 ) {
-    context = await buildDatabaseDropContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MongoDriver;
 

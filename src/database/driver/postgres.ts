@@ -1,12 +1,11 @@
 import { isObject } from 'locter';
 import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import { OptionsError } from '../../errors';
-import type { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../type';
+import type { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../methods';
 import { hasOwnProperty } from '../../utils';
-import type { DriverOptions } from './type';
+import type { DriverOptions } from './types';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
+import { synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
@@ -56,13 +55,8 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 }
 
 export async function createPostgresDatabase(
-    context?: DatabaseCreateContext,
+    context: DatabaseCreateContext,
 ) {
-    context = await buildDatabaseCreateContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;
 
@@ -112,13 +106,8 @@ export async function createPostgresDatabase(
 }
 
 export async function dropPostgresDatabase(
-    context?: DatabaseDropContext,
+    context: DatabaseDropContext,
 ) {
-    context = await buildDatabaseDropContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;
 

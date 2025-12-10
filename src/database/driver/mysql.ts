@@ -1,9 +1,8 @@
 import type { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
-import { OptionsError } from '../../errors';
-import type { DatabaseCreateContext, DatabaseDropContext } from '../type';
-import type { DriverOptions } from './type';
+import type { DatabaseCreateContext, DatabaseDropContext } from '../methods';
+import type { DriverOptions } from './types';
 import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
+import { synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
@@ -41,13 +40,8 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 }
 
 export async function createMySQLDatabase(
-    context?: DatabaseCreateContext,
+    context: DatabaseCreateContext,
 ) {
-    context = await buildDatabaseCreateContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MysqlDriver;
 
@@ -86,13 +80,8 @@ export async function createMySQLDatabase(
 }
 
 export async function dropMySQLDatabase(
-    context?: DatabaseDropContext,
+    context: DatabaseDropContext,
 ) {
-    context = await buildDatabaseDropContext(context);
-    if (!context.options) {
-        throw OptionsError.undeterminable();
-    }
-
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MysqlDriver;
 
