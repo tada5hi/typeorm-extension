@@ -10,9 +10,24 @@ import { pickRecord } from '../../utils';
 import { getEntityMetadata } from './metadata';
 
 type EntityUniquenessCheckOptions<T> = {
+    /**
+     * Repository entity class.
+     */
     entityTarget: EntityTarget<T>,
+
+    /**
+     * Entity to insert/update.
+     */
     entity: Partial<T>,
-    entityExisting?: Partial<T>,
+
+    /**
+     * Entity found.
+     */
+    entityExisting?: Partial<T> | null,
+
+    /**
+     * DataSource to use
+     */
     dataSource?: DataSource
 };
 
