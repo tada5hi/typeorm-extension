@@ -1,11 +1,15 @@
 import { isObject } from 'locter';
 import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import type { DatabaseBaseContext, DatabaseCreateContext, DatabaseDropContext } from '../methods';
+import type {
+    DatabaseBaseContext,
+    DatabaseCreateContextInput,
+    DatabaseDropContextInput,
+} from '../methods';
 import { hasOwnProperty } from '../../utils';
 import type { DriverOptions } from './types';
 import { buildDriverOptions, createDriver } from './utils';
-import { synchronizeDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimplePostgresConnection(
     driver: PostgresDriver | CockroachDriver,
@@ -55,8 +59,9 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 }
 
 export async function createPostgresDatabase(
-    context: DatabaseCreateContext,
+    input: DatabaseCreateContextInput,
 ) {
+    const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;
 
@@ -106,8 +111,9 @@ export async function createPostgresDatabase(
 }
 
 export async function dropPostgresDatabase(
-    context: DatabaseDropContext,
+    input: DatabaseDropContextInput,
 ) {
+    const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as PostgresDriver;
 

@@ -4,9 +4,9 @@
         "lib": [
             "ESNext"
         ],
-        "module": "commonjs",
+        "module": "ESNext",
         "outDir": "dist",
-        "target": "ES2020",
+        "target": "ES2022",
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "strictPropertyInitialization": false

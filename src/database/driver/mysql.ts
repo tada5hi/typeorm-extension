@@ -1,8 +1,11 @@
 import type { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
-import type { DatabaseCreateContext, DatabaseDropContext } from '../methods';
+import type {
+    DatabaseCreateContextInput,
+    DatabaseDropContextInput,
+} from '../methods';
 import type { DriverOptions } from './types';
 import { buildDriverOptions, createDriver } from './utils';
-import { synchronizeDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
@@ -40,8 +43,9 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 }
 
 export async function createMySQLDatabase(
-    context: DatabaseCreateContext,
+    input: DatabaseCreateContextInput,
 ) {
+    const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MysqlDriver;
 
@@ -80,8 +84,9 @@ export async function createMySQLDatabase(
 }
 
 export async function dropMySQLDatabase(
-    context: DatabaseDropContext,
+    input: DatabaseDropContextInput,
 ) {
+    const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as MysqlDriver;
 

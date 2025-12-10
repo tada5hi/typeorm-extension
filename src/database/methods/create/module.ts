@@ -11,7 +11,7 @@ import {
     createPostgresDatabase,
     createSQLiteDatabase,
 } from '../../driver';
-import { buildDatabaseCreateContext } from '../context';
+import { buildDatabaseCreateContext } from '../../utils/context';
 
 /**
  * Create database for specified driver in ConnectionOptions.

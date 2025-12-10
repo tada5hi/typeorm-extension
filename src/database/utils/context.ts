@@ -6,7 +6,7 @@ import type {
     DatabaseCreateContextInput,
     DatabaseDropContext,
     DatabaseDropContextInput,
-} from './type';
+} from '../methods';
 
 async function normalizeDataSourceOptions(context: DatabaseBaseContextInput) : Promise<DataSourceOptions> {
     let options : DataSourceOptions | undefined;

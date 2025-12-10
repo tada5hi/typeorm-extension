@@ -11,7 +11,7 @@ import {
     dropPostgresDatabase,
     dropSQLiteDatabase,
 } from '../../driver';
-import { buildDatabaseDropContext } from '../context';
+import { buildDatabaseDropContext } from '../../utils/context';
 
 /**
  * Drop database for specified driver in ConnectionOptions.

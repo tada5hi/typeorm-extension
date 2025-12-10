@@ -1,8 +1,11 @@
 import type { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
-import type { DatabaseCreateContext, DatabaseDropContext } from '../methods';
+import type {
+    DatabaseCreateContextInput,
+    DatabaseDropContextInput,
+} from '../methods';
 import type { DriverOptions } from './types';
 import { buildDriverOptions, createDriver } from './utils';
-import { synchronizeDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
 
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
@@ -23,8 +26,9 @@ export async function createSimpleMsSQLConnection(
 }
 
 export async function createMsSQLDatabase(
-    context: DatabaseCreateContext,
+    input: DatabaseCreateContextInput,
 ) {
+    const context = await buildDatabaseCreateContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as SqlServerDriver;
 
@@ -50,8 +54,9 @@ export async function createMsSQLDatabase(
 }
 
 export async function dropMsSQLDatabase(
-    context: DatabaseDropContext,
+    input: DatabaseDropContextInput,
 ) {
+    const context = await buildDatabaseDropContext(input);
     const options = buildDriverOptions(context.options);
     const driver = createDriver(context.options) as SqlServerDriver;
 
