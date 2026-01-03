@@ -1,5 +1,5 @@
 # Query
-The query submodule enables query parameter (fields, filter, ...) values to be build, parsed & validated.
+The query submodule enables query parameter (fields, filter, ...) values to be built, parsed & validated.
 Therefore, the [rapiq](https://www.npmjs.com/package/rapiq) library is used under the hood.
 
 The query parameter options (allowed, default, ...) are fully typed 🔥 and depend on the (nested-) properties of the target entity passed to
