@@ -26,7 +26,17 @@ describe('src/api/sort.ts', () => {
         ] as QueryFieldsApplyOutput);
     });
 
-    it('should apply query parse output', () => {
+    it('should apply query with empty parse output and options', () => {
+        const data = applyQuery(query, { }, {
+            pagination: {
+                maxLimit: 50,
+            },
+        });
+
+        expect(data.pagination).toEqual({ limit: 50, offset: 0 });
+    });
+
+    it('should apply query with empty parse output', () => {
         let data = applyQueryParseOutput(query, {
             relations: [],
             fields: [],

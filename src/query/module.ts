@@ -49,10 +49,8 @@ export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
 export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     input: ParseInput,
-    options?: QueryApplyOptions<T>,
+    options: QueryApplyOptions<T> = {},
 ) : QueryApplyOutput {
-    options = options || {};
-
     if (options.defaultAlias) {
         options.defaultPath = options.defaultAlias;
     }
@@ -71,9 +69,9 @@ export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
         options.filters = false;
     }
 
-    if (
-        typeof options.pagination === 'undefined'
-    ) {
+    if (options.pagination) {
+        input.pagination = input.pagination || {};
+    } else {
         options.pagination = false;
     }
 
