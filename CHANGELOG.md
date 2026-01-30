@@ -18,6 +18,13 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [3.7.4](https://github.com/tada5hi/typeorm-extension/compare/v3.7.3...v3.7.4) (2026-01-30)
+
+
+### Bug Fixes
+
+* allways apply pagination.maxLimit option ([01022b2](https://github.com/tada5hi/typeorm-extension/commit/01022b2658b561d0a51b782fb762bf9f6d2f28c1))
+
 ## [3.7.3](https://github.com/tada5hi/typeorm-extension/compare/v3.7.2...v3.7.3) (2025-12-10)
 
 
