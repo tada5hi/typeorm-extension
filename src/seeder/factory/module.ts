@@ -162,6 +162,6 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
         this.faker = new fakerExports.Faker(options);
 
-        return this.faker;
+        return this.faker!;
     }
 }
