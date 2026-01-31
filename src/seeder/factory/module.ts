@@ -1,5 +1,4 @@
-import type { FakerOptions, LocaleDefinition } from '@faker-js/faker';
-import type { Faker } from '@faker-js/faker';
+import type { Faker, FakerOptions, LocaleDefinition } from '@faker-js/faker';
 import { isObject, load } from 'locter';
 import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
