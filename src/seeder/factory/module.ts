@@ -1,5 +1,4 @@
-import type { FakerOptions, LocaleDefinition } from '@faker-js/faker';
-import { Faker } from '@faker-js/faker';
+import type { Faker, FakerOptions, LocaleDefinition } from '@faker-js/faker';
 import { isObject, load } from 'locter';
 import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
@@ -160,8 +159,8 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
             }
         }
 
-        this.faker = new Faker(options);
+        this.faker = new fakerExports.Faker(options);
 
-        return this.faker;
+        return this.faker!;
     }
 }
