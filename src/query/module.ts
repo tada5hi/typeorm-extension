@@ -70,7 +70,9 @@ export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
     }
 
     if (options.pagination) {
-        input.pagination = input.pagination || {};
+        if (!input.pagination && !input.page) {
+            input.pagination = input.pagination || {};
+        }
     } else {
         options.pagination = false;
     }
