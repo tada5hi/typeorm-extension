@@ -87,7 +87,7 @@
         "@types/node": "^24.10.1",
         "better-sqlite3": "^12.4.6",
         "cross-env": "^10.1.0",
-        "eslint": "^8.56.0",
+        "eslint": "^10.0.0",
         "husky": "^9.1.7",
         "jest": "^30.2.0",
         "rimraf": "^6.1.2",
