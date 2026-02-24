@@ -30,7 +30,7 @@ function buildTemplate(
     const up = upStatements.map((statement) => `        ${statement}`);
     const down = downStatements.map((statement) => `        ${statement}`);
 
-    return `import { MigrationInterface, QueryRunner } from 'typeorm';
+    return `import type { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class ${migrationName} implements MigrationInterface {
     name = '${migrationName}';
@@ -60,10 +60,6 @@ export async function generateMigration(
     const up: string[] = []; const
         down: string[] = [];
 
-    if (!dataSource.isInitialized) {
-        await dataSource.initialize();
-    }
-
     const sqlInMemory = await dataSource.driver.createSchemaBuilder().log();
 
     if (context.prettify) {
@@ -86,8 +82,6 @@ export async function generateMigration(
     sqlInMemory.downQueries.forEach((downQuery) => {
         down.push(`await queryRunner.query(\`${downQuery.query.replace(/`/g, '\\`')}\`${queryParams(downQuery.parameters)});`);
     });
-
-    await dataSource.destroy();
 
     if (
         up.length === 0 &&
@@ -116,9 +110,11 @@ export async function generateMigration(
             await fs.promises.mkdir(directoryPath, { recursive: true });
         }
 
-        const filePath = path.join(directoryPath, fileName);
-
-        await fs.promises.writeFile(filePath, content, { encoding: 'utf-8' });
+        await fs.promises.writeFile(
+            path.join(directoryPath, fileName),
+            content,
+            { encoding: 'utf-8' },
+        );
     }
 
     return {

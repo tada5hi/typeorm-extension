@@ -15,11 +15,14 @@ describe('src/database/migration', () => {
             },
         };
         const dataSource = new DataSource(options);
+        await dataSource.initialize();
 
         const output = await generateMigration({
             dataSource,
             preview: true,
         });
+
+        await dataSource.destroy();
 
         expect(output).toBeDefined();
         expect(output.up).toBeDefined();
