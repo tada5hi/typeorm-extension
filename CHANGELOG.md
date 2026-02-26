@@ -18,6 +18,18 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [3.9.0](https://github.com/tada5hi/typeorm-extension/compare/v3.8.0...v3.9.0) (2026-02-26)
+
+
+### Features
+
+* enable to hook in on joinRelation ([#1359](https://github.com/tada5hi/typeorm-extension/issues/1359)) ([bc949f0](https://github.com/tada5hi/typeorm-extension/commit/bc949f02502997eb8eff669fd1cdc89959007af3))
+
+
+### Bug Fixes
+
+* don't destroy data-source in generateMigration ([c824165](https://github.com/tada5hi/typeorm-extension/commit/c82416579fea2d6cef826df72117dd3c52587c39))
+
 ## [3.8.0](https://github.com/tada5hi/typeorm-extension/compare/v3.7.4...v3.8.0) (2026-02-02)
 
 
