@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import { readDataSourceOptionsFromEnv } from '../../../src';
 import { EnvironmentVariableName, resetEnv, useEnv } from '../../../src/env';
 

@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import { InstanceChecker } from 'typeorm';
 import path from 'path';
 import { findDataSource } from '../../../src';

@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import { EntityRelationLookupError, validateEntityJoinColumns } from '../../../src';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';

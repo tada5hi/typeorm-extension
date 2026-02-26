@@ -1,6 +1,9 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import path from 'node:path';
 import {
-    buildDataSourceOptions, checkDatabase,
+    buildDataSourceOptions, checkDatabase, createDatabase,
 } from '../../../src';
 
 describe('src/database/module.ts', () => {
@@ -14,12 +17,16 @@ describe('src/database/module.ts', () => {
         expect(options).toBeDefined();
     });
 
-    it('should check database', async () => {
+    it.only('should check database', async () => {
         const options = await buildDataSourceOptions({
             directory: rootPath,
         });
 
+        console.log(options);
+
         expect(options).toBeDefined();
+
+        await createDatabase({ ifNotExist: true, options });
 
         const check = await checkDatabase({
             options,

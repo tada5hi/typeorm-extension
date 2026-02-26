@@ -31,6 +31,7 @@ export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectL
 
         /* istanbul ignore next */
         query.leftJoinAndSelect(key, data[i].value);
+        query.addGroupBy(data[i].value);
     }
 
     return data;

@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import { parseQuerySort } from 'rapiq';
 import { applyQuerySort, applyQuerySortParseOutput, applySort } from '../../../src';
 import { FakeSelectQueryBuilder } from '../../data/typeorm/FakeSelectQueryBuilder';
