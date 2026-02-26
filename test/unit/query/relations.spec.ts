@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import type { RelationsParseOutput } from 'rapiq';
 import { FakeSelectQueryBuilder } from '../../data/typeorm/FakeSelectQueryBuilder';
 import { applyQueryRelations, applyRelations } from '../../../src';

@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import type { FiltersParseOptions } from 'rapiq';
 import { FilterComparisonOperator, parseQueryFilters, parseQueryRelations } from 'rapiq';
 import type { ObjectLiteral } from 'typeorm';

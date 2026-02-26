@@ -1,4 +1,7 @@
 import {
+    describe, expect, it,
+} from 'vitest';
+import {
     applyFields,
     applyQueryFields,
 } from '../../../src';

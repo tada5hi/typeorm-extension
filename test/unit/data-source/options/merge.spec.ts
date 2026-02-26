@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 import { mergeDataSourceOptions } from '../../../../src';
 

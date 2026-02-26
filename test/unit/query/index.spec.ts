@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import type { ParseOutput } from 'rapiq';
 import type { QueryFieldsApplyOutput } from '../../../src';
 import { applyQuery, applyQueryParseOutput } from '../../../src';

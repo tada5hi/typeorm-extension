@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import { applyPagination, applyQueryPagination } from '../../../src';
 import { FakeSelectQueryBuilder } from '../../data/typeorm/FakeSelectQueryBuilder';
 

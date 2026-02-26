@@ -9,6 +9,7 @@ import resolve from '@rollup/plugin-node-resolve';
 import {transform} from "@swc/core";
 import pkg from './package.json' with {type: 'json'};
 import path from "node:path";
+import swc from 'unplugin-swc';
 
 const extensions = [
     '.js', '.jsx', '.ts', '.tsx',
@@ -78,7 +79,7 @@ export default [
             resolve({ extensions}),
 
             // Compile TypeScript/JavaScript files
-            swc()
+            swc.rollup(),
         ],
         output: [
             {
@@ -105,7 +106,7 @@ export default [
             resolve({ extensions}),
 
             // Compile TypeScript/JavaScript files
-            swc()
+            swc.rollup(),
         ],
         output: [
             {

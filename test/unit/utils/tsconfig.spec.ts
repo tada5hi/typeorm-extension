@@ -1,5 +1,6 @@
+import { describe, expect, it } from 'vitest';
 import path from 'node:path';
-import { readTSConfig } from '../../../src/utils/tsconfig';
+import { readTSConfig } from '../../../src/index';
 
 describe('src/utils/tsconfig.ts', () => {
     it('should read tsconfig file', async () => {

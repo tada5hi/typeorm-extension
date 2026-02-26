@@ -1,3 +1,6 @@
+import {
+    afterEach, beforeEach, describe, expect, it,
+} from 'vitest';
 import type { DataSource } from 'typeorm';
 import { useSeederFactory } from '../../../src';
 import { User } from '../../data/entity/user';

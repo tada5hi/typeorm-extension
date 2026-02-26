@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import { isEntityUnique } from '../../../src';
 import { User } from '../../data/entity/user';
 import { createDataSource } from '../../data/typeorm/factory';

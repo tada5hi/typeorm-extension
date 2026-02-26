@@ -1,3 +1,6 @@
+import {
+    describe, expect, it,
+} from 'vitest';
 import type { DataSourceOptions } from 'typeorm';
 import {
     EnvironmentVariableName,
