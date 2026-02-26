@@ -1,6 +1,9 @@
+import { isObject } from 'locter';
 import type { ParseInput, ParseOutput } from 'rapiq';
 import { parseQuery } from 'rapiq';
 import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';
+import { extendObject } from '../utils/index';
+import type { QueryRelationsApplyOptions } from './parameter';
 import {
     applyQueryFieldsParseOutput,
     applyQueryFiltersParseOutput,
@@ -14,6 +17,7 @@ import { isQueryOptionDefined } from './utils';
 export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     context: ParseOutput,
+    options: QueryApplyOptions<T> = {},
 ): ParseOutput {
     if (context.fields) {
         applyQueryFieldsParseOutput(query, context.fields, {
@@ -34,9 +38,14 @@ export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     }
 
     if (context.relations) {
-        applyQueryRelationsParseOutput(query, context.relations, {
+        const relations : QueryRelationsApplyOptions<T> = {
             defaultAlias: context.defaultPath,
-        });
+        };
+        if (isObject(options.relations)) {
+            extendObject(relations, options.relations);
+        }
+
+        applyQueryRelationsParseOutput(query, context.relations, relations);
     }
 
     if (context.sort) {
@@ -91,7 +100,11 @@ export function applyQuery<T extends ObjectLiteral = ObjectLiteral>(
         options.sort = false;
     }
 
-    const output = applyQueryParseOutput(query, parseQuery(input, options));
+    const output = applyQueryParseOutput(
+        query,
+        parseQuery(input, options),
+        options,
+    );
 
     return {
         ...output,

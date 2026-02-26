@@ -14,9 +14,8 @@ import type { QueryRelationsApplyOptions, QueryRelationsApplyOutput } from './ty
 export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: RelationsParseOutput,
-    options?: QueryRelationsApplyOptions<T>,
+    options: QueryRelationsApplyOptions<T> = {},
 ) : QueryRelationsApplyOutput {
-    options = options || {};
     for (let i = 0; i < data.length; i++) {
         const parts = data[i].key.split('.');
 
@@ -31,6 +30,10 @@ export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectL
 
         /* istanbul ignore next */
         query.leftJoinAndSelect(key, data[i].value);
+
+        if (options.onJoin) {
+            options.onJoin(key, data[i].value, query);
+        }
     }
 
     return data;
@@ -46,7 +49,7 @@ export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectL
 export function applyQueryRelations<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: QueryRelationsApplyOptions<T>,
+    options: QueryRelationsApplyOptions<T> = {},
 ) : QueryRelationsApplyOutput {
     return applyQueryRelationsParseOutput(query, parseQueryRelations(data, options), options);
 }
@@ -61,7 +64,7 @@ export function applyQueryRelations<T extends ObjectLiteral = ObjectLiteral>(
 export function applyRelations<T extends ObjectLiteral = ObjectLiteral>(
     query: SelectQueryBuilder<T>,
     data: unknown,
-    options?: QueryRelationsApplyOptions<T>,
+    options: QueryRelationsApplyOptions<T> = {},
 ) : QueryRelationsApplyOutput {
     return applyQueryRelations(query, data, options);
 }
