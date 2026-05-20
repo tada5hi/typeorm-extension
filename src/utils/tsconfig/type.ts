@@ -1,4 +1,4 @@
-import type * as ts from 'typescript';
+import type { CompilerOptions, TypeAcquisition } from 'typescript';
 
 export type StripEnums<T extends Record<string, any>> = {
     [K in keyof T]: T[K] extends boolean ?
@@ -15,11 +15,11 @@ export type StripEnums<T extends Record<string, any>> = {
 };
 
 export interface TSConfig {
-    compilerOptions?: StripEnums<ts.CompilerOptions>;
+    compilerOptions?: StripEnums<CompilerOptions>;
     exclude?: string[];
     compileOnSave?: boolean;
     extends?: string;
     files?: string[];
     include?: string[];
-    typeAcquisition?: ts.TypeAcquisition;
+    typeAcquisition?: TypeAcquisition;
 }
