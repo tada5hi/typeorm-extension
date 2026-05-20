@@ -16,10 +16,6 @@ This is a library to
     - `sort` resources according to one or more criteria,
     - limit the number of resources returned in a response by `page` limit & offset
 
-> **Warning**
-> This readme includes the documentation for the upcoming version 3.
-> This is the [link](https://github.com/tada5hi/typeorm-extension/tree/v2) for the v2.
-
 **Table of Contents**
 - [Installation](#installation)
 - [Documentation](#documentation)
@@ -79,14 +75,17 @@ for the seeder- & factory-location.
 
 #### CLI Options
 
-| Option                  | Commands                                           | Default         | Description                                                                                                                                                                                                                             |
-|-------------------------|----------------------------------------------------|-----------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--root` or `-r`        | `db:create`, `db:drop`, `seed:create` & `seed:run` | `process.cwd()` | Root directory of the project.                                                                                                                                                                                                          |
-| `--dataSource` or `-d`  | `db:create`, `db:drop` & `seed:run`                | `data-source`   | Name (or relative path incl. name) of the data-source file.                                                                                                                                                                             |
-| `--synchronize` or `-s` | `db:create`                            | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                        |
-| `--initialDatabase`     | `db:create`                                        | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always connect to a database. If no database is provided, the database name will be equal to the connection user name. |
-| `--name`                | `seed:create` & `seed:run`                         | `undefined`     | Name (or relative path incl. name) of the seeder.                                                                                                                                                                                       |
-| `--preserveFilePaths`   | `db:create`, `db:drop`, `seed:create` & `seed:run` | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                         |
+| Option                  | Commands                                  | Default         | Description                                                                                                                                                                                                                           |
+|-------------------------|-------------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--root` or `-r`        | `db:create`, `db:drop`, `seed:run`, `seed:create` | `process.cwd()` | Root directory of the project.                                                                                                                                                                                                |
+| `--tsconfig` or `-tc`   | `db:create`, `db:drop`, `seed:run`        | `tsconfig.json` | Name (or relative path incl. name) of the tsconfig file.                                                                                                                                                                              |
+| `--dataSource` or `-d`  | `db:create`, `db:drop`, `seed:run`        | `data-source`   | Name (or relative path incl. name) of the data-source file.                                                                                                                                                                           |
+| `--synchronize` or `-s` | `db:create`                               | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                      |
+| `--initialDatabase`     | `db:create`                               | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always connect to a database. If no database is provided, the database name will be equal to the connection user name. |
+| `--name` or `-n`        | `seed:create` (required), `seed:run` (optional) | `undefined` | Name (or relative path incl. name) of the seeder. Required on `seed:create`; on `seed:run` restricts execution to the matching seeder.                                                                                                |
+| `--timestamp` or `-t`   | `seed:create`                             | `Date.now()`    | Custom timestamp used in the generated seeder filename.                                                                                                                                                                               |
+| `--javascript` or `-j`  | `seed:create`                             | `false`         | Generate a seeder file for JavaScript instead of TypeScript.                                                                                                                                                                          |
+| `--preserveFilePaths`   | `db:create`, `db:drop`, `seed:run`        | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                       |
 
 #### CLI Examples
 **`Database Create`**
@@ -125,7 +124,7 @@ import { createDatabase } from 'typeorm-extension';
 
 (async () => {
     const options: DataSourceOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite'
     };
 
@@ -197,7 +196,7 @@ import { dropDatabase } from 'typeorm-extension';
 
 (async () => {
     const options: DataSourceOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite'
     };
 
@@ -307,7 +306,7 @@ Seeding the database is fairly easy and can be achieved by following the steps b
 
 Seeder paths are configured as **glob patterns**, making it easy
 to match all the factory/seeder files in your project without configuration effort:
-- use `*` to match anything expect slashes and hidden files
+- use `*` to match anything except slashes and hidden files
 - use `**` to match zero or more directories
 - use comma separate values between `{}` to match against a list of options
 
@@ -327,7 +326,7 @@ The following values are assumed by default:
 Note: When seeder paths are configured as **glob patterns**, the paths are resolved and sorted in alphabetical order using filenames. This helps to ensure that the seeders are executed in the correct order.
 
 It is possible to define that a seeder is only executed once.
-This can either be set globally using the seedTacking option or locally using the track property of a seeder class.
+This can either be set globally using the `seedTracking` option or locally using the `track` property of a seeder class.
 
 `data-source.ts`
 
@@ -336,7 +335,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { SeederOptions } from 'typeorm-extension';
 
 const options: DataSourceOptions & SeederOptions = {
-    type: 'better-sqlite',
+    type: 'better-sqlite3',
     database: 'db.sqlite',
 
     seeds: ['src/database/seeds/**/*{.ts,.js}'],
@@ -355,7 +354,7 @@ import { runSeeders, SeederOptions } from 'typeorm-extension';
 
 (async () => {
     const options: DataSourceOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite',
     };
 
@@ -410,17 +409,17 @@ import { User } from './user';
 
 export default setSeederFactory(User, (faker) => {
     const user = new User();
-    user.firstName = faker.name.firstName('male');
-    user.lastName = faker.name.lastName('male');
-    user.email = faker.internet.email(user.firstName, user.lastName);
+    user.firstName = faker.person.firstName('male');
+    user.lastName = faker.person.lastName('male');
+    user.email = faker.internet.email({ firstName: user.firstName, lastName: user.lastName });
 
     return user;
 })
 ```
 
 #### Seed
-And last but not least, create a seeder. The seeder can be called by the cli command `seed` or in the codebase
-by using the function `runSeeder`.
+And last but not least, create a seeder. The seeder can be called by the cli command `seed:run` or in the codebase
+by using the function `runSeeder` / `runSeeders`.
 A seeder class only requires one method, called `run` and provides the arguments `dataSource` & `factoryManager`.
 
 **`user.seeder.ts`**
@@ -472,11 +471,11 @@ Populate the database from the code base:
 ```typescript
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { runSeeders, SeederOptions } from 'typeorm-extension';
-import { User } from 'user';
+import { User } from './user';
 
 (async () => {
     const options: DataSourceOptions & SeederOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite',
         entities: [User],
 
@@ -496,13 +495,13 @@ Populate the database by explicit definitions from the codebase.
 ```typescript
 import { DataSource, DataSourceOptions } from 'typeorm';
 import { runSeeders, SeederOptions } from 'typeorm-extension';
-import { User } from 'user';
-import UserSeeder from 'user.seeder';
-import UserFactory from 'user.factory';
+import { User } from './user';
+import UserSeeder from './user.seeder';
+import UserFactory from './user.factory';
 
 (async () => {
     const options: DataSourceOptions & SeederOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite',
         entities: [User],
 
@@ -532,6 +531,7 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
+    Index,
     OneToOne,
     JoinColumn
 } from 'typeorm';
@@ -607,7 +607,7 @@ router.use(createHandler());
  * @param req
  * @param res
  */
-router.get('users', async (req: Request, res: Response) => {
+router.get('/users', async (req: Request, res: Response) => {
     const dataSource = await useDataSource();
     const repository = dataSource.getRepository(User);
     const query = repository.createQueryBuilder('user');
@@ -617,12 +617,12 @@ router.get('users', async (req: Request, res: Response) => {
     const { pagination } = applyQuery(query, useQuery(req), {
         defaultAlias: 'user',
         fields: {
-            // porfile fields can only be included,
+            // profile fields can only be included,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         },
         filters: {
-            // porfile.id can only be used as a filter,
+            // profile.id can only be used as a filter,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id'],
         },
