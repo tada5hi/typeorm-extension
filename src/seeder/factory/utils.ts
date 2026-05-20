@@ -38,8 +38,7 @@ export async function prepareSeederFactories(
     let factoryFiles: string[] = [];
     const factoryConfigs: SeederFactoryItem[] = [];
 
-    for (let i = 0; i < items.length; i++) {
-        const value = items[i];
+    for (const value of items) {
         if (typeof value === 'string') {
             factoryFiles.push(value);
         } else {
@@ -51,18 +50,18 @@ export async function prepareSeederFactories(
         factoryFiles = await resolveFilePatterns(factoryFiles, root);
         factoryFiles = resolveFilePaths(factoryFiles, root);
 
-        for (let i = 0; i < factoryFiles.length; i++) {
-            await load(factoryFiles[i]);
+        for (const factoryFile of factoryFiles) {
+            await load(factoryFile);
         }
     }
 
     if (factoryConfigs.length > 0) {
         const factoryManager = useSeederFactoryManager();
 
-        for (let i = 0; i < factoryConfigs.length; i++) {
+        for (const factoryConfig of factoryConfigs) {
             factoryManager.set(
-                factoryConfigs[i].entity,
-                factoryConfigs[i].factoryFn,
+                factoryConfig.entity,
+                factoryConfig.factoryFn,
             );
         }
     }

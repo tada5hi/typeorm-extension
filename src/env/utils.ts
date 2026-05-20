@@ -1,5 +1,10 @@
 import {
-    oneOf, read, readBool, readInt, toArray, toBool,
+    oneOf,
+    read,
+    readBool,
+    readInt,
+    toArray,
+    toBool,
 } from 'envix';
 import type { DataSourceCacheOption } from '../data-source';
 import { EnvironmentVariableName } from './constants';

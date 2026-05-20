@@ -45,9 +45,7 @@ export class DatabaseDropCommand implements CommandModule {
                 default: 'data-source',
                 describe: 'Name (or relative path incl. name) of the data-source file.',
             })
-            .option('initialDatabase', {
-                describe: 'Specify the initial database to connect to.',
-            });
+            .option('initialDatabase', { describe: 'Specify the initial database to connect to.' });
     }
 
     async handler(raw: Arguments) {

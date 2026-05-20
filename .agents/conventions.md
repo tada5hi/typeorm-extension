@@ -2,17 +2,16 @@
 
 ## Tooling
 
-| Tool                                  | Purpose                                                                |
-|---------------------------------------|------------------------------------------------------------------------|
-| TypeScript 5.9                        | Source language (`tsconfig.json` extends `@tada5hi/tsconfig`)          |
-| Rollup 4 + `@swc/core`                | Bundling (`dist/index.{cjs,mjs}` + `bin/cli.{cjs,mjs}`)                |
-| `tsc --emitDeclarationOnly`           | Type declarations (`dist/index.d.ts`)                                  |
-| Jest 30 + `ts-jest`                   | Test runner                                                            |
-| ESLint 8 + `@tada5hi/eslint-config-typescript` | Linting (config in `.eslintrc`)                               |
-| `@tada5hi/commitlint-config`          | Conventional Commits enforcement                                       |
-| Husky 9                               | `commit-msg` hook runs commitlint                                      |
-| release-please                        | Automated release PRs (`release-please-config.json` + manifest)        |
-| VitePress 1                           | Docs site under `docs/`                                                |
+| Tool                                          | Purpose                                                                |
+|-----------------------------------------------|------------------------------------------------------------------------|
+| TypeScript 6                                  | Source language (`tsconfig.json` extends `@tada5hi/tsconfig`)          |
+| [tsdown](https://tsdown.dev) (rolldown + oxc) | Bundling — emits `dist/index.mjs` + `dist/index.d.mts` + `bin/cli.mjs` |
+| Vitest 4 + `unplugin-swc`                     | Test runner; swc transform for decorator metadata                      |
+| ESLint 10 + `@tada5hi/eslint-config` v2       | Linting (flat config in `eslint.config.mjs`)                           |
+| `@tada5hi/commitlint-config`                  | Conventional Commits enforcement                                       |
+| Husky 9                                       | `commit-msg` hook runs commitlint                                      |
+| release-please + [`tada5hi/monoship`](https://github.com/tada5hi/monoship) | Automated release PRs + npm publish on merge |
+| VitePress 1                                   | Docs site under `docs/`                                                |
 
 ## Validation & Error Handling
 
@@ -29,12 +28,12 @@
 
 ## Code Style
 
-- **Module format**: ESM (TypeScript `module: ESNext`). Rollup emits both CJS and ESM. The ESM build also rewrites bare `typeorm/...` deep imports to add `.js` extensions for Node's ESM resolver.
+- **Module format**: ESM-only (`"type": "module"` + `module: ESNext`). tsdown emits a single `.mjs` bundle. A small tsdown plugin (`typeormDeepImportExtension` in `tsdown.config.ts`) rewrites bare `typeorm/<deep>` imports to add `.js` for Node's strict ESM resolver.
 - **Indentation**: 4 spaces, LF line endings, UTF-8, final newline, trim trailing whitespace (`.editorconfig`).
-- **Linting**: `@tada5hi/eslint-config-typescript` (extends Airbnb-flavoured rules). Project-local overrides in `.eslintrc`:
+- **Linting**: `@tada5hi/eslint-config` v2 (flat config, ESLint 10). Project-local overrides in `eslint.config.mjs`:
   - `class-methods-use-this: off`
-  - `import/no-cycle: [2, { maxDepth: 1 }]` — direct circular imports are blocked (depth > 1 is allowed; barrel files create deeper "cycles" in practice).
   - `no-shadow`, `no-use-before-define`, `@typescript-eslint/no-unused-vars`, `@typescript-eslint/no-use-before-define`: off.
+  - Ignores `dist/**`, `bin/**`, declaration files, vitepress build output.
 
 ## Naming Conventions
 
@@ -57,7 +56,7 @@
 
 ## Pre-commit Hooks
 
-Husky runs `commit-msg` only (no `pre-commit`). It executes `commitlint --edit`, which enforces Conventional Commits per `@tada5hi/commitlint-config`. There is **no lint-staged**; lint is a manual step (and runs in CI).
+Husky 9 runs `commit-msg` only (no `pre-commit`). It executes `commitlint --edit "$1"`, which enforces Conventional Commits per `@tada5hi/commitlint-config`. The hook file (`.husky/commit-msg`) is in the v9 format — just the command, no `#!/usr/bin/env sh` shebang and no `_/husky.sh` source line. There is **no lint-staged**; lint is a manual step (and runs in CI).
 
 ## Commit Convention
 
@@ -78,29 +77,36 @@ Common `type`s used in this repo (see `git log`): `feat`, `fix`, `chore`, `build
 ## TypeScript
 
 - Target: `ES2022`, Module: `ESNext`, libs: `ESNext` (Node-only).
+- ModuleResolution: **`node10`** (with `ignoreDeprecations: "6.0"`) — required because the code does type-only deep imports like `import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner'`, and typeorm's `package.json` exports field does not expose those subpaths. Stricter modes (`bundler`, `nodenext`) refuse them. tsdown handles runtime resolution independently.
+- `noEmit: true` + `allowImportingTsExtensions: true` — tsdown handles all emit; tsc is type-check-only (`npm run build:types`).
 - `experimentalDecorators` + `emitDecoratorMetadata` enabled — required because consumers' TypeORM entities use decorators, and seeder/factory loading evaluates those files at runtime.
 - `strictPropertyInitialization: false` — set by this project on top of `@tada5hi/tsconfig` so executor classes (`SeederExecutor`) can declare lazily-assigned protected fields.
+- **Relaxed strict options** (set explicitly to keep the legacy code passing typecheck — tightening these is intentional future work):
+  - `noUncheckedIndexedAccess: false`
+  - `noUnusedLocals: false`
+  - `noUnusedParameters: false`
+  - `verbatimModuleSyntax: false`
+- TypeScript **6** is in use. Its public types restructured — `CompilerOptions` / `TypeAcquisition` etc. live under the `ts.*` namespace (`import type ts from 'typescript'` then `ts.CompilerOptions`). Do not use `import type { CompilerOptions } from 'typescript'`; it no longer resolves.
 - Output: `dist/` (library), `bin/` (CLI). Both are gitignored; only `dist/` and `bin/` ship in the `files` array.
 
 ## Build Output
 
-| Artefact            | Purpose                                  | Built by                     |
-|---------------------|------------------------------------------|------------------------------|
-| `dist/index.cjs`    | CommonJS library bundle                  | Rollup (swc)                 |
-| `dist/index.mjs`    | ESM library bundle (with `.js` extension fix-up for `typeorm/*`) | Rollup (swc) |
-| `dist/index.d.ts`   | Type declarations                        | `tsc --emitDeclarationOnly`  |
-| `bin/cli.cjs`       | CJS CLI bundle                           | Rollup (swc)                 |
-| `bin/cli.mjs`       | ESM CLI bundle (use via `typeorm-extension-esm`) | Rollup (swc)         |
+| Artefact            | Purpose                                                          | Built by |
+|---------------------|------------------------------------------------------------------|----------|
+| `dist/index.mjs`    | ESM library bundle (with `.js` extension fix-up for `typeorm/*`) | tsdown   |
+| `dist/index.d.mts`  | Type declarations                                                | tsdown   |
+| `bin/cli.mjs`       | ESM CLI bundle                                                   | tsdown   |
 
-The CLI bundle rewrites cross-domain imports back to `typeorm-extension` (see `rollup.config.mjs`) so consumers pay for the library once, not twice.
+The CLI bundle's `cliRewriteExternal` plugin rewrites cross-domain imports back to `typeorm-extension` so the CLI doesn't carry a duplicate copy of the library AND so it shares singleton state with the library imported by the consumer's own code.
 
 ## Release Process
 
-[`release-please`](https://github.com/googleapis/release-please) runs in `.github/workflows/release.yml`. It opens / updates a release PR on `master` based on Conventional Commit history. Merging the release PR bumps the version, updates `CHANGELOG.md`, tags, and publishes to npm.
+[`release-please`](https://github.com/googleapis/release-please) runs in `.github/workflows/release.yml`. It opens / updates a release PR on `master` based on Conventional Commit history. Merging the release PR bumps the version, updates `CHANGELOG.md`, and tags. Publishing to npm is then handled by **[`tada5hi/monoship@v2`](https://github.com/tada5hi/monoship)** (a GitHub Action that runs `npm publish` with provenance / OIDC).
 
 Settings (`release-please-config.json`):
 
 - `release-type: node`
+- `include-v-in-tag: true` — tags look like `v3.10.0`
 - `prerelease: true`, `prerelease-type: alpha` — pre-1.0 / pre-release semantics apply.
 - `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — `feat:` ⇒ minor, `fix:` ⇒ patch (no major bumps without explicit `BREAKING CHANGE`).
 

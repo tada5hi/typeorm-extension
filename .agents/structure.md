@@ -45,11 +45,12 @@ typeorm-extension/
 │   │   └── tsconfig.json
 │   └── unit/                   # Test suites mirroring src/ folder names
 ├── docs/                       # VitePress site (guide/, index.md)
-├── bin/                        # Rollup output: cli.cjs, cli.mjs (gitignored, built)
-├── dist/                       # Rollup output: index.cjs/mjs + tsc-emitted index.d.ts
-├── rollup.config.mjs           # Two bundles: src/cli/index.ts and src/index.ts
+├── bin/                        # tsdown output: cli.mjs (gitignored, built)
+├── dist/                       # tsdown output: index.mjs + index.d.mts
+├── tsdown.config.ts            # Two entries: src/cli/index.ts → bin/, src/index.ts → dist/
+├── eslint.config.mjs           # ESLint v10 flat config (extends @tada5hi/eslint-config v2)
 ├── tsconfig.json               # extends @tada5hi/tsconfig; emit decorators + metadata
-├── package.json
+├── package.json                # "type": "module" — ESM-only
 └── release-please-config.json  # release-please manifest-driven releases
 ```
 
@@ -88,13 +89,14 @@ typeorm-extension/
 {
     "./package.json": "./package.json",
     ".": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
+        "types": "./dist/index.d.mts",
+        "import": "./dist/index.mjs"
     },
     "./bin/*": "./bin/*"
 }
 ```
+
+ESM-only. CJS consumers on Node 22+ can still `require('typeorm-extension')` thanks to Node's `require(esm)` support.
 
 `src/index.ts` is the public barrel; anything re-exported there is public API:
 
@@ -110,7 +112,7 @@ export * from './seeder';
 export * from './utils';
 ```
 
-`src/cli/index.ts` is **not** in the public barrel — it is the executable entry, bundled separately into `bin/cli.{cjs,mjs}` by Rollup. The rollup config rewrites cross-domain imports inside `src/cli/` to import from `typeorm-extension` itself, so the CLI bundle stays small and reuses the library at runtime.
+`src/cli/index.ts` is **not** in the public barrel — it is the executable entry, bundled separately into `bin/cli.mjs` by tsdown. A tsdown plugin (`cliRewriteExternal` in `tsdown.config.ts`) rewrites cross-domain imports inside `src/cli/` to import from `typeorm-extension` itself, so the CLI bundle stays small AND shares singleton state (data-source registry, env cache, factory manager) with the library that consumers import directly.
 
 ## Separation of Concerns
 

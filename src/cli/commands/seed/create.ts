@@ -84,7 +84,7 @@ export class SeedCreateCommand implements CommandModule {
 
         try {
             await fs.promises.writeFile(filePath, template, { encoding: 'utf-8' });
-        } catch (e) {
+        } catch {
             consola.warn(`The seed could not be written to the path ${filePath}.`);
             process.exit(1);
         }

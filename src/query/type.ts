@@ -10,17 +10,17 @@ import type {
 
 export type QueryApplyOptions<
     T extends ObjectLiteral = ObjectLiteral,
-    > = {
-        defaultPath?: string;
-        throwOnFailure?: boolean;
-        defaultAlias?: string,
+> = {
+    defaultPath?: string;
+    throwOnFailure?: boolean;
+    defaultAlias?: string,
 
-        fields?: boolean | QueryFieldsApplyOptions<T>,
-        filters?: boolean | QueryFiltersApplyOptions<T>,
-        pagination?: boolean | QueryPaginationApplyOptions,
-        relations?: boolean | QueryRelationsApplyOptions<T>,
-        sort?: boolean | QuerySortApplyOptions<T>
-    };
+    fields?: boolean | QueryFieldsApplyOptions<T>,
+    filters?: boolean | QueryFiltersApplyOptions<T>,
+    pagination?: boolean | QueryPaginationApplyOptions,
+    relations?: boolean | QueryRelationsApplyOptions<T>,
+    sort?: boolean | QuerySortApplyOptions<T>
+};
 
 export type QueryApplyOutput = ParseOutput & {
     defaultAlias?: string

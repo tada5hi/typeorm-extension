@@ -29,9 +29,7 @@ export async function synchronizeDatabaseSchema(
     let migrations : Migration[] = [];
 
     if (migrationsCount > 0) {
-        migrations = await dataSource.runMigrations({
-            transaction: options.migrationsTransactionMode,
-        });
+        migrations = await dataSource.runMigrations({ transaction: options.migrationsTransactionMode });
     } else {
         await dataSource.synchronize(false);
     }

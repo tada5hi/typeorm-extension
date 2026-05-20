@@ -18,14 +18,13 @@ export function transformParsedFilters<T extends ObjectLiteral = ObjectLiteral>(
 ) : QueryFiltersOutput {
     const items : QueryFiltersOutput = [];
 
-    for (let i = 0; i < data.length; i++) {
-        const alias = getAliasForPath(options.relations, data[i].path) ||
+    for (const filter of data) {
+        const alias = getAliasForPath(options.relations, filter.path) ||
             options.defaultAlias ||
             options.defaultPath;
 
-        const fullKey : string = buildKeyWithPrefix(data[i].key, alias);
+        const fullKey : string = buildKeyWithPrefix(filter.key, alias);
 
-        const filter = data[i];
 
         const statement : string[] = [
             fullKey,
@@ -160,11 +159,11 @@ export function applyFiltersTransformed<T extends ObjectLiteral = ObjectLiteral>
 
     /* istanbul ignore next */
     query.andWhere(new Brackets((qb) => {
-        for (let i = 0; i < data.length; i++) {
+        for (const [i, element] of data.entries()) {
             if (i === 0) {
-                qb.where(data[i].statement, data[i].binding);
+                qb.where(element.statement, element.binding);
             } else {
-                qb.andWhere(data[i].statement, data[i].binding);
+                qb.andWhere(element.statement, element.binding);
             }
         }
     }));

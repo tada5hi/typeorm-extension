@@ -7,8 +7,8 @@ export function canReplaceWindowsSeparator(input: string) : boolean {
     let characterIndex: number;
 
     const specialCharacters = ['[', '{', '(', '^', '$', '.', '|', '?', '*', '+'];
-    for (let i = 0; i < specialCharacters.length; i++) {
-        characterIndex = input.indexOf(specialCharacters[i]);
+    for (const specialCharacter of specialCharacters) {
+        characterIndex = input.indexOf(specialCharacter);
         if (characterIndex !== -1) {
             // special character is prefixed with \, no transformation allowed
             if (characterIndex !== 0 && input[characterIndex - 1] === '\\') {
@@ -25,7 +25,7 @@ export function replaceWindowSeparator(input: string) {
 }
 
 export function safeReplaceWindowsSeparator(input: string): string {
-    if (input.indexOf('\\') === -1 || !canReplaceWindowsSeparator(input)) {
+    if (!input.includes('\\') || !canReplaceWindowsSeparator(input)) {
         return input;
     }
 

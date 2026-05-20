@@ -10,9 +10,7 @@ describe('src/database/migration', () => {
             type: 'better-sqlite3',
             entities: [User, Role],
             database: ':memory:',
-            extra: {
-                charset: 'UTF8_GENERAL_CI',
-            },
+            extra: { charset: 'UTF8_GENERAL_CI' },
         };
         const dataSource = new DataSource(options);
         await dataSource.initialize();

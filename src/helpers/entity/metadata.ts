@@ -1,6 +1,8 @@
 import { Repository } from 'typeorm';
 import type {
-    DataSource, EntityMetadata, EntityTarget,
+    DataSource,
+    EntityMetadata,
+    EntityTarget,
     ObjectLiteral,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';

@@ -106,7 +106,7 @@ export async function generateMigration(
 
         try {
             await fs.promises.access(directoryPath, fs.constants.R_OK | fs.constants.W_OK);
-        } catch (e) {
+        } catch {
             await fs.promises.mkdir(directoryPath, { recursive: true });
         }
 

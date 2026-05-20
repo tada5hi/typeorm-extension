@@ -1,5 +1,9 @@
 import {
-    oneOf, read, readArray, readBool, readInt,
+    oneOf,
+    read,
+    readArray,
+    readBool,
+    readInt,
 } from 'envix';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import { EnvironmentName, EnvironmentVariableName } from './constants';

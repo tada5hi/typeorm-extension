@@ -38,9 +38,7 @@ describe('src/data-source/options/env', () => {
             type: 'better-sqlite3',
             entities: [User],
             database: ':memory:',
-            extra: {
-                charset: 'UTF8_GENERAL_CI',
-            },
+            extra: { charset: 'UTF8_GENERAL_CI' },
         };
 
         process.env = {
@@ -64,9 +62,7 @@ describe('src/data-source/options/env', () => {
             [EnvironmentVariableName.DATABASE]: 'test.sqlite',
         };
 
-        const options = await buildDataSourceOptions({
-            directory: 'test/data/typeorm',
-        });
+        const options = await buildDataSourceOptions({ directory: 'test/data/typeorm' });
 
         expect(options).toBeDefined();
         expect(options.type).toEqual('better-sqlite3');

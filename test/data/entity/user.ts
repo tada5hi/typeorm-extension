@@ -1,6 +1,10 @@
 import {
-    Column, Entity, JoinColumn, ManyToOne,
-    PrimaryGeneratedColumn, Unique,
+    Column,
+    Entity,
+    JoinColumn,
+    ManyToOne,
+    PrimaryGeneratedColumn,
+    Unique,
 } from 'typeorm';
 import { Role } from './role';
 
@@ -8,21 +12,21 @@ import { Role } from './role';
 @Entity()
 export class User {
     @PrimaryGeneratedColumn()
-        id: number;
+    id: number;
 
     @Column()
-        firstName: string;
+    firstName: string;
 
     @Column()
-        lastName: string;
+    lastName: string;
 
     @Column()
-        email: string;
+    email: string;
 
     @Column({ nullable: true })
-        roleId: number | null;
+    roleId: number | null;
 
     @ManyToOne(() => Role, (role: Role) => role.id, { nullable: true })
     @JoinColumn({ name: 'roleId' })
-        role: Role;
+    role: Role;
 }

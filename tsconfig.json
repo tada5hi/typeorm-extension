@@ -1,20 +1,23 @@
 {
     "extends": "@tada5hi/tsconfig",
     "compilerOptions": {
-        "lib": [
-            "ESNext"
-        ],
-        "module": "ESNext",
-        "outDir": "dist",
+        "lib": ["ESNext"],
         "target": "ES2022",
+        "module": "ESNext",
+        "moduleResolution": "node10",
+        "ignoreDeprecations": "6.0",
+        "noEmit": true,
+        "allowImportingTsExtensions": true,
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        "strictPropertyInitialization": false
+        "strictPropertyInitialization": false,
+        "noUncheckedIndexedAccess": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "verbatimModuleSyntax": false,
+        "types": ["node"]
     },
     "include": [
-        "src/**/*.ts"
-    ],
-    "exclude": [
-        "node_modules/**/*"
+        "src/**/*"
     ]
 }

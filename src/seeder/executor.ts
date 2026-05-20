@@ -124,30 +124,30 @@ export class SeederExecutor {
         const executed : SeederEntity[] = [];
 
         try {
-            for (let i = 0; i < pending.length; i++) {
-                const seeder = pending[i].instance;
+            for (const element of pending) {
+                const seeder = element.instance;
                 if (!seeder) {
                     continue;
                 }
 
-                pending[i].result = await seeder.run(this.dataSource, factoryManager);
+                element.result = await seeder.run(this.dataSource, factoryManager);
 
                 let seedTracking : boolean | undefined;
-                if (typeof pending[i].trackExecution !== 'undefined') {
-                    seedTracking = pending[i].trackExecution;
+                if (typeof element.trackExecution !== 'undefined') {
+                    seedTracking = element.trackExecution;
                 } else {
                     seedTracking = options.seedTracking;
                 }
 
                 if (queryRunner && seedTracking) {
-                    await this.track(queryRunner, pending[i]);
+                    await this.track(queryRunner, element);
                 }
 
                 this.dataSource.logger.logSchemaBuild(
-                    `Seed ${pending[i].name} has been executed successfully.`,
+                    `Seed ${element.name} has been executed successfully.`,
                 );
 
-                executed.push(pending[i]);
+                executed.push(element);
             }
         } finally {
             if (queryRunner) {
@@ -176,8 +176,8 @@ export class SeederExecutor {
             .getRawMany();
 
         return raw.map((migrationRaw) => new SeederEntity({
-            id: parseInt(migrationRaw.id, 10),
-            timestamp: parseInt(migrationRaw.timestamp, 10),
+            id: Number.parseInt(migrationRaw.id, 10),
+            timestamp: Number.parseInt(migrationRaw.timestamp, 10),
             name: migrationRaw.name,
             constructor: undefined,
         }));
@@ -199,9 +199,7 @@ export class SeederExecutor {
                 filePath,
             } = element;
 
-            let {
-                timestamp,
-            } = element;
+            let { timestamp } = element;
 
             const className = seed.name || (seed.constructor as any).name;
 
@@ -313,9 +311,7 @@ export class SeederExecutor {
             );
             values.name = new MssqlParameter(
                 seederEntity.name,
-                this.dataSource.driver.normalizeType({
-                    type: this.dataSource.driver.mappedDataTypes.migrationName,
-                }) as any,
+                this.dataSource.driver.normalizeType({ type: this.dataSource.driver.mappedDataTypes.migrationName }) as any,
             );
         } else {
             values.timestamp = seederEntity.timestamp;
@@ -422,7 +418,7 @@ export class SeederExecutor {
     protected classNameToTimestamp(className: string) {
         const match = className.match(/^(.*)([0-9]{13,})$/);
         if (match) {
-            return parseInt(match[2], 10);
+            return Number.parseInt(match[2], 10);
         }
 
         return undefined;

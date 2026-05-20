@@ -51,8 +51,8 @@ export function transformFilePath(
     dist = dist || 'dist';
 
     if (
-        input.indexOf(src) !== -1 &&
-        input.indexOf(dist) === -1
+        input.includes(src) &&
+        !input.includes(dist)
     ) {
         const lastIndex = input.lastIndexOf(src);
         const prevCharacter = input.substring(lastIndex - 1, lastIndex);
@@ -65,17 +65,20 @@ export function transformFilePath(
         }
     }
 
-    // if the path already contains a js file extension, we are done
     const jsExtensions = ['js', 'cjs', 'mjs'];
-    for (let i = 0; i < jsExtensions.length; i++) {
-        if (base.indexOf(jsExtensions[i]) !== -1) {
-            return input;
-        }
+
+    // if the path already contains a js-family file extension (as a real
+    // extension at end-of-name or inside a glob brace expansion, not just
+    // anywhere in the basename — `my-json.ts` must still be transformable),
+    // we are done.
+    const jsExtensionRegex = /(?:^|[./{,])(?:js|cjs|mjs)(?:[}.,]|$)/;
+    if (jsExtensionRegex.test(base)) {
+        return input;
     }
 
     const tsExtensions = ['ts', 'cts', 'mts'];
-    for (let i = 0; i < tsExtensions.length; i++) {
-        const regex = new RegExp(`(\\.${tsExtensions[i]}|${tsExtensions[i]})`, 'g');
+    for (const [i, tsExtension] of tsExtensions.entries()) {
+        const regex = new RegExp(`(\\.${tsExtension}|${tsExtension})`, 'g');
         let matchesSum: number | undefined;
         const matches = base.match(regex);
         if (Array.isArray(matches)) {
@@ -154,8 +157,8 @@ export async function adjustFilePaths<T extends Record<string, any>>(
 
     keys = keys || Object.keys(input);
 
-    for (let i = 0; i < keys.length; i++) {
-        input[keys[i]] = await adjustFilePath(input[keys[i]], tsconfig);
+    for (const key of keys) {
+        input[key] = await adjustFilePath(input[key], tsconfig);
     }
 
     return input;

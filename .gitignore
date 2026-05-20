@@ -1,15 +1,13 @@
 .DS_Store
 bin
 dist
-doc
 node_modules
 .vscode
-.nyc_output
+.idea
 coverage
 *.log
 npm-debug.log*
-.idea
-reports
 db.sqlite
 .env
 cache
+.claude/settings.local.json

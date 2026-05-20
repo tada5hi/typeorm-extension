@@ -53,9 +53,7 @@ export class DatabaseCreateCommand implements CommandModule {
                 describe: 'Create database schema for all entities.',
                 choices: ['yes', 'no'],
             })
-            .option('initialDatabase', {
-                describe: 'Specify the initial database to connect to.',
-            });
+            .option('initialDatabase', { describe: 'Specify the initial database to connect to.' });
     }
 
     async handler(raw: Arguments) {

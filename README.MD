@@ -57,26 +57,22 @@ To read the docs, visit [https://typeorm-extension.tada5hi.net](https://typeorm-
 
 ### CLI
 
-If you use esm, the executable must be changed from `typeorm-extension` to `typeorm-extension-esm`.
 The following commands are available in the terminal:
 - `typeorm-extension db:create` to create the database
 - `typeorm-extension db:drop` to drop the database
 - `typeorm-extension seed:run` seed the database
 - `typeorm-extension seed:create` to create a new seeder
 
-If the application has not yet been built or is to be tested with ts-node, the commands can be adapted as follows:
+If the application has not yet been built and you want to run the CLI against TypeScript sources directly, invoke the ESM bundle with a TypeScript-aware Node loader (e.g. `tsx` or Node's `--experimental-strip-types`):
 
 ```
 "scripts": {
-    "db:create": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:create",
-    "db:drop": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:drop",
-    "seed:run": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run",
-    "seed:create": "ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:create"
+    "db:create":   "tsx ./node_modules/typeorm-extension/bin/cli.mjs db:create",
+    "db:drop":     "tsx ./node_modules/typeorm-extension/bin/cli.mjs db:drop",
+    "seed:run":    "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:run",
+    "seed:create": "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:create"
 }
 ```
-To test the application in the context of an esm project, the following adjustments must be made:
-- executable `ts-node` to `ts-node-esm`
-- library path `cli.cjs` to `cli.mjs`
 
 Read the [Seeding Configuration](#configuration) section to find out how to specify the path,
 for the seeder- & factory-location.
@@ -95,26 +91,26 @@ for the seeder- & factory-location.
 #### CLI Examples
 **`Database Create`**
 ```shell
-ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:create  -d src/data-source.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs db:create  -d src/data-source.ts
 ```
 **`Database Drop`**
 ```shell
-ts-node ./node_modules/typeorm-extension/bin/cli.cjs db:drop  -d src/data-source.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs db:drop  -d src/data-source.ts
 ```
 
 **`Seed Run`**
 ```shell
-ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/data-source.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:run  -d src/data-source.ts
 ```
 
 **`Seed Run Explicit`**
 ```shell
-ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:run  -d src/data-source.ts --name src/database/seeds/user.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:run  -d src/data-source.ts --name src/database/seeds/user.ts
 ```
 
 **`Seed Create`**
 ```shell
-ts-node ./node_modules/typeorm-extension/bin/cli.cjs seed:create  --name src/database/seeds/user.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:create  --name src/database/seeds/user.ts
 ```
 
 ### Database

@@ -8,7 +8,7 @@ export async function readTSConfig(input?: string) : Promise<TSConfig> {
         input :
         path.resolve(process.cwd(), input);
 
-    const filePath = input.indexOf('.json') === -1 ?
+    const filePath = !input.includes('.json') ?
         path.join(input, 'tsconfig.json') :
         input;
 
@@ -18,7 +18,7 @@ export async function readTSConfig(input?: string) : Promise<TSConfig> {
         if (isObject(tsConfig)) {
             return tsConfig;
         }
-    } catch (e) {
+    } catch {
         // don't do anything ;)
     }
 

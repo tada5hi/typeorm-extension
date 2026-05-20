@@ -9,7 +9,7 @@ export default defineConfig({
         ],
         editLink: {
             pattern: 'https://github.com/tada5hi/typeorm-extension/edit/master/docs/:path',
-            text: 'Edit this page on GitHub'
+            text: 'Edit this page on GitHub',
         },
         nav: [
             {
@@ -21,43 +21,44 @@ export default defineConfig({
                 text: 'Guide',
                 link: '/guide/',
                 activeMatch: '/guide/',
-            }
+            },
         ],
         sidebar: {
             '/guide/': [
                 {
                     text: 'Introduction',
                     items: [
-                        {text: 'What is it?', link: '/guide/'},
-                    ]
+                        { text: 'What is it?', link: '/guide/' },
+                    ],
                 },
                 {
                     text: 'Getting Started',
                     items: [
-                        {text: 'Installation', link: '/guide/installation'},
-                        {text: 'CLI', link: '/guide/cli'},
-                        {text: 'Database', link: '/guide/database'},
-                        {text: 'Instances', link: '/guide/instances'},
-                        {text: 'Seeding', link: '/guide/seeding'},
-                        {text: 'Query', link: '/guide/query'},
-                    ]
+                        { text: 'Installation', link: '/guide/installation' },
+                        { text: 'CLI', link: '/guide/cli' },
+                        { text: 'Database', link: '/guide/database' },
+                        { text: 'Instances', link: '/guide/instances' },
+                        { text: 'Seeding', link: '/guide/seeding' },
+                        { text: 'Query', link: '/guide/query' },
+                    ],
                 },
                 {
                     text: 'API Reference',
                     items: [
-                        {text: 'Database', link: '/guide/database-api-reference'},
-                        {text: 'DataSource', link: '/guide/datasource-api-reference'},
-                        {text: 'Seeding', link: '/guide/seeding-api-reference'},
-                        {text: 'Query', link: '/guide/query-api-reference'},
-                    ]
+                        { text: 'Database', link: '/guide/database-api-reference' },
+                        { text: 'DataSource', link: '/guide/datasource-api-reference' },
+                        { text: 'Seeding', link: '/guide/seeding-api-reference' },
+                        { text: 'Query', link: '/guide/query-api-reference' },
+                    ],
                 },
                 {
                     text: 'Upgrading',
                     items: [
-                        {text: 'Version 3', link: '/guide/migration-guide-v3' }
-                    ]
-                }
-            ]
-        }
-    }
+                        { text: 'Version 4', link: '/guide/migration-guide-v4' },
+                        { text: 'Version 3', link: '/guide/migration-guide-v3' },
+                    ],
+                },
+            ],
+        },
+    },
 });

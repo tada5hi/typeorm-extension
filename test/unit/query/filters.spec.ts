@@ -3,12 +3,14 @@ import { FilterComparisonOperator, parseQueryFilters, parseQueryRelations } from
 import type { ObjectLiteral } from 'typeorm';
 import { FakeSelectQueryBuilder } from '../../data/typeorm/FakeSelectQueryBuilder';
 import type {
-    QueryFiltersApplyOptions, QueryFiltersApplyOutput,
+    QueryFiltersApplyOptions,
+    QueryFiltersApplyOutput,
     QueryFiltersOutput,
 } from '../../../src';
 import {
     applyFilters,
-    applyFiltersTransformed, applyQueryFilters,
+    applyFiltersTransformed,
+    applyQueryFilters,
     applyQueryFiltersParseOutput,
     transformParsedFilters,
 } from '../../../src';
@@ -184,7 +186,11 @@ describe('src/api/filters.ts', () => {
     it('should apply filters parse output', () => {
         const data = applyQueryFiltersParseOutput(queryBuilder, parseQueryFilters({ id: 1 }, { allowed: ['id'] }));
         expect(data).toEqual([
-            { key: 'id', operator: FilterComparisonOperator.EQUAL, value: 1 },
+            {
+                key: 'id',
+                operator: FilterComparisonOperator.EQUAL,
+                value: 1,
+            },
         ] as QueryFiltersApplyOutput);
     });
 
@@ -207,13 +213,21 @@ describe('src/api/filters.ts', () => {
         let data = applyQueryFilters(queryBuilder, { id: 1 }, { allowed: ['id'] });
 
         expect(data).toEqual([
-            { key: 'id', operator: FilterComparisonOperator.EQUAL, value: 1 },
+            {
+                key: 'id',
+                operator: FilterComparisonOperator.EQUAL,
+                value: 1,
+            },
         ]);
 
         data = applyFilters(queryBuilder, { id: 1 }, { allowed: ['id'] });
 
         expect(data).toEqual([
-            { key: 'id', operator: FilterComparisonOperator.EQUAL, value: 1 },
+            {
+                key: 'id',
+                operator: FilterComparisonOperator.EQUAL,
+                value: 1,
+            },
         ]);
     });
 });

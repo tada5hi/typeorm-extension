@@ -10,9 +10,7 @@ describe('entity-relation-columns', () => {
         await dataSource.synchronize();
 
         const roleRepository = dataSource.getRepository(Role);
-        const role = roleRepository.create({
-            name: 'foo',
-        });
+        const role = roleRepository.create({ name: 'foo' });
 
         await roleRepository.save(role);
 

@@ -48,7 +48,7 @@ export async function dropSQLiteDatabase(
         if (context.ifExist) {
             await fs.promises.unlink(filePath);
         }
-    } catch (e) {
+    } catch {
         // ...
     }
 }

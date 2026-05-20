@@ -22,10 +22,10 @@ export function applyQuerySortParseOutput<T extends ObjectLiteral = ObjectLitera
 
     const sort : Record<string, `${SortDirection}`> = {};
 
-    for (let i = 0; i < data.length; i++) {
-        const key = buildKeyWithPrefix(data[i].key, data[i].path);
+    for (const datum of data) {
+        const key = buildKeyWithPrefix(datum.key, datum.path);
 
-        sort[key] = data[i].value;
+        sort[key] = datum.value;
     }
 
     query.orderBy(sort);

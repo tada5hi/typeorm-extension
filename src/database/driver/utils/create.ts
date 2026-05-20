@@ -10,9 +10,7 @@ export function createDriver(connectionOptions: DataSourceOptions) {
     const fakeConnection: DataSource = {
         options: {
             type: connectionOptions.type,
-            ...(driversRequireDatabaseOption.indexOf(connectionOptions.type) !== -1 ? {
-                database: connectionOptions.database,
-            } : {}),
+            ...(driversRequireDatabaseOption.includes(connectionOptions.type) ? { database: connectionOptions.database } : {}),
         },
     } as DataSource;
 

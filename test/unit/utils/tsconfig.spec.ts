@@ -3,7 +3,7 @@ import { readTSConfig } from '../../../src/utils/tsconfig';
 
 describe('src/utils/tsconfig.ts', () => {
     it('should read tsconfig file', async () => {
-        const rootPath : string = path.resolve(__dirname, '..', '..', 'data');
+        const rootPath : string = path.resolve(import.meta.dirname, '..', '..', 'data');
         const tsConfig = await readTSConfig(rootPath);
 
         expect(tsConfig.compilerOptions).toBeDefined();
@@ -13,7 +13,7 @@ describe('src/utils/tsconfig.ts', () => {
     });
 
     it('should read empty tsconfig', async () => {
-        const rootPath : string = path.resolve(__dirname, '..', '..', 'data', 'foo');
+        const rootPath : string = path.resolve(import.meta.dirname, '..', '..', 'data', 'foo');
         const tsConfig = await readTSConfig(rootPath);
 
         expect(tsConfig).toBeDefined();

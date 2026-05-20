@@ -59,17 +59,17 @@ export async function findDataSource(
     }
 
     const lookupPaths = [];
-    for (let j = 0; j < files.length; j++) {
+    for (const file of files) {
         if (
             directory &&
             directoryIsPattern
         ) {
-            lookupPaths.push(path.posix.join(directory, files[j]));
+            lookupPaths.push(path.posix.join(directory, file));
         }
 
         lookupPaths.push(...[
-            path.posix.join('src', files[j]),
-            path.posix.join('src/{db,database}', files[j]),
+            path.posix.join('src', file),
+            path.posix.join('src/{db,database}', file),
         ]);
     }
 
@@ -81,9 +81,9 @@ export async function findDataSource(
         }
     }
 
-    for (let i = 0; i < files.length; i++) {
+    for (const file of files) {
         const info = await locate(
-            `${files[i]}.{js,cjs,mjs,ts,cts,mts}`,
+            `${file}.{js,cjs,mjs,ts,cts,mts}`,
             {
                 path: [
                     process.cwd(),
@@ -109,8 +109,8 @@ export async function findDataSource(
             }
 
             const keys = Object.keys(moduleRecord);
-            for (let j = 0; j < keys.length; j++) {
-                let value = moduleRecord[keys[j]];
+            for (const key of keys) {
+                let value = moduleRecord[key];
 
                 if (isPromise(value)) {
                     value = await value;
