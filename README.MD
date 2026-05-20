@@ -574,18 +574,16 @@ plugin [@routup/query](https://www.npmjs.com/package/@routup/query) is used to h
 but there is also a guide available for [express](https://typeorm-extension.tada5hi.net/guide/query.html).
 
 ```typescript
-import { createServer } from 'node:http';
-import type { Request, Response } from 'routup';
-import { createNodeDispatcher, Router } from 'routup';
-import { createHandler, useQuery } from '@routup/query';
+import { App, defineCoreHandler, serve } from 'routup';
+import { query, useRequestQuery } from '@routup/query';
 
 import {
     applyQuery,
     useDataSource
 } from 'typeorm-extension';
 
-const router = new Router();
-router.use(createHandler());
+const app = new App();
+app.use(query());
 
 /**
  * Get many users.
@@ -604,17 +602,15 @@ router.use(createHandler());
  *        offset: 0
  *    }
  * }
- * @param req
- * @param res
  */
-router.get('/users', async (req: Request, res: Response) => {
+app.get('/users', defineCoreHandler(async (event) => {
     const dataSource = await useDataSource();
     const repository = dataSource.getRepository(User);
     const query = repository.createQueryBuilder('user');
 
     // -----------------------------------------------------
 
-    const { pagination } = applyQuery(query, useQuery(req), {
+    const { pagination } = applyQuery(query, useRequestQuery(event), {
         defaultAlias: 'user',
         fields: {
             // profile fields can only be included,
@@ -651,10 +647,9 @@ router.get('/users', async (req: Request, res: Response) => {
             ...pagination
         }
     };
-});
+}));
 
-const server = createServer(createNodeDispatcher(router));
-server.listen(80);
+serve(app, { port: 80 });
 ```
 
 ## Contributing

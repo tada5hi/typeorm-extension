@@ -67,18 +67,16 @@ In this example [routup](https://www.npmjs.com/package/routup) and the
 plugin [@routup/query](https://www.npmjs.com/package/@routup/query) is used to handle HTTP requests.
 
 ```typescript
-import { createServer } from 'node:http';
-import type { Request, Response } from 'routup';
-import { createNodeDispatcher, Router } from 'routup';
-import { createHandler, useQuery } from '@routup/query';
+import { App, defineCoreHandler, serve } from 'routup';
+import { query, useRequestQuery } from '@routup/query';
 
 import {
     applyQuery,
     useDataSource
 } from 'typeorm-extension';
 
-const router = new Router();
-router.use(createHandler());
+const app = new App();
+app.use(query());
 
 /**
  * Get many users.
@@ -97,25 +95,23 @@ router.use(createHandler());
  *        offset: 0
  *    }
  * }
- * @param req
- * @param res
  */
-router.get('users', async (req: Request, res: Response) => {
+app.get('/users', defineCoreHandler(async (event) => {
     const dataSource = await useDataSource();
     const repository = dataSource.getRepository(User);
     const query = repository.createQueryBuilder('user');
 
     // -----------------------------------------------------
 
-    const { pagination } = applyQuery(query, useQuery(req), {
+    const { pagination } = applyQuery(query, useRequestQuery(event), {
         defaultAlias: 'user',
         fields: {
-            // porfile fields can only be included,
+            // profile fields can only be included,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         },
         filters: {
-            // porfile.id can only be used as a filter,
+            // profile.id can only be used as a filter,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id'],
         },
@@ -127,7 +123,7 @@ router.get('users', async (req: Request, res: Response) => {
             allowed: ['profile']
         },
         sort: {
-            // profile.id can only be used as sorting key, 
+            // profile.id can only be used as sorting key,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id']
         },
@@ -144,10 +140,9 @@ router.get('users', async (req: Request, res: Response) => {
             ...pagination
         }
     };
-});
+}));
 
-const server = createServer(createNodeDispatcher(router));
-server.listen(80);
+serve(app, { port: 80 });
 ```
 
 ### Express
@@ -185,7 +180,7 @@ const app = express();
  * @param req
  * @param res
  */
-app.get('users', async (req: Request, res: Response) => {
+app.get('/users', async (req: Request, res: Response) => {
     const dataSource = await useDataSource();
     const repository = dataSource.getRepository(User);
     const query = repository.createQueryBuilder('user');
@@ -195,12 +190,12 @@ app.get('users', async (req: Request, res: Response) => {
     const { pagination } = applyQuery(query, req.query, {
         defaultAlias: 'user',
         fields: {
-            // porfile fields can only be included,
+            // profile fields can only be included,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
         },
         filters: {
-            // porfile.id can only be used as a filter,
+            // profile.id can only be used as a filter,
             // if the relation 'profile' is included.
             allowed: ['id', 'name', 'profile.id'],
         },
