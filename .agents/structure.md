@@ -8,11 +8,12 @@ Single-package TypeScript library. Source lives in `src/`, tests in `test/`, doc
 typeorm-extension/
 ├── src/
 │   ├── index.ts                # Public barrel — re-exports every public module
-│   ├── cli/                    # yargs-based CLI (bundled separately into bin/)
-│   │   ├── index.ts            # CLI entry: registers commands, parses argv
+│   ├── cli/                    # citty-based CLI (bundled separately into bin/)
+│   │   ├── index.ts            # CLI entry: calls runMain(createCLIEntryPointCommand())
+│   │   ├── module.ts           # createCLIEntryPointCommand — wires subCommands (db, seed) + legacy colon aliases
 │   │   └── commands/
-│   │       ├── database/       # db:create, db:drop  (yargs CommandModule classes)
-│   │       └── seed/           # seed:run, seed:create
+│   │       ├── database/       # `db` parent + `create`/`drop` subcommands (citty defineCommand)
+│   │       └── seed/           # `seed` parent + `create`/`run` subcommands
 │   ├── data-source/            # DataSource discovery, options, and singleton registry
 │   │   ├── find/               # findDataSource() — locate data-source file on disk
 │   │   ├── options/            # buildDataSourceOptions, env-merge, file load
@@ -58,7 +59,7 @@ typeorm-extension/
 
 | Module           | Purpose                                                                                                |
 |------------------|--------------------------------------------------------------------------------------------------------|
-| `cli/`           | Process entry for the `typeorm-extension(-esm)` binaries. Thin wrapper over the public API.            |
+| `cli/`           | Process entry for the `typeorm-extension` binary. Thin wrapper over the public API.                   |
 | `data-source/`   | Locate, build, and cache `DataSource` instances by alias. Backbone for every other feature.            |
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
@@ -78,7 +79,7 @@ typeorm-extension/
 | `locter`             | Glob + file loading (used to discover data-source / seed / factory files).                    |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
 | `consola`            | CLI logger (used inside `src/cli/commands/*`).                                                |
-| `yargs`              | CLI argument parser. Each command is a class implementing `CommandModule`.                    |
+| `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |
 | `smob`               | Object merge utility (deep merge of data-source options).                                     |
 | `reflect-metadata`   | Imported at the top of `src/cli/index.ts` so TypeORM decorators work in CLI-loaded files.     |
 | `pascal-case`        | Used in seed/factory file generation (template stamps `PascalCaseName`).                      |
@@ -103,7 +104,6 @@ ESM-only. CJS consumers on Node 22+ can still `require('typeorm-extension')` tha
 ```ts
 export * from './errors';
 export * from './query';
-export * from './cli/commands';   // command classes are public (consumers can register them in their own yargs)
 export * from './database';
 export * from './data-source';
 export * from './env';
@@ -112,11 +112,13 @@ export * from './seeder';
 export * from './utils';
 ```
 
+CLI command factories are **not** part of the public barrel — they are internal to the CLI bundle. Consumers who want to embed a command into their own citty pipeline should fork or copy it; that surface is no longer a public API contract.
+
 `src/cli/index.ts` is **not** in the public barrel — it is the executable entry, bundled separately into `bin/cli.mjs` by tsdown. A tsdown plugin (`cliRewriteExternal` in `tsdown.config.ts`) rewrites cross-domain imports inside `src/cli/` to import from `typeorm-extension` itself, so the CLI bundle stays small AND shares singleton state (data-source registry, env cache, factory manager) with the library that consumers import directly.
 
 ## Separation of Concerns
 
-- **CLI parsing** → `src/cli/` (yargs only).
+- **CLI parsing** → `src/cli/` (citty only).
 - **Public, programmatic API** → everything else under `src/`, re-exported from `src/index.ts`.
 - **Driver-specific SQL** → `src/database/driver/<driver>.ts`. Adding a new TypeORM driver means adding a file here and a `case` in `src/database/methods/{create,drop,check}/module.ts`.
 - **Query application** → `src/query/parameter/<concern>/` — one folder per JSON:API concern (`fields`, `filters`, `pagination`, `relations`, `sort`).
