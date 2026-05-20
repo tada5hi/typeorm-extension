@@ -72,7 +72,7 @@ typeorm-extension/
 
 | Dependency           | Role                                                                                          |
 |----------------------|-----------------------------------------------------------------------------------------------|
-| `typeorm` (peer)     | The ORM being extended. Pinned to `~0.3.0`.                                                   |
+| `typeorm` (peer)     | The ORM being extended. Requires `^1.0.0` (TypeORM 0.3 is no longer supported).                |
 | `@faker-js/faker`    | Optional peer — only required when using `SeederFactory`.                                     |
 | `rapiq`              | JSON:API query parser. `query/module.ts` is a thin TypeORM-flavoured adapter on top of it.    |
 | `locter`             | Glob + file loading (used to discover data-source / seed / factory files).                    |

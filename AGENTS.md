@@ -4,7 +4,7 @@
 
 A TypeScript library that extends [TypeORM](https://typeorm.io) with:
 
-- `create` / `drop` databases across all supported drivers (Postgres, MySQL/MariaDB, MongoDB, MSSQL, Oracle, SQLite/better-sqlite3, CockroachDB).
+- `create` / `drop` databases across all supported drivers (Postgres, MySQL/MariaDB, MongoDB, MSSQL, Oracle, better-sqlite3, CockroachDB). Note: TypeORM 1.0 removed the legacy `sqlite` driver — use `better-sqlite3`.
 - A seeder/factory system (similar to Laravel) backed by `@faker-js/faker`.
 - A data-source registry with auto-discovery and lazy initialization.
 - A JSON:API-style query parameter parser that applies `fields`, `filters`, `relations`, `sort`, and `page` onto a `SelectQueryBuilder`.

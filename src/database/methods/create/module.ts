@@ -40,7 +40,6 @@ export async function createDatabase(input: DatabaseCreateContextInput = {}) : P
         case 'cockroachdb':
             output = await createCockroachDBDatabase(context);
             break;
-        case 'sqlite':
         case 'better-sqlite3':
             output = await createSQLiteDatabase(context);
             break;

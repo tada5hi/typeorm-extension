@@ -1,6 +1,6 @@
 # Upgrading to v4
 
-This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain (ESM-only, Node ≥ 22, new bundler / test runner / linter); the typeorm peer-dep bump to `^1.0.0` is a separate follow-up release once typeorm 1.0 ships.
+This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain (ESM-only, Node ≥ 22, new bundler / test runner / linter) **and** moves the typeorm peer-dep to `^1.0.0`. TypeORM `0.3.x` is no longer supported — stay on `typeorm-extension` v3 if you need it.
 
 ## Breaking Changes
 
@@ -40,7 +40,23 @@ You can use any TypeScript-aware loader (`tsx`, Node's `--experimental-strip-typ
 
 ### Peer dependency: TypeORM
 
-`peerDependencies.typeorm` is still `~0.3.0` in this release — typeorm 1.0 hasn't shipped yet. v4 is the **toolchain-modernization** half of the v3 → v4 jump; the peer-dep bump to `^1.0.0` will land in a follow-up release once typeorm 1.0 is stable. No TypeORM API changes are required by this v4 upgrade itself.
+| v3 | v4 |
+|---|---|
+| `typeorm ~0.3.0` | `typeorm ^1.0.0` |
+
+TypeORM `0.3.x` is **not** supported on `typeorm-extension` v4+. Pick the row that fits you:
+
+- Already on TypeORM `1.0`: upgrade to `typeorm-extension` v4.
+- Still on TypeORM `0.3.x`: stay on `typeorm-extension` v3 until you can migrate the rest of your app to TypeORM `1.0`.
+
+The TypeORM 1.0 upstream changes that affect `typeorm-extension` consumers:
+
+- **`sqlite` driver removed** — TypeORM 1.0 dropped the `sqlite` package; only `better-sqlite3` is supported. `typeorm-extension` follows suit and only handles `better-sqlite3` in `createDatabase` / `dropDatabase` / `TYPEORM_CONNECTION`.
+- **MongoDB**: requires `mongodb` `^7.0.0`.
+- **MySQL**: only the `mysql2` package is supported (the legacy `mysql` package is removed).
+- **Node.js**: TypeORM 1.0 requires Node `^20.19.0 || ^22.13.0 || >=24.11.0`. `typeorm-extension` v4 already requires Node `>=22.0.0`.
+
+See the [TypeORM 1.0 release notes](https://typeorm.io/docs/releases/1.0/release-notes/) for the full list of upstream breaking changes.
 
 ## Internal Toolchain (no consumer impact)
 

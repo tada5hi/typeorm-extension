@@ -1,4 +1,4 @@
-import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
 import { mergeDataSourceOptions } from '../../../../src';
 
 describe('src/data-source/options/merge', () => {
@@ -13,7 +13,7 @@ describe('src/data-source/options/merge', () => {
 
         expect(options).toBeDefined();
         expect(options.type).toEqual('postgres');
-        expect((options as PostgresConnectionOptions).password).toEqual('password');
+        expect((options as PostgresDataSourceOptions).password).toEqual('password');
     });
 
     it('should not merge data source options', () => {
@@ -27,6 +27,6 @@ describe('src/data-source/options/merge', () => {
 
         expect(options).toBeDefined();
         expect(options.type).toEqual('postgres');
-        expect((options as PostgresConnectionOptions).password).toBeUndefined();
+        expect((options as PostgresDataSourceOptions).password).toBeUndefined();
     });
 });

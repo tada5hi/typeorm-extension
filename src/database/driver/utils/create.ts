@@ -2,7 +2,6 @@ import type { DataSource, DataSourceOptions } from 'typeorm';
 import { DriverFactory } from 'typeorm/driver/DriverFactory';
 
 const driversRequireDatabaseOption: DataSourceOptions['type'][] = [
-    'sqlite',
     'better-sqlite3',
 ];
 
