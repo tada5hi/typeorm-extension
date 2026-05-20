@@ -52,7 +52,7 @@ export function defineCLISeedRunCommand() {
             let sourcePath = resolveFilePath(args.dataSource, args.root);
             let { name } = args;
             if (!args.preserveFilePaths) {
-                tsconfig = await readTSConfig(args.root);
+                tsconfig = await readTSConfig(resolveFilePath(args.root, args.tsconfig));
                 sourcePath = await adjustFilePath(sourcePath, tsconfig);
                 name = await adjustFilePath(name, tsconfig);
             }
