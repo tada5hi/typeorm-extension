@@ -52,7 +52,7 @@ export function defineCLISeedRunCommand() {
             let sourcePath = resolveFilePath(args.dataSource, args.root);
             let { name } = args;
             if (!args.preserveFilePaths) {
-                tsconfig = await readTSConfig(resolveFilePath(args.root, args.tsconfig));
+                tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
                 sourcePath = await adjustFilePath(sourcePath, tsconfig);
                 name = await adjustFilePath(name, tsconfig);
             }
@@ -82,9 +82,15 @@ export function defineCLISeedRunCommand() {
                 preserveFilePaths: args.preserveFilePaths,
             });
 
-            await executor.execute({ seedName: name });
-
-            process.exit(0);
+            try {
+                await executor.execute({ seedName: name });
+                consola.success('Executed seeders.');
+                process.exit(0);
+            } catch (e) {
+                consola.warn('Failed to execute seeders.');
+                consola.error(e);
+                process.exit(1);
+            }
         },
     });
 }

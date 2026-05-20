@@ -51,7 +51,7 @@ export function defineCLIDatabaseDropCommand() {
             let tsconfig : TSConfig | undefined;
             let sourcePath = resolveFilePath(args.dataSource, args.root);
             if (!args.preserveFilePaths) {
-                tsconfig = await readTSConfig(resolveFilePath(args.root, args.tsconfig));
+                tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
                 sourcePath = await adjustFilePath(sourcePath, tsconfig);
             }
 
