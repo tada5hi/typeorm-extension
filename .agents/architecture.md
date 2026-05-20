@@ -35,6 +35,8 @@ The CLI is a *thin* layer — every command just calls a function from the publi
 
 `src/database/methods/create/module.ts` (and its `drop` / `check` siblings) own a single `switch` over `context.options.type` that maps each TypeORM `DatabaseType` to a driver-specific function in `src/database/driver/<driver>.ts`. There is no plugin registry — driver support is a closed set known at build time. Adding a driver = adding a file in `database/driver/` + adding a `case`. Keep this pattern; do not introduce a registry abstraction.
 
+The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typeorm-extension` v4+ — stay on `typeorm-extension` v3 if you need it. TypeORM 1.0 also removed the legacy `sqlite` driver (only `better-sqlite3` remains) and renamed deep types like `PostgresConnectionOptions` → `PostgresDataSourceOptions`; the code is already migrated.
+
 ### 2. Operations bypass `DataSource.initialize()`
 
 `createDatabase` / `dropDatabase` cannot use a TypeORM `DataSource`, because the database might not exist yet. Each driver file opens a *raw* native client (e.g. `pg.Client`, `mysql2.createConnection`) using credentials extracted from the data-source options, runs the SQL, and closes the connection. The TypeORM `Driver` object is used only for its connector reference (`driver.postgres`, `driver.mysql`) — never `.connect()`d.

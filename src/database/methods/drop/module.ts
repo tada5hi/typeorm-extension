@@ -40,7 +40,6 @@ export async function dropDatabase(input: DatabaseDropContextInput = {}) : Promi
         case 'cockroachdb':
             output = await dropCockroachDBDatabase(context);
             break;
-        case 'sqlite':
         case 'better-sqlite3':
             output = await dropSQLiteDatabase(context);
             break;

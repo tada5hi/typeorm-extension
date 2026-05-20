@@ -1,6 +1,6 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions';
-import type { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
@@ -59,7 +59,7 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
             ...credentialOptions,
             type: base.type,
             schema: useEnv('schema'),
-            uuidExtension: useEnv('uuidExtension') as PostgresConnectionOptions['uuidExtension'],
+            uuidExtension: useEnv('uuidExtension') as PostgresDataSourceOptions['uuidExtension'],
         };
     }
 
@@ -70,14 +70,6 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
             type: base.type,
             schema: useEnv('schema'),
             timeTravelQueries: true,
-        };
-    }
-
-    if (base.type === 'sqlite') {
-        return {
-            ...base,
-            type: base.type,
-            database: useEnv('database') || 'db.sqlite',
         };
     }
 
