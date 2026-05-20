@@ -63,9 +63,7 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
         }
 
         const repository = dataSource.getRepository(relation.type);
-        const item = await repository.findOne({
-            where,
-        });
+        const item = await repository.findOne({ where });
 
         if (!item) {
             throw EntityRelationLookupError.notFound(relation.propertyName, columns);
@@ -75,9 +73,7 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
     }
 
     const relationKeys = Object.keys(relations);
-    for (let i = 0; i < relationKeys.length; i++) {
-        const relationKey = relationKeys[i];
-
+    for (const relationKey of relationKeys) {
         entity[relationKey as keyof T] = relations[relationKey] as T[keyof T];
     }
 

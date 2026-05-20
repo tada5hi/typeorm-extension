@@ -15,10 +15,9 @@ export class FakeSelectQueryBuilder<T extends ObjectLiteral = ObjectLiteral> ext
     }
 
     override leftJoinAndSelect(
-        // eslint-disable-next-line @typescript-eslint/ban-types
-        _entityOrProperty: Function | string | ((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
+        _entityOrProperty: ((...args: any[]) => any) | string | ((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
         _alias: string,
-        // eslint-disable-next-line default-param-last
+         
         _condition = '',
         _parameters?: ObjectLiteral,
     ): this {

@@ -5,9 +5,9 @@ export function getAliasForPath(items?: QueryRelationsApplyOutput, path?: string
         return undefined;
     }
 
-    for (let i = 0; i < items.length; i++) {
-        if (items[i].key === path) {
-            return items[i].value;
+    for (const item of items) {
+        if (item.key === path) {
+            return item.value;
         }
     }
 

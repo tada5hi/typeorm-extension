@@ -16,23 +16,23 @@ export function applyQueryRelationsParseOutput<T extends ObjectLiteral = ObjectL
     data: RelationsParseOutput,
     options: QueryRelationsApplyOptions<T> = {},
 ) : QueryRelationsApplyOutput {
-    for (let i = 0; i < data.length; i++) {
-        const parts = data[i].key.split('.');
+    for (const datum of data) {
+        const parts = datum.key.split('.');
 
         let key : string;
         if (parts.length > 1) {
             key = parts.slice(-2).join('.');
         } else {
-            key = buildKeyWithPrefix(data[i].key, options.defaultAlias);
+            key = buildKeyWithPrefix(datum.key, options.defaultAlias);
         }
 
-        data[i].key = key;
+        datum.key = key;
 
         /* istanbul ignore next */
-        query.leftJoinAndSelect(key, data[i].value);
+        query.leftJoinAndSelect(key, datum.value);
 
         if (options.onJoin) {
-            options.onJoin(key, data[i].value, query);
+            options.onJoin(key, datum.value, query);
         }
     }
 

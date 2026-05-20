@@ -1,16 +1,17 @@
-# This workflow will do a clean install of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
-
 name: CI
 
 on:
     push:
-        branches:
-            - master
+        branches: [develop, master, next, beta, alpha]
     pull_request:
-        types:
-            - opened
-            - synchronize
+        branches: [develop, master, next, beta, alpha]
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
 
 env:
     PRIMARY_NODE_VERSION: 22
@@ -27,26 +28,6 @@ jobs:
               with:
                   node-version: ${{ env.PRIMARY_NODE_VERSION }}
 
-    lint:
-        name: Lint
-        needs: [build]
-        runs-on: ubuntu-latest
-        steps:
-            -   name: Checkout
-                uses: actions/checkout@v6
-
-            -   name: Install
-                uses: ./.github/actions/install
-                with:
-                    node-version: ${{ env.PRIMARY_NODE_VERSION }}
-
-            -   name: Build
-                uses: ./.github/actions/build
-
-            -   name: Lint
-                run: |
-                    npm run lint
-
     build:
         name: Build
         needs: [install]
@@ -61,22 +42,42 @@ jobs:
             - name: Build
               uses: ./.github/actions/build
 
+    lint:
+        name: Lint
+        needs: [build]
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Install
+              uses: ./.github/actions/install
+              with:
+                  node-version: ${{ env.PRIMARY_NODE_VERSION }}
+
+            - name: Build
+              uses: ./.github/actions/build
+
+            - name: Lint
+              run: |
+                  npm run lint
+
     tests:
         name: Test
         needs: [build]
         runs-on: ubuntu-latest
         steps:
-            -   name: Checkout
-                uses: actions/checkout@v6
+            - name: Checkout
+              uses: actions/checkout@v6
 
-            -   name: Install
-                uses: ./.github/actions/install
-                with:
-                    node-version: ${{ env.PRIMARY_NODE_VERSION }}
+            - name: Install
+              uses: ./.github/actions/install
+              with:
+                  node-version: ${{ env.PRIMARY_NODE_VERSION }}
 
-            -   name: Build
-                uses: ./.github/actions/build
+            - name: Build
+              uses: ./.github/actions/build
 
-            -   name: Run tests
-                run: |
-                    npm run test
+            - name: Run tests
+              run: |
+                  npm run test

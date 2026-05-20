@@ -12,8 +12,7 @@ export async function prepareSeederSeeds(
     let seedFiles: string[] = [];
     const seedConstructors: SeederConstructor[] = [];
 
-    for (let i = 0; i < input.length; i++) {
-        const value = input[i];
+    for (const value of input) {
         if (typeof value === 'string') {
             seedFiles.push(value);
         } else {
@@ -25,14 +24,14 @@ export async function prepareSeederSeeds(
         seedFiles = await resolveFilePatterns(seedFiles, root);
         seedFiles = resolveFilePaths(seedFiles, root);
 
-        for (let i = 0; i < seedFiles.length; i++) {
-            const moduleExports = await load(seedFiles[i]);
+        for (const filePath of seedFiles) {
+            const moduleExports = await load(filePath);
 
             let clazzConstructor : SeederConstructor | undefined;
 
             const exportKeys = Object.keys(moduleExports);
-            for (let j = 0; j < exportKeys.length; j++) {
-                const moduleExport = moduleExports[exportKeys[j]];
+            for (const exportKey of exportKeys) {
+                const moduleExport = moduleExports[exportKey];
                 if (
                     typeof moduleExport === 'function' &&
                     moduleExport.prototype
@@ -42,13 +41,12 @@ export async function prepareSeederSeeds(
             }
 
             if (clazzConstructor) {
-                const fileName = path.basename(seedFiles[i]);
-                const filePath = seedFiles[i];
+                const fileName = path.basename(filePath);
                 const match = fileName.match(/^([0-9]{13,})-(.*)$/);
 
                 let timestamp : number | undefined;
                 if (match) {
-                    timestamp = parseInt(match[1], 10);
+                    timestamp = Number.parseInt(match[1], 10);
                 }
 
                 items.push({
@@ -62,10 +60,8 @@ export async function prepareSeederSeeds(
     }
 
     if (seedConstructors.length > 0) {
-        for (let i = 0; i < seedConstructors.length; i++) {
-            items.push({
-                constructor: seedConstructors[i],
-            });
+        for (const seedConstructor of seedConstructors) {
+            items.push({ constructor: seedConstructor });
         }
     }
 

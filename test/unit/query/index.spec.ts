@@ -9,14 +9,10 @@ describe('src/api/sort.ts', () => {
     it('should apply query', () => {
         const data = applyQuery(
             query,
-            {
-                fields: ['id', 'name', 'fake'],
-            },
+            { fields: ['id', 'name', 'fake'] },
             {
                 defaultAlias: 'user',
-                fields: {
-                    allowed: ['id', 'name'],
-                },
+                fields: { allowed: ['id', 'name'] },
             },
         );
 
@@ -27,11 +23,7 @@ describe('src/api/sort.ts', () => {
     });
 
     it('should apply query with empty parse output and options', () => {
-        const data = applyQuery(query, { }, {
-            pagination: {
-                maxLimit: 50,
-            },
-        });
+        const data = applyQuery(query, { }, { pagination: { maxLimit: 50 } });
 
         expect(data.pagination).toEqual({ limit: 50, offset: 0 });
     });

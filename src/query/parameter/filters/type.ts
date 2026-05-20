@@ -3,10 +3,10 @@ import type { ObjectLiteral } from 'typeorm';
 
 export type QueryFiltersApplyOptions<
     T extends ObjectLiteral = ObjectLiteral,
-    > = FiltersParseOptions<T> & {
-        bindingKey?: (key: string) => string,
-        defaultAlias?: string
-    };
+> = FiltersParseOptions<T> & {
+    bindingKey?: (key: string) => string,
+    defaultAlias?: string
+};
 
 export type QueryFiltersApplyOutput = FiltersParseOutput;
 

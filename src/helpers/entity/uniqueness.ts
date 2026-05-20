@@ -2,7 +2,10 @@ import { FilterComparisonOperator } from 'rapiq';
 import type { FiltersParseOutputElement } from 'rapiq';
 import { Brackets } from 'typeorm';
 import type {
-    DataSource, EntityTarget, ObjectLiteral, WhereExpressionBuilder,
+    DataSource, 
+    EntityTarget, 
+    ObjectLiteral, 
+    WhereExpressionBuilder,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
 import { applyFiltersTransformed, transformParsedFilters } from '../../query';
@@ -47,10 +50,10 @@ function applyWhereExpression(
     const elements : FiltersParseOutputElement[] = [];
 
     const keys = Object.keys(data);
-    for (let i = 0; i < keys.length; i++) {
+    for (const key of keys) {
         elements.push({
-            key: keys[i],
-            value: transformUndefinedToNull(data[keys[i]]),
+            key,
+            value: transformUndefinedToNull(data[key]),
             operator: type === 'target' ?
                 FilterComparisonOperator.EQUAL :
                 FilterComparisonOperator.NOT_EQUAL,
@@ -113,10 +116,10 @@ export async function isEntityUnique<T extends ObjectLiteral>(
         }
     }
 
-    for (let i = 0; i < columnGroups.length; i++) {
+    for (const columnGroup of columnGroups) {
         const queryBuilder = repository.createQueryBuilder('entity');
         queryBuilder.where(new Brackets((qb) => {
-            applyWhereExpression(qb, pickRecord(options.entity, columnGroups[i]), 'target');
+            applyWhereExpression(qb, pickRecord(options.entity, columnGroup), 'target');
         }));
 
         if (options.entityExisting) {

@@ -12,9 +12,7 @@ describe('src/api/includes.ts', () => {
         value = applyRelations(queryBuilder, 'profile', { allowed: ['profile'], defaultAlias: 'user' });
         expect(value).toEqual([{ key: 'user.profile', value: 'profile' }] as RelationsParseOutput);
 
-        value = applyQueryRelations(queryBuilder, ['profile', 'user_roles.role'], {
-            allowed: ['profile', 'user_roles.role'],
-        });
+        value = applyQueryRelations(queryBuilder, ['profile', 'user_roles.role'], { allowed: ['profile', 'user_roles.role'] });
         expect(value).toEqual([
             { key: 'user_roles', value: 'user_roles' },
             { key: 'profile', value: 'profile' },

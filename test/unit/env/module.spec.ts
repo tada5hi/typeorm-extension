@@ -15,9 +15,7 @@ describe('src/env/**', () => {
     it('should handle extra env parameter', () => {
         resetEnv();
 
-        const ob : Record<string, any> = {
-            foo: 'bar',
-        };
+        const ob : Record<string, any> = { foo: 'bar' };
         process.env = {
             ...process.env,
             [EnvironmentVariableName.TYPE]: 'better-sqlite3',

@@ -25,8 +25,8 @@ describe('src/seeder/factory/index.ts', () => {
         expect(users).toBeDefined();
         expect(users.length).toEqual(3);
 
-        for (let i = 0; i < users.length; i++) {
-            expect(users[i].id).toBeDefined();
+        for (const user of users) {
+            expect(user.id).toBeDefined();
         }
     });
 

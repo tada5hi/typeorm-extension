@@ -38,9 +38,7 @@ export function applyQueryParseOutput<T extends ObjectLiteral = ObjectLiteral>(
     }
 
     if (context.relations) {
-        const relations : QueryRelationsApplyOptions<T> = {
-            defaultAlias: context.defaultPath,
-        };
+        const relations : QueryRelationsApplyOptions<T> = { defaultAlias: context.defaultPath };
         if (isObject(options.relations)) {
             extendObject(relations, options.relations);
         }

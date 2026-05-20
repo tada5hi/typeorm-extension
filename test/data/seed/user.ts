@@ -13,7 +13,9 @@ export default class UserSeeder implements Seeder {
 
         await repository.insert([
             {
-                firstName: 'Caleb', lastName: 'Barrows', email: 'caleb.barrows@gmail.com',
+                firstName: 'Caleb', 
+                lastName: 'Barrows', 
+                email: 'caleb.barrows@gmail.com',
             },
         ]);
 

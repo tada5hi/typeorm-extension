@@ -2,17 +2,17 @@
 
 ## Setup
 
-- **Runner**: Jest 30 + `ts-jest`
-- **Test location**: `test/unit/**/*.spec.ts` (regex: `(/unit/.*|(\.|/)(test|spec))\.(ts|js)x?$`)
-- **Config**: `test/jest.config.js` — note `rootDir: '../'`, so Jest is invoked from `test/` but resolves paths relative to the repo root.
-- **Prerequisite**: nothing external. All integration tests use `better-sqlite3` in-memory databases, declared in `test/data/typeorm/factory.ts`.
+- **Runner**: Vitest 4 with **[`unplugin-swc`](https://github.com/unplugin/unplugin-swc)** for TypeScript transformation (needed because TypeORM decorators require `emitDecoratorMetadata`, which vitest's default `oxc` transformer does not emit). The config sets `oxc: false` to keep oxc from running in parallel with swc.
+- **Test location**: `test/unit/**/*.{test,spec}.{js,ts}`
+- **Config**: `test/vitest.config.ts` — sets `root` to repo root, enables `globals: true` (so test files don't need to `import { describe, it, expect } from 'vitest'`), and inlines `locter` (`server.deps.inline: [/locter/]`) so dynamic `import()` calls inside `locter.load()` go through vitest's module graph instead of native Node — without this, dynamically-loaded seeder / data-source / factory files don't share entity classes with the test module, breaking TypeORM repository lookups.
+- **Prerequisite**: nothing external. All integration tests use `better-sqlite3` databases (in-memory for unit work; file-backed under `writable/` for the seeder lifecycle tests).
 
 ## Running Tests
 
 ```bash
-npm test                                       # all suites
-npx jest --config ./test/jest.config.js path/to/file.spec.ts   # single file
-npm run test:coverage                          # with coverage (thresholds enforced)
+npm test                                                              # all suites
+npx vitest --config test/vitest.config.ts --run test/unit/query        # one folder
+npm run test:coverage                                                 # with coverage (thresholds enforced)
 ```
 
 There are no workspace-scoped commands — this is a single package.
@@ -86,13 +86,15 @@ const qb = { where: jest.fn(), leftJoin: jest.fn() } as any;
 
 After mutating `process.env` in a test, call `resetEnv()` from `src/env` to clear the cached `Environment` instance, otherwise the next test sees stale values.
 
+Test files that need a directory reference must use `import.meta.dirname` (Node 22+) — `__dirname` is not available because the package is ESM-only.
+
 ## Code Coverage
 
 ```bash
 npm run test:coverage
 ```
 
-Thresholds (enforced — Jest fails the run below these):
+Thresholds (enforced — Vitest fails the run below these):
 
 | Metric     | Target |
 |------------|--------|
@@ -101,7 +103,7 @@ Thresholds (enforced — Jest fails the run below these):
 | lines      | 80%    |
 | statements | 80%    |
 
-`collectCoverageFrom` (in `test/jest.config.js`) **excludes** `src/cli/**`, `src/database/**`, `src/env/utils.ts`, `src/errors/**`, `src/utils/**`, and `src/seeder/**` from coverage scoring — the gate effectively covers `src/data-source/**`, `src/helpers/**`, and `src/query/**`. Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
+`coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/**`, `src/env/utils.ts`, `src/errors/**`, `src/utils/**`, and `src/seeder/**` from coverage scoring — the gate effectively covers `src/data-source/**`, `src/helpers/**`, and `src/query/**`. Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
 
 Coverage is uploaded by CI to Codecov via `codecov/codecov-action`.
 

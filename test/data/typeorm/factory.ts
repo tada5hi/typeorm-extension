@@ -11,9 +11,7 @@ export function createDataSourceOptions() : DataSourceOptions & SeederOptions {
         database: ':memory:',
         factories: ['test/data/factory/**/*.{ts,.js}'],
         seeds: ['test/data/seed/**/*.{ts,js}'],
-        extra: {
-            charset: 'UTF8_GENERAL_CI',
-        },
+        extra: { charset: 'UTF8_GENERAL_CI' },
     };
 }
 

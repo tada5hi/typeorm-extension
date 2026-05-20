@@ -64,7 +64,7 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
         if (!dataSource.isInitialized) {
             await dataSource.initialize();
         }
-    } catch (e) {
+    } catch {
         result.exists = false;
 
         return result;

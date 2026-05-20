@@ -10,8 +10,8 @@ export function isQueryOptionDefined(
 
     const options = Array.isArray(option) ? option : [option];
 
-    for (let i = 0; i < options.length; i++) {
-        if (hasOwnProperty(input, options[i])) {
+    for (const option_ of options) {
+        if (hasOwnProperty(input, option_)) {
             return true;
         }
     }

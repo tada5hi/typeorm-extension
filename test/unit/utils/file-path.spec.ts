@@ -48,8 +48,8 @@ describe('src/connection/utils.ts', () => {
         expect(transformFilePath(srcPath)).toEqual('dist/ts.js');
 
         const srcPaths = ['src/entities.ts', './src/entities.ts'];
-        for (let i = 0; i < srcPaths.length; i++) {
-            srcPath = srcPaths[i];
+        for (const srcPath_ of srcPaths) {
+            srcPath = srcPath_;
 
             expect(transformFilePath(srcPath, 'dist')).toEqual('dist/entities.js');
             expect(transformFilePath(srcPath, './dist')).toEqual('dist/entities.js');
@@ -103,14 +103,10 @@ describe('src/connection/utils.ts', () => {
             subscribers: ['dist/subscribers.js'],
         });
 
-        const modifiedConnectionOption = await adjustFilePaths({
-            entities: ['./src/entities.ts'],
-        });
+        const modifiedConnectionOption = await adjustFilePaths({ entities: ['./src/entities.ts'] });
         expect(modifiedConnectionOption).toEqual({ entities: ['dist/entities.js'] });
 
-        const modifiedConnectionOptionAlt = await adjustFilePaths({
-            entities: ['src/entities.ts'],
-        });
+        const modifiedConnectionOptionAlt = await adjustFilePaths({ entities: ['src/entities.ts'] });
         expect(modifiedConnectionOptionAlt).toEqual({ entities: ['dist/entities.js'] });
     });
 });

@@ -22,9 +22,7 @@ describe('src/data-source/options', () => {
     });
 
     it('should build data-source options', async () => {
-        const options = await buildDataSourceOptions({
-            directory: 'test/data/typeorm',
-        });
+        const options = await buildDataSourceOptions({ directory: 'test/data/typeorm' });
 
         expect(options).toBeDefined();
         expect(options.type).toEqual('better-sqlite3');

@@ -50,8 +50,8 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
         if (params) {
             const keys : (keyof O)[] = Object.keys(params);
-            for (let i = 0; i < keys.length; i++) {
-                entity[keys[i]] = (params as O)[keys[i]];
+            for (const key of keys) {
+                entity[key] = (params as O)[key];
             }
         }
 
@@ -90,12 +90,10 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
     private async resolve(entity: O, save?: boolean) : Promise<O> {
         const keys = Object.keys(entity);
-        for (let i = 0; i < keys.length; i++) {
-            const key : keyof O = keys[i];
+        for (const key of keys as (keyof O)[]) {
             const value : O[keyof O] = entity[key];
 
             if (!hasOwnProperty(entity, key)) {
-                // eslint-disable-next-line no-continue
                 continue;
             }
 
@@ -129,9 +127,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
             return this.faker;
         }
 
-        const options : FakerOptions = {
-            locale: [],
-        };
+        const options : FakerOptions = { locale: [] };
 
         const fakerExports = await load('@faker-js/faker');
 
@@ -144,18 +140,18 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
             names = ['en'];
         }
 
-        for (let i = 0; i < names.length; i++) {
+        for (const name of names) {
             if (
                 hasOwnProperty(fakerExports, 'default') &&
                 isObject(fakerExports.default) &&
-                hasOwnProperty(fakerExports.default, names[i])
+                hasOwnProperty(fakerExports.default, name)
             ) {
-                (options.locale as LocaleDefinition[]).push(fakerExports.default[names[i]] as LocaleDefinition);
+                (options.locale as LocaleDefinition[]).push(fakerExports.default[name] as LocaleDefinition);
                 continue;
             }
 
-            if (hasOwnProperty(fakerExports, names[i])) {
-                (options.locale as LocaleDefinition[]).push(fakerExports[names[i]] as LocaleDefinition);
+            if (hasOwnProperty(fakerExports, name)) {
+                (options.locale as LocaleDefinition[]).push(fakerExports[name] as LocaleDefinition);
             }
         }
 

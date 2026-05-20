@@ -37,9 +37,7 @@ describe('src/seeder/index.ts', () => {
     });
 
     it('should seed with explicit definitions', async () => {
-        await runSeeders(dataSource, {
-            seeds: [UserSeeder],
-        });
+        await runSeeders(dataSource, { seeds: [UserSeeder] });
 
         const repository = dataSource.getRepository(User);
         const entities = await repository.find();

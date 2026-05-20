@@ -12,9 +12,7 @@ export class RoleSeeder implements Seeder {
         const repository = dataSource.getRepository(Role);
 
         await repository.insert([
-            {
-                name: 'admin',
-            },
+            { name: 'admin' },
         ]);
 
         return undefined;
