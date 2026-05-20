@@ -1,9 +1,9 @@
 import {
-    oneOf, 
-    read, 
-    readBool, 
-    readInt, 
-    toArray, 
+    oneOf,
+    read,
+    readBool,
+    readInt,
+    toArray,
     toBool,
 } from 'envix';
 import type { DataSourceCacheOption } from '../data-source';

@@ -17,7 +17,7 @@ export class FakeSelectQueryBuilder<T extends ObjectLiteral = ObjectLiteral> ext
     override leftJoinAndSelect(
         _entityOrProperty: ((...args: any[]) => any) | string | ((qb: SelectQueryBuilder<any>) => SelectQueryBuilder<any>),
         _alias: string,
-         
+
         _condition = '',
         _parameters?: ObjectLiteral,
     ): this {

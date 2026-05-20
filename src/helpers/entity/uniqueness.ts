@@ -2,9 +2,9 @@ import { FilterComparisonOperator } from 'rapiq';
 import type { FiltersParseOutputElement } from 'rapiq';
 import { Brackets } from 'typeorm';
 import type {
-    DataSource, 
-    EntityTarget, 
-    ObjectLiteral, 
+    DataSource,
+    EntityTarget,
+    ObjectLiteral,
     WhereExpressionBuilder,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';

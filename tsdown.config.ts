@@ -24,12 +24,19 @@ const cliRewriteExternal = {
             return null;
         }
 
-        // Imports that traverse upward (../) leave the cli subtree → resolve
-        // them against the published package so the CLI shares singleton
-        // state (DataSource registry, env cache, factory manager) with the
-        // library the consumer imports.
+        // Externalise an upward-traversing import to the published package
+        // only when its resolved target actually leaves src/cli/, so the CLI
+        // shares singleton state (DataSource registry, env cache, factory
+        // manager) with the library the consumer imports. Imports that go up
+        // but stay inside src/cli/ (e.g. ../utils from src/cli/commands/foo)
+        // continue to bundle into the CLI as normal.
         if (source.startsWith('../')) {
-            return { id: 'typeorm-extension', external: true };
+            const importerDir = path.posix.dirname(importerRelative);
+            const resolved = path.posix.normalize(path.posix.join(importerDir, source));
+
+            if (!resolved.startsWith('src/cli/')) {
+                return { id: 'typeorm-extension', external: true };
+            }
         }
 
         return null;

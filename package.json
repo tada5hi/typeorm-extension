@@ -18,7 +18,8 @@
         "./package.json": "./package.json",
         ".": {
             "types": "./dist/index.d.mts",
-            "import": "./dist/index.mjs"
+            "import": "./dist/index.mjs",
+            "default": "./dist/index.mjs"
         },
         "./bin/*": "./bin/*"
     },

@@ -65,12 +65,15 @@ export function transformFilePath(
         }
     }
 
-    // if the path already contains a js file extension, we are done
     const jsExtensions = ['js', 'cjs', 'mjs'];
-    for (const jsExtension of jsExtensions) {
-        if (base.includes(jsExtension)) {
-            return input;
-        }
+
+    // if the path already contains a js-family file extension (as a real
+    // extension at end-of-name or inside a glob brace expansion, not just
+    // anywhere in the basename — `my-json.ts` must still be transformable),
+    // we are done.
+    const jsExtensionRegex = /(?:^|[./{,])(?:js|cjs|mjs)(?:[}.,]|$)/;
+    if (jsExtensionRegex.test(base)) {
+        return input;
     }
 
     const tsExtensions = ['ts', 'cts', 'mts'];

@@ -3,13 +3,13 @@ import { FilterComparisonOperator, parseQueryFilters, parseQueryRelations } from
 import type { ObjectLiteral } from 'typeorm';
 import { FakeSelectQueryBuilder } from '../../data/typeorm/FakeSelectQueryBuilder';
 import type {
-    QueryFiltersApplyOptions, 
+    QueryFiltersApplyOptions,
     QueryFiltersApplyOutput,
     QueryFiltersOutput,
 } from '../../../src';
 import {
     applyFilters,
-    applyFiltersTransformed, 
+    applyFiltersTransformed,
     applyQueryFilters,
     applyQueryFiltersParseOutput,
     transformParsedFilters,
@@ -187,9 +187,9 @@ describe('src/api/filters.ts', () => {
         const data = applyQueryFiltersParseOutput(queryBuilder, parseQueryFilters({ id: 1 }, { allowed: ['id'] }));
         expect(data).toEqual([
             {
-                key: 'id', 
-                operator: FilterComparisonOperator.EQUAL, 
-                value: 1, 
+                key: 'id',
+                operator: FilterComparisonOperator.EQUAL,
+                value: 1,
             },
         ] as QueryFiltersApplyOutput);
     });
@@ -214,9 +214,9 @@ describe('src/api/filters.ts', () => {
 
         expect(data).toEqual([
             {
-                key: 'id', 
-                operator: FilterComparisonOperator.EQUAL, 
-                value: 1, 
+                key: 'id',
+                operator: FilterComparisonOperator.EQUAL,
+                value: 1,
             },
         ]);
 
@@ -224,9 +224,9 @@ describe('src/api/filters.ts', () => {
 
         expect(data).toEqual([
             {
-                key: 'id', 
-                operator: FilterComparisonOperator.EQUAL, 
-                value: 1, 
+                key: 'id',
+                operator: FilterComparisonOperator.EQUAL,
+                value: 1,
             },
         ]);
     });

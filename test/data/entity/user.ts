@@ -1,9 +1,9 @@
 import {
-    Column, 
-    Entity, 
-    JoinColumn, 
+    Column,
+    Entity,
+    JoinColumn,
     ManyToOne,
-    PrimaryGeneratedColumn, 
+    PrimaryGeneratedColumn,
     Unique,
 } from 'typeorm';
 import { Role } from './role';

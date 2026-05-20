@@ -1,8 +1,8 @@
 import {
-    oneOf, 
-    read, 
-    readArray, 
-    readBool, 
+    oneOf,
+    read,
+    readArray,
+    readBool,
     readInt,
 } from 'envix';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';

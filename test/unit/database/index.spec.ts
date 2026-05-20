@@ -1,6 +1,6 @@
 import path from 'node:path';
 import {
-    buildDataSourceOptions, 
+    buildDataSourceOptions,
     checkDatabase,
 } from '../../../src';
 

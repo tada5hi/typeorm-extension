@@ -1,6 +1,6 @@
 # Upgrading to v4
 
-This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain and aligns with `typeorm@1.0`.
+This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain (ESM-only, Node ≥ 22, new bundler / test runner / linter); the typeorm peer-dep bump to `^1.0.0` is a separate follow-up release once typeorm 1.0 ships.
 
 ## Breaking Changes
 
@@ -38,9 +38,9 @@ You can use any TypeScript-aware loader (`tsx`, Node's `--experimental-strip-typ
 |---|---|
 | `^20.19.0 \|\| ^22.13.0 \|\| ^23.5.0 \|\| >=24.0.0` | `>=22.0.0` |
 
-### Peer dependency: TypeORM 1.x
+### Peer dependency: TypeORM
 
-v4 targets `typeorm@^1.0.0`. v3 targeted `typeorm@~0.3.0`. Apply the TypeORM 1.0 upgrade guide separately.
+`peerDependencies.typeorm` is still `~0.3.0` in this release — typeorm 1.0 hasn't shipped yet. v4 is the **toolchain-modernization** half of the v3 → v4 jump; the peer-dep bump to `^1.0.0` will land in a follow-up release once typeorm 1.0 is stable. No TypeORM API changes are required by this v4 upgrade itself.
 
 ## Internal Toolchain (no consumer impact)
 
