@@ -1,4 +1,3 @@
-import { consola } from 'consola';
 import { defineCommand } from 'citty';
 import process from 'node:process';
 import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../../data-source';
@@ -10,6 +9,8 @@ import {
     resolveFilePath,
 } from '../../../utils';
 import type { TSConfig } from '../../../utils';
+import { runWithExitCode } from '../../exit';
+import { LOG_LEVEL_VALUES, createLogger, normalizeLogLevel } from '../../logger';
 
 export function defineCLISeedRunCommand() {
     return defineCommand({
@@ -46,51 +47,59 @@ export function defineCLISeedRunCommand() {
                 alias: 'n',
                 description: 'Name (or relative path incl. name) of the seeder.',
             },
+            'log-level': {
+                type: 'string',
+                description: 'Logger verbosity.',
+                valueHint: LOG_LEVEL_VALUES.join('|'),
+                options: LOG_LEVEL_VALUES as string[],
+            },
         },
         async run({ args }) {
-            let tsconfig : TSConfig | undefined;
-            let sourcePath = resolveFilePath(args.dataSource, args.root);
-            let { name } = args;
-            if (!args.preserveFilePaths) {
-                tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
-                sourcePath = await adjustFilePath(sourcePath, tsconfig);
-                name = await adjustFilePath(name, tsconfig);
-            }
+            const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+            await runWithExitCode(logger, async () => {
+                logger.info('Running seeders');
 
-            const source = parseFilePath(sourcePath);
+                let tsconfig : TSConfig | undefined;
+                let sourcePath = resolveFilePath(args.dataSource, args.root);
+                let { name } = args;
+                if (!args.preserveFilePaths) {
+                    tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
+                    sourcePath = await adjustFilePath(sourcePath, tsconfig);
+                    name = await adjustFilePath(name, tsconfig);
+                }
 
-            consola.info(`DataSource Directory: ${source.directory}`);
-            consola.info(`DataSource Name: ${source.name}`);
+                const source = parseFilePath(sourcePath);
 
-            const dataSourceOptions = await buildDataSourceOptions({
-                dataSourceName: source.name,
-                directory: source.directory,
-                tsconfig,
-                preserveFilePaths: args.preserveFilePaths,
-            });
+                logger.section('DataSource');
+                const dsPad = 'directory'.length;
+                logger.kv('directory', source.directory, dsPad);
+                logger.kv('name', source.name, dsPad);
 
-            setDataSourceOptions(dataSourceOptions);
+                const dataSourceOptions = await buildDataSourceOptions({
+                    dataSourceName: source.name,
+                    directory: source.directory,
+                    tsconfig,
+                    preserveFilePaths: args.preserveFilePaths,
+                });
 
-            if (name) {
-                consola.info(`Seed Name: ${name}`);
-            }
+                setDataSourceOptions(dataSourceOptions);
 
-            const dataSource = await useDataSource();
-            const executor = new SeederExecutor(dataSource, {
-                root: args.root,
-                tsconfig,
-                preserveFilePaths: args.preserveFilePaths,
-            });
+                if (name) {
+                    logger.section('Seed');
+                    logger.kv('name', name, 'name'.length);
+                }
 
-            try {
+                const dataSource = await useDataSource();
+                const executor = new SeederExecutor(dataSource, {
+                    root: args.root,
+                    tsconfig,
+                    preserveFilePaths: args.preserveFilePaths,
+                });
+
+                logger.blank();
                 await executor.execute({ seedName: name });
-                consola.success('Executed seeders.');
-                process.exit(0);
-            } catch (e) {
-                consola.warn('Failed to execute seeders.');
-                consola.error(e);
-                process.exit(1);
-            }
+                logger.success('Executed seeders.');
+            });
         },
     });
 }

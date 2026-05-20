@@ -1,4 +1,3 @@
-import { consola } from 'consola';
 import { defineCommand } from 'citty';
 import process from 'node:process';
 import { buildDataSourceOptions } from '../../../data-source';
@@ -11,6 +10,8 @@ import {
     resolveFilePath,
 } from '../../../utils';
 import type { TSConfig } from '../../../utils';
+import { runWithExitCode } from '../../exit';
+import { LOG_LEVEL_VALUES, createLogger, normalizeLogLevel } from '../../logger';
 
 export function defineCLIDatabaseDropCommand() {
     return defineCommand({
@@ -46,48 +47,55 @@ export function defineCLIDatabaseDropCommand() {
                 type: 'string',
                 description: 'Specify the initial database to connect to.',
             },
+            'log-level': {
+                type: 'string',
+                description: 'Logger verbosity.',
+                valueHint: LOG_LEVEL_VALUES.join('|'),
+                options: LOG_LEVEL_VALUES as string[],
+            },
         },
         async run({ args }) {
-            let tsconfig : TSConfig | undefined;
-            let sourcePath = resolveFilePath(args.dataSource, args.root);
-            if (!args.preserveFilePaths) {
-                tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
-                sourcePath = await adjustFilePath(sourcePath, tsconfig);
-            }
+            const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+            await runWithExitCode(logger, async () => {
+                logger.info('Dropping database');
 
-            const source = parseFilePath(sourcePath);
+                let tsconfig : TSConfig | undefined;
+                let sourcePath = resolveFilePath(args.dataSource, args.root);
+                if (!args.preserveFilePaths) {
+                    tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
+                    sourcePath = await adjustFilePath(sourcePath, tsconfig);
+                }
 
-            consola.info(`DataSource Directory: ${source.directory}`);
-            consola.info(`DataSource Name: ${source.name}`);
+                const source = parseFilePath(sourcePath);
 
-            const dataSourceOptions = await buildDataSourceOptions({
-                directory: source.directory,
-                dataSourceName: source.name,
-                tsconfig,
-                preserveFilePaths: args.preserveFilePaths,
-            });
+                logger.section('DataSource');
+                const pad = 'directory'.length;
+                logger.kv('directory', source.directory, pad);
+                logger.kv('name', source.name, pad);
 
-            const context : DatabaseDropContext = {
-                ifExist: true,
-                options: dataSourceOptions,
-            };
+                const dataSourceOptions = await buildDataSourceOptions({
+                    directory: source.directory,
+                    dataSourceName: source.name,
+                    tsconfig,
+                    preserveFilePaths: args.preserveFilePaths,
+                });
 
-            if (
-                typeof args.initialDatabase === 'string' &&
-                args.initialDatabase !== ''
-            ) {
-                context.initialDatabase = args.initialDatabase;
-            }
+                const context : DatabaseDropContext = {
+                    ifExist: true,
+                    options: dataSourceOptions,
+                };
 
-            try {
+                if (
+                    typeof args.initialDatabase === 'string' &&
+                    args.initialDatabase !== ''
+                ) {
+                    context.initialDatabase = args.initialDatabase;
+                }
+
+                logger.blank();
                 await dropDatabase(context);
-                consola.success('Dropped database.');
-                process.exit(0);
-            } catch (e) {
-                consola.warn('Failed to drop database.');
-                consola.error(e);
-                process.exit(1);
-            }
+                logger.success('Dropped database.');
+            });
         },
     });
 }

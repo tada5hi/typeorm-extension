@@ -88,6 +88,7 @@ for the seeder- & factory-location.
 | `--timestamp` or `-t`   | `seed create`                                     | `Date.now()`    | Custom timestamp used in the generated seeder filename.                                                                                                                                                                               |
 | `--javascript` or `-j`  | `seed create`                                     | `false`         | Generate a seeder file for JavaScript instead of TypeScript.                                                                                                                                                                          |
 | `--preserveFilePaths`   | `db create`, `db drop`, `seed run`                | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                       |
+| `--log-level`           | `db create`, `db drop`, `seed create`, `seed run` | `info`          | Logger verbosity. One of `silent`, `info`, `debug`.                                                                                                                                                                                   |
 
 #### CLI Examples
 **`Database Create`**

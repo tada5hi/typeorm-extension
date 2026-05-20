@@ -11,6 +11,8 @@ typeorm-extension/
 │   ├── cli/                    # citty-based CLI (bundled separately into bin/)
 │   │   ├── index.ts            # CLI entry: calls runMain(createCLIEntryPointCommand())
 │   │   ├── module.ts           # createCLIEntryPointCommand — wires subCommands (db, seed) + legacy colon aliases
+│   │   ├── logger.ts           # TTY-aware logger (info/success/warn/error/debug + section/kv/blank) + CLIUserError
+│   │   ├── exit.ts             # runWithExitCode wrapper + ExitCode enum
 │   │   └── commands/
 │   │       ├── database/       # `db` parent + `create`/`drop` subcommands (citty defineCommand)
 │   │       └── seed/           # `seed` parent + `create`/`run` subcommands
@@ -78,7 +80,6 @@ typeorm-extension/
 | `rapiq`              | JSON:API query parser. `query/module.ts` is a thin TypeORM-flavoured adapter on top of it.    |
 | `locter`             | Glob + file loading (used to discover data-source / seed / factory files).                    |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
-| `consola`            | CLI logger (used inside `src/cli/commands/*`).                                                |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |
 | `smob`               | Object merge utility (deep merge of data-source options).                                     |
 | `reflect-metadata`   | Imported at the top of `src/cli/index.ts` so TypeORM decorators work in CLI-loaded files.     |
