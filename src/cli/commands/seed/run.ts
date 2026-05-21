@@ -1,5 +1,5 @@
-import { consola } from 'consola';
-import type { Arguments, Argv, CommandModule } from 'yargs';
+import { defineCommand } from 'citty';
+import process from 'node:process';
 import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../../data-source';
 import { SeederExecutor } from '../../../seeder';
 import {
@@ -9,86 +9,97 @@ import {
     resolveFilePath,
 } from '../../../utils';
 import type { TSConfig } from '../../../utils';
+import { runWithExitCode } from '../../exit';
+import { LOG_LEVEL_VALUES, createLogger, normalizeLogLevel } from '../../logger';
 
-export interface SeedRunArguments extends Arguments {
-    preserveFilePaths: boolean,
-    root: string;
-    tsconfig: string,
-    dataSource: string;
-    name?: string,
-}
-
-export class SeedRunCommand implements CommandModule {
-    command = 'seed:run';
-
-    describe = 'Populate the database with an initial data set or generated data by a factory.';
-
-    builder(args: Argv) {
-        return args
-            .option('preserveFilePaths', {
-                default: false,
+export function defineCLISeedRunCommand() {
+    return defineCommand({
+        meta: {
+            name: 'run',
+            description: 'Populate the database with an initial data set or generated data by a factory.',
+        },
+        args: {
+            preserveFilePaths: {
                 type: 'boolean',
-                describe: 'This option indicates if file paths should be preserved.',
-            })
-            .option('root', {
+                default: false,
+                description: 'This option indicates if file paths should be preserved.',
+            },
+            root: {
+                type: 'string',
                 alias: 'r',
                 default: process.cwd(),
-                describe: 'Root directory of the project.',
-            })
-            .option('tsconfig', {
+                description: 'Root directory of the project.',
+            },
+            tsconfig: {
+                type: 'string',
                 alias: 'tc',
                 default: 'tsconfig.json',
-                describe: 'Name (or relative path incl. name) of the tsconfig file.',
-            })
-            .option('dataSource', {
+                description: 'Name (or relative path incl. name) of the tsconfig file.',
+            },
+            dataSource: {
+                type: 'string',
                 alias: 'd',
                 default: 'data-source',
-                describe: 'Name (or relative path incl. name) of the data-source file.',
-            })
-            .option('name', {
+                description: 'Name (or relative path incl. name) of the data-source file.',
+            },
+            name: {
+                type: 'string',
                 alias: 'n',
-                describe: 'Name (or relative path incl. name) of the seeder.',
+                description: 'Name (or relative path incl. name) of the seeder.',
+            },
+            'log-level': {
+                type: 'string',
+                description: 'Logger verbosity.',
+                valueHint: LOG_LEVEL_VALUES.join('|'),
+                options: LOG_LEVEL_VALUES as string[],
+            },
+        },
+        async run({ args }) {
+            const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+            await runWithExitCode(logger, async () => {
+                logger.info('Running seeders');
+
+                let tsconfig : TSConfig | undefined;
+                let sourcePath = resolveFilePath(args.dataSource, args.root);
+                let { name } = args;
+                if (!args.preserveFilePaths) {
+                    tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
+                    sourcePath = await adjustFilePath(sourcePath, tsconfig);
+                    name = await adjustFilePath(name, tsconfig);
+                }
+
+                const source = parseFilePath(sourcePath);
+
+                logger.section('DataSource');
+                const dsPad = 'directory'.length;
+                logger.kv('directory', source.directory, dsPad);
+                logger.kv('name', source.name, dsPad);
+
+                const dataSourceOptions = await buildDataSourceOptions({
+                    dataSourceName: source.name,
+                    directory: source.directory,
+                    tsconfig,
+                    preserveFilePaths: args.preserveFilePaths,
+                });
+
+                setDataSourceOptions(dataSourceOptions);
+
+                if (name) {
+                    logger.section('Seed');
+                    logger.kv('name', name, 'name'.length);
+                }
+
+                const dataSource = await useDataSource();
+                const executor = new SeederExecutor(dataSource, {
+                    root: args.root,
+                    tsconfig,
+                    preserveFilePaths: args.preserveFilePaths,
+                });
+
+                logger.blank();
+                await executor.execute({ seedName: name });
+                logger.success('Executed seeders.');
             });
-    }
-
-    async handler(raw: Arguments) {
-        const args = raw as SeedRunArguments;
-
-        let tsconfig : TSConfig | undefined;
-        let sourcePath = resolveFilePath(args.dataSource, args.root);
-        if (!args.preserveFilePaths) {
-            tsconfig = await readTSConfig(args.root);
-            sourcePath = await adjustFilePath(sourcePath, tsconfig);
-            args.name = await adjustFilePath(args.name, tsconfig);
-        }
-
-        const source = parseFilePath(sourcePath);
-
-        consola.info(`DataSource Directory: ${source.directory}`);
-        consola.info(`DataSource Name: ${source.name}`);
-
-        const dataSourceOptions = await buildDataSourceOptions({
-            dataSourceName: source.name,
-            directory: source.directory,
-            tsconfig,
-            preserveFilePaths: args.preserveFilePaths,
-        });
-
-        setDataSourceOptions(dataSourceOptions);
-
-        if (args.name) {
-            consola.info(`Seed Name: ${args.name}`);
-        }
-
-        const dataSource = await useDataSource();
-        const executor = new SeederExecutor(dataSource, {
-            root: args.root,
-            tsconfig,
-            preserveFilePaths: args.preserveFilePaths,
-        });
-
-        await executor.execute({ seedName: args.name });
-
-        process.exit(0);
-    }
+        },
+    });
 }

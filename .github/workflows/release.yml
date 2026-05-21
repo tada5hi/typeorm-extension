@@ -20,7 +20,7 @@ defaults:
         shell: bash
 
 env:
-    PRIMARY_NODE_VERSION: 22
+    PRIMARY_NODE_VERSION: 24
 
 jobs:
     release:

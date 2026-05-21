@@ -6,8 +6,8 @@
 
 ```
                                 ┌─────────────────────────────┐
-                                │  CLI  (bin/cli.{cjs,mjs})   │
-                                │  yargs commands             │
+                                │  CLI  (bin/cli.mjs)         │
+                                │  citty commands             │
                                 └──────────────┬──────────────┘
                                                │ delegates to
               ┌─────────────────┬──────────────┴──────────────┬─────────────────┐
@@ -90,21 +90,47 @@ State that must survive across calls in the same process is stored in module-loc
 
 `useEnv()` is cached on first read; tests that mutate `process.env` must call `resetEnv()` between cases.
 
-### CommandModule pattern (CLI)
+### defineCommand pattern (CLI)
 
-Each command is a class implementing yargs' `CommandModule` interface (see `src/cli/commands/database/create.ts`). The classes are **public exports** — consumers can pull `DatabaseCreateCommand` into their own yargs pipeline. The CLI entry just instantiates and registers them:
+Each command is a `defineCommand` factory from [`citty`](https://github.com/unjs/citty) (see `src/cli/commands/database/create.ts`). These factories are **internal** to the CLI bundle and are not re-exported from `src/index.ts` — the public API surface for the library deliberately stops at the runtime helpers (`createDatabase`, `runSeeder`, etc.). The CLI entry composes the command tree in `src/cli/module.ts` and hands it to citty's `runMain`:
 
 ```ts
+// src/cli/module.ts (shape)
+export function createCLIEntryPointCommand() {
+    return defineCommand({
+        meta: { name: 'typeorm-extension', description: '...' },
+        subCommands: {
+            db: defineCLIDatabaseCommand(),       // → db create / db drop
+            seed: defineCLISeedCommand(),         // → seed create / seed run
+            // Legacy colon-form aliases (kept for v3 backwards compatibility).
+            'db:create': defineCLIDatabaseCreateCommand(),
+            'db:drop': defineCLIDatabaseDropCommand(),
+            'seed:create': defineCLISeedCreateCommand(),
+            'seed:run': defineCLISeedRunCommand(),
+        },
+    });
+}
+
 // src/cli/index.ts
-yargs(hideBin(process.argv))
-    .scriptName('typeorm-extension')
-    .command(new DatabaseCreateCommand())
-    .command(new DatabaseDropCommand())
-    .command(new SeedRunCommand())
-    .command(new SeedCreateCommand())
-    .strict()
-    .parse();
+runMain(createCLIEntryPointCommand());
 ```
+
+Why both forms: nested subcommands (`db create`) are the canonical citty idiom and match the way the user docs are now written. The colon-form keys are registered as separate `subCommands` entries pointing at the same `defineCommand` instances, so `typeorm-extension db:create` keeps working for npm-script consumers upgrading from v3. When deprecating, remove the colon-form keys from `createCLIEntryPointCommand`.
+
+### CLI logger + exit handling
+
+CLI output goes through a small TTY-aware logger in `src/cli/logger.ts` (`info` / `success` / `warn` / `error` / `debug` + a `section(title)` header and `kv(key, value, padTo)` aligned key-value renderer; ANSI colour codes are stripped when stderr is not a TTY). Every command exposes a `--log-level silent|info|debug` arg. `consola` is intentionally **not** used — keeping the logger in-tree avoids pulling a runtime dep into the CLI bundle just for output formatting.
+
+Each command body runs inside `runWithExitCode(logger, async () => { … })` (`src/cli/exit.ts`). The wrapper turns thrown errors into deterministic exit codes:
+
+| Thrown                | Logger call             | Exit code |
+|-----------------------|-------------------------|-----------|
+| Resolves              | —                       | `0`       |
+| `CLIUserError`        | `logger.error(message)` | `1`       |
+| Other `Error`         | `logger.error(stack)`   | `2`       |
+| Non-`Error` value     | `logger.error(String)`  | `2`       |
+
+`CLIUserError` is the typed sentinel for "the user did something wrong" (missing directory, invalid argument value). Throw it instead of calling `process.exit(1)` inline — keeps each command's success path linear.
 
 ### Factory pattern (seeder/factory)
 
@@ -174,7 +200,8 @@ Output:
 
 ```text
 Public entry             → src/index.ts
-CLI entry                → src/cli/index.ts          (bundled to bin/cli.{cjs,mjs})
+CLI entry                → src/cli/index.ts          (bundled to bin/cli.mjs)
+CLI command tree          → src/cli/module.ts          (createCLIEntryPointCommand)
 Database create/drop     → src/database/methods/{create,drop,check}/module.ts
 Per-driver SQL           → src/database/driver/<driver>.ts
 Context builders         → src/database/utils/context.ts

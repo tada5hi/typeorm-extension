@@ -41,7 +41,7 @@ npm run docs:dev           # vitepress dev server for docs/
 |----------------------------|-------------------------|----------------|
 | `typeorm-extension`        | `src/cli/index.ts`      | `bin/cli.mjs`  |
 
-Commands: `db:create`, `db:drop`, `seed:run`, `seed:create`. Each is a yargs `CommandModule` class in `src/cli/commands/`.
+Commands: `db create`, `db drop`, `seed run`, `seed create` (each is a [citty](https://github.com/unjs/citty) `defineCommand` factory in `src/cli/commands/`). The legacy colon-form names (`db:create`, `db:drop`, `seed:run`, `seed:create`) are still registered as backwards-compatibility aliases at the top level so consumer scripts from v3 keep working.
 
 ## Documentation
 

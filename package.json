@@ -63,14 +63,13 @@
     },
     "license": "MIT",
     "dependencies": {
-        "consola": "^3.4.0",
+        "citty": "^0.2.2",
         "envix": "^1.5.0",
         "locter": "^2.2.1",
         "pascal-case": "^3.1.2",
         "rapiq": "^0.9.0",
         "reflect-metadata": "^0.2.2",
-        "smob": "^1.5.0",
-        "yargs": "^18.0.0"
+        "smob": "^1.5.0"
     },
     "peerDependencies": {
         "@faker-js/faker": ">=8.4.1",
@@ -83,7 +82,6 @@
         "@tada5hi/eslint-config": "^2.3.0",
         "@tada5hi/tsconfig": "^0.7.2",
         "@types/node": "^25.9.1",
-        "@types/yargs": "^17.0.35",
         "@vitest/coverage-v8": "^4.1.5",
         "better-sqlite3": "^12.4.6",
         "eslint": "^10.3.0",

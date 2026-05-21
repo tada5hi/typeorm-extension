@@ -54,19 +54,21 @@ To read the docs, visit [https://typeorm-extension.tada5hi.net](https://typeorm-
 ### CLI
 
 The following commands are available in the terminal:
-- `typeorm-extension db:create` to create the database
-- `typeorm-extension db:drop` to drop the database
-- `typeorm-extension seed:run` seed the database
-- `typeorm-extension seed:create` to create a new seeder
+- `typeorm-extension db create` to create the database
+- `typeorm-extension db drop` to drop the database
+- `typeorm-extension seed run` to seed the database
+- `typeorm-extension seed create` to create a new seeder
+
+The legacy colon-form (`db:create`, `db:drop`, `seed:run`, `seed:create`) is still accepted for backwards compatibility.
 
 If the application has not yet been built and you want to run the CLI against TypeScript sources directly, invoke the ESM bundle with a TypeScript-aware Node loader (e.g. `tsx` or Node's `--experimental-strip-types`):
 
 ```
 "scripts": {
-    "db:create":   "tsx ./node_modules/typeorm-extension/bin/cli.mjs db:create",
-    "db:drop":     "tsx ./node_modules/typeorm-extension/bin/cli.mjs db:drop",
-    "seed:run":    "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:run",
-    "seed:create": "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:create"
+    "db:create":   "tsx ./node_modules/typeorm-extension/bin/cli.mjs db create",
+    "db:drop":     "tsx ./node_modules/typeorm-extension/bin/cli.mjs db drop",
+    "seed:run":    "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed run",
+    "seed:create": "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed create"
 }
 ```
 
@@ -75,41 +77,42 @@ for the seeder- & factory-location.
 
 #### CLI Options
 
-| Option                  | Commands                                  | Default         | Description                                                                                                                                                                                                                           |
-|-------------------------|-------------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--root` or `-r`        | `db:create`, `db:drop`, `seed:run`, `seed:create` | `process.cwd()` | Root directory of the project.                                                                                                                                                                                                |
-| `--tsconfig` or `-tc`   | `db:create`, `db:drop`, `seed:run`        | `tsconfig.json` | Name (or relative path incl. name) of the tsconfig file.                                                                                                                                                                              |
-| `--dataSource` or `-d`  | `db:create`, `db:drop`, `seed:run`        | `data-source`   | Name (or relative path incl. name) of the data-source file.                                                                                                                                                                           |
-| `--synchronize` or `-s` | `db:create`                               | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                      |
-| `--initialDatabase`     | `db:create`                               | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always connect to a database. If no database is provided, the database name will be equal to the connection user name. |
-| `--name` or `-n`        | `seed:create` (required), `seed:run` (optional) | `undefined` | Name (or relative path incl. name) of the seeder. Required on `seed:create`; on `seed:run` restricts execution to the matching seeder.                                                                                                |
-| `--timestamp` or `-t`   | `seed:create`                             | `Date.now()`    | Custom timestamp used in the generated seeder filename.                                                                                                                                                                               |
-| `--javascript` or `-j`  | `seed:create`                             | `false`         | Generate a seeder file for JavaScript instead of TypeScript.                                                                                                                                                                          |
-| `--preserveFilePaths`   | `db:create`, `db:drop`, `seed:run`        | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                       |
+| Option                  | Commands                                          | Default         | Description                                                                                                                                                                                                                           |
+|-------------------------|---------------------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--root` or `-r`        | `db create`, `db drop`, `seed run`, `seed create` | `process.cwd()` | Root directory of the project.                                                                                                                                                                                                        |
+| `--tsconfig` or `-tc`   | `db create`, `db drop`, `seed run`                | `tsconfig.json` | Name (or relative path incl. name) of the tsconfig file.                                                                                                                                                                              |
+| `--dataSource` or `-d`  | `db create`, `db drop`, `seed run`                | `data-source`   | Name (or relative path incl. name) of the data-source file.                                                                                                                                                                           |
+| `--synchronize` or `-s` | `db create`                                       | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                      |
+| `--initialDatabase`     | `db create`                                       | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always connect to a database. If no database is provided, the database name will be equal to the connection user name. |
+| `--name` or `-n`        | `seed create` (required), `seed run` (optional)   | `undefined`     | Name (or relative path incl. name) of the seeder. Required on `seed create`; on `seed run` restricts execution to the matching seeder.                                                                                                |
+| `--timestamp` or `-t`   | `seed create`                                     | `Date.now()`    | Custom timestamp used in the generated seeder filename.                                                                                                                                                                               |
+| `--javascript` or `-j`  | `seed create`                                     | `false`         | Generate a seeder file for JavaScript instead of TypeScript.                                                                                                                                                                          |
+| `--preserveFilePaths`   | `db create`, `db drop`, `seed run`                | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                       |
+| `--log-level`           | `db create`, `db drop`, `seed create`, `seed run` | `info`          | Logger verbosity. One of `silent`, `info`, `debug`.                                                                                                                                                                                   |
 
 #### CLI Examples
 **`Database Create`**
 ```shell
-tsx ./node_modules/typeorm-extension/bin/cli.mjs db:create  -d src/data-source.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs db create  -d src/data-source.ts
 ```
 **`Database Drop`**
 ```shell
-tsx ./node_modules/typeorm-extension/bin/cli.mjs db:drop  -d src/data-source.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs db drop  -d src/data-source.ts
 ```
 
 **`Seed Run`**
 ```shell
-tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:run  -d src/data-source.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs seed run  -d src/data-source.ts
 ```
 
 **`Seed Run Explicit`**
 ```shell
-tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:run  -d src/data-source.ts --name src/database/seeds/user.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs seed run  -d src/data-source.ts --name src/database/seeds/user.ts
 ```
 
 **`Seed Create`**
 ```shell
-tsx ./node_modules/typeorm-extension/bin/cli.mjs seed:create  --name src/database/seeds/user.ts
+tsx ./node_modules/typeorm-extension/bin/cli.mjs seed create  --name src/database/seeds/user.ts
 ```
 
 ### Database

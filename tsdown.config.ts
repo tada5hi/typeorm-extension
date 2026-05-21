@@ -78,7 +78,7 @@ export default defineConfig([
         sourcemap: true,
         clean: true,
         platform: 'node',
-        deps: { neverBundle: [/^yargs/] },
+        deps: { neverBundle: [/^citty$/] },
         plugins: [cliRewriteExternal],
     },
 ]);

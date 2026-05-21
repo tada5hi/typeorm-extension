@@ -39,12 +39,12 @@
 
 - **Files**: kebab-case (`data-source.ts`, `file-path.ts`).
 - **Folders**: kebab-case (`data-source/`, `cli/commands/database/`).
-- **Classes**: PascalCase (`SeederExecutor`, `SeederFactoryManager`, `DatabaseCreateCommand`).
+- **Classes**: PascalCase (`SeederExecutor`, `SeederFactoryManager`).
 - **Functions**: camelCase verb-first (`createDatabase`, `findDataSource`, `useDataSource`, `applyQuery`, `buildDatabaseCreateContext`).
 - **Hook-style accessors**: `use*` (`useDataSource`, `useEnv`, `useSeederFactoryManager`). These return cached/singleton state.
 - **Registry mutators**: `set*` / `has*` / `unset*` / `reset*` (see `src/data-source/singleton.ts`, `src/env/module.ts`).
 - **Context/options types**: `XContextInput` (loose, user-supplied) → `XContext` (resolved) → driver receives the resolved one. Example: `DatabaseCreateContextInput` → `DatabaseCreateContext`.
-- **CLI commands**: `<Verb><Noun>Command` class implementing `yargs.CommandModule` (e.g. `DatabaseCreateCommand`).
+- **CLI commands**: `defineCLI<Noun><Verb>Command()` factory returning a citty `defineCommand` instance (e.g. `defineCLIDatabaseCreateCommand`). Parent commands that only group subcommands use the same `defineCLI<Noun>Command()` shape (e.g. `defineCLIDatabaseCommand`).
 
 ## File Organization
 
