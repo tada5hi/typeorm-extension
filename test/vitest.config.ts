@@ -23,7 +23,7 @@ export default defineConfig({
         globals: true,
         root: path.resolve(import.meta.dirname, '..'),
         include: ['test/unit/**/*.{test,spec}.{js,ts}'],
-        server: { deps: { inline: [/locter/] } },
+        setupFiles: ['test/vitest.setup.ts'],
         coverage: {
             provider: 'v8',
             include: ['src/**/*.{ts,tsx,js,jsx}'],

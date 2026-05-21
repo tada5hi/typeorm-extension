@@ -1,6 +1,6 @@
 /* istanbul ignore next */
 import type { LocatorInfo } from 'locter';
-import { locateMany } from 'locter';
+import { buildFilePath, locateMany } from 'locter';
 import path from 'node:path';
 
 export async function resolveFilePatterns(
@@ -10,7 +10,7 @@ export async function resolveFilePatterns(
     return locateMany(
         filesPattern,
         {
-            ...(root ? { path: root } : {}),
+            ...(root ? { cwd: root } : {}),
             ignore: ['**/*.d.ts'],
         },
     ).then(buildFilePathname);
@@ -33,6 +33,6 @@ export function resolveFilePaths(
 export function buildFilePathname(files: LocatorInfo[]) {
     return (
         // sorting by name so that we can define the order of execution using file names
-        files.sort((a, b) => (a.name > b.name ? 1 : -1)).map((el) => path.join(el.path, el.name + el.extension))
+        files.sort((a, b) => (a.name > b.name ? 1 : -1)).map((el) => buildFilePath(el))
     );
 }

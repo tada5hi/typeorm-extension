@@ -85,7 +85,7 @@ export async function findDataSource(
         const info = await locate(
             `${file}.{js,cjs,mjs,ts,cts,mts}`,
             {
-                path: [
+                cwd: [
                     process.cwd(),
                     ...(directory && !directoryIsPattern ? [directory] : []),
                 ],

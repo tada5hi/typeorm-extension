@@ -6,17 +6,20 @@ describe('src/seeder/utils/file-path.ts', () => {
         it('should build file path name', () => {
             const files = [
                 {
-                    path: '/path/to/dir',
+                    directory: '/path/to/dir',
+                    path: '/path/to/dir/2_file.ts',
                     name: '2_file',
                     extension: '.ts',
                 },
                 {
-                    path: '/path/to/dir',
+                    directory: '/path/to/dir',
+                    path: '/path/to/dir/1_file.ts',
                     name: '1_file',
                     extension: '.ts',
                 },
                 {
-                    path: '/path/to/dir',
+                    directory: '/path/to/dir',
+                    path: '/path/to/dir/0_file.ts',
                     name: '0_file',
                     extension: '.ts',
                 },
