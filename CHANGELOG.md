@@ -18,6 +18,29 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.0.0-beta.0](https://github.com/tada5hi/typeorm-extension/compare/v3.9.0...v4.0.0-beta.0) (2026-05-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* peer/runtime dependency `locter` is bumped to ^3.0.0.
+* The CLI command classes (`DatabaseCreateCommand`, `DatabaseDropCommand`, `SeedRunCommand`, `SeedCreateCommand`) are no longer exported from the package entry. Consumers embedding these in a custom yargs pipeline must now compose their own citty (or other) tree. The `yargs` runtime dependency has been removed.
+* typeorm peer dependency is now `^1.0.0`. typeorm `0.3.x` is no longer supported — stay on `typeorm-extension` v3 if you need it.
+* typeorm-extension is now ESM-only. CJS consumers on Node 22+ can still require('typeorm-extension') thanks to require(esm) support; older Node versions can no longer consume the package. Minimum Node is now 22 (was 20.19). The typeorm-extension-esm binary alias is removed - use typeorm-extension. See docs/guide/migration-guide-v4.md.
+
+### Features
+
+* migrate CLI from yargs to citty ([#1379](https://github.com/tada5hi/typeorm-extension/issues/1379)) ([05cc0fc](https://github.com/tada5hi/typeorm-extension/commit/05cc0fc4745c63acf412768af010cae494dc198f))
+* modernize toolchain and ship ESM-only build ([#1373](https://github.com/tada5hi/typeorm-extension/issues/1373)) ([8df2109](https://github.com/tada5hi/typeorm-extension/commit/8df210974338b1abebd6dc3afc6ccc7c7ff218bc))
+* support typeorm 1.x and drop 0.3.x peer dep ([#1377](https://github.com/tada5hi/typeorm-extension/issues/1377)) ([b6a29ca](https://github.com/tada5hi/typeorm-extension/commit/b6a29ca644a0bdaf845b25b5f6e7e270001a49dd))
+* upgrade locter to v3 and use setModuleLoader for vitest ([27f079b](https://github.com/tada5hi/typeorm-extension/commit/27f079b64436902fc289d0f7d4519300eba5c206))
+
+
+### Miscellaneous Chores
+
+* release 4.0.0-alpha.0 ([95b8ee4](https://github.com/tada5hi/typeorm-extension/commit/95b8ee4b263c5d733599d1dd26cafda69b3e4384))
+* release 4.0.0-beta.0 ([6adf5a0](https://github.com/tada5hi/typeorm-extension/commit/6adf5a06a86cffc13d4d44b099c5f5a370d49eb0))
+
 ## [3.9.0](https://github.com/tada5hi/typeorm-extension/compare/v3.8.0...v3.9.0) (2026-02-26)
 
 
