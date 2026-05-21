@@ -1,6 +1,6 @@
 {
     "name": "typeorm-extension",
-    "version": "3.9.0",
+    "version": "4.0.0-beta.0",
     "type": "module",
     "description": "A library to create/drop database, simple seeding data sets, ...",
     "author": {
