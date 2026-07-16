@@ -2,17 +2,17 @@ import {
     MongoDBDialect,
     buildMongoDBConnectionUri,
 } from '../../../../src/database/core';
-import { MemoryMongoDatabaseConnector, createMemoryRuntime } from '../../../data/database';
+import { MemoryMongoDatabaseConnector } from '../../../data/database';
 
 describe('src/database/core/mongodb', () => {
     it('should create database by connecting and closing', async () => {
         const mongo = new MemoryMongoDatabaseConnector();
-        const dialect = new MongoDBDialect();
+        const dialect = new MongoDBDialect(mongo);
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
-        }, createMemoryRuntime({ mongo }));
+        });
 
         expect(mongo.eventTypes()).toEqual(['connect', 'close']);
         expect(mongo.events[0]).toEqual({
@@ -25,12 +25,12 @@ describe('src/database/core/mongodb', () => {
 
     it('should drop database', async () => {
         const mongo = new MemoryMongoDatabaseConnector();
-        const dialect = new MongoDBDialect();
+        const dialect = new MongoDBDialect(mongo);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
-        }, createMemoryRuntime({ mongo }));
+        });
 
         expect(mongo.eventTypes()).toEqual(['connect', 'dropDatabase', 'close']);
         expect(mongo.openSessions.size).toEqual(0);

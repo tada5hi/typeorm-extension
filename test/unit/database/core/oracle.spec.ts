@@ -2,17 +2,17 @@ import {
     OracleDialect,
     buildOracleConnectString,
 } from '../../../../src/database/core';
-import { MemoryDatabaseConnector, createMemoryRuntime } from '../../../data/database';
+import { MemoryDatabaseConnector } from '../../../data/database';
 
 describe('src/database/core/oracle', () => {
     it('should create database', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new OracleDialect();
+        const dialect = new OracleDialect(connector);
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual(['CREATE DATABASE IF NOT EXISTS app']);
         expect(connector.openSessions.size).toEqual(0);
@@ -20,12 +20,12 @@ describe('src/database/core/oracle', () => {
 
     it('should not connect on drop', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new OracleDialect();
+        const dialect = new OracleDialect(connector);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.events).toHaveLength(0);
     });

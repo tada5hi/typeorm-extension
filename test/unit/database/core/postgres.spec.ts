@@ -2,18 +2,18 @@ import {
     PostgresDialect,
     buildPostgresCreateDatabaseQuery,
 } from '../../../../src/database/core';
-import { MemoryDatabaseConnector, createMemoryRuntime } from '../../../data/database';
+import { MemoryDatabaseConnector } from '../../../data/database';
 
 describe('src/database/core/postgres', () => {
     it('should create database', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         const output = await dialect.create({
             params: { database: 'app' },
             ifNotExist: false,
             initialDatabase: 'postgres',
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual(['CREATE DATABASE "app"']);
         expect(connector.events[0]).toEqual({
@@ -27,12 +27,12 @@ describe('src/database/core/postgres', () => {
 
     it('should check existence before creation', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual([
             "SELECT * FROM pg_database WHERE lower(datname) = lower('app');",
@@ -45,12 +45,12 @@ describe('src/database/core/postgres', () => {
         const connector = new MemoryDatabaseConnector(
             (sql) => (sql.startsWith('SELECT') ? { rows: [{ datname: 'app' }] } : { ok: true }),
         );
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         const output = await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toHaveLength(1);
         expect(connector.openSessions.size).toEqual(0);
@@ -59,13 +59,13 @@ describe('src/database/core/postgres', () => {
 
     it('should create schema on a second session targeting the new database', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         await dialect.create({
             params: { database: 'app', schema: 'tenant' },
             ifNotExist: false,
             initialDatabase: 'postgres',
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual([
             'CREATE DATABASE "app"',
@@ -94,12 +94,12 @@ describe('src/database/core/postgres', () => {
 
     it('should not create the public schema', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         await dialect.create({
             params: { database: 'app', schema: 'public' },
             ifNotExist: false,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual(['CREATE DATABASE "app"']);
     });
@@ -108,24 +108,24 @@ describe('src/database/core/postgres', () => {
         const connector = new MemoryDatabaseConnector(() => {
             throw new Error('boom');
         });
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         await expect(dialect.create({
             params: { database: 'app' },
             ifNotExist: false,
-        }, createMemoryRuntime({ connector }))).rejects.toThrow('boom');
+        })).rejects.toThrow('boom');
 
         expect(connector.openSessions.size).toEqual(0);
     });
 
     it('should drop database', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual(['DROP DATABASE IF EXISTS "app"']);
         expect(connector.openSessions.size).toEqual(0);
@@ -133,12 +133,12 @@ describe('src/database/core/postgres', () => {
 
     it('should drop database without exist guard', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new PostgresDialect();
+        const dialect = new PostgresDialect(connector);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: false,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual(['DROP DATABASE "app"']);
     });

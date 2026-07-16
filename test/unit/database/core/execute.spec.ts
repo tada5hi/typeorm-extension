@@ -6,7 +6,6 @@ import {
     executeDatabaseDrop,
 } from '../../../../src/database/methods/execute';
 import { resolveDatabaseDialectName } from '../../../../src/database/registry';
-import { UnsupportedConnector } from '../../../../src/database/adapters';
 import { MemoryDatabaseConnector } from '../../../data/database';
 
 const options = {
@@ -86,11 +85,5 @@ describe('src/database/methods/execute', () => {
         });
 
         expect(executed).toEqual(['DROP DATABASE IF EXISTS "app"']);
-    });
-
-    it('should reject unsupported connection kinds', async () => {
-        const connector = new UnsupportedConnector('better-sqlite3');
-
-        await expect(connector.connect()).rejects.toThrow(DriverError);
     });
 });

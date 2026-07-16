@@ -90,34 +90,38 @@ export type DatabaseDropOperation = {
 };
 
 /**
- * Everything a dialect may touch. Assembled by the composition root;
- * connectors a dialect does not need are wired to rejecting stubs.
- */
-export type DialectRuntime = {
-    connector: IDatabaseConnector,
-    mongo: IMongoDatabaseConnector,
-    fs: IFileSystem,
-    cwd: string,
-};
-
-/**
- * A dialect owns the create/drop orchestration for one driver type.
+ * A dialect owns the create/drop orchestration for one driver type and
+ * receives its connector(s) via the constructor.
  *
  * Implementations must stay pure: types, typed errors and pure helpers only —
  * no native clients, no I/O, no environment state.
  */
 export interface IDatabaseDialect {
-    create(operation: DatabaseCreateOperation, runtime: DialectRuntime): Promise<unknown>;
+    create(operation: DatabaseCreateOperation): Promise<unknown>;
 
-    drop(operation: DatabaseDropOperation, runtime: DialectRuntime): Promise<unknown>;
+    drop(operation: DatabaseDropOperation): Promise<unknown>;
 }
 
 export type DatabaseDialectName = 'postgres' | 'cockroachdb' | 'mysql' | 'mssql' |
 'oracle' | 'mongodb' | 'better-sqlite3';
 
+/**
+ * Composition overrides for building a dialect —
+ * used by tests and the caller supplied connection escape hatch.
+ * Only the slot a dialect actually consumes has an effect.
+ */
+export type DatabaseDialectOverrides = {
+    connector?: IDatabaseConnector,
+    mongo?: IMongoDatabaseConnector,
+    fs?: IFileSystem,
+    cwd?: string,
+};
+
 export type DatabaseDialectRegistryEntry = {
-    dialect: IDatabaseDialect,
     buildParams: (options: DataSourceOptions) => ConnectionParams,
-    buildConnector?: (options: DataSourceOptions, params: ConnectionParams) => IDatabaseConnector,
-    buildMongoConnector?: (options: DataSourceOptions, params: ConnectionParams) => IMongoDatabaseConnector,
+    buildDialect: (
+        options: DataSourceOptions,
+        params: ConnectionParams,
+        overrides: DatabaseDialectOverrides,
+    ) => IDatabaseDialect,
 };

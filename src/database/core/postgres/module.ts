@@ -1,7 +1,7 @@
 import type {
     DatabaseCreateOperation,
     DatabaseDropOperation,
-    DialectRuntime,
+    IDatabaseConnector,
     IDatabaseDialect,
 } from '../type';
 import { hasResultRows } from '../utils';
@@ -13,10 +13,14 @@ import {
 } from './statements';
 
 export class PostgresDialect implements IDatabaseDialect {
-    async create(operation: DatabaseCreateOperation, runtime: DialectRuntime): Promise<unknown> {
+    constructor(protected connector: IDatabaseConnector) {
+        this.connector = connector;
+    }
+
+    async create(operation: DatabaseCreateOperation): Promise<unknown> {
         const { params } = operation;
 
-        const session = await runtime.connector.connect(operation.initialDatabase);
+        const session = await this.connector.connect(operation.initialDatabase);
 
         let exists = false;
         let result: unknown;
@@ -46,7 +50,7 @@ export class PostgresDialect implements IDatabaseDialect {
          * inside the new database — hence a second session, targeted at it.
          */
         if (typeof params.schema === 'string' && params.schema !== 'public') {
-            const schemaSession = await runtime.connector.connect(params.database);
+            const schemaSession = await this.connector.connect(params.database);
 
             try {
                 await schemaSession.execute(buildPostgresCreateSchemaQuery(params.schema));
@@ -58,8 +62,8 @@ export class PostgresDialect implements IDatabaseDialect {
         return result;
     }
 
-    async drop(operation: DatabaseDropOperation, runtime: DialectRuntime): Promise<unknown> {
-        const session = await runtime.connector.connect(operation.initialDatabase);
+    async drop(operation: DatabaseDropOperation): Promise<unknown> {
+        const session = await this.connector.connect(operation.initialDatabase);
 
         try {
             return await session.execute(

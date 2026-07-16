@@ -3,17 +3,17 @@ import {
     buildMySQLCreateDatabaseQuery,
     deriveMySQLCharacterSet,
 } from '../../../../src/database/core';
-import { MemoryDatabaseConnector, createMemoryRuntime } from '../../../data/database';
+import { MemoryDatabaseConnector } from '../../../data/database';
 
 describe('src/database/core/mysql', () => {
     it('should create database', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new MySQLDialect();
+        const dialect = new MySQLDialect(connector);
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual(['CREATE DATABASE IF NOT EXISTS `app`']);
         expect(connector.openSessions.size).toEqual(0);
@@ -21,12 +21,12 @@ describe('src/database/core/mysql', () => {
 
     it('should create database with derived character set', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new MySQLDialect();
+        const dialect = new MySQLDialect(connector);
 
         await dialect.create({
             params: { database: 'app', charset: 'utf8mb4_general_ci' },
             ifNotExist: false,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual([
             'CREATE DATABASE `app` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci',
@@ -35,12 +35,12 @@ describe('src/database/core/mysql', () => {
 
     it('should wrap drop in foreign key check toggles on one session', async () => {
         const connector = new MemoryDatabaseConnector();
-        const dialect = new MySQLDialect();
+        const dialect = new MySQLDialect(connector);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
-        }, createMemoryRuntime({ connector }));
+        });
 
         expect(connector.sql()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',
@@ -60,12 +60,12 @@ describe('src/database/core/mysql', () => {
 
             return { ok: true };
         });
-        const dialect = new MySQLDialect();
+        const dialect = new MySQLDialect(connector);
 
         await expect(dialect.drop({
             params: { database: 'app' },
             ifExist: true,
-        }, createMemoryRuntime({ connector }))).rejects.toThrow('boom');
+        })).rejects.toThrow('boom');
 
         expect(connector.sql()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',

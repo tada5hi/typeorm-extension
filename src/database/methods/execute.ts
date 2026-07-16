@@ -1,10 +1,6 @@
-import type { DataSourceOptions } from 'typeorm';
-import { NodeFileSystem, UnsupportedConnector } from '../adapters';
 import type {
-    ConnectionParams,
     DatabaseDialectName,
-    DatabaseDialectRegistryEntry,
-    DialectRuntime,
+    DatabaseDialectOverrides,
     IDatabaseConnection,
     IDatabaseConnector,
 } from '../core';
@@ -31,52 +27,41 @@ class InjectedConnector implements IDatabaseConnector {
     }
 }
 
-function buildDialectRuntime(
-    entry: DatabaseDialectRegistryEntry,
-    options: DataSourceOptions,
-    params: ConnectionParams,
-    overrides: Partial<DialectRuntime>,
-): DialectRuntime {
-    return {
-        connector: overrides.connector ||
-            (entry.buildConnector ?
-                entry.buildConnector(options, params) :
-                new UnsupportedConnector(options.type)),
-        mongo: overrides.mongo ||
-            (entry.buildMongoConnector ?
-                entry.buildMongoConnector(options, params) :
-                new UnsupportedConnector(options.type)),
-        fs: overrides.fs || new NodeFileSystem(),
-        cwd: overrides.cwd || process.cwd(),
-    };
+function buildOverrides(
+    context: DatabaseCreateContext | DatabaseDropContext,
+    overrides: DatabaseDialectOverrides,
+): DatabaseDialectOverrides {
+    if (context.connection && !overrides.connector) {
+        return {
+            ...overrides,
+            connector: new InjectedConnector(context.connection),
+        };
+    }
+
+    return overrides;
 }
 
 /**
  * Composition root for the create operation: resolves the registry entry,
- * derives connection params once, wires connectors (honouring overrides and a
- * caller supplied connection) and runs the schema synchronization exactly once.
+ * derives connection params once, builds the dialect with its connector
+ * (honouring overrides and a caller supplied connection) and runs the
+ * schema synchronization exactly once.
  */
 export async function executeDatabaseCreate(
     name: DatabaseDialectName,
     context: DatabaseCreateContext,
-    runtime: Partial<DialectRuntime> = {},
+    overrides: DatabaseDialectOverrides = {},
 ): Promise<unknown> {
     const entry = useDatabaseDialectEntry(name);
     const params = entry.buildParams(context.options);
 
-    const overrides = { ...runtime };
-    if (context.connection && !overrides.connector) {
-        overrides.connector = new InjectedConnector(context.connection);
-    }
+    const dialect = entry.buildDialect(context.options, params, buildOverrides(context, overrides));
 
-    const output = await entry.dialect.create(
-        {
-            params,
-            ifNotExist: context.ifNotExist,
-            initialDatabase: context.initialDatabase,
-        },
-        buildDialectRuntime(entry, context.options, params, overrides),
-    );
+    const output = await dialect.create({
+        params,
+        ifNotExist: context.ifNotExist,
+        initialDatabase: context.initialDatabase,
+    });
 
     if (context.synchronize) {
         await synchronizeDatabaseSchema(context.options);
@@ -88,22 +73,16 @@ export async function executeDatabaseCreate(
 export async function executeDatabaseDrop(
     name: DatabaseDialectName,
     context: DatabaseDropContext,
-    runtime: Partial<DialectRuntime> = {},
+    overrides: DatabaseDialectOverrides = {},
 ): Promise<unknown> {
     const entry = useDatabaseDialectEntry(name);
     const params = entry.buildParams(context.options);
 
-    const overrides = { ...runtime };
-    if (context.connection && !overrides.connector) {
-        overrides.connector = new InjectedConnector(context.connection);
-    }
+    const dialect = entry.buildDialect(context.options, params, buildOverrides(context, overrides));
 
-    return entry.dialect.drop(
-        {
-            params,
-            ifExist: context.ifExist ?? true,
-            initialDatabase: context.initialDatabase,
-        },
-        buildDialectRuntime(entry, context.options, params, overrides),
-    );
+    return dialect.drop({
+        params,
+        ifExist: context.ifExist ?? true,
+        initialDatabase: context.initialDatabase,
+    });
 }

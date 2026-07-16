@@ -2,8 +2,8 @@ import { OptionsError } from '../../../errors';
 import type {
     DatabaseCreateOperation,
     DatabaseDropOperation,
-    DialectRuntime,
     IDatabaseDialect,
+    IFileSystem,
 } from '../type';
 import { resolveSQLiteDatabaseDirectory, resolveSQLiteDatabasePath } from './path';
 
@@ -12,27 +12,35 @@ import { resolveSQLiteDatabaseDirectory, resolveSQLiteDatabasePath } from './pat
  * create/drop are filesystem effects.
  */
 export class SQLiteDialect implements IDatabaseDialect {
-    async create(operation: DatabaseCreateOperation, runtime: DialectRuntime): Promise<unknown> {
+    constructor(
+        protected fs: IFileSystem,
+        protected cwd: string,
+    ) {
+        this.fs = fs;
+        this.cwd = cwd;
+    }
+
+    async create(operation: DatabaseCreateOperation): Promise<unknown> {
         if (!operation.params.database) {
             throw OptionsError.databaseNotDefined();
         }
 
-        const directoryPath = resolveSQLiteDatabaseDirectory(operation.params.database, runtime.cwd);
+        const directoryPath = resolveSQLiteDatabaseDirectory(operation.params.database, this.cwd);
 
-        await runtime.fs.assertDirectoryWritable(directoryPath);
+        await this.fs.assertDirectoryWritable(directoryPath);
 
         return undefined;
     }
 
-    async drop(operation: DatabaseDropOperation, runtime: DialectRuntime): Promise<unknown> {
+    async drop(operation: DatabaseDropOperation): Promise<unknown> {
         if (!operation.params.database) {
             throw OptionsError.databaseNotDefined();
         }
 
-        const filePath = resolveSQLiteDatabasePath(operation.params.database, runtime.cwd);
+        const filePath = resolveSQLiteDatabasePath(operation.params.database, this.cwd);
 
-        if (operation.ifExist && await runtime.fs.isFileWritable(filePath)) {
-            await runtime.fs.removeFile(filePath);
+        if (operation.ifExist && await this.fs.isFileWritable(filePath)) {
+            await this.fs.removeFile(filePath);
         }
 
         return undefined;

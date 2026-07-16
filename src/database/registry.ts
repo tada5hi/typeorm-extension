@@ -5,6 +5,7 @@ import {
     MongoDBConnector,
     MsSQLConnector,
     MySQLConnector,
+    NodeFileSystem,
     OracleConnector,
     PostgresConnector,
 } from './adapters';
@@ -25,43 +26,54 @@ import {
 
 /**
  * The single dispatch site: a closed set of dialects known at build time.
+ * Each entry composes a dialect with its connector (overridable for tests
+ * and caller supplied connections).
  * Adding a driver = one dialect folder in core/, one adapter, one row here.
  */
 const registry: Record<DatabaseDialectName, DatabaseDialectRegistryEntry> = {
     postgres: {
-        dialect: new PostgresDialect(),
         buildParams: buildConnectionParams,
-        buildConnector: (options, params) => new PostgresConnector(options, params),
+        buildDialect: (options, params, overrides) => new PostgresDialect(
+            overrides.connector || new PostgresConnector(options, params),
+        ),
     },
-    // cockroachdb speaks the pg wire protocol and reuses the postgres adapter
+    // cockroachdb speaks the pg wire protocol and reuses the postgres connector
     cockroachdb: {
-        dialect: new CockroachDBDialect(),
         buildParams: buildConnectionParams,
-        buildConnector: (options, params) => new PostgresConnector(options, params),
+        buildDialect: (options, params, overrides) => new CockroachDBDialect(
+            overrides.connector || new PostgresConnector(options, params),
+        ),
     },
     mysql: {
-        dialect: new MySQLDialect(),
         buildParams: buildConnectionParams,
-        buildConnector: (options, params) => new MySQLConnector(options, params),
+        buildDialect: (options, params, overrides) => new MySQLDialect(
+            overrides.connector || new MySQLConnector(options, params),
+        ),
     },
     mssql: {
-        dialect: new MsSQLDialect(),
         buildParams: buildConnectionParams,
-        buildConnector: (options, params) => new MsSQLConnector(options, params),
+        buildDialect: (options, params, overrides) => new MsSQLDialect(
+            overrides.connector || new MsSQLConnector(options, params),
+        ),
     },
     oracle: {
-        dialect: new OracleDialect(),
         buildParams: buildConnectionParams,
-        buildConnector: (options, params) => new OracleConnector(options, params),
+        buildDialect: (options, params, overrides) => new OracleDialect(
+            overrides.connector || new OracleConnector(options, params),
+        ),
     },
     mongodb: {
-        dialect: new MongoDBDialect(),
         buildParams: buildConnectionParams,
-        buildMongoConnector: (options, params) => new MongoDBConnector(options, params),
+        buildDialect: (options, params, overrides) => new MongoDBDialect(
+            overrides.mongo || new MongoDBConnector(options, params),
+        ),
     },
     'better-sqlite3': {
-        dialect: new SQLiteDialect(),
         buildParams: buildConnectionParams,
+        buildDialect: (options, params, overrides) => new SQLiteDialect(
+            overrides.fs || new NodeFileSystem(),
+            overrides.cwd || process.cwd(),
+        ),
     },
 };
 
