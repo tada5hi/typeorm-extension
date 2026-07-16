@@ -12,4 +12,8 @@ export class DriverError extends TypeormExtensionError {
     static notSupported(driverName: string) {
         return new DriverError(`The driver ${driverName} is not supported yet.`);
     }
+
+    static sessionNotOpen() {
+        return new DriverError('The database session has not been opened yet.');
+    }
 }

@@ -47,7 +47,7 @@ describe('src/database/core/mysql', () => {
             'DROP DATABASE IF EXISTS `app`',
             'SET FOREIGN_KEY_CHECKS=1;',
         ]);
-        expect(connector.events.filter((event) => event.type === 'connect')).toHaveLength(1);
+        expect(connector.events.filter((event) => event.type === 'open')).toHaveLength(1);
         expect(connector.events.at(-1)?.type).toEqual('close');
         expect(connector.openSessions.size).toEqual(0);
     });

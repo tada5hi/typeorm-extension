@@ -51,7 +51,7 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
   - `ormconfig.json` → fixture for legacy config discovery paths.
   - `tsconfig.json` → consumed by tests that exercise `readTSConfig` + `adjustFilePath`.
 - **`test/data/database/`** — in-memory implementations of the database connectors:
-  - `MemoryDatabaseConnector` → recording SQL connector (events: connect/execute/close, open-session tracking, pluggable respond callback to simulate server state). Assert `connector.sql()` and lifecycle ordering instead of touching a real server.
+  - `MemoryDatabaseConnector` → recording SQL connector (events: open/execute/close, open-session tracking, pluggable respond callback to simulate server state). Assert `connector.sql()` and lifecycle ordering instead of touching a real server.
   - `MemoryMongoDatabaseConnector` / `MemoryFileSystem` → same idea for the mongo and filesystem connectors.
   - Connectors are injected via the dialect constructor (`new PostgresDialect(new MemoryDatabaseConnector())`); end-to-end specs pass `DatabaseDialectOverrides` to `executeDatabaseCreate` / `executeDatabaseDrop`.
 

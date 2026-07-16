@@ -15,7 +15,8 @@ export class CockroachDBDialect implements IDatabaseDialect {
     }
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
-        const session = await this.connector.connect(operation.initialDatabase);
+        const session = this.connector.session(operation.initialDatabase);
+        await session.open();
 
         try {
             return await session.execute(
@@ -30,7 +31,8 @@ export class CockroachDBDialect implements IDatabaseDialect {
     }
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
-        const session = await this.connector.connect(operation.initialDatabase);
+        const session = this.connector.session(operation.initialDatabase);
+        await session.open();
 
         try {
             return await session.execute(

@@ -1,9 +1,10 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
+import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnection,
     IDatabaseConnector,
+    IDatabaseSession,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 import { promisifyCallbackQuery } from './utils';
@@ -20,26 +21,47 @@ export class MySQLConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    async connect(database?: string): Promise<IDatabaseConnection> {
-        const driver = useNativeDriver(this.options) as MysqlDriver;
-        const { createConnection } = driver.mysql;
-
-        const option: Record<string, any> = {
-            host: this.params.host,
-            user: this.params.user,
-            password: this.params.password,
-            port: this.params.port,
-            ssl: this.params.ssl,
-            ...(this.params.extra ? this.params.extra : {}),
-            ...(typeof database === 'string' ? { database } : {}),
-        };
-
-        const connection = await createConnection(option);
+    session(database?: string): IDatabaseSession {
+        const { options, params } = this;
+        let connection: any;
 
         return {
-            execute: (sql: string) => promisifyCallbackQuery(connection, sql),
+            open: async () => {
+                if (connection) {
+                    return;
+                }
+
+                const driver = useNativeDriver(options) as MysqlDriver;
+                const { createConnection } = driver.mysql;
+
+                const option: Record<string, any> = {
+                    host: params.host,
+                    user: params.user,
+                    password: params.password,
+                    port: params.port,
+                    ssl: params.ssl,
+                    ...(params.extra ? params.extra : {}),
+                    ...(typeof database === 'string' ? { database } : {}),
+                };
+
+                connection = await createConnection(option);
+            },
+            execute: (sql: string) => {
+                if (!connection) {
+                    return Promise.reject(DriverError.sessionNotOpen());
+                }
+
+                return promisifyCallbackQuery(connection, sql);
+            },
             close: () => new Promise<void>((resolve) => {
-                connection.end(() => resolve());
+                if (!connection) {
+                    resolve();
+                    return;
+                }
+
+                const current = connection;
+                connection = undefined;
+                current.end(() => resolve());
             }),
         };
     }

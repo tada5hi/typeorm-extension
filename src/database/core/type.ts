@@ -1,9 +1,15 @@
 import type { DataSourceOptions } from 'typeorm';
 
 /**
- * An open session against a database server (never a TypeORM DataSource).
+ * A session against a database server (never a TypeORM DataSource).
+ *
+ * Lifecycle: open() performs the handshake and is idempotent;
+ * execute() throws a DriverError while the session is not open;
+ * close() on a session that was never opened is a no-op.
  */
-export interface IDatabaseConnection {
+export interface IDatabaseSession {
+    open(): Promise<void>;
+
     execute(sql: string): Promise<unknown>;
 
     close(): Promise<void>;
@@ -12,25 +18,28 @@ export interface IDatabaseConnection {
 /**
  * Connector for SQL speaking database servers.
  *
+ * session() is a cheap factory — no I/O happens before open().
  * The optional database argument overrides the session's target database
  * (e.g. the initial database, or a freshly created database). When omitted,
  * the server side default (maintenance database) is used.
  */
 export interface IDatabaseConnector {
-    connect(database?: string): Promise<IDatabaseConnection>;
+    session(database?: string): IDatabaseSession;
 }
 
 /**
  * MongoDB speaks commands, not SQL, and therefore owns a separate connector.
  */
-export interface IMongoDatabaseConnection {
+export interface IMongoDatabaseSession {
+    open(): Promise<void>;
+
     dropDatabase(): Promise<unknown>;
 
     close(): Promise<void>;
 }
 
 export interface IMongoDatabaseConnector {
-    connect(database?: string): Promise<IMongoDatabaseConnection>;
+    session(database?: string): IMongoDatabaseSession;
 }
 
 /**

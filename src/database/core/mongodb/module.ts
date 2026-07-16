@@ -14,19 +14,21 @@ export class MongoDBDialect implements IDatabaseDialect {
      * Connecting to the target database creates it lazily server side.
      */
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
-        const connection = await this.connector.connect(operation.params.database);
-        await connection.close();
+        const session = this.connector.session(operation.params.database);
+        await session.open();
+        await session.close();
 
         return undefined;
     }
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
-        const connection = await this.connector.connect(operation.params.database);
+        const session = this.connector.session(operation.params.database);
+        await session.open();
 
         try {
-            return await connection.dropDatabase();
+            return await session.dropDatabase();
         } finally {
-            await connection.close();
+            await session.close();
         }
     }
 }

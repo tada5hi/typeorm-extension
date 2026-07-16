@@ -20,7 +20,8 @@ export class MySQLDialect implements IDatabaseDialect {
     }
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
-        const session = await this.connector.connect(operation.initialDatabase);
+        const session = this.connector.session(operation.initialDatabase);
+        await session.open();
 
         try {
             return await session.execute(
@@ -32,7 +33,8 @@ export class MySQLDialect implements IDatabaseDialect {
     }
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
-        const session = await this.connector.connect(operation.initialDatabase);
+        const session = this.connector.session(operation.initialDatabase);
+        await session.open();
 
         try {
             await session.execute(MYSQL_FOREIGN_KEY_CHECKS_OFF);

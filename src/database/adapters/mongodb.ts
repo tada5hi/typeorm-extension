@@ -1,9 +1,10 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { MongoDriver } from 'typeorm/driver/mongodb/MongoDriver';
+import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IMongoDatabaseConnection,
     IMongoDatabaseConnector,
+    IMongoDatabaseSession,
 } from '../core';
 import { buildMongoDBConnectionUri } from '../core';
 import { useNativeDriver } from './typeorm-driver';
@@ -17,16 +18,38 @@ export class MongoDBConnector implements IMongoDatabaseConnector {
         this.params = params;
     }
 
-    async connect(database?: string): Promise<IMongoDatabaseConnection> {
-        const driver = useNativeDriver(this.options) as MongoDriver;
-        const { MongoClient } = driver.mongodb;
-
-        const client = new MongoClient(buildMongoDBConnectionUri(this.params, database));
-        await client.connect();
+    session(database?: string): IMongoDatabaseSession {
+        const { options, params } = this;
+        let client: any;
 
         return {
-            dropDatabase: () => client.db().dropDatabase(),
-            close: () => client.close(),
+            open: async () => {
+                if (client) {
+                    return;
+                }
+
+                const driver = useNativeDriver(options) as MongoDriver;
+                const { MongoClient } = driver.mongodb;
+
+                client = new MongoClient(buildMongoDBConnectionUri(params, database));
+                await client.connect();
+            },
+            dropDatabase: () => {
+                if (!client) {
+                    return Promise.reject(DriverError.sessionNotOpen());
+                }
+
+                return client.db().dropDatabase();
+            },
+            close: async () => {
+                if (!client) {
+                    return;
+                }
+
+                const current = client;
+                client = undefined;
+                await current.close();
+            },
         };
     }
 }

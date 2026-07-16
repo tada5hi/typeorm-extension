@@ -1,10 +1,10 @@
 import type {
-    IMongoDatabaseConnection,
     IMongoDatabaseConnector,
+    IMongoDatabaseSession,
 } from '../../../src/database/core';
 
 export type MemoryMongoConnectorEvent =    | {
-    type: 'connect', 
+    type: 'open', 
     session: number, 
     database?: string 
 } |
@@ -18,19 +18,24 @@ export class MemoryMongoDatabaseConnector implements IMongoDatabaseConnector {
 
     protected counter = 0;
 
-    async connect(database?: string): Promise<IMongoDatabaseConnection> {
+    session(database?: string): IMongoDatabaseSession {
         this.counter += 1;
         const session = this.counter;
 
-        this.openSessions.add(session);
-        this.events.push({
-            type: 'connect', 
-            session, 
-            database, 
-        });
-
         return {
+            open: async () => {
+                this.openSessions.add(session);
+                this.events.push({
+                    type: 'open', 
+                    session, 
+                    database, 
+                });
+            },
             dropDatabase: async () => {
+                if (!this.openSessions.has(session)) {
+                    throw new Error('The session has not been opened yet.');
+                }
+
                 this.events.push({ type: 'dropDatabase', session });
                 return true;
             },

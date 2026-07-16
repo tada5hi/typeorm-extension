@@ -1,9 +1,10 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
+import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnection,
     IDatabaseConnector,
+    IDatabaseSession,
 } from '../core';
 import { buildOracleConnectString } from '../core';
 import { useNativeDriver } from './typeorm-driver';
@@ -17,24 +18,44 @@ export class OracleConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    async connect(): Promise<IDatabaseConnection> {
-        const driver = useNativeDriver(this.options) as OracleDriver;
-        const { getConnection } = driver.oracle;
-
-        const connectString = this.params.connectString ||
-            buildOracleConnectString(this.params);
-
-        const connection = await getConnection({
-            user: this.params.user,
-            password: this.params.password,
-            connectString: connectString || this.params.url,
-            ...(this.params.extra ? this.params.extra : {}),
-        });
+    session(): IDatabaseSession {
+        const { options, params } = this;
+        let connection: any;
 
         return {
-            execute: (sql: string) => connection.execute(sql),
+            open: async () => {
+                if (connection) {
+                    return;
+                }
+
+                const driver = useNativeDriver(options) as OracleDriver;
+                const { getConnection } = driver.oracle;
+
+                const connectString = params.connectString ||
+                    buildOracleConnectString(params);
+
+                connection = await getConnection({
+                    user: params.user,
+                    password: params.password,
+                    connectString: connectString || params.url,
+                    ...(params.extra ? params.extra : {}),
+                });
+            },
+            execute: (sql: string) => {
+                if (!connection) {
+                    return Promise.reject(DriverError.sessionNotOpen());
+                }
+
+                return connection.execute(sql);
+            },
             close: async () => {
-                await connection.close();
+                if (!connection) {
+                    return;
+                }
+
+                const current = connection;
+                connection = undefined;
+                await current.close();
             },
         };
     }

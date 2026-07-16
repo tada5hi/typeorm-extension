@@ -1,10 +1,11 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
 import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
+import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnection,
     IDatabaseConnector,
+    IDatabaseSession,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 import { promisifyCallbackQuery } from './utils';
@@ -21,31 +22,51 @@ export class PostgresConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    async connect(database?: string): Promise<IDatabaseConnection> {
-        const driver = useNativeDriver(this.options) as PostgresDriver | CockroachDriver;
-        const { Client } = driver.postgres;
-
-        const data: Record<string, any> = {
-            host: this.params.host,
-            port: this.params.port,
-            user: this.params.user,
-            password: this.params.password,
-            ssl: this.params.ssl,
-            schema: this.params.schema,
-            ...(this.params.extra ? this.params.extra : {}),
-        };
-
-        if (typeof database === 'string') {
-            data.database = database;
-        }
-
-        const client = new Client(data);
-        await client.connect();
+    session(database?: string): IDatabaseSession {
+        const { options, params } = this;
+        let client: any;
 
         return {
-            execute: (sql: string) => promisifyCallbackQuery(client, sql),
+            open: async () => {
+                if (client) {
+                    return;
+                }
+
+                const driver = useNativeDriver(options) as PostgresDriver | CockroachDriver;
+                const { Client } = driver.postgres;
+
+                const data: Record<string, any> = {
+                    host: params.host,
+                    port: params.port,
+                    user: params.user,
+                    password: params.password,
+                    ssl: params.ssl,
+                    schema: params.schema,
+                    ...(params.extra ? params.extra : {}),
+                };
+
+                if (typeof database === 'string') {
+                    data.database = database;
+                }
+
+                client = new Client(data);
+                await client.connect();
+            },
+            execute: (sql: string) => {
+                if (!client) {
+                    return Promise.reject(DriverError.sessionNotOpen());
+                }
+
+                return promisifyCallbackQuery(client, sql);
+            },
             close: async () => {
-                await client.end();
+                if (!client) {
+                    return;
+                }
+
+                const current = client;
+                client = undefined;
+                await current.end();
             },
         };
     }

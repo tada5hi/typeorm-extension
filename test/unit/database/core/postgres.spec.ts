@@ -17,7 +17,7 @@ describe('src/database/core/postgres', () => {
 
         expect(connector.sql()).toEqual(['CREATE DATABASE "app"']);
         expect(connector.events[0]).toEqual({
-            type: 'connect', 
+            type: 'open', 
             session: 1, 
             database: 'postgres', 
         });
@@ -72,20 +72,20 @@ describe('src/database/core/postgres', () => {
             'CREATE SCHEMA IF NOT EXISTS "tenant"',
         ]);
         expect(connector.eventTypes()).toEqual([
-            'connect', 
+            'open', 
             'execute', 
             'close',
-            'connect', 
+            'open', 
             'execute', 
             'close',
         ]);
         expect(connector.events[0]).toEqual({
-            type: 'connect', 
+            type: 'open', 
             session: 1, 
             database: 'postgres', 
         });
         expect(connector.events[3]).toEqual({
-            type: 'connect', 
+            type: 'open', 
             session: 2, 
             database: 'app', 
         });

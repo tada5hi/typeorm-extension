@@ -14,9 +14,9 @@ describe('src/database/core/mongodb', () => {
             ifNotExist: true,
         });
 
-        expect(mongo.eventTypes()).toEqual(['connect', 'close']);
+        expect(mongo.eventTypes()).toEqual(['open', 'close']);
         expect(mongo.events[0]).toEqual({
-            type: 'connect', 
+            type: 'open', 
             session: 1, 
             database: 'app', 
         });
@@ -32,7 +32,7 @@ describe('src/database/core/mongodb', () => {
             ifExist: true,
         });
 
-        expect(mongo.eventTypes()).toEqual(['connect', 'dropDatabase', 'close']);
+        expect(mongo.eventTypes()).toEqual(['open', 'dropDatabase', 'close']);
         expect(mongo.openSessions.size).toEqual(0);
     });
 

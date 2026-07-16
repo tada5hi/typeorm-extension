@@ -1,8 +1,8 @@
 import type {
     DatabaseDialectName,
     DatabaseDialectOverrides,
-    IDatabaseConnection,
     IDatabaseConnector,
+    IDatabaseSession,
 } from '../core';
 import { useDatabaseDialectEntry } from '../registry';
 import { synchronizeDatabaseSchema } from '../utils';
@@ -10,17 +10,19 @@ import type { DatabaseCreateContext, DatabaseDropContext } from './type';
 
 /**
  * Wraps a caller supplied connection as a connector.
- * The caller owns the lifecycle — close() never touches it.
+ * The connection is treated as already open, and the caller owns the
+ * lifecycle — open() and close() never touch it.
  */
 class InjectedConnector implements IDatabaseConnector {
-    constructor(protected connection: IDatabaseConnection) {
+    constructor(protected connection: Pick<IDatabaseSession, 'execute' | 'close'>) {
         this.connection = connection;
     }
 
-    async connect(): Promise<IDatabaseConnection> {
+    session(): IDatabaseSession {
         const { connection } = this;
 
         return {
+            open: () => Promise.resolve(),
             execute: (sql: string) => connection.execute(sql),
             close: () => Promise.resolve(),
         };

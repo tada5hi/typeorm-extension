@@ -1,10 +1,10 @@
 import type {
-    IDatabaseConnection,
     IDatabaseConnector,
+    IDatabaseSession,
 } from '../../../src/database/core';
 
 export type MemoryConnectorEvent =    | {
-    type: 'connect', 
+    type: 'open', 
     session: number, 
     database?: string 
 } |
@@ -32,19 +32,24 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
         this.respond = respond || (() => ({ ok: true }));
     }
 
-    async connect(database?: string): Promise<IDatabaseConnection> {
+    session(database?: string): IDatabaseSession {
         this.counter += 1;
         const session = this.counter;
 
-        this.openSessions.add(session);
-        this.events.push({
-            type: 'connect', 
-            session, 
-            database, 
-        });
-
         return {
+            open: async () => {
+                this.openSessions.add(session);
+                this.events.push({
+                    type: 'open', 
+                    session, 
+                    database, 
+                });
+            },
             execute: async (sql: string) => {
+                if (!this.openSessions.has(session)) {
+                    throw new Error('The session has not been opened yet.');
+                }
+
                 this.events.push({
                     type: 'execute', 
                     session, 

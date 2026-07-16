@@ -1,9 +1,10 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
+import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnection,
     IDatabaseConnector,
+    IDatabaseSession,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
@@ -16,25 +17,45 @@ export class MsSQLConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    async connect(database?: string): Promise<IDatabaseConnection> {
-        const driver = useNativeDriver(this.options) as SqlServerDriver;
-
-        const option: Record<string, any> = {
-            user: this.params.user,
-            password: this.params.password,
-            server: this.params.host,
-            port: this.params.port || 1433,
-            ...(this.params.extra ? this.params.extra : {}),
-            ...(this.params.domain ? { domain: this.params.domain } : {}),
-            ...(typeof database === 'string' ? { database } : {}),
-        };
-
-        const pool = await driver.mssql.connect(option);
+    session(database?: string): IDatabaseSession {
+        const { options, params } = this;
+        let pool: any;
 
         return {
-            execute: (sql: string) => pool.request().query(sql),
+            open: async () => {
+                if (pool) {
+                    return;
+                }
+
+                const driver = useNativeDriver(options) as SqlServerDriver;
+
+                const option: Record<string, any> = {
+                    user: params.user,
+                    password: params.password,
+                    server: params.host,
+                    port: params.port || 1433,
+                    ...(params.extra ? params.extra : {}),
+                    ...(params.domain ? { domain: params.domain } : {}),
+                    ...(typeof database === 'string' ? { database } : {}),
+                };
+
+                pool = await driver.mssql.connect(option);
+            },
+            execute: (sql: string) => {
+                if (!pool) {
+                    return Promise.reject(DriverError.sessionNotOpen());
+                }
+
+                return pool.request().query(sql);
+            },
             close: async () => {
-                await pool.close();
+                if (!pool) {
+                    return;
+                }
+
+                const current = pool;
+                pool = undefined;
+                await current.close();
             },
         };
     }
