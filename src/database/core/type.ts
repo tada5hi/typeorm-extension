@@ -103,8 +103,8 @@ export type DialectRuntime = {
 /**
  * A dialect owns the create/drop orchestration for one driver type.
  *
- * Implementations must stay pure: types and typed errors only —
- * no native clients, no node built-ins, no environment state.
+ * Implementations must stay pure: types, typed errors and pure helpers only —
+ * no native clients, no I/O, no environment state.
  */
 export interface IDatabaseDialect {
     create(operation: DatabaseCreateOperation, runtime: DialectRuntime): Promise<unknown>;
