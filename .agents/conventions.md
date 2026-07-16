@@ -24,7 +24,7 @@
 - After changing source, run `npm run build` (catches TS errors that ESLint misses) and `npm test`.
 - After changing source or tests, run `npm run lint` on the affected files (or `npm run lint:fix`).
 - When changing user-facing behavior (CLI flags, public API signatures, env var names, seeder/factory contract), update both `README.MD` and the matching page in `docs/guide/`.
-- Adding a new TypeORM driver: add a file in `src/database/driver/<name>.ts`, export it from `src/database/driver/index.ts`, and add `case`s in `src/database/methods/{create,drop,check}/module.ts`. Then add a test fixture and a docs entry.
+- Adding a new TypeORM driver: add a dialect folder `src/database/core/<name>/` (`statements.ts` + `module.ts`), an adapter in `src/database/adapters/<name>.ts`, and a row in `src/database/registry.ts`. Then add a spec under `test/unit/database/core/` (using the memory ports from `test/data/database/`) and a docs entry.
 
 ## Code Style
 
@@ -137,5 +137,5 @@ VitePress sources under `docs/`. The site is published to <https://typeorm-exten
 - Before adding new code, study surrounding patterns — especially the context-builder pattern in `src/database/methods/*` and the singleton-registry pattern in `src/data-source/singleton.ts`.
 - Don't introduce new singletons unless the state is genuinely process-global (DataSource registry, factory manager, env cache are the existing ones — that should be roughly the full set).
 - When extending the JSON:API query layer, check `rapiq` first — most parsing behavior lives there, and the local `applyQuery*` functions should stay focused on TypeORM translation.
-- Keep driver files self-contained: connect with the native client, run SQL, close. Don't import from sibling driver files.
+- Keep the database core pure: dialects (`src/database/core/<dialect>/`) may import types, typed errors and pure helpers only — native clients and `node:fs` belong in `src/database/adapters/`. Don't import from sibling dialect folders (cockroachdb sharing the postgres *adapter* is wired in the registry, not by cross-imports).
 - Prefer typed errors from `src/errors/` over `throw new Error(...)` when a consumer might catch the error.
