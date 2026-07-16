@@ -11,3 +11,4 @@ db.sqlite
 .env
 cache
 .claude/settings.local.json
+.agents/plans
