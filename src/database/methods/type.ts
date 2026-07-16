@@ -1,5 +1,6 @@
 import type { DataSourceOptions } from 'typeorm';
 import type { DataSourceFindOptions } from '../../data-source';
+import type { IDatabaseConnection } from '../core';
 
 export type DatabaseBaseContext = {
     /**
@@ -18,6 +19,14 @@ export type DatabaseBaseContext = {
      * default: undefined
      */
     initialDatabase?: string,
+
+    /**
+     * Caller supplied server-level connection (SQL drivers only).
+     * The caller owns its lifecycle — it is never closed by the library.
+     *
+     * default: undefined
+     */
+    connection?: IDatabaseConnection,
 };
 
 export type DatabaseBaseContextInput = Partial<DatabaseBaseContext>;

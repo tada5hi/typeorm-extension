@@ -3,10 +3,13 @@ import type {
     DatabaseCreateContextInput,
     DatabaseDropContextInput,
 } from '../methods';
+import { executeDatabaseCreate, executeDatabaseDrop } from '../methods/execute';
 import type { DriverOptions } from './types';
-import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, synchronizeDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext } from '../utils';
 
+/**
+ * @deprecated Use createDatabase() / the connection ports instead. Removed in the next major.
+ */
 export function createSimpleOracleConnection(
     driver: OracleDriver,
     options: DriverOptions,
@@ -45,34 +48,24 @@ export function createSimpleOracleConnection(
     });
 }
 
+/**
+ * @deprecated Use createDatabase() instead — dialect dispatch is automatic.
+ */
 export async function createOracleDatabase(
     input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
-    const options = buildDriverOptions(context.options);
-    const driver = createDriver(context.options) as OracleDriver;
 
-    const connection = createSimpleOracleConnection(driver, options);
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295
-     */
-    const query = `CREATE DATABASE IF NOT EXISTS ${options.database}`;
-
-    const result = await connection.execute(query);
-
-    if (context.synchronize) {
-        await synchronizeDatabaseSchema(context.options);
-    }
-
-    return result;
+    return executeDatabaseCreate('oracle', context);
 }
 
+/**
+ * @deprecated Use dropDatabase() instead — dialect dispatch is automatic.
+ */
 export async function dropOracleDatabase(
-    _context: DatabaseDropContextInput = {},
+    input: DatabaseDropContextInput = {},
 ) {
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/oracle/OracleQueryRunner.ts#L295
-     */
+    const context = await buildDatabaseDropContext(input);
 
-    return Promise.resolve();
+    return executeDatabaseDrop('oracle', context);
 }

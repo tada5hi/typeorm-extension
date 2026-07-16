@@ -1,17 +1,9 @@
-import { DriverError } from '../../../errors';
+import { buildDatabaseCreateContext } from '../../utils/context';
+import { resolveDatabaseDialectName } from '../../registry';
+import { executeDatabaseCreate } from '../execute';
 import type {
     DatabaseCreateContextInput,
 } from '../type';
-import {
-    createCockroachDBDatabase,
-    createMongoDBDatabase,
-    createMsSQLDatabase,
-    createMySQLDatabase,
-    createOracleDatabase,
-    createPostgresDatabase,
-    createSQLiteDatabase,
-} from '../../driver';
-import { buildDatabaseCreateContext } from '../../utils/context';
 
 /**
  * Create database for specified driver in ConnectionOptions.
@@ -24,34 +16,5 @@ import { buildDatabaseCreateContext } from '../../utils/context';
 export async function createDatabase(input: DatabaseCreateContextInput = {}) : Promise<unknown> {
     const context = await buildDatabaseCreateContext(input);
 
-    let output : unknown | undefined;
-
-    switch (context.options.type) {
-        case 'mongodb':
-            output = await createMongoDBDatabase(context);
-            break;
-        case 'mysql':
-        case 'mariadb':
-            output = await createMySQLDatabase(context);
-            break;
-        case 'postgres':
-            output = await createPostgresDatabase(context);
-            break;
-        case 'cockroachdb':
-            output = await createCockroachDBDatabase(context);
-            break;
-        case 'better-sqlite3':
-            output = await createSQLiteDatabase(context);
-            break;
-        case 'oracle':
-            output = await createOracleDatabase(context);
-            break;
-        case 'mssql':
-            output = await createMsSQLDatabase(context);
-            break;
-        default:
-            throw DriverError.notSupported(context.options.type);
-    }
-
-    return output;
+    return executeDatabaseCreate(resolveDatabaseDialectName(context.options.type), context);
 }

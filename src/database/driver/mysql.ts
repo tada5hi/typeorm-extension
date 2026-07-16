@@ -3,10 +3,13 @@ import type {
     DatabaseCreateContextInput,
     DatabaseDropContextInput,
 } from '../methods';
+import { executeDatabaseCreate, executeDatabaseDrop } from '../methods/execute';
 import type { DriverOptions } from './types';
-import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext } from '../utils';
 
+/**
+ * @deprecated Use createDatabase() / the connection ports instead. Removed in the next major.
+ */
 export async function createSimpleMySQLConnection(
     driver: MysqlDriver,
     options: DriverOptions,
@@ -28,6 +31,9 @@ export async function createSimpleMySQLConnection(
     return createConnection(option);
 }
 
+/**
+ * @deprecated Use createDatabase() / the connection ports instead. Removed in the next major.
+ */
 export async function executeSimpleMysqlQuery(connection: any, query: string, endConnection = true) {
     return new Promise(((resolve, reject) => {
         connection.query(query, (queryErr: any, queryResult: any) => {
@@ -43,65 +49,24 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
     }));
 }
 
+/**
+ * @deprecated Use createDatabase() instead — dialect dispatch is automatic.
+ */
 export async function createMySQLDatabase(
     input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
-    const options = buildDriverOptions(context.options);
-    const driver = createDriver(context.options) as MysqlDriver;
 
-    const connection = await createSimpleMySQLConnection(driver, options);
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L297
-     */
-    let query = context.ifNotExist ?
-        `CREATE DATABASE IF NOT EXISTS \`${options.database}\`` :
-        `CREATE DATABASE \`${options.database}\``;
-
-    if (typeof options.charset === 'string') {
-        const { charset } = options;
-        let { characterSet } = options;
-
-        if (typeof characterSet === 'undefined') {
-            if (charset.toLowerCase().startsWith('utf8mb4')) {
-                characterSet = 'utf8mb4';
-            } else if (charset.toLowerCase().startsWith('utf8')) {
-                characterSet = 'utf8';
-            }
-        }
-
-        if (typeof characterSet === 'string') {
-            query += ` CHARACTER SET ${characterSet} COLLATE ${charset}`;
-        }
-    }
-
-    const result = await executeSimpleMysqlQuery(connection, query);
-
-    if (context.synchronize) {
-        await synchronizeDatabaseSchema(context.options);
-    }
-
-    return result;
+    return executeDatabaseCreate('mysql', context);
 }
 
+/**
+ * @deprecated Use dropDatabase() instead — dialect dispatch is automatic.
+ */
 export async function dropMySQLDatabase(
     input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
-    const options = buildDriverOptions(context.options);
-    const driver = createDriver(context.options) as MysqlDriver;
 
-    const connection = await createSimpleMySQLConnection(driver, options);
-
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L306
-     */
-    const query = context.ifExist ?
-        `DROP DATABASE IF EXISTS \`${options.database}\`` :
-        `DROP DATABASE \`${options.database}\``;
-
-    await executeSimpleMysqlQuery(connection, 'SET FOREIGN_KEY_CHECKS=0;', false);
-    const result = await executeSimpleMysqlQuery(connection, query, false);
-    await executeSimpleMysqlQuery(connection, 'SET FOREIGN_KEY_CHECKS=1;');
-    return result;
+    return executeDatabaseDrop('mysql', context);
 }

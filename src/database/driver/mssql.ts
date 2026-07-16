@@ -3,10 +3,13 @@ import type {
     DatabaseCreateContextInput,
     DatabaseDropContextInput,
 } from '../methods';
+import { executeDatabaseCreate, executeDatabaseDrop } from '../methods/execute';
 import type { DriverOptions } from './types';
-import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
+import { buildDatabaseCreateContext, buildDatabaseDropContext } from '../utils';
 
+/**
+ * @deprecated Use createDatabase() / the connection ports instead. Removed in the next major.
+ */
 export async function createSimpleMsSQLConnection(
     driver: SqlServerDriver,
     options: DriverOptions,
@@ -25,48 +28,24 @@ export async function createSimpleMsSQLConnection(
     return driver.mssql;
 }
 
+/**
+ * @deprecated Use createDatabase() instead — dialect dispatch is automatic.
+ */
 export async function createMsSQLDatabase(
     input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
-    const options = buildDriverOptions(context.options);
-    const driver = createDriver(context.options) as SqlServerDriver;
 
-    const connection = await createSimpleMsSQLConnection(driver, options);
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L416
-     */
-    let query = context.ifNotExist ?
-        `IF DB_ID('${options.database}') IS NULL CREATE DATABASE "${options.database}"` :
-        `CREATE DATABASE "${options.database}"`;
-
-    if (typeof options.characterSet === 'string') {
-        query += ` CHARACTER SET ${options.characterSet}`;
-    }
-
-    const result = await connection.query(query);
-
-    if (context.synchronize) {
-        await synchronizeDatabaseSchema(context.options);
-    }
-
-    return result;
+    return executeDatabaseCreate('mssql', context);
 }
 
+/**
+ * @deprecated Use dropDatabase() instead — dialect dispatch is automatic.
+ */
 export async function dropMsSQLDatabase(
     input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
-    const options = buildDriverOptions(context.options);
-    const driver = createDriver(context.options) as SqlServerDriver;
 
-    const connection = await createSimpleMsSQLConnection(driver, options);
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L425
-     */
-    const query = context.ifExist ?
-        `IF DB_ID('${options.database}') IS NOT NULL DROP DATABASE "${options.database}"` :
-        `DROP DATABASE "${options.database}"`;
-
-    return connection.query(query);
+    return executeDatabaseDrop('mssql', context);
 }
