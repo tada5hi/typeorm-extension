@@ -51,6 +51,7 @@ export async function executeSimplePostgresQuery(connection: any, query: string,
 
             if (queryErr) {
                 reject(queryErr);
+                return;
             }
 
             resolve(queryResult);

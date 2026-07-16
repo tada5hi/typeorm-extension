@@ -13,6 +13,7 @@ export async function executeSimpleCockroachDBQuery(connection: any, query: stri
 
             if (queryErr) {
                 reject(queryErr);
+                return;
             }
 
             resolve(queryResult);

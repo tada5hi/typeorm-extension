@@ -35,6 +35,7 @@ export async function executeSimpleMysqlQuery(connection: any, query: string, en
 
             if (queryErr) {
                 reject(queryErr);
+                return;
             }
 
             resolve(queryResult);
