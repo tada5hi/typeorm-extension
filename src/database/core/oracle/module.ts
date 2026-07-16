@@ -8,7 +8,7 @@ import { buildOracleCreateDatabaseQuery } from './statements';
 
 export class OracleDialect implements IDatabaseDialect {
     async create(operation: DatabaseCreateOperation, runtime: DialectRuntime): Promise<unknown> {
-        const session = await runtime.server.connect(operation.initialDatabase);
+        const session = await runtime.connector.connect(operation.initialDatabase);
 
         try {
             return await session.execute(

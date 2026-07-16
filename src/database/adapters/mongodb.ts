@@ -3,12 +3,12 @@ import type { MongoDriver } from 'typeorm/driver/mongodb/MongoDriver';
 import type {
     ConnectionParams,
     IMongoDatabaseConnection,
-    IMongoDatabaseServerPort,
+    IMongoDatabaseConnector,
 } from '../core';
 import { buildMongoDBConnectionUri } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
-export class MongoDBServerPort implements IMongoDatabaseServerPort {
+export class MongoDBConnector implements IMongoDatabaseConnector {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,

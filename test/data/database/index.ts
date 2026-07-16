@@ -1,4 +1,4 @@
-export * from './memory-database-server';
+export * from './memory-database-connector';
 export * from './memory-file-system';
-export * from './memory-mongo-server';
+export * from './memory-mongo-connector';
 export * from './runtime';

@@ -16,7 +16,7 @@ export class PostgresDialect implements IDatabaseDialect {
     async create(operation: DatabaseCreateOperation, runtime: DialectRuntime): Promise<unknown> {
         const { params } = operation;
 
-        const session = await runtime.server.connect(operation.initialDatabase);
+        const session = await runtime.connector.connect(operation.initialDatabase);
 
         let exists = false;
         let result: unknown;
@@ -46,7 +46,7 @@ export class PostgresDialect implements IDatabaseDialect {
          * inside the new database — hence a second session, targeted at it.
          */
         if (typeof params.schema === 'string' && params.schema !== 'public') {
-            const schemaSession = await runtime.server.connect(params.database);
+            const schemaSession = await runtime.connector.connect(params.database);
 
             try {
                 await schemaSession.execute(buildPostgresCreateSchemaQuery(params.schema));
@@ -59,7 +59,7 @@ export class PostgresDialect implements IDatabaseDialect {
     }
 
     async drop(operation: DatabaseDropOperation, runtime: DialectRuntime): Promise<unknown> {
-        const session = await runtime.server.connect(operation.initialDatabase);
+        const session = await runtime.connector.connect(operation.initialDatabase);
 
         try {
             return await session.execute(

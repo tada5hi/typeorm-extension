@@ -1,9 +1,9 @@
 import type {
     IMongoDatabaseConnection,
-    IMongoDatabaseServerPort,
+    IMongoDatabaseConnector,
 } from '../../../src/database/core';
 
-export type MemoryMongoEvent =    | {
+export type MemoryMongoConnectorEvent =    | {
     type: 'connect', 
     session: number, 
     database?: string 
@@ -11,8 +11,8 @@ export type MemoryMongoEvent =    | {
     { type: 'dropDatabase', session: number } |
     { type: 'close', session: number };
 
-export class MemoryMongoDatabaseServer implements IMongoDatabaseServerPort {
-    events: MemoryMongoEvent[] = [];
+export class MemoryMongoDatabaseConnector implements IMongoDatabaseConnector {
+    events: MemoryMongoConnectorEvent[] = [];
 
     openSessions = new Set<number>();
 

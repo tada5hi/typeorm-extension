@@ -23,8 +23,8 @@ typeorm-extension/
 │   │   └── type.ts
 │   ├── database/               # Database create/drop/check, per-dialect
 │   │   ├── methods/            # createDatabase / dropDatabase / checkDatabase + execute.ts (composition root)
-│   │   ├── core/               # PURE: dialect per driver (statements.ts + module.ts), ports (I-prefixed), params
-│   │   ├── adapters/           # native client glue behind the ports (only files touching pg/mysql2/mssql/... or node:fs)
+│   │   ├── core/               # PURE: dialect per driver (statements.ts + module.ts), connector interfaces (I-prefixed), params
+│   │   ├── adapters/           # native client glue behind the connector interfaces (only files touching pg/mysql2/mssql/... or node:fs)
 │   │   ├── registry.ts         # the single dialect dispatch table (closed set)
 │   │   ├── driver/             # deprecated per-driver delegates (removed next major)
 │   │   └── utils/              # context builders, schema sync, migration helpers
@@ -124,6 +124,6 @@ CLI command factories are **not** part of the public barrel — they are interna
 
 - **CLI parsing** → `src/cli/` (citty only).
 - **Public, programmatic API** → everything else under `src/`, re-exported from `src/index.ts`.
-- **Driver-specific SQL** → `src/database/core/<dialect>/statements.ts` (pure builders), orchestrated by `src/database/core/<dialect>/module.ts` over the connection ports; native clients live only in `src/database/adapters/`. Adding a new TypeORM driver means one dialect folder in `core/`, one adapter, and one row in `src/database/registry.ts`.
+- **Driver-specific SQL** → `src/database/core/<dialect>/statements.ts` (pure builders), orchestrated by `src/database/core/<dialect>/module.ts` over the connectors; native clients live only in `src/database/adapters/`. Adding a new TypeORM driver means one dialect folder in `core/`, one adapter, and one row in `src/database/registry.ts`.
 - **Query application** → `src/query/parameter/<concern>/` — one folder per JSON:API concern (`fields`, `filters`, `pagination`, `relations`, `sort`).
 - **Side-effectful state** (DataSource registry, env cache, factory manager) → singletons in `src/data-source/singleton.ts`, `src/env/module.ts`, `src/seeder/factory/manager.ts`.

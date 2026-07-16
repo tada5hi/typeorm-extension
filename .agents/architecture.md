@@ -31,12 +31,12 @@ The CLI is a *thin* layer — every command just calls a function from the publi
 
 ## Core Design Decisions
 
-### 1. Database dialects behind connection ports (core + adapters)
+### 1. Database dialects behind connectors (core + adapters)
 
 The `database` domain is split hexagonally ([RFC #1400](https://github.com/tada5hi/typeorm-extension/issues/1400)):
 
-- **`src/database/core/`** — the pure side. One folder per dialect (`postgres/`, `mysql/`, `mssql/`, `oracle/`, `mongodb/`, `cockroachdb/`, `sqlite/`), each with `statements.ts` (pure SQL string builders) and `module.ts` (a `class <X>Dialect implements IDatabaseDialect` orchestrating create/drop over the ports with `try/finally` lifecycle). Also owns the port interfaces (`IDatabaseConnection`, `IDatabaseServerPort`, `IMongoDatabaseConnection`/`IMongoDatabaseServerPort`, `IFileSystemPort`) and `buildConnectionParams()` (DataSourceOptions → dialect-neutral `ConnectionParams`, derived once per operation). **Dialects must stay pure**: types, typed errors and pure helpers only — no native clients, no I/O, no env state.
-- **`src/database/adapters/`** — the impure side, and the only files touching native clients or `node:fs`. Each adapter (`PostgresServerPort`, `MySQLServerPort`, `MsSQLServerPort`, `OracleServerPort`, `MongoDBServerPort`, `NodeFileSystemPort`) acquires its client lazily on `connect()` via TypeORM's `DriverFactory` (`useNativeDriver()` — typeorm stays the single source of client libraries). Adapters are internal — not re-exported from the public barrel.
+- **`src/database/core/`** — the pure side. One folder per dialect (`postgres/`, `mysql/`, `mssql/`, `oracle/`, `mongodb/`, `cockroachdb/`, `sqlite/`), each with `statements.ts` (pure SQL string builders) and `module.ts` (a `class <X>Dialect implements IDatabaseDialect` orchestrating create/drop over the connectors with `try/finally` lifecycle). Also owns the connector interfaces (`IDatabaseConnection`, `IDatabaseConnector`, `IMongoDatabaseConnection`/`IMongoDatabaseConnector`, `IFileSystem`) and `buildConnectionParams()` (DataSourceOptions → dialect-neutral `ConnectionParams`, derived once per operation). **Dialects must stay pure**: types, typed errors and pure helpers only — no native clients, no I/O, no env state.
+- **`src/database/adapters/`** — the impure side, and the only files touching native clients or `node:fs`. Each adapter (`PostgresConnector`, `MySQLConnector`, `MsSQLConnector`, `OracleConnector`, `MongoDBConnector`, `NodeFileSystem`) acquires its client lazily on `connect()` via TypeORM's `DriverFactory` (`useNativeDriver()` — typeorm stays the single source of client libraries). Adapters are internal — not re-exported from the public barrel.
 - **`src/database/registry.ts`** — the single dispatch site: a closed `Record<DatabaseDialectName, entry>` wiring each dialect to its adapter (`mariadb` resolves to `mysql`; cockroachdb reuses the postgres adapter). No plugin system — driver support is a closed set known at build time. Adding a driver = one dialect folder in `core/`, one adapter, one registry row.
 - **`src/database/methods/execute.ts`** — the composition root (`executeDatabaseCreate` / `executeDatabaseDrop`): resolves the registry entry, derives params once, wires the runtime (honouring test overrides via `Partial<DialectRuntime>` and a caller-supplied `connection` on the context), and runs `synchronizeDatabaseSchema` exactly once after create.
 
@@ -46,7 +46,7 @@ The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typ
 
 ### 2. Operations bypass `DataSource.initialize()`
 
-`createDatabase` / `dropDatabase` cannot use a TypeORM `DataSource`, because the database might not exist yet. Each adapter in `src/database/adapters/` opens a *raw* native client (e.g. `pg.Client`, `mysql2.createConnection`) using the derived `ConnectionParams`, exposes it through the `IDatabaseConnection` port, and the dialect closes the session in a `finally` block. The TypeORM `Driver` object is used only for its connector reference (`driver.postgres`, `driver.mysql`) — never `.connect()`d. Callers may alternatively supply their own server-level connection via the context's `connection` field; the library never closes a caller-owned connection.
+`createDatabase` / `dropDatabase` cannot use a TypeORM `DataSource`, because the database might not exist yet. Each adapter in `src/database/adapters/` opens a *raw* native client (e.g. `pg.Client`, `mysql2.createConnection`) using the derived `ConnectionParams`, exposes it through the `IDatabaseConnection` interface, and the dialect closes the session in a `finally` block. The TypeORM `Driver` object is used only for its native client reference (`driver.postgres`, `driver.mysql`) — never `.connect()`d. Callers may alternatively supply their own server-level connection via the context's `connection` field; the library never closes a caller-owned connection.
 
 ### 3. DataSource registry with alias-keyed lazy init
 
@@ -149,7 +149,7 @@ Processing:
   1. buildDatabaseXContext() resolves options + flags (context built exactly once)
   2. resolveDatabaseDialectName() → registry entry (dialect + adapter wiring)
   3. buildConnectionParams() derives dialect-neutral connection facts once
-  4. dialect orchestrates over the ports: adapter connects a raw native client
+  4. dialect orchestrates over the connectors: adapter connects a raw native client
      (bypassing TypeORM init), SQL from statements.ts runs, session closes in finally
   5. (create only) the composition root optionally synchronizes the schema once
 
@@ -194,7 +194,7 @@ Output:
 ## Error Handling
 
 - `TypeormExtensionError` (`src/errors/base.ts`) is the root. It extends `Error` and adds nothing on its own — subclasses give semantic meaning.
-- `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by `resolveDatabaseDialectName()` on a registry miss and by the `UnsupportedServerPort` stub when a dialect opens a connection kind its driver does not support.
+- `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by `resolveDatabaseDialectName()` on a registry miss and by the `UnsupportedConnector` stub when a dialect opens a connection kind its driver does not support.
 - `OptionsError` is thrown when the context builder cannot resolve a DataSource / options.
 - Anywhere else, library code lets the underlying error (TypeORM, the native driver, faker, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
 
@@ -209,7 +209,7 @@ Composition root         → src/database/methods/execute.ts
 Dialect registry         → src/database/registry.ts
 Per-dialect SQL          → src/database/core/<dialect>/statements.ts
 Dialect orchestration    → src/database/core/<dialect>/module.ts
-Connection ports (types) → src/database/core/type.ts
+Connector interfaces (types) → src/database/core/type.ts
 Native client adapters   → src/database/adapters/<driver>.ts
 Deprecated delegates     → src/database/driver/<driver>.ts (removed next major)
 Context builders         → src/database/utils/context.ts

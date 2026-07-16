@@ -1,12 +1,12 @@
 import type { DialectRuntime } from '../../../src/database/core';
-import { MemoryDatabaseServer } from './memory-database-server';
+import { MemoryDatabaseConnector } from './memory-database-connector';
 import { MemoryFileSystem } from './memory-file-system';
-import { MemoryMongoDatabaseServer } from './memory-mongo-server';
+import { MemoryMongoDatabaseConnector } from './memory-mongo-connector';
 
 export function createMemoryRuntime(input: Partial<DialectRuntime> = {}): DialectRuntime {
     return {
-        server: input.server || new MemoryDatabaseServer(),
-        mongo: input.mongo || new MemoryMongoDatabaseServer(),
+        connector: input.connector || new MemoryDatabaseConnector(),
+        mongo: input.mongo || new MemoryMongoDatabaseConnector(),
         fs: input.fs || new MemoryFileSystem(),
         cwd: input.cwd || '/cwd',
     };

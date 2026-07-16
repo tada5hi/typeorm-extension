@@ -3,11 +3,11 @@ import type { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 import type {
     ConnectionParams,
     IDatabaseConnection,
-    IDatabaseServerPort,
+    IDatabaseConnector,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
-export class MsSQLServerPort implements IDatabaseServerPort {
+export class MsSQLConnector implements IDatabaseConnector {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,

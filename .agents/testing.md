@@ -50,10 +50,10 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
   - `FakeSelectQueryBuilder.ts` → in-memory query-builder fake; use when asserting that `applyQuery*` makes the right calls without spinning up sqlite.
   - `ormconfig.json` → fixture for legacy config discovery paths.
   - `tsconfig.json` → consumed by tests that exercise `readTSConfig` + `adjustFilePath`.
-- **`test/data/database/`** — in-memory implementations of the database connection ports:
-  - `MemoryDatabaseServer` → recording SQL server port (events: connect/execute/close, open-session tracking, pluggable respond callback to simulate server state). Assert `server.sql()` and lifecycle ordering instead of touching a real server.
-  - `MemoryMongoDatabaseServer` / `MemoryFileSystem` → same idea for the mongo and filesystem ports.
-  - `createMemoryRuntime()` → assembles a full `DialectRuntime` from memory ports; pass overrides for the port under test.
+- **`test/data/database/`** — in-memory implementations of the database connectors:
+  - `MemoryDatabaseConnector` → recording SQL connector (events: connect/execute/close, open-session tracking, pluggable respond callback to simulate server state). Assert `connector.sql()` and lifecycle ordering instead of touching a real server.
+  - `MemoryMongoDatabaseConnector` / `MemoryFileSystem` → same idea for the mongo and filesystem connectors.
+  - `createMemoryRuntime()` → assembles a full `DialectRuntime` from memory connectors; pass overrides for the connector under test.
 
 ## Testing Philosophy
 

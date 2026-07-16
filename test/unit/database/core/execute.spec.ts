@@ -6,8 +6,8 @@ import {
     executeDatabaseDrop,
 } from '../../../../src/database/methods/execute';
 import { resolveDatabaseDialectName } from '../../../../src/database/registry';
-import { UnsupportedServerPort } from '../../../../src/database/adapters';
-import { MemoryDatabaseServer } from '../../../data/database';
+import { UnsupportedConnector } from '../../../../src/database/adapters';
+import { MemoryDatabaseConnector } from '../../../data/database';
 
 const options = {
     type: 'postgres',
@@ -25,27 +25,27 @@ describe('src/database/methods/execute', () => {
     });
 
     it('should execute create through the registry', async () => {
-        const server = new MemoryDatabaseServer();
+        const connector = new MemoryDatabaseConnector();
 
         await executeDatabaseCreate('postgres', {
             options,
             ifNotExist: false,
             synchronize: false,
-        }, { server });
+        }, { connector });
 
-        expect(server.sql()).toEqual(['CREATE DATABASE "app"']);
-        expect(server.openSessions.size).toEqual(0);
+        expect(connector.sql()).toEqual(['CREATE DATABASE "app"']);
+        expect(connector.openSessions.size).toEqual(0);
     });
 
     it('should execute drop through the registry', async () => {
-        const server = new MemoryDatabaseServer();
+        const connector = new MemoryDatabaseConnector();
 
         await executeDatabaseDrop('postgres', {
             options,
             ifExist: true,
-        }, { server });
+        }, { connector });
 
-        expect(server.sql()).toEqual(['DROP DATABASE IF EXISTS "app"']);
+        expect(connector.sql()).toEqual(['DROP DATABASE IF EXISTS "app"']);
     });
 
     it('should use a caller supplied connection and never close it', async () => {
@@ -89,8 +89,8 @@ describe('src/database/methods/execute', () => {
     });
 
     it('should reject unsupported connection kinds', async () => {
-        const port = new UnsupportedServerPort('better-sqlite3');
+        const connector = new UnsupportedConnector('better-sqlite3');
 
-        await expect(port.connect()).rejects.toThrow(DriverError);
+        await expect(connector.connect()).rejects.toThrow(DriverError);
     });
 });

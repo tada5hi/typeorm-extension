@@ -1,7 +1,7 @@
 import fs from 'node:fs';
-import type { IFileSystemPort } from '../core';
+import type { IFileSystem } from '../core';
 
-export class NodeFileSystemPort implements IFileSystemPort {
+export class NodeFileSystem implements IFileSystem {
     async assertDirectoryWritable(path: string): Promise<void> {
         await fs.promises.access(path, fs.constants.W_OK);
     }

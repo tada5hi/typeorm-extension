@@ -4,7 +4,7 @@ import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import type {
     ConnectionParams,
     IDatabaseConnection,
-    IDatabaseServerPort,
+    IDatabaseConnector,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 import { promisifyCallbackQuery } from './utils';
@@ -12,7 +12,7 @@ import { promisifyCallbackQuery } from './utils';
 /**
  * Serves postgres AND cockroachdb — both speak the pg wire protocol.
  */
-export class PostgresServerPort implements IDatabaseServerPort {
+export class PostgresConnector implements IDatabaseConnector {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,

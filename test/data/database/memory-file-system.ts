@@ -1,6 +1,6 @@
-import type { IFileSystemPort } from '../../../src/database/core';
+import type { IFileSystem } from '../../../src/database/core';
 
-export class MemoryFileSystem implements IFileSystemPort {
+export class MemoryFileSystem implements IFileSystem {
     writableDirectories = new Set<string>();
 
     files = new Set<string>();

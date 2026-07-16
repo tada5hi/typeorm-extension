@@ -3,12 +3,12 @@ import type { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
 import type {
     ConnectionParams,
     IDatabaseConnection,
-    IDatabaseServerPort,
+    IDatabaseConnector,
 } from '../core';
 import { buildOracleConnectString } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
-export class OracleServerPort implements IDatabaseServerPort {
+export class OracleConnector implements IDatabaseConnector {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,

@@ -11,7 +11,7 @@ import {
 
 export class MsSQLDialect implements IDatabaseDialect {
     async create(operation: DatabaseCreateOperation, runtime: DialectRuntime): Promise<unknown> {
-        const session = await runtime.server.connect(operation.initialDatabase);
+        const session = await runtime.connector.connect(operation.initialDatabase);
 
         try {
             return await session.execute(
@@ -23,7 +23,7 @@ export class MsSQLDialect implements IDatabaseDialect {
     }
 
     async drop(operation: DatabaseDropOperation, runtime: DialectRuntime): Promise<unknown> {
-        const session = await runtime.server.connect(operation.initialDatabase);
+        const session = await runtime.connector.connect(operation.initialDatabase);
 
         try {
             return await session.execute(

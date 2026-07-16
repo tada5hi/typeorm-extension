@@ -3,7 +3,7 @@ import type { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 import type {
     ConnectionParams,
     IDatabaseConnection,
-    IDatabaseServerPort,
+    IDatabaseConnector,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 import { promisifyCallbackQuery } from './utils';
@@ -11,7 +11,7 @@ import { promisifyCallbackQuery } from './utils';
 /**
  * Serves mysql AND mariadb.
  */
-export class MySQLServerPort implements IDatabaseServerPort {
+export class MySQLConnector implements IDatabaseConnector {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,

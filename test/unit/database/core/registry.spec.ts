@@ -37,14 +37,14 @@ describe('src/database/registry', () => {
             const params = entry.buildParams(optionsFor(name));
             expect(params.database).toEqual('app');
 
-            if (entry.buildServerPort) {
-                const port = entry.buildServerPort(optionsFor(name), params);
-                expect(typeof port.connect).toEqual('function');
+            if (entry.buildConnector) {
+                const connector = entry.buildConnector(optionsFor(name), params);
+                expect(typeof connector.connect).toEqual('function');
             }
 
-            if (entry.buildMongoPort) {
-                const port = entry.buildMongoPort(optionsFor(name), params);
-                expect(typeof port.connect).toEqual('function');
+            if (entry.buildMongoConnector) {
+                const mongoConnector = entry.buildMongoConnector(optionsFor(name), params);
+                expect(typeof mongoConnector.connect).toEqual('function');
             }
         }
     });
@@ -57,7 +57,7 @@ describe('src/database/registry', () => {
         expect(resolveDatabaseDialectName('mariadb')).toEqual('mysql');
     });
 
-    it('should run the sqlite dialect with default rejecting server ports', async () => {
+    it('should run the sqlite dialect with default rejecting connectors', async () => {
         const fs = new MemoryFileSystem();
         fs.writableDirectories.add('/data');
 

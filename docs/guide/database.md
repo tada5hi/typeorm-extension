@@ -157,7 +157,7 @@ import { pool } from './admin-pool';
 
 The injected object implements the `IDatabaseConnection` interface. For full control
 over how connections are opened (e.g. per-database session targeting), implement the
-`IDatabaseServerPort` interface instead — both types are exported from the package.
+`IDatabaseConnector` interface instead — both types are exported from the package.
 
 ::: warning NOTE
 The former per-driver helpers (`createPostgresDatabase`, `dropMySQLDatabase`, ...)

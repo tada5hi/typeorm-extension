@@ -2,11 +2,11 @@ import {
     MongoDBDialect,
     buildMongoDBConnectionUri,
 } from '../../../../src/database/core';
-import { MemoryMongoDatabaseServer, createMemoryRuntime } from '../../../data/database';
+import { MemoryMongoDatabaseConnector, createMemoryRuntime } from '../../../data/database';
 
 describe('src/database/core/mongodb', () => {
     it('should create database by connecting and closing', async () => {
-        const mongo = new MemoryMongoDatabaseServer();
+        const mongo = new MemoryMongoDatabaseConnector();
         const dialect = new MongoDBDialect();
 
         await dialect.create({
@@ -24,7 +24,7 @@ describe('src/database/core/mongodb', () => {
     });
 
     it('should drop database', async () => {
-        const mongo = new MemoryMongoDatabaseServer();
+        const mongo = new MemoryMongoDatabaseConnector();
         const dialect = new MongoDBDialect();
 
         await dialect.drop({

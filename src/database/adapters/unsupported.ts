@@ -1,7 +1,7 @@
 import { DriverError } from '../../errors';
 import type {
-    IDatabaseServerPort,
-    IMongoDatabaseServerPort,
+    IDatabaseConnector,
+    IMongoDatabaseConnector,
 } from '../core';
 
 /**
@@ -9,7 +9,7 @@ import type {
  * (e.g. better-sqlite3 never connects to a server, postgres never
  * opens a mongo session). Connecting is a programming error.
  */
-export class UnsupportedServerPort implements IDatabaseServerPort, IMongoDatabaseServerPort {
+export class UnsupportedConnector implements IDatabaseConnector, IMongoDatabaseConnector {
     constructor(protected type: string) {
         this.type = type;
     }

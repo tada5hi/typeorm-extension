@@ -1,9 +1,9 @@
 import type {
     IDatabaseConnection,
-    IDatabaseServerPort,
+    IDatabaseConnector,
 } from '../../../src/database/core';
 
-export type MemoryServerEvent =    | {
+export type MemoryConnectorEvent =    | {
     type: 'connect', 
     session: number, 
     database?: string 
@@ -16,11 +16,11 @@ export type MemoryServerEvent =    | {
     { type: 'close', session: number };
 
 /**
- * Recording in-memory implementation of the SQL server port.
+ * Recording in-memory implementation of the SQL connector.
  * The respond callback simulates server state (e.g. "database exists").
  */
-export class MemoryDatabaseServer implements IDatabaseServerPort {
-    events: MemoryServerEvent[] = [];
+export class MemoryDatabaseConnector implements IDatabaseConnector {
+    events: MemoryConnectorEvent[] = [];
 
     openSessions = new Set<number>();
 

@@ -3,57 +3,57 @@ import {
     buildMySQLCreateDatabaseQuery,
     deriveMySQLCharacterSet,
 } from '../../../../src/database/core';
-import { MemoryDatabaseServer, createMemoryRuntime } from '../../../data/database';
+import { MemoryDatabaseConnector, createMemoryRuntime } from '../../../data/database';
 
 describe('src/database/core/mysql', () => {
     it('should create database', async () => {
-        const server = new MemoryDatabaseServer();
+        const connector = new MemoryDatabaseConnector();
         const dialect = new MySQLDialect();
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
-        }, createMemoryRuntime({ server }));
+        }, createMemoryRuntime({ connector }));
 
-        expect(server.sql()).toEqual(['CREATE DATABASE IF NOT EXISTS `app`']);
-        expect(server.openSessions.size).toEqual(0);
+        expect(connector.sql()).toEqual(['CREATE DATABASE IF NOT EXISTS `app`']);
+        expect(connector.openSessions.size).toEqual(0);
     });
 
     it('should create database with derived character set', async () => {
-        const server = new MemoryDatabaseServer();
+        const connector = new MemoryDatabaseConnector();
         const dialect = new MySQLDialect();
 
         await dialect.create({
             params: { database: 'app', charset: 'utf8mb4_general_ci' },
             ifNotExist: false,
-        }, createMemoryRuntime({ server }));
+        }, createMemoryRuntime({ connector }));
 
-        expect(server.sql()).toEqual([
+        expect(connector.sql()).toEqual([
             'CREATE DATABASE `app` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci',
         ]);
     });
 
     it('should wrap drop in foreign key check toggles on one session', async () => {
-        const server = new MemoryDatabaseServer();
+        const connector = new MemoryDatabaseConnector();
         const dialect = new MySQLDialect();
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
-        }, createMemoryRuntime({ server }));
+        }, createMemoryRuntime({ connector }));
 
-        expect(server.sql()).toEqual([
+        expect(connector.sql()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',
             'DROP DATABASE IF EXISTS `app`',
             'SET FOREIGN_KEY_CHECKS=1;',
         ]);
-        expect(server.events.filter((event) => event.type === 'connect')).toHaveLength(1);
-        expect(server.events.at(-1)?.type).toEqual('close');
-        expect(server.openSessions.size).toEqual(0);
+        expect(connector.events.filter((event) => event.type === 'connect')).toHaveLength(1);
+        expect(connector.events.at(-1)?.type).toEqual('close');
+        expect(connector.openSessions.size).toEqual(0);
     });
 
     it('should restore foreign key checks and close when drop fails', async () => {
-        const server = new MemoryDatabaseServer((sql) => {
+        const connector = new MemoryDatabaseConnector((sql) => {
             if (sql.startsWith('DROP DATABASE')) {
                 throw new Error('boom');
             }
@@ -65,14 +65,14 @@ describe('src/database/core/mysql', () => {
         await expect(dialect.drop({
             params: { database: 'app' },
             ifExist: true,
-        }, createMemoryRuntime({ server }))).rejects.toThrow('boom');
+        }, createMemoryRuntime({ connector }))).rejects.toThrow('boom');
 
-        expect(server.sql()).toEqual([
+        expect(connector.sql()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',
             'DROP DATABASE IF EXISTS `app`',
             'SET FOREIGN_KEY_CHECKS=1;',
         ]);
-        expect(server.openSessions.size).toEqual(0);
+        expect(connector.openSessions.size).toEqual(0);
     });
 
     it('should derive the character set from the collation', () => {

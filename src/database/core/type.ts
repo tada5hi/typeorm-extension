@@ -10,18 +10,18 @@ export interface IDatabaseConnection {
 }
 
 /**
- * Connection port for SQL speaking database servers.
+ * Connector for SQL speaking database servers.
  *
  * The optional database argument overrides the session's target database
  * (e.g. the initial database, or a freshly created database). When omitted,
  * the server side default (maintenance database) is used.
  */
-export interface IDatabaseServerPort {
+export interface IDatabaseConnector {
     connect(database?: string): Promise<IDatabaseConnection>;
 }
 
 /**
- * MongoDB speaks commands, not SQL, and therefore owns a separate port.
+ * MongoDB speaks commands, not SQL, and therefore owns a separate connector.
  */
 export interface IMongoDatabaseConnection {
     dropDatabase(): Promise<unknown>;
@@ -29,14 +29,14 @@ export interface IMongoDatabaseConnection {
     close(): Promise<void>;
 }
 
-export interface IMongoDatabaseServerPort {
+export interface IMongoDatabaseConnector {
     connect(database?: string): Promise<IMongoDatabaseConnection>;
 }
 
 /**
  * Filesystem effects for file backed databases (better-sqlite3).
  */
-export interface IFileSystemPort {
+export interface IFileSystem {
     assertDirectoryWritable(path: string): Promise<void>;
 
     isFileWritable(path: string): Promise<boolean>;
@@ -91,12 +91,12 @@ export type DatabaseDropOperation = {
 
 /**
  * Everything a dialect may touch. Assembled by the composition root;
- * ports a dialect does not need are wired to rejecting stubs.
+ * connectors a dialect does not need are wired to rejecting stubs.
  */
 export type DialectRuntime = {
-    server: IDatabaseServerPort,
-    mongo: IMongoDatabaseServerPort,
-    fs: IFileSystemPort,
+    connector: IDatabaseConnector,
+    mongo: IMongoDatabaseConnector,
+    fs: IFileSystem,
     cwd: string,
 };
 
@@ -118,6 +118,6 @@ export type DatabaseDialectName = 'postgres' | 'cockroachdb' | 'mysql' | 'mssql'
 export type DatabaseDialectRegistryEntry = {
     dialect: IDatabaseDialect,
     buildParams: (options: DataSourceOptions) => ConnectionParams,
-    buildServerPort?: (options: DataSourceOptions, params: ConnectionParams) => IDatabaseServerPort,
-    buildMongoPort?: (options: DataSourceOptions, params: ConnectionParams) => IMongoDatabaseServerPort,
+    buildConnector?: (options: DataSourceOptions, params: ConnectionParams) => IDatabaseConnector,
+    buildMongoConnector?: (options: DataSourceOptions, params: ConnectionParams) => IMongoDatabaseConnector,
 };
