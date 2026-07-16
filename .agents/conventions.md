@@ -40,6 +40,7 @@
 - **Files**: kebab-case (`data-source.ts`, `file-path.ts`).
 - **Folders**: kebab-case (`data-source/`, `cli/commands/database/`).
 - **Classes**: PascalCase (`SeederExecutor`, `SeederFactoryManager`).
+- **Interfaces**: an interface that is implemented by a class is prefixed with `I` (`IDatabaseDialect` → `class PostgresDialect implements IDatabaseDialect`). Pure data shapes — options, contexts, records like `Environment`, `TSConfig` — carry no prefix. Existing public contracts that predate this rule (e.g. `Seeder`, implemented by consumer seed classes) are grandfathered: renaming them would break public API; apply the prefix to new interfaces only.
 - **Functions**: camelCase verb-first (`createDatabase`, `findDataSource`, `useDataSource`, `applyQuery`, `buildDatabaseCreateContext`).
 - **Hook-style accessors**: `use*` (`useDataSource`, `useEnv`, `useSeederFactoryManager`). These return cached/singleton state.
 - **Registry mutators**: `set*` / `has*` / `unset*` / `reset*` (see `src/data-source/singleton.ts`, `src/env/module.ts`).
