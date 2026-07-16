@@ -16,7 +16,11 @@ describe('src/database/core/postgres', () => {
         }, createMemoryRuntime({ server }));
 
         expect(server.sql()).toEqual(['CREATE DATABASE "app"']);
-        expect(server.events[0]).toEqual({ type: 'connect', session: 1, database: 'postgres' });
+        expect(server.events[0]).toEqual({
+            type: 'connect', 
+            session: 1, 
+            database: 'postgres', 
+        });
         expect(server.openSessions.size).toEqual(0);
         expect(output).toEqual({ ok: true });
     });
@@ -68,11 +72,23 @@ describe('src/database/core/postgres', () => {
             'CREATE SCHEMA IF NOT EXISTS "tenant"',
         ]);
         expect(server.eventTypes()).toEqual([
-            'connect', 'execute', 'close',
-            'connect', 'execute', 'close',
+            'connect', 
+            'execute', 
+            'close',
+            'connect', 
+            'execute', 
+            'close',
         ]);
-        expect(server.events[0]).toEqual({ type: 'connect', session: 1, database: 'postgres' });
-        expect(server.events[3]).toEqual({ type: 'connect', session: 2, database: 'app' });
+        expect(server.events[0]).toEqual({
+            type: 'connect', 
+            session: 1, 
+            database: 'postgres', 
+        });
+        expect(server.events[3]).toEqual({
+            type: 'connect', 
+            session: 2, 
+            database: 'app', 
+        });
         expect(server.openSessions.size).toEqual(0);
     });
 
@@ -135,7 +151,9 @@ describe('src/database/core/postgres', () => {
             .toEqual('CREATE DATABASE "app" WITH ENCODING \'UTF8\'');
 
         expect(buildPostgresCreateDatabaseQuery({
-            database: 'app', template: 'template0', characterSet: 'UTF8',
+            database: 'app', 
+            template: 'template0', 
+            characterSet: 'UTF8',
         })).toEqual('CREATE DATABASE "app" TEMPLATE "template0"');
     });
 });

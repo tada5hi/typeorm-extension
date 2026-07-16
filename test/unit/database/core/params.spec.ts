@@ -56,9 +56,7 @@ describe('src/database/core/params', () => {
             password: 'secret',
             database: 'app',
             domain: 'corp',
-            extra: {
-                trustServerCertificate: true,
-            },
+            extra: { trustServerCertificate: true },
         } as DataSourceOptions);
 
         expect(params.domain).toEqual('corp');
@@ -113,9 +111,7 @@ describe('src/database/core/params', () => {
         const params = buildConnectionParams({
             type: 'postgres',
             database: 'app',
-            extra: {
-                characterSet: 'UTF8',
-            },
+            extra: { characterSet: 'UTF8' },
         } as DataSourceOptions);
 
         expect(params.characterSet).toEqual('UTF8');

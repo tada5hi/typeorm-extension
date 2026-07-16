@@ -15,7 +15,11 @@ describe('src/database/core/mongodb', () => {
         }, createMemoryRuntime({ mongo }));
 
         expect(mongo.eventTypes()).toEqual(['connect', 'close']);
-        expect(mongo.events[0]).toEqual({ type: 'connect', session: 1, database: 'app' });
+        expect(mongo.events[0]).toEqual({
+            type: 'connect', 
+            session: 1, 
+            database: 'app', 
+        });
         expect(mongo.openSessions.size).toEqual(0);
     });
 

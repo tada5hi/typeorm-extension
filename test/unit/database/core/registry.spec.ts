@@ -11,7 +11,13 @@ import {
 import { MemoryFileSystem } from '../../../data/database';
 
 const names: DatabaseDialectName[] = [
-    'postgres', 'cockroachdb', 'mysql', 'mssql', 'oracle', 'mongodb', 'better-sqlite3',
+    'postgres', 
+    'cockroachdb', 
+    'mysql', 
+    'mssql', 
+    'oracle', 
+    'mongodb', 
+    'better-sqlite3',
 ];
 
 const optionsFor = (type: string) => ({
@@ -22,30 +28,30 @@ const optionsFor = (type: string) => ({
 
 describe('src/database/registry', () => {
     it('should provide an entry for every dialect', () => {
-        for (let i = 0; i < names.length; i++) {
-            const entry = useDatabaseDialectEntry(names[i]);
+        for (const name of names) {
+            const entry = useDatabaseDialectEntry(name);
 
             expect(entry).toBeDefined();
             expect(entry.dialect).toBeDefined();
 
-            const params = entry.buildParams(optionsFor(names[i]));
+            const params = entry.buildParams(optionsFor(name));
             expect(params.database).toEqual('app');
 
             if (entry.buildServerPort) {
-                const port = entry.buildServerPort(optionsFor(names[i]), params);
+                const port = entry.buildServerPort(optionsFor(name), params);
                 expect(typeof port.connect).toEqual('function');
             }
 
             if (entry.buildMongoPort) {
-                const port = entry.buildMongoPort(optionsFor(names[i]), params);
+                const port = entry.buildMongoPort(optionsFor(name), params);
                 expect(typeof port.connect).toEqual('function');
             }
         }
     });
 
     it('should resolve every supported driver type', () => {
-        for (let i = 0; i < names.length; i++) {
-            expect(resolveDatabaseDialectName(names[i])).toEqual(names[i]);
+        for (const name of names) {
+            expect(resolveDatabaseDialectName(name)).toEqual(name);
         }
 
         expect(resolveDatabaseDialectName('mariadb')).toEqual('mysql');

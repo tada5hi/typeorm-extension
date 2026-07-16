@@ -3,10 +3,17 @@ import type {
     IDatabaseServerPort,
 } from '../../../src/database/core';
 
-export type MemoryServerEvent =
-    | { type: 'connect', session: number, database?: string }
-    | { type: 'execute', session: number, sql: string }
-    | { type: 'close', session: number };
+export type MemoryServerEvent =    | {
+    type: 'connect', 
+    session: number, 
+    database?: string 
+} |
+    {
+        type: 'execute', 
+        session: number, 
+        sql: string 
+    } |
+    { type: 'close', session: number };
 
 /**
  * Recording in-memory implementation of the SQL server port.
@@ -30,11 +37,19 @@ export class MemoryDatabaseServer implements IDatabaseServerPort {
         const session = this.counter;
 
         this.openSessions.add(session);
-        this.events.push({ type: 'connect', session, database });
+        this.events.push({
+            type: 'connect', 
+            session, 
+            database, 
+        });
 
         return {
             execute: async (sql: string) => {
-                this.events.push({ type: 'execute', session, sql });
+                this.events.push({
+                    type: 'execute', 
+                    session, 
+                    sql, 
+                });
                 return this.respond(sql, database);
             },
             close: async () => {

@@ -2,9 +2,7 @@ import { buildDatabaseCreateContext, buildDatabaseDropContext } from '../../../s
 
 describe('src/database/utils/context', () => {
     it('should discover options when none are passed', async () => {
-        const context = await buildDatabaseCreateContext({
-            findOptions: { directory: 'test/data/typeorm' },
-        });
+        const context = await buildDatabaseCreateContext({ findOptions: { directory: 'test/data/typeorm' } });
 
         expect(context.options).toBeDefined();
         expect(context.options.type).toEqual('better-sqlite3');
@@ -18,9 +16,7 @@ describe('src/database/utils/context', () => {
     });
 
     it('should apply defaults for the drop context', async () => {
-        const context = await buildDatabaseDropContext({
-            findOptions: { directory: 'test/data/typeorm' },
-        });
+        const context = await buildDatabaseDropContext({ findOptions: { directory: 'test/data/typeorm' } });
 
         expect(context.options.type).toEqual('better-sqlite3');
         expect(context.ifExist).toBeTruthy();

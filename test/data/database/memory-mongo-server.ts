@@ -3,10 +3,13 @@ import type {
     IMongoDatabaseServerPort,
 } from '../../../src/database/core';
 
-export type MemoryMongoEvent =
-    | { type: 'connect', session: number, database?: string }
-    | { type: 'dropDatabase', session: number }
-    | { type: 'close', session: number };
+export type MemoryMongoEvent =    | {
+    type: 'connect', 
+    session: number, 
+    database?: string 
+} |
+    { type: 'dropDatabase', session: number } |
+    { type: 'close', session: number };
 
 export class MemoryMongoDatabaseServer implements IMongoDatabaseServerPort {
     events: MemoryMongoEvent[] = [];
@@ -20,7 +23,11 @@ export class MemoryMongoDatabaseServer implements IMongoDatabaseServerPort {
         const session = this.counter;
 
         this.openSessions.add(session);
-        this.events.push({ type: 'connect', session, database });
+        this.events.push({
+            type: 'connect', 
+            session, 
+            database, 
+        });
 
         return {
             dropDatabase: async () => {
