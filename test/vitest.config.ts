@@ -30,7 +30,10 @@ export default defineConfig({
             exclude: [
                 'src/**/*.d.ts',
                 'src/cli/**/*.{ts,js}',
-                'src/database/**/*.{ts,js}',
+                // native client glue + deprecated delegates — everything else in
+                // src/database (core, registry, methods) is covered by the gate
+                'src/database/adapters/**/*.{ts,js}',
+                'src/database/driver/**/*.{ts,js}',
                 'src/env/utils.ts',
                 'src/errors/*.{ts,js}',
                 'src/utils/**/*.{ts,js}',
