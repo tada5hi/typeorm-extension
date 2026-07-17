@@ -2,9 +2,11 @@ import { dataSource } from '../../data/typeorm/data-source';
 import {
     hasDataSource,
     setDataSource,
+    setDataSourceOptions,
     unsetDataSource,
     useDataSource,
 } from '../../../src';
+import { createDataSourceOptions } from '../../data/typeorm/factory';
 
 describe('src/data-source/singleton.ts', () => {
     afterAll(async () => {
@@ -41,5 +43,20 @@ describe('src/data-source/singleton.ts', () => {
 
         unsetDataSource('foo');
         expect(hasDataSource('foo')).toBeFalsy();
+    });
+
+    it('should build one data-source for concurrent calls', async () => {
+        setDataSourceOptions(createDataSourceOptions(), 'concurrent');
+
+        const [first, second] = await Promise.all([
+            useDataSource('concurrent'),
+            useDataSource('concurrent'),
+        ]);
+
+        expect(first).toBe(second);
+        expect(first.isInitialized).toBeTruthy();
+
+        await first.destroy();
+        unsetDataSource('concurrent');
     });
 });
