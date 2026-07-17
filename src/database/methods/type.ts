@@ -21,13 +21,13 @@ export type DatabaseBaseContext = {
     initialDatabase?: string,
 
     /**
-     * Caller supplied server-level connection.
+     * Caller supplied server-level session.
      * It is treated as already open, and the caller owns its lifecycle —
      * the library never opens or closes it.
      *
      * default: undefined
      */
-    connection?: Pick<IDatabaseSession, 'execute'>,
+    session?: Pick<IDatabaseSession, 'execute'>,
 };
 
 export type DatabaseBaseContextInput = Partial<DatabaseBaseContext>;

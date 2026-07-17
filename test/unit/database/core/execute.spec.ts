@@ -47,12 +47,12 @@ describe('src/database/methods/execute', () => {
         expect(connector.statements()).toEqual(['DROP DATABASE IF EXISTS "app"']);
     });
 
-    it('should use a caller supplied connection and never close it', async () => {
+    it('should use a caller supplied session and never close it', async () => {
         const executed: string[] = [];
         let closed = 0;
 
         // a full session shaped object is accepted — only execute is required
-        const connection = {
+        const session = {
             execute: async (statement: string) => {
                 executed.push(statement);
                 return { ok: true };
@@ -66,19 +66,19 @@ describe('src/database/methods/execute', () => {
             options,
             ifNotExist: false,
             synchronize: false,
-            connection,
+            session,
         });
 
         expect(executed).toEqual(['CREATE DATABASE "app"']);
         expect(closed).toEqual(0);
     });
 
-    it('should drop through a caller supplied connection', async () => {
+    it('should drop through a caller supplied session', async () => {
         const executed: string[] = [];
 
         await dropDatabase({
             options,
-            connection: {
+            session: {
                 execute: async (statement: string) => {
                     executed.push(statement);
                     return { ok: true };

@@ -9,21 +9,21 @@ import { synchronizeDatabaseSchema } from '../utils';
 import type { DatabaseCreateContext, DatabaseDropContext } from './type';
 
 /**
- * Wraps a caller supplied connection as a connector.
- * The connection is treated as already open, and the caller owns the
+ * Wraps a caller supplied session as a connector.
+ * The session is treated as already open, and the caller owns the
  * lifecycle — open() and close() never touch it.
  */
 class InjectedConnector implements IDatabaseConnector {
-    constructor(protected connection: Pick<IDatabaseSession, 'execute'>) {
-        this.connection = connection;
+    constructor(protected injected: Pick<IDatabaseSession, 'execute'>) {
+        this.injected = injected;
     }
 
     session(): IDatabaseSession {
-        const { connection } = this;
+        const { injected } = this;
 
         return {
             open: () => Promise.resolve(),
-            execute: (sql: string) => connection.execute(sql),
+            execute: (statement: string) => injected.execute(statement),
             close: () => Promise.resolve(),
         };
     }
@@ -33,10 +33,10 @@ function buildOverrides(
     context: DatabaseCreateContext | DatabaseDropContext,
     overrides: DatabaseDialectOverrides,
 ): DatabaseDialectOverrides {
-    if (context.connection && !overrides.connector) {
+    if (context.session && !overrides.connector) {
         return {
             ...overrides,
-            connector: new InjectedConnector(context.connection),
+            connector: new InjectedConnector(context.session),
         };
     }
 
@@ -46,7 +46,7 @@ function buildOverrides(
 /**
  * Composition root for the create operation: resolves the registry entry,
  * derives connection params once, builds the dialect with its connector
- * (honouring overrides and a caller supplied connection) and runs the
+ * (honouring overrides and a caller supplied session) and runs the
  * schema synchronization exactly once.
  */
 export async function executeDatabaseCreate(
