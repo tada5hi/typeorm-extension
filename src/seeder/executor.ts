@@ -43,10 +43,8 @@ export class SeederExecutor {
         );
         const all = await this.buildEntities(seederElements);
 
-        let tracking = !!options.seedTracking;
-        if (!tracking) {
-            tracking = all.some((seed) => !!seed.trackExecution);
-        }
+        const tracking = options.seedTracking ||
+            all.some((seed) => seed.effectiveTracking(options.seedTracking));
 
         let queryRunner : QueryRunner | undefined;
         let existing : SeederEntity[] = [];
@@ -93,14 +91,7 @@ export class SeederExecutor {
                 return true;
             }
 
-            let seedTracking : boolean | undefined;
-            if (typeof seed.trackExecution !== 'undefined') {
-                seedTracking = seed.trackExecution;
-            } else {
-                seedTracking = options.seedTracking;
-            }
-
-            return !seedTracking;
+            return !seed.effectiveTracking(options.seedTracking);
         });
 
         if (pending.length === 0) {
@@ -134,14 +125,7 @@ export class SeederExecutor {
 
                 element.result = await seeder.run(this.dataSource, factoryManager);
 
-                let seedTracking : boolean | undefined;
-                if (typeof element.trackExecution !== 'undefined') {
-                    seedTracking = element.trackExecution;
-                } else {
-                    seedTracking = options.seedTracking;
-                }
-
-                if (queryRunner && seedTracking) {
+                if (queryRunner && element.effectiveTracking(options.seedTracking)) {
                     await this.track(queryRunner, element, options.seedTableName);
                 }
 
@@ -227,17 +211,7 @@ export class SeederExecutor {
 
         this.checkForDuplicates(entities);
 
-        // sort them by file name than by timestamp
-        return entities.sort((a, b) => {
-            if (
-                typeof a.fileName !== 'undefined' &&
-                typeof b.fileName !== 'undefined'
-            ) {
-                return a.fileName > b.fileName ? 1 : -1;
-            }
-
-            return a.timestamp - b.timestamp;
-        });
+        return entities.sort(SeederEntity.compare);
     }
 
     protected checkForDuplicates(entities: SeederEntity[]) {
