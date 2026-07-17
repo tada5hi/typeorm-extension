@@ -7,6 +7,12 @@ import {
 } from '../../../src';
 
 describe('src/data-source/singleton.ts', () => {
+    afterAll(async () => {
+        if (dataSource.isInitialized) {
+            await dataSource.destroy();
+        }
+    });
+
     it('should set and use datasource', async () => {
         setDataSource(dataSource);
 
