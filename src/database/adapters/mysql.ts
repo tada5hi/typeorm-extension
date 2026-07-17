@@ -23,46 +23,71 @@ export class MySQLConnector implements IDatabaseConnector {
 
     session(database?: string): IDatabaseSession {
         const { options, params } = this;
+
+        const option: Record<string, any> = {
+            host: params.host,
+            user: params.user,
+            password: params.password,
+            port: params.port,
+            ssl: params.ssl,
+            ...(params.extra ? params.extra : {}),
+            ...(typeof database === 'string' ? { database } : {}),
+        };
+
         let connection: any;
+        let openPromise: Promise<void> | undefined;
+        let closed = false;
+
+        const open = () => {
+            if (closed) {
+                return Promise.reject(DriverError.sessionClosed());
+            }
+
+            if (!openPromise) {
+                openPromise = (async () => {
+                    const driver = useNativeDriver(options) as MysqlDriver;
+                    const { createConnection } = driver.mysql;
+
+                    connection = await createConnection(option);
+                })();
+            }
+
+            return openPromise;
+        };
 
         return {
-            open: async () => {
-                if (connection) {
-                    return;
-                }
-
-                const driver = useNativeDriver(options) as MysqlDriver;
-                const { createConnection } = driver.mysql;
-
-                const option: Record<string, any> = {
-                    host: params.host,
-                    user: params.user,
-                    password: params.password,
-                    port: params.port,
-                    ssl: params.ssl,
-                    ...(params.extra ? params.extra : {}),
-                    ...(typeof database === 'string' ? { database } : {}),
-                };
-
-                connection = await createConnection(option);
-            },
-            execute: (sql: string) => {
-                if (!connection) {
-                    return Promise.reject(DriverError.sessionNotOpen());
-                }
+            open,
+            execute: async (sql: string) => {
+                await open();
 
                 return promisifyCallbackQuery(connection, sql);
             },
-            close: () => new Promise<void>((resolve) => {
+            close: async () => {
+                if (closed) {
+                    return;
+                }
+
+                closed = true;
+
+                if (openPromise) {
+                    try {
+                        await openPromise;
+                    } catch {
+                        // opening failed — nothing to close
+                    }
+                }
+
                 if (!connection) {
-                    resolve();
                     return;
                 }
 
                 const current = connection;
                 connection = undefined;
-                current.end(() => resolve());
-            }),
+
+                await new Promise<void>((resolve) => {
+                    current.end(() => resolve());
+                });
+            },
         };
     }
 }

@@ -20,35 +20,60 @@ export class OracleConnector implements IDatabaseConnector {
 
     session(): IDatabaseSession {
         const { options, params } = this;
+
+        const connectString = params.connectString ||
+            buildOracleConnectString(params);
+
+        const option: Record<string, any> = {
+            user: params.user,
+            password: params.password,
+            connectString: connectString || params.url,
+            ...(params.extra ? params.extra : {}),
+        };
+
         let connection: any;
+        let openPromise: Promise<void> | undefined;
+        let closed = false;
+
+        const open = () => {
+            if (closed) {
+                return Promise.reject(DriverError.sessionClosed());
+            }
+
+            if (!openPromise) {
+                openPromise = (async () => {
+                    const driver = useNativeDriver(options) as OracleDriver;
+                    const { getConnection } = driver.oracle;
+
+                    connection = await getConnection(option);
+                })();
+            }
+
+            return openPromise;
+        };
 
         return {
-            open: async () => {
-                if (connection) {
-                    return;
-                }
-
-                const driver = useNativeDriver(options) as OracleDriver;
-                const { getConnection } = driver.oracle;
-
-                const connectString = params.connectString ||
-                    buildOracleConnectString(params);
-
-                connection = await getConnection({
-                    user: params.user,
-                    password: params.password,
-                    connectString: connectString || params.url,
-                    ...(params.extra ? params.extra : {}),
-                });
-            },
-            execute: (sql: string) => {
-                if (!connection) {
-                    return Promise.reject(DriverError.sessionNotOpen());
-                }
+            open,
+            execute: async (sql: string) => {
+                await open();
 
                 return connection.execute(sql);
             },
             close: async () => {
+                if (closed) {
+                    return;
+                }
+
+                closed = true;
+
+                if (openPromise) {
+                    try {
+                        await openPromise;
+                    } catch {
+                        // opening failed — nothing to close
+                    }
+                }
+
                 if (!connection) {
                     return;
                 }

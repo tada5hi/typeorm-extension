@@ -36,19 +36,31 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
         this.counter += 1;
         const session = this.counter;
 
+        let opened = false;
+        let closed = false;
+
+        const open = async () => {
+            if (closed) {
+                throw new Error('The session has already been closed.');
+            }
+
+            if (opened) {
+                return;
+            }
+
+            opened = true;
+            this.openSessions.add(session);
+            this.events.push({
+                type: 'open', 
+                session, 
+                database, 
+            });
+        };
+
         return {
-            open: async () => {
-                this.openSessions.add(session);
-                this.events.push({
-                    type: 'open', 
-                    session, 
-                    database, 
-                });
-            },
+            open,
             execute: async (sql: string) => {
-                if (!this.openSessions.has(session)) {
-                    throw new Error('The session has not been opened yet.');
-                }
+                await open();
 
                 this.events.push({
                     type: 'execute', 
@@ -58,6 +70,16 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
                 return this.respond(sql, database);
             },
             close: async () => {
+                if (closed) {
+                    return;
+                }
+
+                closed = true;
+
+                if (!opened) {
+                    return;
+                }
+
                 this.openSessions.delete(session);
                 this.events.push({ type: 'close', session });
             },

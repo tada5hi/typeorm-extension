@@ -20,28 +20,53 @@ export class MongoDBConnector implements IMongoDatabaseConnector {
 
     session(database?: string): IMongoDatabaseSession {
         const { options, params } = this;
+
+        const uri = buildMongoDBConnectionUri(params, database);
+
         let client: any;
+        let openPromise: Promise<void> | undefined;
+        let closed = false;
+
+        const open = () => {
+            if (closed) {
+                return Promise.reject(DriverError.sessionClosed());
+            }
+
+            if (!openPromise) {
+                openPromise = (async () => {
+                    const driver = useNativeDriver(options) as MongoDriver;
+                    const { MongoClient } = driver.mongodb;
+
+                    client = new MongoClient(uri);
+                    await client.connect();
+                })();
+            }
+
+            return openPromise;
+        };
 
         return {
-            open: async () => {
-                if (client) {
-                    return;
-                }
-
-                const driver = useNativeDriver(options) as MongoDriver;
-                const { MongoClient } = driver.mongodb;
-
-                client = new MongoClient(buildMongoDBConnectionUri(params, database));
-                await client.connect();
-            },
-            dropDatabase: () => {
-                if (!client) {
-                    return Promise.reject(DriverError.sessionNotOpen());
-                }
+            open,
+            dropDatabase: async () => {
+                await open();
 
                 return client.db().dropDatabase();
             },
             close: async () => {
+                if (closed) {
+                    return;
+                }
+
+                closed = true;
+
+                if (openPromise) {
+                    try {
+                        await openPromise;
+                    } catch {
+                        // opening failed — nothing to close
+                    }
+                }
+
                 if (!client) {
                     return;
                 }

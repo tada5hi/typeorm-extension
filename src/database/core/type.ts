@@ -3,9 +3,10 @@ import type { DataSourceOptions } from 'typeorm';
 /**
  * A session against a database server (never a TypeORM DataSource).
  *
- * Lifecycle: open() performs the handshake and is idempotent;
- * execute() throws a DriverError while the session is not open;
- * close() on a session that was never opened is a no-op.
+ * Lifecycle: open() performs the handshake once — concurrent and repeated
+ * calls share the same attempt — and is optional, since execute() opens
+ * the session on demand. close() is terminal: a closed session cannot be
+ * reopened, and closing a never-opened session is a no-op.
  */
 export interface IDatabaseSession {
     open(): Promise<void>;

@@ -24,42 +24,64 @@ export class PostgresConnector implements IDatabaseConnector {
 
     session(database?: string): IDatabaseSession {
         const { options, params } = this;
+
+        const data: Record<string, any> = {
+            host: params.host,
+            port: params.port,
+            user: params.user,
+            password: params.password,
+            ssl: params.ssl,
+            schema: params.schema,
+            ...(params.extra ? params.extra : {}),
+            ...(typeof database === 'string' ? { database } : {}),
+        };
+
         let client: any;
+        let openPromise: Promise<void> | undefined;
+        let closed = false;
+
+        const open = () => {
+            if (closed) {
+                return Promise.reject(DriverError.sessionClosed());
+            }
+
+            if (!openPromise) {
+                openPromise = (async () => {
+                    // native client acquisition stays lazy: DriverFactory
+                    // requires the client library on first use
+                    const driver = useNativeDriver(options) as PostgresDriver | CockroachDriver;
+                    const { Client } = driver.postgres;
+
+                    client = new Client(data);
+                    await client.connect();
+                })();
+            }
+
+            return openPromise;
+        };
 
         return {
-            open: async () => {
-                if (client) {
-                    return;
-                }
-
-                const driver = useNativeDriver(options) as PostgresDriver | CockroachDriver;
-                const { Client } = driver.postgres;
-
-                const data: Record<string, any> = {
-                    host: params.host,
-                    port: params.port,
-                    user: params.user,
-                    password: params.password,
-                    ssl: params.ssl,
-                    schema: params.schema,
-                    ...(params.extra ? params.extra : {}),
-                };
-
-                if (typeof database === 'string') {
-                    data.database = database;
-                }
-
-                client = new Client(data);
-                await client.connect();
-            },
-            execute: (sql: string) => {
-                if (!client) {
-                    return Promise.reject(DriverError.sessionNotOpen());
-                }
+            open,
+            execute: async (sql: string) => {
+                await open();
 
                 return promisifyCallbackQuery(client, sql);
             },
             close: async () => {
+                if (closed) {
+                    return;
+                }
+
+                closed = true;
+
+                if (openPromise) {
+                    try {
+                        await openPromise;
+                    } catch {
+                        // opening failed — nothing to close
+                    }
+                }
+
                 if (!client) {
                     return;
                 }

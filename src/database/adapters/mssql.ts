@@ -19,36 +19,59 @@ export class MsSQLConnector implements IDatabaseConnector {
 
     session(database?: string): IDatabaseSession {
         const { options, params } = this;
+
+        const option: Record<string, any> = {
+            user: params.user,
+            password: params.password,
+            server: params.host,
+            port: params.port || 1433,
+            ...(params.extra ? params.extra : {}),
+            ...(params.domain ? { domain: params.domain } : {}),
+            ...(typeof database === 'string' ? { database } : {}),
+        };
+
         let pool: any;
+        let openPromise: Promise<void> | undefined;
+        let closed = false;
+
+        const open = () => {
+            if (closed) {
+                return Promise.reject(DriverError.sessionClosed());
+            }
+
+            if (!openPromise) {
+                openPromise = (async () => {
+                    const driver = useNativeDriver(options) as SqlServerDriver;
+
+                    pool = await driver.mssql.connect(option);
+                })();
+            }
+
+            return openPromise;
+        };
 
         return {
-            open: async () => {
-                if (pool) {
-                    return;
-                }
-
-                const driver = useNativeDriver(options) as SqlServerDriver;
-
-                const option: Record<string, any> = {
-                    user: params.user,
-                    password: params.password,
-                    server: params.host,
-                    port: params.port || 1433,
-                    ...(params.extra ? params.extra : {}),
-                    ...(params.domain ? { domain: params.domain } : {}),
-                    ...(typeof database === 'string' ? { database } : {}),
-                };
-
-                pool = await driver.mssql.connect(option);
-            },
-            execute: (sql: string) => {
-                if (!pool) {
-                    return Promise.reject(DriverError.sessionNotOpen());
-                }
+            open,
+            execute: async (sql: string) => {
+                await open();
 
                 return pool.request().query(sql);
             },
             close: async () => {
+                if (closed) {
+                    return;
+                }
+
+                closed = true;
+
+                if (openPromise) {
+                    try {
+                        await openPromise;
+                    } catch {
+                        // opening failed — nothing to close
+                    }
+                }
+
                 if (!pool) {
                     return;
                 }
