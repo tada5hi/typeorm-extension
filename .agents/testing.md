@@ -108,7 +108,7 @@ Thresholds (enforced — Vitest fails the run below these):
 | lines      | 80%    |
 | statements | 80%    |
 
-`coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, `src/errors/**`, `src/utils/**`, and `src/seeder/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/query/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
+`coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, `src/errors/**`, and `src/utils/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/query/**`, `src/seeder/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
 
 Coverage is uploaded by CI to Codecov via `codecov/codecov-action`.
 

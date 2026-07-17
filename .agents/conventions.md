@@ -17,7 +17,7 @@
 
 - **Validation**: no schema-validation library is used. Public API functions take loose input objects and trust internal callers.
 - **Errors**: typed via `TypeormExtensionError` → `DriverError` / `OptionsError` (`src/errors/`). Throw a typed error only when a consumer might reasonably want to catch it (e.g. unsupported driver, missing data source). Otherwise let TypeORM / native-driver errors propagate.
-- **Validation location**: context-builder functions (`buildDatabaseCreateContext`, `buildDataSourceOptions`, `SeederExecutor.buildOptions`) are the choke points where defaults are applied and missing values raise `OptionsError`.
+- **Validation location**: context-builder functions (`buildDatabaseCreateContext`, `buildDataSourceOptions`, `resolveSeederConfig`) are the choke points where defaults are applied and missing values raise `OptionsError`.
 
 ## Workflow
 
