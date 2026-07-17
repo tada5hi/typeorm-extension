@@ -44,7 +44,7 @@ export class MsSQLConnectionFactory implements IDatabaseConnectionFactory {
                     const driver = useNativeDriver(options) as SqlServerDriver;
 
                     // dedicated pool — the module level connect() would share
-                    // one global pool across sessions
+                    // one global pool across connections
                     pool = await new driver.mssql.ConnectionPool(option).connect();
                 })();
             }

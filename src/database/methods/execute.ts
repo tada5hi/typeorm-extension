@@ -45,7 +45,7 @@ function buildOverrides(
 
 /**
  * Composition root for the create operation: resolves the registry entry,
- * derives connection params once, builds the dialect with its connector
+ * derives connection params once, builds the dialect with its connection factory
  * (honouring overrides and a caller supplied connection) and runs the
  * schema synchronization exactly once.
  */
