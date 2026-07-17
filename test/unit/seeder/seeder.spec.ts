@@ -1,11 +1,15 @@
-import type { DataSource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import {
     SeederExecutor,
+    createDatabase,
+    dropDatabase,
     runSeeder,
     runSeeders,
+    useDataSource,
 } from '../../../src';
 import type { SeederEntity } from '../../../src';
 import { User } from '../../data/entity/user';
+import { createDataSourceOptions } from '../../data/typeorm/factory';
 import { destroyTestFsDataSource, setupFsDataSource } from '../../data/typeorm/utils';
 import '../../data/factory/user';
 import UserSeeder from '../../data/seed/user';
@@ -44,6 +48,36 @@ describe('src/seeder/index.ts', () => {
 
         expect(entities).toBeDefined();
         expect(entities.length).toBeGreaterThanOrEqual(7);
+    });
+
+    it('should not touch the default alias and seed into the executor data-source', async () => {
+        const options = createDataSourceOptions();
+        Object.assign(options, { database: 'writable/seeder-secondary.sqlite' });
+
+        await createDatabase({ options });
+
+        const secondary = new DataSource(options);
+        await secondary.initialize();
+
+        try {
+            const executor = new SeederExecutor(secondary);
+
+            // constructing an executor must not repoint the default alias
+            const defaultDataSource = await useDataSource();
+            expect(defaultDataSource).toBe(dataSource);
+
+            await executor.execute({ seeds: [UserSeeder] });
+
+            // factory saves belong to the executor's data-source, not the default one
+            const secondaryCount = await secondary.getRepository(User).count();
+            expect(secondaryCount).toBeGreaterThanOrEqual(7);
+
+            const defaultCount = await dataSource.getRepository(User).count();
+            expect(defaultCount).toEqual(0);
+        } finally {
+            await secondary.destroy();
+            await dropDatabase({ options });
+        }
     });
 
     it('should seed with explicit definition', async () => {

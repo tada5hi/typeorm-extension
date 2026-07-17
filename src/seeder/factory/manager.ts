@@ -1,10 +1,17 @@
-import type { EntitySchema, ObjectType } from 'typeorm';
-import type { FactoryCallback, SeederFactoryItem } from './type';
+import type { DataSource, EntitySchema, ObjectType } from 'typeorm';
+import type { FactoryCallback, SeederFactoryItem, SeederFactoryManagerContext } from './type';
 import { getEntityName, hasOwnProperty } from '../../utils';
 import { SeederFactory } from './module';
 
 export class SeederFactoryManager {
-    public readonly items : Record<string, SeederFactoryItem> = {};
+    public readonly items : Record<string, SeederFactoryItem>;
+
+    public readonly dataSource : DataSource | undefined;
+
+    constructor(context: SeederFactoryManagerContext = {}) {
+        this.items = context.items || {};
+        this.dataSource = context.dataSource;
+    }
 
     set<O extends Record<string, any>, Meta = unknown>(
         entity: ObjectType<O> | EntitySchema<O>,
@@ -33,6 +40,7 @@ export class SeederFactoryManager {
             factoryFn: this.items[name].factoryFn,
             entity,
             name,
+            dataSource: this.dataSource,
         });
     }
 }
