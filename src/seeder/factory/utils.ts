@@ -14,6 +14,10 @@ export function useSeederFactoryManager() {
     return registry.factories;
 }
 
+export function resetSeederFactoryManager() {
+    useRuntimeRegistry().factories = undefined;
+}
+
 export function setSeederFactory<O extends Record<string, any>, Meta = unknown>(
     entity: ObjectType<O> | EntitySchema<O>,
     factoryFn: FactoryCallback<O, Meta>,
