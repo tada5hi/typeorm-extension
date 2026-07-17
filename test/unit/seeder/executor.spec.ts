@@ -46,9 +46,7 @@ describe('src/seeder/executor.ts', () => {
         expect(rows[0].name).toEqual('UserSeeder');
     });
 
-    // characterization: seedTracking from the data-source options is silently ignored —
-    // the seed re-runs on every invocation.
-    it('should ignore seedTracking from the data-source options (current behavior)', async () => {
+    it('should honor seedTracking from the data-source options', async () => {
         Object.assign(dataSource.options, { seedTracking: true });
 
         const executor = new SeederExecutor(dataSource);
@@ -57,7 +55,7 @@ describe('src/seeder/executor.ts', () => {
         expect(output.length).toEqual(1);
 
         output = await executor.execute({ seeds: [UntrackedSeeder] });
-        expect(output.length).toEqual(1);
+        expect(output.length).toEqual(0);
     });
 
     it('should honor seedTracking from the options input', async () => {

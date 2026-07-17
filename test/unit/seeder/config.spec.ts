@@ -120,12 +120,10 @@ describe('src/seeder/config.ts', () => {
             expect(config.seedTracking).toBe(false);
         });
 
-        // characterization: the data-source options fallback is dead code —
-        // the input value is defaulted to `false` before it is checked.
-        it('should ignore data-source options when input is undefined (current behavior)', () => {
+        it('should fall back to data-source options when input is undefined', () => {
             const config = resolveSeederConfig({}, { seedTracking: true });
 
-            expect(config.seedTracking).toBe(false);
+            expect(config.seedTracking).toBe(true);
         });
 
         it('should default to false', () => {
