@@ -10,9 +10,9 @@ import { resolveSeederConfig } from './config';
 import { SeederEntity } from './entity';
 import { SeederFactoryManager, prepareSeederFactories, useSeederFactoryManager } from './factory';
 import type {
-    SeederConfig, 
-    SeederExecutorOptions, 
-    SeederOptions, 
+    SeederConfig,
+    SeederExecutorOptions,
+    SeederOptions,
     SeederPrepareElement,
 } from './type';
 import { prepareSeederSeeds } from './utils';
@@ -28,58 +28,89 @@ export class SeederExecutor {
     }
 
     async execute(input: SeederOptions = {}) : Promise<SeederEntity[]> {
-        const options = await this.buildOptions(input);
-        if (!options.seeds || options.seeds.length === 0) {
-            return [];
-        }
+        const config = await this.resolveConfig(input);
 
-        if (options.factories) {
-            await prepareSeederFactories(options.factories, this.options.root);
-        }
+        await prepareSeederFactories(config.factories, this.options.root);
 
-        const seederElements = await prepareSeederSeeds(
-            options.seeds,
-            this.options.root,
-        );
-        const all = await this.buildEntities(seederElements);
+        const all = await this.loadEntities(config);
 
-        const tracking = options.seedTracking ||
-            all.some((seed) => seed.effectiveTracking(options.seedTracking));
+        const tracking = config.seedTracking ||
+            all.some((seed) => seed.effectiveTracking(config.seedTracking));
 
         let queryRunner : QueryRunner | undefined;
         let existing : SeederEntity[] = [];
 
         if (tracking) {
             queryRunner = this.dataSource.createQueryRunner();
-            await this.createTableIfNotExist(queryRunner, options.seedTableName);
-            existing = await this.loadExisting(queryRunner, options.seedTableName);
+            await this.createTableIfNotExist(queryRunner, config.seedTableName);
+            existing = await this.loadExisting(queryRunner, config.seedTableName);
         }
 
-        const isMatch = (seed: SeederEntity) : boolean => {
-            if (!options.seedName) {
-                return true;
+        try {
+            const pending = this.filterPending(all, existing, config);
+            if (pending.length === 0) {
+                return [];
             }
 
-            if (
-                seed.name === options.seedName ||
-                seed.fileName === options.seedName
-            ) {
-                return true;
+            this.dataSource.logger.logSchemaBuild(
+                `${existing.length} seeds are already present in the database.`,
+            );
+            this.dataSource.logger.logSchemaBuild(
+                `${all.length} seeds were found in the source code.`,
+            );
+
+            return await this.runPending(pending, config, queryRunner);
+        } finally {
+            if (queryRunner) {
+                await queryRunner.release();
+            }
+        }
+    }
+
+    protected async resolveConfig(input: SeederOptions = {}) : Promise<SeederConfig> {
+        const config = resolveSeederConfig(input, this.dataSourceOptions, useEnv());
+
+        if (!this.options.preserveFilePaths) {
+            let tsConfig : TSConfig;
+
+            if (isObject(this.options.tsconfig)) {
+                tsConfig = this.options.tsconfig;
+            } else {
+                tsConfig = await readTSConfig(
+                    resolveFilePath(this.options.tsconfig || 'tsconfig.json', this.options.root),
+                );
             }
 
-            if (!seed.filePath) {
-                return false;
-            }
+            await adjustFilePaths(
+                config,
+                [
+                    'seeds',
+                    'seedName',
+                    'factories',
+                ],
+                tsConfig,
+            );
+        }
 
-            if (seed.filePath === options.seedName) {
-                return true;
-            }
+        return config;
+    }
 
-            return resolveFilePath(options.seedName, this.options.root) === seed.filePath;
-        };
+    protected async loadEntities(config: SeederConfig) : Promise<SeederEntity[]> {
+        const elements = await prepareSeederSeeds(
+            config.seeds,
+            this.options.root,
+        );
 
-        const pending = all.filter((seed) => {
-            if (!isMatch(seed)) {
+        return this.buildEntities(elements);
+    }
+
+    protected filterPending(
+        all: SeederEntity[],
+        existing: SeederEntity[],
+        config: SeederConfig,
+    ) : SeederEntity[] {
+        return all.filter((seed) => {
+            if (!this.isMatch(seed, config)) {
                 return false;
             }
 
@@ -91,24 +122,38 @@ export class SeederExecutor {
                 return true;
             }
 
-            return !seed.effectiveTracking(options.seedTracking);
+            return !seed.effectiveTracking(config.seedTracking);
         });
+    }
 
-        if (pending.length === 0) {
-            if (queryRunner) {
-                await queryRunner.release();
-            }
-
-            return [];
+    protected isMatch(seed: SeederEntity, config: SeederConfig) : boolean {
+        if (!config.seedName) {
+            return true;
         }
 
-        this.dataSource.logger.logSchemaBuild(
-            `${existing.length} seeds are already present in the database.`,
-        );
-        this.dataSource.logger.logSchemaBuild(
-            `${all.length} seeds were found in the source code.`,
-        );
+        if (
+            seed.name === config.seedName ||
+            seed.fileName === config.seedName
+        ) {
+            return true;
+        }
 
+        if (!seed.filePath) {
+            return false;
+        }
+
+        if (seed.filePath === config.seedName) {
+            return true;
+        }
+
+        return resolveFilePath(config.seedName, this.options.root) === seed.filePath;
+    }
+
+    protected async runPending(
+        pending: SeederEntity[],
+        config: SeederConfig,
+        queryRunner?: QueryRunner,
+    ) : Promise<SeederEntity[]> {
         const factoryManager = new SeederFactoryManager({
             items: useSeederFactoryManager().items,
             dataSource: this.dataSource,
@@ -116,29 +161,23 @@ export class SeederExecutor {
 
         const executed : SeederEntity[] = [];
 
-        try {
-            for (const element of pending) {
-                const seeder = element.instance;
-                if (!seeder) {
-                    continue;
-                }
-
-                element.result = await seeder.run(this.dataSource, factoryManager);
-
-                if (queryRunner && element.effectiveTracking(options.seedTracking)) {
-                    await this.track(queryRunner, element, options.seedTableName);
-                }
-
-                this.dataSource.logger.logSchemaBuild(
-                    `Seed ${element.name} has been executed successfully.`,
-                );
-
-                executed.push(element);
+        for (const element of pending) {
+            const seeder = element.instance;
+            if (!seeder) {
+                continue;
             }
-        } finally {
-            if (queryRunner) {
-                await queryRunner.release();
+
+            element.result = await seeder.run(this.dataSource, factoryManager);
+
+            if (queryRunner && element.effectiveTracking(config.seedTracking)) {
+                await this.track(queryRunner, element, config.seedTableName);
             }
+
+            this.dataSource.logger.logSchemaBuild(
+                `Seed ${element.name} has been executed successfully.`,
+            );
+
+            executed.push(element);
         }
 
         return executed;
@@ -172,9 +211,6 @@ export class SeederExecutor {
         }));
     }
 
-    /**
-     * Gets all migrations that setup for this connection.
-     */
     protected async buildEntities(seeds?: SeederPrepareElement[]): Promise<SeederEntity[]> {
         if (!seeds) {
             return [];
@@ -335,34 +371,6 @@ export class SeederExecutor {
             this.schema,
             this.database,
         );
-    }
-
-    protected async buildOptions(input: SeederOptions = {}) : Promise<SeederConfig> {
-        const options = resolveSeederConfig(input, this.dataSourceOptions, useEnv());
-
-        if (!this.options.preserveFilePaths) {
-            let tsConfig : TSConfig;
-
-            if (isObject(this.options.tsconfig)) {
-                tsConfig = this.options.tsconfig;
-            } else {
-                tsConfig = await readTSConfig(
-                    resolveFilePath(this.options.tsconfig || 'tsconfig.json', this.options.root),
-                );
-            }
-
-            await adjustFilePaths(
-                options,
-                [
-                    'seeds',
-                    'seedName',
-                    'factories',
-                ],
-                tsConfig,
-            );
-        }
-
-        return options;
     }
 
     protected classNameToTimestamp(className: string) {
