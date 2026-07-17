@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import type { IFileSystem } from '../core';
+import { hasErrorCode } from './utils';
 
 export class NodeFileSystem implements IFileSystem {
     async assertDirectoryWritable(path: string): Promise<void> {
@@ -10,12 +11,29 @@ export class NodeFileSystem implements IFileSystem {
         try {
             await fs.promises.access(path, fs.constants.F_OK | fs.constants.W_OK);
             return true;
-        } catch {
-            return false;
+        } catch (error) {
+            if (hasErrorCode(error, 'ENOENT')) {
+                return false;
+            }
+
+            throw error;
         }
     }
 
-    async removeFile(path: string): Promise<void> {
-        await fs.promises.unlink(path);
+    async createFile(path: string): Promise<void> {
+        await fs.promises.writeFile(path, '', { flag: 'wx' });
+    }
+
+    async removeFile(path: string): Promise<boolean> {
+        try {
+            await fs.promises.unlink(path);
+            return true;
+        } catch (error) {
+            if (hasErrorCode(error, 'ENOENT')) {
+                return false;
+            }
+
+            throw error;
+        }
     }
 }

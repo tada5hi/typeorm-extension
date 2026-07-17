@@ -1,3 +1,15 @@
+import { isObject } from 'locter';
+import { hasOwnProperty } from '../../utils';
+
+/**
+ * Whether the (unknown) error carries the given errno code.
+ */
+export function hasErrorCode(error: unknown, code: string): boolean {
+    return isObject(error) &&
+        hasOwnProperty(error, 'code') &&
+        error.code === code;
+}
+
 /**
  * Normalize a callback style client (pg, mysql2) query to a promise.
  */

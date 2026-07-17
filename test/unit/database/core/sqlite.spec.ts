@@ -1,22 +1,58 @@
 import path from 'node:path';
-import { OptionsError } from '../../../../src/errors';
+import { DriverError, OptionsError } from '../../../../src/errors';
 import {
     SQLiteDialect,
     resolveSQLiteDatabasePath,
 } from '../../../../src/database/core';
 import { MemoryFileSystem } from '../../../data/database';
 
+const database = path.join('writable', 'db.sqlite');
+const filePath = path.join('/cwd', 'writable', 'db.sqlite');
+
+const createFileSystem = () => {
+    const fs = new MemoryFileSystem();
+    fs.writableDirectories.add(path.join('/cwd', 'writable'));
+
+    return fs;
+};
+
 describe('src/database/core/sqlite', () => {
-    it('should verify the database directory on create', async () => {
-        const fs = new MemoryFileSystem();
-        fs.writableDirectories.add(path.join('/cwd', 'writable'));
+    it('should create the database file', async () => {
+        const fs = createFileSystem();
+        const dialect = new SQLiteDialect(fs, '/cwd');
+
+        await dialect.create({
+            params: { database },
+            ifNotExist: false,
+        });
+
+        expect(fs.files.has(filePath)).toBeTruthy();
+    });
+
+    it('should keep an existing database file with the exist guard', async () => {
+        const fs = createFileSystem();
+        fs.files.add(filePath);
 
         const dialect = new SQLiteDialect(fs, '/cwd');
 
         await dialect.create({
-            params: { database: path.join('writable', 'db.sqlite') },
+            params: { database },
             ifNotExist: true,
         });
+
+        expect(fs.files.has(filePath)).toBeTruthy();
+    });
+
+    it('should fail on create when the database file already exists', async () => {
+        const fs = createFileSystem();
+        fs.files.add(filePath);
+
+        const dialect = new SQLiteDialect(fs, '/cwd');
+
+        await expect(dialect.create({
+            params: { database },
+            ifNotExist: false,
+        })).rejects.toThrow('already exists');
     });
 
     it('should fail on create when the directory is not writable', async () => {
@@ -24,7 +60,7 @@ describe('src/database/core/sqlite', () => {
         const dialect = new SQLiteDialect(fs, '/cwd');
 
         await expect(dialect.create({
-            params: { database: path.join('writable', 'db.sqlite') },
+            params: { database },
             ifNotExist: true,
         })).rejects.toThrow('not writable');
     });
@@ -43,41 +79,40 @@ describe('src/database/core/sqlite', () => {
         })).rejects.toThrow(OptionsError);
     });
 
-    it('should remove the database file on drop', async () => {
-        const filePath = path.join('/cwd', 'writable', 'db.sqlite');
-
-        const fs = new MemoryFileSystem();
+    it('should remove the database file on drop, even without the exist guard', async () => {
+        const fs = createFileSystem();
         fs.files.add(filePath);
 
         const dialect = new SQLiteDialect(fs, '/cwd');
 
         await dialect.drop({
-            params: { database: path.join('writable', 'db.sqlite') },
-            ifExist: true,
+            params: { database },
+            ifExist: false,
         });
 
         expect(fs.removed).toEqual([filePath]);
     });
 
-    it('should not remove anything when the file is missing or ifExist is unset', async () => {
-        const filePath = path.join('/cwd', 'writable', 'db.sqlite');
-
-        const fs = new MemoryFileSystem();
+    it('should ignore a missing database file with the exist guard', async () => {
+        const fs = createFileSystem();
         const dialect = new SQLiteDialect(fs, '/cwd');
 
         await dialect.drop({
-            params: { database: path.join('writable', 'db.sqlite') },
+            params: { database },
             ifExist: true,
         });
 
-        fs.files.add(filePath);
-
-        await dialect.drop({
-            params: { database: path.join('writable', 'db.sqlite') },
-            ifExist: false,
-        });
-
         expect(fs.removed).toEqual([]);
+    });
+
+    it('should fail on drop when the database file is missing', async () => {
+        const fs = createFileSystem();
+        const dialect = new SQLiteDialect(fs, '/cwd');
+
+        await expect(dialect.drop({
+            params: { database },
+            ifExist: false,
+        })).rejects.toThrow(DriverError);
     });
 
     it('should resolve relative and absolute database paths', () => {
