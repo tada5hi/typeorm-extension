@@ -58,4 +58,12 @@ describe('src/database/core/mongodb', () => {
         expect(buildMongoDBConnectionUri({ database: 'app' }, 'other'))
             .toEqual('mongodb://127.0.0.1:27017/other');
     });
+
+    it('should url encode credentials in the connection uri', () => {
+        expect(buildMongoDBConnectionUri({
+            database: 'app',
+            user: 'ad@min',
+            password: 'p@ss:w/rd',
+        })).toEqual('mongodb://ad%40min:p%40ss%3Aw%2Frd@127.0.0.1:27017/app');
+    });
 });

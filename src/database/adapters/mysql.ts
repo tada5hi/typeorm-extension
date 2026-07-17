@@ -84,8 +84,15 @@ export class MySQLConnector implements IDatabaseConnector {
                 const current = connection;
                 connection = undefined;
 
-                await new Promise<void>((resolve) => {
-                    current.end(() => resolve());
+                await new Promise<void>((resolve, reject) => {
+                    current.end((error?: Error) => {
+                        if (error) {
+                            reject(error);
+                            return;
+                        }
+
+                        resolve();
+                    });
                 });
             },
         };

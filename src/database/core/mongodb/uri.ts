@@ -4,7 +4,7 @@ export function buildMongoDBConnectionUri(params: ConnectionParams, database?: s
     let uri = 'mongodb://';
 
     if (params.user && params.password) {
-        uri += `${params.user}:${params.password}@`;
+        uri += `${encodeURIComponent(params.user)}:${encodeURIComponent(params.password)}@`;
     }
 
     uri += `${params.host || '127.0.0.1'}:${params.port || 27017}/${database ?? params.database}`;

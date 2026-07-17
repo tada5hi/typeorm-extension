@@ -43,7 +43,9 @@ export class MsSQLConnector implements IDatabaseConnector {
                 openPromise = (async () => {
                     const driver = useNativeDriver(options) as SqlServerDriver;
 
-                    pool = await driver.mssql.connect(option);
+                    // dedicated pool — the module level connect() would share
+                    // one global pool across sessions
+                    pool = await new driver.mssql.ConnectionPool(option).connect();
                 })();
             }
 

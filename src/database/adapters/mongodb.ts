@@ -37,7 +37,7 @@ export class MongoDBConnector implements IDatabaseConnector {
                     const driver = useNativeDriver(options) as MongoDriver;
                     const { MongoClient } = driver.mongodb;
 
-                    client = new MongoClient(uri);
+                    client = new MongoClient(uri, params.extra);
                     await client.connect();
                 })();
             }
