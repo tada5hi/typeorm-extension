@@ -162,14 +162,15 @@ type SeederConstructor = new () => Seeder;
 ## `SeederOptions`
 
 ```typescript
-import { SeederConstructor, SeederFactoryConfig } from 'typeorm-extension';
+import { SeederConstructor, SeederFactoryItem } from 'typeorm-extension';
 
 export type SeederOptions = {
     seeds?: SeederConstructor[] | string[],
     seedName?: string,
+    seedTableName?: string,
+    seedTracking?: boolean,
 
-    factories?: SeederFactoryConfig[] | string[],
-    factoriesLoad?: boolean
+    factories?: SeederFactoryItem[] | string[],
 };
 ```
 

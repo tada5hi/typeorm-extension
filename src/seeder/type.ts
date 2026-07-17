@@ -22,7 +22,6 @@ export type SeederOptions = {
     seedTracking?: boolean
 
     factories?: SeederFactoryItem[] | string[],
-    factoriesLoad?: boolean
 };
 
 /**
