@@ -37,7 +37,6 @@ export default defineConfig({
                 'src/env/utils.ts',
                 'src/errors/*.{ts,js}',
                 'src/utils/**/*.{ts,js}',
-                'src/seeder/**/*.{ts,js}',
             ],
             thresholds: {
                 branches: 80,

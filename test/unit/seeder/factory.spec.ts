@@ -8,7 +8,7 @@ import {
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import { destroyTestFsDataSource, setupFsDataSource } from '../../data/typeorm/utils';
-import '../../data/factory/user';
+import userFactoryItem from '../../data/factory/user';
 
 describe('src/seeder/factory/index.ts', () => {
     let dataSource : DataSource;
@@ -44,6 +44,38 @@ describe('src/seeder/factory/index.ts', () => {
         factory.setLocale('de');
         user = await factory.save();
         expect(user).toBeDefined();
+    });
+
+    it('should resolve nested factories and thenable properties', async () => {
+        setSeederFactory(Role, () => {
+            const role = new Role();
+            role.name = 'nested';
+
+            return role;
+        });
+
+        setSeederFactory(User, (faker) => {
+            const user = new User();
+            user.firstName = faker.person.firstName();
+            user.lastName = faker.person.lastName();
+            user.email = { then: (resolve: (value: string) => void) => resolve('nested@example.com') } as unknown as string;
+            user.role = useSeederFactory(Role) as unknown as Role;
+
+            return user;
+        });
+
+        try {
+            const made = await useSeederFactory(User).make();
+            expect(made.role).toBeInstanceOf(Role);
+            expect(made.email).toEqual('nested@example.com');
+
+            const saved = await useSeederFactory(User).save();
+            expect(saved.id).toBeDefined();
+            expect(saved.role).toBeInstanceOf(Role);
+            expect(saved.role.id).toBeDefined();
+        } finally {
+            setSeederFactory(User, userFactoryItem.factoryFn);
+        }
     });
 
     it('should reset the factory manager', () => {

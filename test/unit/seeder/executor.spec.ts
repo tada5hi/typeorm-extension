@@ -1,14 +1,20 @@
+/* eslint-disable max-classes-per-file */
 import type { DataSource } from 'typeorm';
 import type { Seeder } from '../../../src';
-import { SeederExecutor } from '../../../src';
-import { User } from '../../data/entity/user';
+import { SeederExecutor, runSeeder } from '../../../src';
 import { destroyTestFsDataSource, setupFsDataSource } from '../../data/typeorm/utils';
-import '../../data/factory/user';
+import userFactoryItem from '../../data/factory/user';
 import UserSeeder from '../../data/seed/user';
 
 class UntrackedSeeder implements Seeder {
     public async run() : Promise<unknown> {
         return 'executed';
+    }
+}
+
+class TimestampSeeder1700000000000 implements Seeder {
+    public async run() : Promise<unknown> {
+        return undefined;
     }
 }
 
@@ -69,6 +75,51 @@ describe('src/seeder/executor.ts', () => {
 
         output = await executor.execute({
             seeds: [UntrackedSeeder],
+            seedTracking: true,
+        });
+        expect(output.length).toEqual(0);
+    });
+
+    it('should run a single seed selected by class name', async () => {
+        const entity = await runSeeder(dataSource, 'UserSeeder');
+
+        expect(entity).toBeDefined();
+        expect(entity?.name).toEqual('UserSeeder');
+    });
+
+    it('should run a single seed selected by file name', async () => {
+        const executor = new SeederExecutor(dataSource, { preserveFilePaths: true });
+        const output = await executor.execute({
+            seeds: ['test/data/seed/{role,user}.ts'],
+            seedName: 'user.ts',
+        });
+
+        expect(output.length).toEqual(1);
+        expect(output[0].name).toEqual('UserSeeder');
+    });
+
+    it('should register factories provided as items', async () => {
+        const executor = new SeederExecutor(dataSource);
+        const output = await executor.execute({
+            seeds: [UserSeeder],
+            factories: [userFactoryItem],
+        });
+
+        expect(output.length).toEqual(1);
+    });
+
+    it('should derive the tracking timestamp from the class name', async () => {
+        const executor = new SeederExecutor(dataSource);
+
+        let output = await executor.execute({
+            seeds: [TimestampSeeder1700000000000],
+            seedTracking: true,
+        });
+        expect(output.length).toEqual(1);
+        expect(output[0].timestamp).toEqual(1700000000000);
+
+        output = await executor.execute({
+            seeds: [TimestampSeeder1700000000000],
             seedTracking: true,
         });
         expect(output.length).toEqual(0);
