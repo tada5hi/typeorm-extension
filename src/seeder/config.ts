@@ -21,7 +21,9 @@ export function resolveSeederConfig(
         seeds: firstNonEmpty(input.seeds, dataSourceOptions.seeds, env.seeds) ??
             SEEDS_DEFAULT,
         seedName: input.seedName,
-        seedTableName: dataSourceOptions.seedTableName || 'seeds',
+        seedTableName: input.seedTableName ||
+            dataSourceOptions.seedTableName ||
+            'seeds',
         seedTracking: input.seedTracking ?? false,
         factories: firstNonEmpty(input.factories, dataSourceOptions.factories, env.factories) ??
             FACTORIES_DEFAULT,

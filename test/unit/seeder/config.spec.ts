@@ -136,14 +136,19 @@ describe('src/seeder/config.ts', () => {
     });
 
     describe('seedTableName', () => {
-        // characterization: the table name is resolved exclusively from the
-        // data-source options — input is silently ignored.
-        it('should ignore input and only honor data-source options (current behavior)', () => {
-            let config = resolveSeederConfig({}, { seedTableName: 'custom_seed_table' });
-            expect(config.seedTableName).toEqual('custom_seed_table');
+        it('should prefer input over data-source options', () => {
+            const config = resolveSeederConfig(
+                { seedTableName: 'input_seed_table' },
+                { seedTableName: 'ds_seed_table' },
+            );
 
-            config = resolveSeederConfig({ seedTableName: 'custom_seed_table' }, {});
-            expect(config.seedTableName).toEqual('seeds');
+            expect(config.seedTableName).toEqual('input_seed_table');
+        });
+
+        it('should fall back to data-source options', () => {
+            const config = resolveSeederConfig({}, { seedTableName: 'ds_seed_table' });
+
+            expect(config.seedTableName).toEqual('ds_seed_table');
         });
 
         it('should default to "seeds"', () => {

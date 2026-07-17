@@ -30,9 +30,7 @@ describe('src/seeder/executor.ts', () => {
         await destroyTestFsDataSource(dataSource);
     });
 
-    // characterization: seedTableName from the options input is silently ignored —
-    // tracking rows land in the default `seeds` table.
-    it('should ignore a custom seedTableName from the options input (current behavior)', async () => {
+    it('should honor a custom seedTableName from the options input', async () => {
         const executor = new SeederExecutor(dataSource);
         const output = await executor.execute({
             seeds: [UserSeeder],
@@ -40,8 +38,12 @@ describe('src/seeder/executor.ts', () => {
         });
         expect(output.length).toEqual(1);
 
-        expect(await findTable(dataSource, 'custom_seed_table')).toHaveLength(0);
-        expect(await findTable(dataSource, 'seeds')).toHaveLength(1);
+        expect(await findTable(dataSource, 'custom_seed_table')).toHaveLength(1);
+        expect(await findTable(dataSource, 'seeds')).toHaveLength(0);
+
+        const rows = await dataSource.query('SELECT name FROM custom_seed_table');
+        expect(rows).toHaveLength(1);
+        expect(rows[0].name).toEqual('UserSeeder');
     });
 
     // characterization: seedTracking from the data-source options is silently ignored —

@@ -22,13 +22,9 @@ export class SeederExecutor {
 
     protected options : SeederExecutorOptions;
 
-    private readonly tableName: string;
-
     constructor(dataSource: DataSource, options?: SeederExecutorOptions) {
         this.dataSource = dataSource;
         this.options = options || {};
-
-        this.tableName = this.dataSourceOptions.seedTableName || 'seeds';
     }
 
     async execute(input: SeederOptions = {}) : Promise<SeederEntity[]> {
@@ -57,8 +53,8 @@ export class SeederExecutor {
 
         if (tracking) {
             queryRunner = this.dataSource.createQueryRunner();
-            await this.createTableIfNotExist(queryRunner);
-            existing = await this.loadExisting(queryRunner);
+            await this.createTableIfNotExist(queryRunner, options.seedTableName);
+            existing = await this.loadExisting(queryRunner, options.seedTableName);
         }
 
         const isMatch = (seed: SeederEntity) : boolean => {
@@ -146,7 +142,7 @@ export class SeederExecutor {
                 }
 
                 if (queryRunner && seedTracking) {
-                    await this.track(queryRunner, element);
+                    await this.track(queryRunner, element, options.seedTableName);
                 }
 
                 this.dataSource.logger.logSchemaBuild(
@@ -164,12 +160,15 @@ export class SeederExecutor {
         return executed;
     }
 
-    protected async loadExisting(queryRunner: QueryRunner) : Promise<SeederEntity[]> {
+    protected async loadExisting(
+        queryRunner: QueryRunner,
+        tableName: string,
+    ) : Promise<SeederEntity[]> {
         if (this.dataSource.driver.options.type === 'mongodb') {
             const mongoRunner = queryRunner as MongoQueryRunner;
 
             return mongoRunner
-                .cursor(this.tableName, {})
+                .cursor(tableName, {})
                 .sort({ _id: -1 })
                 .toArray();
         }
@@ -178,7 +177,7 @@ export class SeederExecutor {
             .createQueryBuilder(queryRunner)
             .select()
             .orderBy(this.dataSource.driver.escape('id'), 'DESC')
-            .from(this.table, this.tableName)
+            .from(this.buildTableName(tableName), tableName)
             .getRawMany();
 
         return raw.map((migrationRaw) => new SeederEntity({
@@ -255,18 +254,21 @@ export class SeederExecutor {
         }
     }
 
-    protected async createTableIfNotExist(queryRunner: QueryRunner) {
+    protected async createTableIfNotExist(
+        queryRunner: QueryRunner,
+        tableName: string,
+    ) {
         // If driver is mongo no need to create
         if (this.dataSource.driver.options.type === 'mongodb') {
             return;
         }
-        const tableExist = await queryRunner.hasTable(this.table);
+        const tableExist = await queryRunner.hasTable(this.buildTableName(tableName));
         if (!tableExist) {
             await queryRunner.createTable(
                 new Table({
                     database: this.database,
                     schema: this.schema,
-                    name: this.table,
+                    name: this.buildTableName(tableName),
                     columns: [
                         {
                             name: 'id',
@@ -305,6 +307,7 @@ export class SeederExecutor {
     protected async track(
         queryRunner: QueryRunner,
         seederEntity: SeederEntity,
+        tableName: string,
     ): Promise<void> {
         const values: ObjectLiteral = {};
         if (this.dataSource.driver.options.type === 'mssql') {
@@ -328,13 +331,13 @@ export class SeederExecutor {
             const mongoRunner = queryRunner as MongoQueryRunner;
             await mongoRunner.databaseConnection
                 .db(this.dataSource.driver.database)
-                .collection(this.tableName)
+                .collection(tableName)
                 .insertOne(values);
         } else {
             const qb = queryRunner.manager.createQueryBuilder();
             await qb
                 .insert()
-                .into(this.table)
+                .into(this.buildTableName(tableName))
                 .values(values)
                 .execute();
         }
@@ -352,9 +355,9 @@ export class SeederExecutor {
         return this.dataSource.driver.schema;
     }
 
-    protected get table() {
+    protected buildTableName(tableName: string) : string {
         return this.dataSource.driver.buildTableName(
-            this.tableName,
+            tableName,
             this.schema,
             this.database,
         );
