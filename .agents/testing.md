@@ -50,6 +50,10 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
   - `FakeSelectQueryBuilder.ts` → in-memory query-builder fake; use when asserting that `applyQuery*` makes the right calls without spinning up sqlite.
   - `ormconfig.json` → fixture for legacy config discovery paths.
   - `tsconfig.json` → consumed by tests that exercise `readTSConfig` + `adjustFilePath`.
+- **`test/data/database/`** — in-memory implementations of the database connection layer:
+  - `MemoryDatabaseConnectionFactory` → recording connection factory (events: open/execute/close, open-connection tracking, pluggable respond callback to simulate server state). Assert `connectionFactory.statements()` and lifecycle ordering instead of touching a real server.
+  - `MemoryFileSystem` → same idea for the filesystem effects (better-sqlite3). The mongo dialect uses `MemoryDatabaseConnectionFactory` too — its statements are JSON encoded command documents.
+  - Connection factories are injected via the dialect constructor (`new PostgresDialect(new MemoryDatabaseConnectionFactory())`); end-to-end specs pass `DatabaseDialectOverrides` to `executeDatabaseCreate` / `executeDatabaseDrop`.
 
 ## Testing Philosophy
 
@@ -103,7 +107,7 @@ Thresholds (enforced — Vitest fails the run below these):
 | lines      | 80%    |
 | statements | 80%    |
 
-`coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/**`, `src/env/utils.ts`, `src/errors/**`, `src/utils/**`, and `src/seeder/**` from coverage scoring — the gate effectively covers `src/data-source/**`, `src/helpers/**`, and `src/query/**`. Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
+`coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, `src/errors/**`, `src/utils/**`, and `src/seeder/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/query/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
 
 Coverage is uploaded by CI to Codecov via `codecov/codecov-action`.
 

@@ -5,5 +5,3 @@ export * from './mysql';
 export * from './oracle';
 export * from './postgres';
 export * from './sqlite';
-export * from './types';
-export * from './utils';

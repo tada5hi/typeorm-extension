@@ -20,8 +20,8 @@
              │                 │                             │                  │
              ▼                 ▼                             ▼                  ▼
        ┌────────────┐   ┌──────────────┐              ┌──────────────┐   ┌──────────────┐
-       │  drivers/  │   │  factory/    │              │  options/    │   │ parameter/   │
-       │  per-DB    │   │  (faker)     │              │  env merge   │   │  rapiq parse │
+       │core/ +     │   │  factory/    │              │  options/    │   │ parameter/   │
+       │adapters/   │   │  (faker)     │              │  env merge   │   │  rapiq parse │
        └────────────┘   └──────────────┘              └──────────────┘   └──────────────┘
 
   Shared infra: src/env (envix), src/errors, src/utils (file-path/tsconfig/object), src/helpers
@@ -31,15 +31,22 @@ The CLI is a *thin* layer — every command just calls a function from the publi
 
 ## Core Design Decisions
 
-### 1. Driver dispatch via `switch`, not a registry
+### 1. Database dialects behind connection factories (core + adapters)
 
-`src/database/methods/create/module.ts` (and its `drop` / `check` siblings) own a single `switch` over `context.options.type` that maps each TypeORM `DatabaseType` to a driver-specific function in `src/database/driver/<driver>.ts`. There is no plugin registry — driver support is a closed set known at build time. Adding a driver = adding a file in `database/driver/` + adding a `case`. Keep this pattern; do not introduce a registry abstraction.
+The `database` domain is split hexagonally ([RFC #1400](https://github.com/tada5hi/typeorm-extension/issues/1400)):
+
+- **`src/database/core/`** — the pure side. One folder per dialect (`postgres/`, `mysql/`, `mssql/`, `oracle/`, `mongodb/`, `cockroachdb/`, `sqlite/`), each with `statements.ts` (pure SQL string builders) and `module.ts` (a `class <X>Dialect implements IDatabaseDialect` with its connection factory injected via the constructor, orchestrating create/drop with `try/finally` lifecycle). Also owns the connection interfaces (`IDatabaseConnection`, `IDatabaseConnectionFactory`, `IFileSystem`) and `buildConnectionParams()` (DataSourceOptions → dialect-neutral `ConnectionParams`, derived once per operation). Statements are strings in the server's native language — SQL text, or for mongodb a JSON encoded command document executed via `db.command()`. **Dialects must stay pure**: types, typed errors and pure helpers only — no native clients, no I/O, no env state.
+- **`src/database/adapters/`** — the impure side, and the only files touching native clients or `node:fs`. Each adapter (`PostgresConnectionFactory`, `MySQLConnectionFactory`, `MsSQLConnectionFactory`, `OracleConnectionFactory`, `MongoDBConnectionFactory`, `NodeFileSystem`) acquires its native client lazily in `open()` via TypeORM's `DriverFactory` (`useNativeDriver()` — typeorm stays the single source of client libraries). Adapters are internal — not re-exported from the public barrel.
+- **`src/database/registry.ts`** — the single dispatch site: a closed `Record<DatabaseDialectName, entry>` wiring each dialect to its adapter (`mariadb` resolves to `mysql`; cockroachdb reuses the postgres adapter). No plugin system — driver support is a closed set known at build time. Adding a driver = one dialect folder in `core/`, one adapter, one registry row.
+- **`src/database/methods/execute.ts`** — the composition root (`executeDatabaseCreate` / `executeDatabaseDrop`): resolves the registry entry, derives params once, builds the dialect with its connection factory (honouring `DatabaseDialectOverrides` for tests and the caller-supplied `connection` on the context), and runs `synchronizeDatabaseSchema` exactly once after create.
+
+Tests inject an in-memory recording server (`test/data/database/`) through the composition root — no live database needed to assert generated SQL, connection targeting and close ordering. The per-driver functions (`createPostgresDatabase`, …, in `src/database/driver/`) are deprecated delegates through the same composition root; remove them in the next major.
 
 The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typeorm-extension` v4+ — stay on `typeorm-extension` v3 if you need it. TypeORM 1.0 also removed the legacy `sqlite` driver (only `better-sqlite3` remains) and renamed deep types like `PostgresConnectionOptions` → `PostgresDataSourceOptions`; the code is already migrated.
 
 ### 2. Operations bypass `DataSource.initialize()`
 
-`createDatabase` / `dropDatabase` cannot use a TypeORM `DataSource`, because the database might not exist yet. Each driver file opens a *raw* native client (e.g. `pg.Client`, `mysql2.createConnection`) using credentials extracted from the data-source options, runs the SQL, and closes the connection. The TypeORM `Driver` object is used only for its connector reference (`driver.postgres`, `driver.mysql`) — never `.connect()`d.
+`createDatabase` / `dropDatabase` cannot use a TypeORM `DataSource`, because the database might not exist yet. Each adapter in `src/database/adapters/` opens a *raw* native client (e.g. `pg.Client`, `mysql2.createConnection`) using the derived `ConnectionParams`, exposes it through the `IDatabaseConnection` interface, and the dialect closes the connection in a `finally` block. The TypeORM `Driver` object is used only for its native client reference (`driver.postgres`, `driver.mysql`) — never `.connect()`d. Callers may alternatively supply their own server-level connection via the context's `connection` field; the library never closes a caller-owned connection.
 
 ### 3. DataSource registry with alias-keyed lazy init
 
@@ -63,20 +70,14 @@ Each public method (`createDatabase`, `dropDatabase`, `checkDatabase`) takes a l
 2. Layers env-var defaults from `useEnv()` over them.
 3. Returns a fully-resolved `Context` (options + flags like `ifNotExist`, `synchronize`, `initialDatabase`).
 
-Driver functions then receive the resolved context and trust every field. **Never reach for `useEnv()` or `findDataSource()` from a driver file — that work belongs in the context builder.**
+The composition root then receives the resolved context and trusts every field — the context is built exactly once per operation. **Never reach for `useEnv()` or `findDataSource()` from a dialect or adapter — that work belongs in the context builder.**
 
 ```ts
 // src/database/methods/create/module.ts
 export async function createDatabase(input: DatabaseCreateContextInput = {}) {
     const context = await buildDatabaseCreateContext(input);
 
-    switch (context.options.type) {
-        case 'postgres':   return createPostgresDatabase(context);
-        case 'mysql':
-        case 'mariadb':    return createMySQLDatabase(context);
-        // ...
-        default:           throw DriverError.notSupported(context.options.type);
-    }
+    return executeDatabaseCreate(resolveDatabaseDialectName(context.options.type), context);
 }
 ```
 
@@ -145,11 +146,12 @@ Input:
   └── DataSourceOptions (passed in) or env vars / discovered data-source file
 
 Processing:
-  1. buildDatabaseXContext() resolves options + flags
-  2. switch on context.options.type → driver function
-  3. driver opens a raw native client (bypassing TypeORM init)
-  4. driver runs CREATE/DROP SQL
-  5. (create only) optionally synchronizes the schema after creation
+  1. buildDatabaseXContext() resolves options + flags (context built exactly once)
+  2. resolveDatabaseDialectName() → registry entry (dialect + adapter wiring)
+  3. buildConnectionParams() derives dialect-neutral connection facts once
+  4. dialect orchestrates over the connection factory: adapter connects a raw native client
+     (bypassing TypeORM init), SQL from statements.ts runs, connection closes in finally
+  5. (create only) the composition root optionally synchronizes the schema once
 
 Output:
   └── driver-native result (Promise<unknown>) — caller usually ignores it
@@ -192,7 +194,7 @@ Output:
 ## Error Handling
 
 - `TypeormExtensionError` (`src/errors/base.ts`) is the root. It extends `Error` and adds nothing on its own — subclasses give semantic meaning.
-- `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by the database-methods `switch` default arm and by driver utility code.
+- `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by `resolveDatabaseDialectName()` on a registry miss, and `DriverError.connectionClosed()` when a closed connection is reused.
 - `OptionsError` is thrown when the context builder cannot resolve a DataSource / options.
 - Anywhere else, library code lets the underlying error (TypeORM, the native driver, faker, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
 
@@ -203,7 +205,13 @@ Public entry             → src/index.ts
 CLI entry                → src/cli/index.ts          (bundled to bin/cli.mjs)
 CLI command tree          → src/cli/module.ts          (createCLIEntryPointCommand)
 Database create/drop     → src/database/methods/{create,drop,check}/module.ts
-Per-driver SQL           → src/database/driver/<driver>.ts
+Composition root         → src/database/methods/execute.ts
+Dialect registry         → src/database/registry.ts
+Per-dialect SQL          → src/database/core/<dialect>/statements.ts
+Dialect orchestration    → src/database/core/<dialect>/module.ts
+Connector interfaces (types) → src/database/core/type.ts
+Native client adapters   → src/database/adapters/<driver>.ts
+Deprecated delegates     → src/database/driver/<driver>.ts (removed next major)
 Context builders         → src/database/utils/context.ts
 Schema sync after create → src/database/utils/schema.ts
 DataSource registry      → src/data-source/singleton.ts

@@ -12,4 +12,8 @@ export class DriverError extends TypeormExtensionError {
     static notSupported(driverName: string) {
         return new DriverError(`The driver ${driverName} is not supported yet.`);
     }
+
+    static connectionClosed() {
+        return new DriverError('The database connection has already been closed.');
+    }
 }

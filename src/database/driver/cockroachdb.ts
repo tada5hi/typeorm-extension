@@ -1,67 +1,28 @@
-import type { CockroachDriver } from 'typeorm/driver/cockroachdb/CockroachDriver';
-import type { DatabaseCreateContextInput, DatabaseDropContextInput } from '../methods';
-import { createSimplePostgresConnection } from './postgres';
-import { buildDriverOptions, createDriver } from './utils';
-import { buildDatabaseCreateContext, buildDatabaseDropContext, synchronizeDatabaseSchema } from '../utils';
+import type {
+    DatabaseCreateContextInput,
+    DatabaseDropContextInput,
+} from '../methods';
+import { executeDatabaseCreate, executeDatabaseDrop } from '../methods/execute';
+import { buildDatabaseCreateContext, buildDatabaseDropContext } from '../utils';
 
-export async function executeSimpleCockroachDBQuery(connection: any, query: string, endConnection = true) {
-    return new Promise(((resolve, reject) => {
-        connection.query(query, (queryErr: any, queryResult: any) => {
-            if (endConnection) {
-                connection.end();
-            }
-
-            if (queryErr) {
-                reject(queryErr);
-            }
-
-            resolve(queryResult);
-        });
-    }));
-}
-
+/**
+ * @deprecated Use createDatabase() instead — dialect dispatch is automatic.
+ */
 export async function createCockroachDBDatabase(
     input: DatabaseCreateContextInput = {},
 ) {
     const context = await buildDatabaseCreateContext(input);
-    const options = buildDriverOptions(context.options);
-    const driver = createDriver(context.options) as CockroachDriver;
 
-    const connection = await createSimplePostgresConnection(
-        driver,
-        options,
-        context,
-    );
-
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/cockroachdb/CockroachQueryRunner.ts#L347
-     */
-    const query = `CREATE DATABASE ${context.ifNotExist ? 'IF NOT EXISTS ' : ''} "${options.database}"`;
-    const result = await executeSimpleCockroachDBQuery(connection, query);
-
-    if (context.synchronize) {
-        await synchronizeDatabaseSchema(context.options);
-    }
-
-    return result;
+    return executeDatabaseCreate('cockroachdb', context);
 }
 
+/**
+ * @deprecated Use dropDatabase() instead — dialect dispatch is automatic.
+ */
 export async function dropCockroachDBDatabase(
     input: DatabaseDropContextInput = {},
 ) {
     const context = await buildDatabaseDropContext(input);
-    const options = buildDriverOptions(context.options);
-    const driver = createDriver(context.options) as CockroachDriver;
 
-    const connection = await createSimplePostgresConnection(
-        driver,
-        options,
-        context,
-    );
-    /**
-     * @link https://github.com/typeorm/typeorm/blob/master/src/driver/cockroachdb/CockroachQueryRunner.ts#L356
-     */
-    const query = `DROP DATABASE ${context.ifExist ? 'IF EXISTS ' : ''} "${options.database}"`;
-
-    return executeSimpleCockroachDBQuery(connection, query);
+    return executeDatabaseDrop('cockroachdb', context);
 }

@@ -1,10 +1,22 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DriverUtils } from 'typeorm/driver/DriverUtils';
-import { getCharsetFromDataSourceOptions } from './charset';
-import { getCharacterSetFromDataSourceOptions } from './character-set';
-import type { DriverOptions } from '../types';
+import type { ConnectionParams } from './type';
 
-export function buildDriverOptions(options: DataSourceOptions): DriverOptions {
+function readStringOption(options: DataSourceOptions, key: string): string | undefined {
+    const record = options as Record<string, any>;
+
+    if (typeof record[key] === 'string') {
+        return record[key];
+    }
+
+    if (typeof record.extra?.[key] === 'string') {
+        return record.extra[key];
+    }
+
+    return undefined;
+}
+
+export function buildConnectionParams(options: DataSourceOptions): ConnectionParams {
     let driverOptions: Record<string, any>;
 
     switch (options.type) {
@@ -23,8 +35,8 @@ export function buildDriverOptions(options: DataSourceOptions): DriverOptions {
             driverOptions = DriverUtils.buildDriverOptions(options);
     }
 
-    const charset = getCharsetFromDataSourceOptions(options);
-    const characterSet = getCharacterSetFromDataSourceOptions(options);
+    const charset = readStringOption(options, 'charset');
+    const characterSet = readStringOption(options, 'characterSet');
 
     return {
         host: driverOptions.host,
