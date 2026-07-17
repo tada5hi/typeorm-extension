@@ -1,150 +1,155 @@
-import type { DataSourceOptions } from 'typeorm';
-import { DataSource } from 'typeorm';
-import type { SeederOptions } from '../../../src';
-import { SeederExecutor, resetEnv } from '../../../src';
+import { resolveSeederConfig } from '../../../src';
 
 const SEEDS_DEFAULT = ['src/database/seeds/**/*{.ts,.js}'];
 const FACTORIES_DEFAULT = ['src/database/factories/**/*{.ts,.js}'];
 
-function createExecutor(dataSourceOptions?: SeederOptions) {
-    const options : DataSourceOptions & SeederOptions = {
-        type: 'better-sqlite3',
-        database: ':memory:',
-        ...(dataSourceOptions || {}),
-    };
-
-    return new SeederExecutor(new DataSource(options), { preserveFilePaths: true });
-}
-
-async function buildOptions(executor: SeederExecutor, input: SeederOptions = {}) : Promise<SeederOptions> {
-    return (executor as any).buildOptions(input);
-}
-
 describe('src/seeder/config.ts', () => {
-    afterEach(() => {
-        delete process.env.DB_SEEDS;
-        delete process.env.DB_FACTORIES;
+    it('should apply the built-in defaults when nothing is provided', () => {
+        const config = resolveSeederConfig();
 
-        resetEnv();
+        expect(config).toEqual({
+            seeds: SEEDS_DEFAULT,
+            seedName: undefined,
+            seedTableName: 'seeds',
+            seedTracking: false,
+            factories: FACTORIES_DEFAULT,
+        });
     });
 
     describe('seeds', () => {
-        it('should prefer input over data-source options and env', async () => {
-            process.env.DB_SEEDS = 'env/seeds/*.ts';
-            const executor = createExecutor({ seeds: ['ds/seeds/*.ts'] });
+        it('should prefer input over data-source options and env', () => {
+            const config = resolveSeederConfig(
+                { seeds: ['input/seeds/*.ts'] },
+                { seeds: ['ds/seeds/*.ts'] },
+                { seeds: ['env/seeds/*.ts'], factories: [] },
+            );
 
-            const output = await buildOptions(executor, { seeds: ['input/seeds/*.ts'] });
-            expect(output.seeds).toEqual(['input/seeds/*.ts']);
+            expect(config.seeds).toEqual(['input/seeds/*.ts']);
         });
 
-        it('should fall back to data-source options when input is empty', async () => {
-            process.env.DB_SEEDS = 'env/seeds/*.ts';
-            const executor = createExecutor({ seeds: ['ds/seeds/*.ts'] });
+        it('should fall back to data-source options when input is empty', () => {
+            let config = resolveSeederConfig(
+                {},
+                { seeds: ['ds/seeds/*.ts'] },
+                { seeds: ['env/seeds/*.ts'], factories: [] },
+            );
+            expect(config.seeds).toEqual(['ds/seeds/*.ts']);
 
-            let output = await buildOptions(executor);
-            expect(output.seeds).toEqual(['ds/seeds/*.ts']);
-
-            output = await buildOptions(executor, { seeds: [] });
-            expect(output.seeds).toEqual(['ds/seeds/*.ts']);
+            config = resolveSeederConfig(
+                { seeds: [] },
+                { seeds: ['ds/seeds/*.ts'] },
+            );
+            expect(config.seeds).toEqual(['ds/seeds/*.ts']);
         });
 
-        it('should fall back to env when input and data-source options are empty', async () => {
-            process.env.DB_SEEDS = 'env/seeds/*.ts';
-            const executor = createExecutor();
+        it('should fall back to env when input and data-source options are empty', () => {
+            const config = resolveSeederConfig(
+                {},
+                {},
+                { seeds: ['env/seeds/*.ts'], factories: [] },
+            );
 
-            const output = await buildOptions(executor);
-            expect(output.seeds).toEqual(['env/seeds/*.ts']);
+            expect(config.seeds).toEqual(['env/seeds/*.ts']);
         });
 
-        it('should apply the built-in default last', async () => {
-            const executor = createExecutor();
+        it('should apply the built-in default last', () => {
+            const config = resolveSeederConfig({}, {}, { seeds: [], factories: [] });
 
-            const output = await buildOptions(executor);
-            expect(output.seeds).toEqual(SEEDS_DEFAULT);
+            expect(config.seeds).toEqual(SEEDS_DEFAULT);
         });
     });
 
     describe('factories', () => {
-        it('should prefer input over data-source options and env', async () => {
-            process.env.DB_FACTORIES = 'env/factories/*.ts';
-            const executor = createExecutor({ factories: ['ds/factories/*.ts'] });
+        it('should prefer input over data-source options and env', () => {
+            const config = resolveSeederConfig(
+                { factories: ['input/factories/*.ts'] },
+                { factories: ['ds/factories/*.ts'] },
+                { seeds: [], factories: ['env/factories/*.ts'] },
+            );
 
-            const output = await buildOptions(executor, { factories: ['input/factories/*.ts'] });
-            expect(output.factories).toEqual(['input/factories/*.ts']);
+            expect(config.factories).toEqual(['input/factories/*.ts']);
         });
 
-        it('should fall back to data-source options when input is empty', async () => {
-            process.env.DB_FACTORIES = 'env/factories/*.ts';
-            const executor = createExecutor({ factories: ['ds/factories/*.ts'] });
+        it('should fall back to data-source options when input is empty', () => {
+            const config = resolveSeederConfig(
+                { factories: [] },
+                { factories: ['ds/factories/*.ts'] },
+                { seeds: [], factories: ['env/factories/*.ts'] },
+            );
 
-            const output = await buildOptions(executor);
-            expect(output.factories).toEqual(['ds/factories/*.ts']);
+            expect(config.factories).toEqual(['ds/factories/*.ts']);
         });
 
-        it('should fall back to env when input and data-source options are empty', async () => {
-            process.env.DB_FACTORIES = 'env/factories/*.ts';
-            const executor = createExecutor();
+        it('should fall back to env when input and data-source options are empty', () => {
+            const config = resolveSeederConfig(
+                {},
+                {},
+                { seeds: [], factories: ['env/factories/*.ts'] },
+            );
 
-            const output = await buildOptions(executor);
-            expect(output.factories).toEqual(['env/factories/*.ts']);
+            expect(config.factories).toEqual(['env/factories/*.ts']);
         });
 
-        it('should apply the built-in default last', async () => {
-            const executor = createExecutor();
+        it('should apply the built-in default last', () => {
+            const config = resolveSeederConfig({}, {}, { seeds: [], factories: [] });
 
-            const output = await buildOptions(executor);
-            expect(output.factories).toEqual(FACTORIES_DEFAULT);
+            expect(config.factories).toEqual(FACTORIES_DEFAULT);
         });
     });
 
     describe('seedName', () => {
-        it('should only be taken from input', async () => {
-            const executor = createExecutor({ seedName: 'FromDataSourceOptions' });
+        it('should only be taken from input', () => {
+            let config = resolveSeederConfig({}, { seedName: 'FromDataSourceOptions' });
+            expect(config.seedName).toBeUndefined();
 
-            let output = await buildOptions(executor);
-            expect(output.seedName).toBeUndefined();
-
-            output = await buildOptions(executor, { seedName: 'FromInput' });
-            expect(output.seedName).toEqual('FromInput');
+            config = resolveSeederConfig(
+                { seedName: 'FromInput' },
+                { seedName: 'FromDataSourceOptions' },
+            );
+            expect(config.seedName).toEqual('FromInput');
         });
     });
 
     describe('seedTracking', () => {
-        it('should prefer input over data-source options', async () => {
-            const executor = createExecutor({ seedTracking: true });
+        it('should prefer input over data-source options', () => {
+            const config = resolveSeederConfig(
+                { seedTracking: false },
+                { seedTracking: true },
+            );
 
-            const output = await buildOptions(executor, { seedTracking: false });
-            expect(output.seedTracking).toBe(false);
+            expect(config.seedTracking).toBe(false);
         });
 
         // characterization: the data-source options fallback is dead code —
-        // buildOptions defaults the input value to `false` before checking it.
-        it('should ignore data-source options when input is undefined (current behavior)', async () => {
-            const executor = createExecutor({ seedTracking: true });
+        // the input value is defaulted to `false` before it is checked.
+        it('should ignore data-source options when input is undefined (current behavior)', () => {
+            const config = resolveSeederConfig({}, { seedTracking: true });
 
-            const output = await buildOptions(executor);
-            expect(output.seedTracking).toBe(false);
+            expect(config.seedTracking).toBe(false);
         });
 
-        it('should default to false', async () => {
-            const executor = createExecutor();
+        it('should default to false', () => {
+            const config = resolveSeederConfig();
 
-            const output = await buildOptions(executor);
-            expect(output.seedTracking).toBe(false);
+            expect(config.seedTracking).toBe(false);
         });
     });
 
     describe('seedTableName', () => {
-        // characterization: the executor resolves the table name in its constructor,
-        // exclusively from the data-source options — input is silently ignored.
-        it('should ignore input and only honor data-source options (current behavior)', async () => {
-            let executor = createExecutor({ seedTableName: 'custom_seed_table' });
-            expect((executor as any).tableName).toEqual('custom_seed_table');
+        // characterization: the table name is resolved exclusively from the
+        // data-source options — input is silently ignored.
+        it('should ignore input and only honor data-source options (current behavior)', () => {
+            let config = resolveSeederConfig({}, { seedTableName: 'custom_seed_table' });
+            expect(config.seedTableName).toEqual('custom_seed_table');
 
-            executor = createExecutor();
-            const output = await buildOptions(executor, { seedTableName: 'custom_seed_table' });
-            expect(output.seedTableName).toEqual('custom_seed_table');
-            expect((executor as any).tableName).toEqual('seeds');
+            config = resolveSeederConfig({ seedTableName: 'custom_seed_table' }, {});
+            expect(config.seedTableName).toEqual('seeds');
+        });
+
+        it('should default to "seeds"', () => {
+            const config = resolveSeederConfig();
+
+            expect(config.seedTableName).toEqual('seeds');
         });
     });
 });

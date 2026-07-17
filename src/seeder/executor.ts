@@ -6,9 +6,15 @@ import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
 import { useEnv } from '../env';
 import { adjustFilePaths, readTSConfig, resolveFilePath } from '../utils';
 import type { TSConfig } from '../utils';
+import { resolveSeederConfig } from './config';
 import { SeederEntity } from './entity';
 import { SeederFactoryManager, prepareSeederFactories, useSeederFactoryManager } from './factory';
-import type { SeederExecutorOptions, SeederOptions, SeederPrepareElement } from './type';
+import type {
+    SeederConfig, 
+    SeederExecutorOptions, 
+    SeederOptions, 
+    SeederPrepareElement,
+} from './type';
 import { prepareSeederSeeds } from './utils';
 
 export class SeederExecutor {
@@ -354,41 +360,8 @@ export class SeederExecutor {
         );
     }
 
-    protected async buildOptions(input: SeederOptions = {}) {
-        const options : SeederOptions = {
-            ...input,
-            seeds: input.seeds || [],
-            factories: input.factories || [],
-            seedTracking: input.seedTracking ?? false,
-        };
-
-        if (!options.seeds || options.seeds.length === 0) {
-            options.seeds = this.dataSourceOptions.seeds;
-        }
-
-        if (!options.seeds || options.seeds.length === 0) {
-            options.seeds = useEnv('seeds');
-        }
-
-        if (!options.seeds || options.seeds.length === 0) {
-            options.seeds = ['src/database/seeds/**/*{.ts,.js}'];
-        }
-
-        if (!options.factories || options.factories.length === 0) {
-            options.factories = this.dataSourceOptions.factories;
-        }
-
-        if (!options.factories || options.factories.length === 0) {
-            options.factories = useEnv('factories');
-        }
-
-        if (!options.factories || options.factories.length === 0) {
-            options.factories = ['src/database/factories/**/*{.ts,.js}'];
-        }
-
-        if (typeof options.seedTracking === 'undefined') {
-            options.seedTracking = this.dataSourceOptions.seedTracking;
-        }
+    protected async buildOptions(input: SeederOptions = {}) : Promise<SeederConfig> {
+        const options = resolveSeederConfig(input, this.dataSourceOptions, useEnv());
 
         if (!this.options.preserveFilePaths) {
             let tsConfig : TSConfig;

@@ -1,3 +1,4 @@
+export * from './config';
 export * from './entity';
 export * from './executor';
 export * from './factory';
