@@ -17,7 +17,7 @@ describe('src/database/core/mssql', () => {
         expect(connectionFactory.openConnections.size).toEqual(0);
     });
 
-    it('should create database with character set', async () => {
+    it('should not append a character set clause', async () => {
         const connectionFactory = new MemoryDatabaseConnectionFactory();
         const dialect = new MsSQLDialect(connectionFactory);
 
@@ -27,7 +27,7 @@ describe('src/database/core/mssql', () => {
         });
 
         expect(connectionFactory.statements()).toEqual([
-            'CREATE DATABASE "app" CHARACTER SET UTF8',
+            'CREATE DATABASE "app"',
         ]);
     });
 

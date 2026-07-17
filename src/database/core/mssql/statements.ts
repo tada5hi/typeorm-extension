@@ -2,17 +2,15 @@ import type { ConnectionParams } from '../type';
 
 /**
  * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L416
+ *
+ * NOTE: the previous implementation appended a `CHARACTER SET` clause,
+ * which is not valid T-SQL (SQL Server uses `COLLATE <collation_name>`).
+ * The clause was removed; a proper collation option is future work.
  */
 export function buildMsSQLCreateDatabaseQuery(params: ConnectionParams, ifNotExist: boolean): string {
-    let query = ifNotExist ?
+    return ifNotExist ?
         `IF DB_ID('${params.database}') IS NULL CREATE DATABASE "${params.database}"` :
         `CREATE DATABASE "${params.database}"`;
-
-    if (typeof params.characterSet === 'string') {
-        query += ` CHARACTER SET ${params.characterSet}`;
-    }
-
-    return query;
 }
 
 /**
