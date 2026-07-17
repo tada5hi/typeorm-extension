@@ -22,7 +22,19 @@ export type SeederOptions = {
     seedTracking?: boolean
 
     factories?: SeederFactoryItem[] | string[],
-    factoriesLoad?: boolean
+};
+
+/**
+ * A fully resolved seeder configuration
+ * (explicit input ← data-source options ← environment ← built-in defaults).
+ */
+export type SeederConfig = {
+    seeds: SeederConstructor[] | string[],
+    seedName?: string,
+    seedTableName: string,
+    seedTracking: boolean,
+
+    factories: SeederFactoryItem[] | string[],
 };
 
 export type SeederExecutorOptions = {

@@ -328,8 +328,14 @@ The following values are assumed by default:
 
 Note: When seeder paths are configured as **glob patterns**, the paths are resolved and sorted in alphabetical order using filenames. This helps to ensure that the seeders are executed in the correct order.
 
+Seeder options can be provided per invocation (`runSeeder(s)` options parameter), on the extended
+data-source options, or via environment variables. Explicit input wins over the data-source options,
+which win over the environment; built-in defaults apply last.
+
 It is possible to define that a seeder is only executed once.
 This can either be set globally using the `seedTracking` option or locally using the `track` property of a seeder class.
+Executed seeds are recorded in a `seeds` table (a collection for MongoDB);
+the table name can be changed with the `seedTableName` option.
 
 `data-source.ts`
 

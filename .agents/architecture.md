@@ -58,7 +58,7 @@ The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typ
 
 ### 5. Seeder tracking mirrors TypeORM's migration tracking
 
-`SeederExecutor` (`src/seeder/executor.ts`) follows the same shape as TypeORM's `MigrationExecutor`: a `seeds` table with `id`, `timestamp`, `name`, populated only when tracking is enabled (per-seed `track = true` or executor-level `seedTracking: true`). MongoDB uses a collection instead. Untracked seeds re-run on every invocation.
+`SeederExecutor` (`src/seeder/executor.ts`) follows the same shape as TypeORM's `MigrationExecutor`: a `seeds` table with `id`, `timestamp`, `name`, populated only when tracking is enabled (per-seed `track = true` or executor-level `seedTracking`, resolved from input ← data-source options). MongoDB uses a collection instead. Untracked seeds re-run on every invocation. The per-seed decision lives in `SeederEntity.effectiveTracking(fallback)`; execution order in the static `SeederEntity.compare` comparator. The table name comes from `seedTableName` (input ← data-source options ← `'seeds'`).
 
 ## Design Patterns
 
@@ -165,15 +165,18 @@ Output:
 
 ```
 Input:
-  └── DataSource + SeederOptions { seeds, factories, seedName?, seedTracking? }
+  └── DataSource + SeederOptions { seeds, factories, seedName?, seedTableName?, seedTracking? }
 
-Processing:
-  1. SeederExecutor.buildOptions() merges options ← dataSource.options ← env ← defaults
-  2. (optional) prepareSeederFactories() loads factory files via glob → registers in the global manager
-  3. prepareSeederSeeds() loads seed files via glob → constructs entities
-  4. If tracking: create `seeds` table if missing, load already-executed names
-  5. Filter to pending = (matches seedName?) AND (not already tracked OR not tracking)
-  6. For each pending: instantiate, call .run(dataSource, factoryManager) with a manager bound to
+Processing (SeederExecutor.execute — one named stage per step):
+  1. resolveConfig(): pure resolveSeederConfig(input, dataSource.options, env) — precedence
+     input ← dataSource.options ← env ← defaults (src/seeder/config.ts) — then JIT path adjustment
+  2. prepareSeederFactories() loads factory files via glob → registers in the global manager
+  3. loadEntities(): prepareSeederSeeds() loads seed files via glob → SeederEntity list,
+     ordered by SeederEntity.compare (fileName, then timestamp)
+  4. If tracking: create the seedTableName table if missing, load already-executed names
+  5. filterPending(): (matches seedName?) AND (not already tracked OR not
+     SeederEntity.effectiveTracking(seedTracking))
+  6. runPending(): instantiate, call .run(dataSource, factoryManager) with a manager bound to
      the executor's data source, optionally insert tracking row
 
 Output:
@@ -224,6 +227,7 @@ DataSource registry      → src/data-source/singleton.ts (delegates to src/runt
 DataSource discovery     → src/data-source/find/module.ts
 DataSource options merge → src/data-source/options/module.ts + utils/{env,merge}.ts
 Seeder runtime           → src/seeder/executor.ts, src/seeder/module.ts
+Seeder config resolver   → src/seeder/config.ts (resolveSeederConfig)
 Factory registry         → src/seeder/factory/manager.ts
 Query applier            → src/query/module.ts
 Per-parameter appliers   → src/query/parameter/<concern>/module.ts

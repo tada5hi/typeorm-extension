@@ -28,6 +28,15 @@ The following values are assumed by default:
 - factory path: `src/database/factories/**/*{.ts,.js}`
 - seed path: `src/database/seeds/**/*{.ts,.js}`
 
+Seeder options can be provided per invocation (`runSeeder(s)` options parameter), on the extended
+data-source options, or via environment variables. Explicit input wins over the data-source options,
+which win over the environment; built-in defaults apply last.
+
+It is possible to define that a seeder is only executed once.
+This can either be set globally using the `seedTracking` option or locally using the `track`
+property of a seeder class. Executed seeds are recorded in a `seeds` table (a collection for
+MongoDB); the table name can be changed with the `seedTableName` option.
+
 `env`
 ```
 TYPEORM_SEEDING_FACTORIES=src/database/factories/**/*{.ts,.js}

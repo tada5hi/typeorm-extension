@@ -39,7 +39,8 @@ typeorm-extension/
 │   │   ├── cache.ts            # AsyncKeyedCache — keyed get-or-build with concurrent dedupe
 │   │   └── module.ts           # RuntimeRegistry + useRuntimeRegistry() — owns data sources, options, env, factories
 │   ├── seeder/                 # Seeder + factory runtime
-│   │   ├── executor.ts         # SeederExecutor — orchestrates run + tracking table
+│   │   ├── config.ts           # resolveSeederConfig — pure precedence resolver (input ← ds options ← env ← defaults)
+│   │   ├── executor.ts         # SeederExecutor — named pipeline stages + tracking table
 │   │   ├── module.ts           # runSeeder / runSeeders
 │   │   ├── factory/            # SeederFactory + SeederFactoryManager (faker bridge)
 │   │   └── utils/              # template, file path resolution, glob prep

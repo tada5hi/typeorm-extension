@@ -65,4 +65,28 @@ export class SeederEntity {
 
         return this.instance.track;
     }
+
+    /**
+     * Decide whether this seeder's execution should be tracked.
+     * The per-seed track property wins over the executor-level default.
+     */
+    effectiveTracking(fallback: boolean) : boolean {
+        return this.trackExecution ?? fallback;
+    }
+
+    /**
+     * Execution-order comparator:
+     * by file name when both entities are file-backed, by timestamp otherwise.
+     */
+    static compare(a: SeederEntity, b: SeederEntity) : number {
+        if (
+            typeof a.fileName !== 'undefined' &&
+            typeof b.fileName !== 'undefined' &&
+            a.fileName !== b.fileName
+        ) {
+            return a.fileName > b.fileName ? 1 : -1;
+        }
+
+        return a.timestamp - b.timestamp;
+    }
 }
