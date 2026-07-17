@@ -135,7 +135,7 @@ To get a better overview and understanding of the [dropDatabase](#dropdatabase) 
 ## Custom Connection
 
 By default, the library opens a raw connection with the driver's native client
-(e.g. `pg`, `mysql2`) to run the `CREATE`/`DROP` statements. For SQL based drivers,
+(e.g. `pg`, `mysql2`) to run the `CREATE`/`DROP` statements. For server backed drivers,
 a caller supplied server-level connection can be injected instead — for example an
 existing admin pool or a tunnelled connection. The library never closes an injected
 connection; its lifecycle stays with the caller.

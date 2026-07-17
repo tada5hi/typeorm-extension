@@ -1,39 +1,45 @@
 import {
     MongoDBDialect,
     buildMongoDBConnectionUri,
+    buildMongoDBDropDatabaseCommand,
 } from '../../../../src/database/core';
-import { MemoryMongoDatabaseConnector } from '../../../data/database';
+import { MemoryDatabaseConnector } from '../../../data/database';
 
 describe('src/database/core/mongodb', () => {
-    it('should create database by connecting and closing', async () => {
-        const mongo = new MemoryMongoDatabaseConnector();
-        const dialect = new MongoDBDialect(mongo);
+    it('should create database by opening and closing a session', async () => {
+        const connector = new MemoryDatabaseConnector();
+        const dialect = new MongoDBDialect(connector);
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
         });
 
-        expect(mongo.eventTypes()).toEqual(['open', 'close']);
-        expect(mongo.events[0]).toEqual({
-            type: 'open', 
-            session: 1, 
-            database: 'app', 
+        expect(connector.eventTypes()).toEqual(['open', 'close']);
+        expect(connector.events[0]).toEqual({
+            type: 'open',
+            session: 1,
+            database: 'app',
         });
-        expect(mongo.openSessions.size).toEqual(0);
+        expect(connector.openSessions.size).toEqual(0);
     });
 
-    it('should drop database', async () => {
-        const mongo = new MemoryMongoDatabaseConnector();
-        const dialect = new MongoDBDialect(mongo);
+    it('should drop database with a command document', async () => {
+        const connector = new MemoryDatabaseConnector();
+        const dialect = new MongoDBDialect(connector);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
         });
 
-        expect(mongo.eventTypes()).toEqual(['open', 'dropDatabase', 'close']);
-        expect(mongo.openSessions.size).toEqual(0);
+        expect(connector.eventTypes()).toEqual(['open', 'execute', 'close']);
+        expect(connector.statements()).toEqual(['{"dropDatabase":1}']);
+        expect(connector.openSessions.size).toEqual(0);
+    });
+
+    it('should build the drop database command', () => {
+        expect(buildMongoDBDropDatabaseCommand()).toEqual('{"dropDatabase":1}');
     });
 
     it('should build the connection uri', () => {

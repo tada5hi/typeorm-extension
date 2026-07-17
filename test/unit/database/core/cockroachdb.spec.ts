@@ -11,7 +11,7 @@ describe('src/database/core/cockroachdb', () => {
             ifNotExist: true,
         });
 
-        expect(connector.sql()).toEqual(['CREATE DATABASE IF NOT EXISTS  "app"']);
+        expect(connector.statements()).toEqual(['CREATE DATABASE IF NOT EXISTS  "app"']);
         expect(connector.openSessions.size).toEqual(0);
     });
 
@@ -24,7 +24,7 @@ describe('src/database/core/cockroachdb', () => {
             ifNotExist: false,
         });
 
-        expect(connector.sql()).toEqual(['CREATE DATABASE  "app"']);
+        expect(connector.statements()).toEqual(['CREATE DATABASE  "app"']);
     });
 
     it('should drop database', async () => {
@@ -36,7 +36,7 @@ describe('src/database/core/cockroachdb', () => {
             ifExist: true,
         });
 
-        expect(connector.sql()).toEqual(['DROP DATABASE IF EXISTS  "app"']);
+        expect(connector.statements()).toEqual(['DROP DATABASE IF EXISTS  "app"']);
         expect(connector.openSessions.size).toEqual(0);
     });
 });

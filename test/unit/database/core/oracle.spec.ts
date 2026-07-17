@@ -14,7 +14,7 @@ describe('src/database/core/oracle', () => {
             ifNotExist: true,
         });
 
-        expect(connector.sql()).toEqual(['CREATE DATABASE IF NOT EXISTS app']);
+        expect(connector.statements()).toEqual(['CREATE DATABASE IF NOT EXISTS app']);
         expect(connector.openSessions.size).toEqual(0);
     });
 

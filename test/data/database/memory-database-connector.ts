@@ -11,7 +11,7 @@ export type MemoryConnectorEvent =    | {
     {
         type: 'execute', 
         session: number, 
-        sql: string 
+        statement: string     
     } |
     { type: 'close', session: number };
 
@@ -26,9 +26,9 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
 
     protected counter = 0;
 
-    protected respond: (sql: string, database?: string) => unknown;
+    protected respond: (statement: string, database?: string) => unknown;
 
-    constructor(respond?: (sql: string, database?: string) => unknown) {
+    constructor(respond?: (statement: string, database?: string) => unknown) {
         this.respond = respond || (() => ({ ok: true }));
     }
 
@@ -59,15 +59,15 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
 
         return {
             open,
-            execute: async (sql: string) => {
+            execute: async (statement: string) => {
                 await open();
 
                 this.events.push({
                     type: 'execute', 
                     session, 
-                    sql, 
+                    statement,
                 });
-                return this.respond(sql, database);
+                return this.respond(statement, database);
             },
             close: async () => {
                 if (closed) {
@@ -86,9 +86,9 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
         };
     }
 
-    sql(): string[] {
+    statements(): string[] {
         return this.events.flatMap(
-            (event) => (event.type === 'execute' ? [event.sql] : []),
+            (event) => (event.type === 'execute' ? [event.statement] : []),
         );
     }
 

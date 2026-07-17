@@ -65,7 +65,7 @@ const registry: Record<DatabaseDialectName, DatabaseDialectRegistryEntry> = {
     mongodb: {
         buildParams: buildConnectionParams,
         buildDialect: (options, params, overrides) => new MongoDBDialect(
-            overrides.mongo || new MongoDBConnector(options, params),
+            overrides.connector || new MongoDBConnector(options, params),
         ),
     },
     'better-sqlite3': {

@@ -32,7 +32,7 @@ describe('src/database/methods/execute', () => {
             synchronize: false,
         }, { connector });
 
-        expect(connector.sql()).toEqual(['CREATE DATABASE "app"']);
+        expect(connector.statements()).toEqual(['CREATE DATABASE "app"']);
         expect(connector.openSessions.size).toEqual(0);
     });
 
@@ -44,7 +44,7 @@ describe('src/database/methods/execute', () => {
             ifExist: true,
         }, { connector });
 
-        expect(connector.sql()).toEqual(['DROP DATABASE IF EXISTS "app"']);
+        expect(connector.statements()).toEqual(['DROP DATABASE IF EXISTS "app"']);
     });
 
     it('should use a caller supplied connection and never close it', async () => {

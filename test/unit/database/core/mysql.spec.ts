@@ -15,7 +15,7 @@ describe('src/database/core/mysql', () => {
             ifNotExist: true,
         });
 
-        expect(connector.sql()).toEqual(['CREATE DATABASE IF NOT EXISTS `app`']);
+        expect(connector.statements()).toEqual(['CREATE DATABASE IF NOT EXISTS `app`']);
         expect(connector.openSessions.size).toEqual(0);
     });
 
@@ -28,7 +28,7 @@ describe('src/database/core/mysql', () => {
             ifNotExist: false,
         });
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             'CREATE DATABASE `app` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci',
         ]);
     });
@@ -42,7 +42,7 @@ describe('src/database/core/mysql', () => {
             ifExist: true,
         });
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',
             'DROP DATABASE IF EXISTS `app`',
             'SET FOREIGN_KEY_CHECKS=1;',
@@ -67,7 +67,7 @@ describe('src/database/core/mysql', () => {
             ifExist: true,
         })).rejects.toThrow('boom');
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',
             'DROP DATABASE IF EXISTS `app`',
             'SET FOREIGN_KEY_CHECKS=1;',

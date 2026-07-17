@@ -3,13 +3,13 @@ import type { MongoDriver } from 'typeorm/driver/mongodb/MongoDriver';
 import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IMongoDatabaseConnector,
-    IMongoDatabaseSession,
+    IDatabaseConnector,
+    IDatabaseSession,
 } from '../core';
 import { buildMongoDBConnectionUri } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
-export class MongoDBConnector implements IMongoDatabaseConnector {
+export class MongoDBConnector implements IDatabaseConnector {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,
@@ -18,7 +18,7 @@ export class MongoDBConnector implements IMongoDatabaseConnector {
         this.params = params;
     }
 
-    session(database?: string): IMongoDatabaseSession {
+    session(database?: string): IDatabaseSession {
         const { options, params } = this;
 
         const uri = buildMongoDBConnectionUri(params, database);
@@ -47,10 +47,14 @@ export class MongoDBConnector implements IMongoDatabaseConnector {
 
         return {
             open,
-            dropDatabase: async () => {
+            /**
+             * Statements are JSON encoded command documents,
+             * e.g. '{"dropDatabase": 1}'.
+             */
+            execute: async (statement: string) => {
                 await open();
 
-                return client.db().dropDatabase();
+                return client.db().command(JSON.parse(statement));
             },
             close: async () => {
                 if (closed) {

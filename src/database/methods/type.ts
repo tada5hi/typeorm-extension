@@ -21,7 +21,7 @@ export type DatabaseBaseContext = {
     initialDatabase?: string,
 
     /**
-     * Caller supplied server-level connection (SQL drivers only).
+     * Caller supplied server-level connection.
      * It is treated as already open, and the caller owns its lifecycle —
      * the library never opens or closes it.
      *

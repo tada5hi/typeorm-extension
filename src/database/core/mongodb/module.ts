@@ -1,12 +1,13 @@
 import type {
     DatabaseCreateOperation,
     DatabaseDropOperation,
+    IDatabaseConnector,
     IDatabaseDialect,
-    IMongoDatabaseConnector,
 } from '../type';
+import { buildMongoDBDropDatabaseCommand } from './statements';
 
 export class MongoDBDialect implements IDatabaseDialect {
-    constructor(protected connector: IMongoDatabaseConnector) {
+    constructor(protected connector: IDatabaseConnector) {
         this.connector = connector;
     }
 
@@ -26,7 +27,7 @@ export class MongoDBDialect implements IDatabaseDialect {
         await session.open();
 
         try {
-            return await session.dropDatabase();
+            return await session.execute(buildMongoDBDropDatabaseCommand());
         } finally {
             await session.close();
         }

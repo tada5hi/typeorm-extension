@@ -3,6 +3,10 @@ import type { DataSourceOptions } from 'typeorm';
 /**
  * A session against a database server (never a TypeORM DataSource).
  *
+ * execute() takes a statement in the server's native language:
+ * SQL text for SQL speaking servers, a JSON encoded command document
+ * for mongodb (executed via db.command()).
+ *
  * Lifecycle: open() performs the handshake once — concurrent and repeated
  * calls share the same attempt — and is optional, since execute() opens
  * the session on demand. close() is terminal: a closed session cannot be
@@ -11,13 +15,13 @@ import type { DataSourceOptions } from 'typeorm';
 export interface IDatabaseSession {
     open(): Promise<void>;
 
-    execute(sql: string): Promise<unknown>;
+    execute(statement: string): Promise<unknown>;
 
     close(): Promise<void>;
 }
 
 /**
- * Connector for SQL speaking database servers.
+ * Connector for database servers.
  *
  * session() is a cheap factory — no I/O happens before open().
  * The optional database argument overrides the session's target database
@@ -26,21 +30,6 @@ export interface IDatabaseSession {
  */
 export interface IDatabaseConnector {
     session(database?: string): IDatabaseSession;
-}
-
-/**
- * MongoDB speaks commands, not SQL, and therefore owns a separate connector.
- */
-export interface IMongoDatabaseSession {
-    open(): Promise<void>;
-
-    dropDatabase(): Promise<unknown>;
-
-    close(): Promise<void>;
-}
-
-export interface IMongoDatabaseConnector {
-    session(database?: string): IMongoDatabaseSession;
 }
 
 /**
@@ -122,7 +111,6 @@ export type DatabaseDialectName = 'postgres' | 'cockroachdb' | 'mysql' | 'mssql'
  */
 export type DatabaseDialectOverrides = {
     connector?: IDatabaseConnector,
-    mongo?: IMongoDatabaseConnector,
     fs?: IFileSystem,
     cwd?: string,
 };

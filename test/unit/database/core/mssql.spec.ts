@@ -11,7 +11,7 @@ describe('src/database/core/mssql', () => {
             ifNotExist: true,
         });
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             'IF DB_ID(\'app\') IS NULL CREATE DATABASE "app"',
         ]);
         expect(connector.openSessions.size).toEqual(0);
@@ -26,7 +26,7 @@ describe('src/database/core/mssql', () => {
             ifNotExist: false,
         });
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             'CREATE DATABASE "app" CHARACTER SET UTF8',
         ]);
     });
@@ -40,7 +40,7 @@ describe('src/database/core/mssql', () => {
             ifExist: true,
         });
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             'IF DB_ID(\'app\') IS NOT NULL DROP DATABASE "app"',
         ]);
         expect(connector.openSessions.size).toEqual(0);

@@ -15,7 +15,7 @@ describe('src/database/core/postgres', () => {
             initialDatabase: 'postgres',
         });
 
-        expect(connector.sql()).toEqual(['CREATE DATABASE "app"']);
+        expect(connector.statements()).toEqual(['CREATE DATABASE "app"']);
         expect(connector.events[0]).toEqual({
             type: 'open', 
             session: 1, 
@@ -34,7 +34,7 @@ describe('src/database/core/postgres', () => {
             ifNotExist: true,
         });
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             "SELECT * FROM pg_database WHERE lower(datname) = lower('app');",
             'CREATE DATABASE "app"',
         ]);
@@ -52,7 +52,7 @@ describe('src/database/core/postgres', () => {
             ifNotExist: true,
         });
 
-        expect(connector.sql()).toHaveLength(1);
+        expect(connector.statements()).toHaveLength(1);
         expect(connector.openSessions.size).toEqual(0);
         expect(output).toBeUndefined();
     });
@@ -67,7 +67,7 @@ describe('src/database/core/postgres', () => {
             initialDatabase: 'postgres',
         });
 
-        expect(connector.sql()).toEqual([
+        expect(connector.statements()).toEqual([
             'CREATE DATABASE "app"',
             'CREATE SCHEMA IF NOT EXISTS "tenant"',
         ]);
@@ -101,7 +101,7 @@ describe('src/database/core/postgres', () => {
             ifNotExist: false,
         });
 
-        expect(connector.sql()).toEqual(['CREATE DATABASE "app"']);
+        expect(connector.statements()).toEqual(['CREATE DATABASE "app"']);
     });
 
     it('should close the session when the query fails', async () => {
@@ -127,7 +127,7 @@ describe('src/database/core/postgres', () => {
             ifExist: true,
         });
 
-        expect(connector.sql()).toEqual(['DROP DATABASE IF EXISTS "app"']);
+        expect(connector.statements()).toEqual(['DROP DATABASE IF EXISTS "app"']);
         expect(connector.openSessions.size).toEqual(0);
     });
 
@@ -140,7 +140,7 @@ describe('src/database/core/postgres', () => {
             ifExist: false,
         });
 
-        expect(connector.sql()).toEqual(['DROP DATABASE "app"']);
+        expect(connector.statements()).toEqual(['DROP DATABASE "app"']);
     });
 
     it('should build create query with template and encoding', () => {
