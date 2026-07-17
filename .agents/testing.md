@@ -34,6 +34,7 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |
 | `test/unit/helper/`      | Entity inspection helpers (join columns, property names, uniqueness) |
 | `test/unit/query/`       | `applyQuery` end-to-end and per-parameter (fields/filters/…)         |
+| `test/unit/runtime/`     | `AsyncKeyedCache` semantics, `RuntimeRegistry` state + `reset()`     |
 | `test/unit/seeder/`      | Seeder execution, tracking, factory manager                          |
 | `test/unit/utils/`       | Pure helper functions                                                |
 
@@ -88,7 +89,7 @@ expect(qb.calls).toEqual([...]);
 const qb = { where: jest.fn(), leftJoin: jest.fn() } as any;
 ```
 
-After mutating `process.env` in a test, call `resetEnv()` from `src/env` to clear the cached `Environment` instance, otherwise the next test sees stale values.
+After mutating `process.env` in a test, call `resetEnv()` from `src/env` to clear the cached `Environment` instance, otherwise the next test sees stale values. For a full process-state teardown (data sources, options, env, factories at once), call `useRuntimeRegistry().reset()` from `src/runtime` (internal module — import it by path in tests).
 
 Test files that need a directory reference must use `import.meta.dirname` (Node 22+) — `__dirname` is not available because the package is ESM-only.
 

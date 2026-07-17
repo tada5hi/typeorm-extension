@@ -24,7 +24,7 @@
        │adapters/   │   │  (faker)     │              │  env merge   │   │  rapiq parse │
        └────────────┘   └──────────────┘              └──────────────┘   └──────────────┘
 
-  Shared infra: src/env (envix), src/errors, src/utils (file-path/tsconfig/object), src/helpers
+  Shared infra: src/runtime (state registry), src/env (envix), src/errors, src/utils (file-path/tsconfig/object), src/helpers
 ```
 
 The CLI is a *thin* layer — every command just calls a function from the public API.
@@ -50,7 +50,7 @@ The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typ
 
 ### 3. DataSource registry with alias-keyed lazy init
 
-`src/data-source/singleton.ts` keeps a `Record<alias, DataSource>` plus parallel promise caches so `useDataSource(alias)` is idempotent and concurrent-safe. The default alias is `'default'`. `setDataSource()` registers a pre-built instance; `useDataSource()` builds + initializes one from discovered options if none is registered. This is why the library can be used in apps that never call `findDataSource` themselves.
+`src/data-source/singleton.ts` stores data sources in the runtime registry's alias-keyed `AsyncKeyedCache`, so `useDataSource(alias)` is idempotent and concurrent-safe (concurrent calls share one build; a failed build is evicted for retry). The default alias is `'default'`. `setDataSource()` registers a pre-built instance; `useDataSource()` builds + initializes one from discovered options if none is registered. This is why the library can be used in apps that never call `findDataSource` themselves.
 
 ### 4. Query application delegates parsing to `rapiq`
 
@@ -81,15 +81,19 @@ export async function createDatabase(input: DatabaseCreateContextInput = {}) {
 }
 ```
 
-### Singleton registry pattern (data sources, factories, env)
+### Runtime registry pattern (data sources, options, env, factories)
 
-State that must survive across calls in the same process is stored in module-local `Record`s, with `set*` / `has*` / `use*` / `unset*` (and sometimes `reset*`) functions:
+All state that must survive across calls in the same process lives in one place: the `RuntimeRegistry` (`src/runtime/module.ts`, reachable via `useRuntimeRegistry()`). It owns four slots:
 
-- `src/data-source/singleton.ts` → `instances`, `initializePromises`, `optionsPromises`
-- `src/env/module.ts` → single `instance` cache, with `resetEnv()`
-- `src/seeder/factory/manager.ts` → `SeederFactoryManager.items` keyed by entity name
+- `dataSources` / `dataSourceOptions` — two alias-keyed `AsyncKeyedCache` instances (`src/runtime/cache.ts`): get-or-build with concurrent-call dedupe and failed-build eviction.
+- `env` — the memoized `Environment` read by `useEnv()`.
+- `factories` — the `SeederFactoryManager` instance (`items` keyed by entity name).
 
-`useEnv()` is cached on first read; tests that mutate `process.env` must call `resetEnv()` between cases.
+The registry is **internal** (not in the public barrel). Consumers interact through the per-domain accessors, which are thin delegates: `setDataSource` / `hasDataSource` / `useDataSource` / `unsetDataSource`, `setDataSourceOptions` / `hasDataSourceOptions` / `useDataSourceOptions`, `useEnv` / `resetEnv`, `useSeederFactoryManager` / `setSeederFactory` / `resetSeederFactoryManager`. `RuntimeRegistry.reset()` restores a pristine process state (used by tests).
+
+`useEnv()` is cached on first read; tests that mutate `process.env` must call `resetEnv()` between cases. Don't add new process-global state outside the registry.
+
+Note: `SeederExecutor` does **not** register its data source globally (a v3 side effect removed in v4). Each run gets a `SeederFactoryManager` bound to the executor's data source (sharing the globally registered factory items), so factory `save()` persists into the executor's database; unbound factories fall back to `useDataSource()`.
 
 ### defineCommand pattern (CLI)
 
@@ -135,7 +139,7 @@ Each command body runs inside `runWithExitCode(logger, async () => { … })` (`s
 
 ### Factory pattern (seeder/factory)
 
-`setSeederFactory(Entity, callback)` registers a faker-driven generator with the global `SeederFactoryManager`. A `Seeder.run(dataSource, factoryManager)` impl calls `factoryManager.get(Entity).createMany(n)`. The factory `callback` receives a `Faker` instance from `@faker-js/faker` (peer dep — only loaded when factories are actually used).
+`setSeederFactory(Entity, callback)` registers a faker-driven generator with the global `SeederFactoryManager`. A `Seeder.run(dataSource, factoryManager)` impl calls `factoryManager.get(Entity).createMany(n)`. The factory `callback` receives a `Faker` instance from `@faker-js/faker` (peer dep — only loaded when factories are actually used). The manager handed to `run()` is bound to the executor's data source (sharing the global `items`), so `save()` / `saveMany()` persist there; factories resolved outside a run fall back to `useDataSource()`.
 
 ## Data Flow
 
@@ -165,11 +169,12 @@ Input:
 
 Processing:
   1. SeederExecutor.buildOptions() merges options ← dataSource.options ← env ← defaults
-  2. (optional) prepareSeederFactories() loads factory files via glob → registers in manager
+  2. (optional) prepareSeederFactories() loads factory files via glob → registers in the global manager
   3. prepareSeederSeeds() loads seed files via glob → constructs entities
   4. If tracking: create `seeds` table if missing, load already-executed names
   5. Filter to pending = (matches seedName?) AND (not already tracked OR not tracking)
-  6. For each pending: instantiate, call .run(dataSource, factoryManager), optionally insert tracking row
+  6. For each pending: instantiate, call .run(dataSource, factoryManager) with a manager bound to
+     the executor's data source, optionally insert tracking row
 
 Output:
   └── SeederEntity[] of seeds actually executed
@@ -214,7 +219,8 @@ Native client adapters   → src/database/adapters/<driver>.ts
 Deprecated delegates     → src/database/driver/<driver>.ts (removed next major)
 Context builders         → src/database/utils/context.ts
 Schema sync after create → src/database/utils/schema.ts
-DataSource registry      → src/data-source/singleton.ts
+Runtime state registry   → src/runtime/module.ts (+ cache.ts — AsyncKeyedCache)
+DataSource registry      → src/data-source/singleton.ts (delegates to src/runtime)
 DataSource discovery     → src/data-source/find/module.ts
 DataSource options merge → src/data-source/options/module.ts + utils/{env,merge}.ts
 Seeder runtime           → src/seeder/executor.ts, src/seeder/module.ts

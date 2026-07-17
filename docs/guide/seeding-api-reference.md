@@ -172,3 +172,19 @@ export type SeederOptions = {
     factoriesLoad?: boolean
 };
 ```
+
+## `resetSeederFactoryManager`
+
+```typescript
+declare function resetSeederFactoryManager() : void;
+```
+
+Drop all factories registered via `setSeederFactory`, so the next access starts from a clean
+manager. Useful in tests and long-lived processes where factory registrations would otherwise
+accumulate for the lifetime of the process.
+
+```typescript
+import { resetSeederFactoryManager } from 'typeorm-extension';
+
+resetSeederFactoryManager();
+```

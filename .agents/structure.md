@@ -35,6 +35,9 @@ typeorm-extension/
 │   │   ├── module.ts           # applyQuery() / applyQueryParseOutput() — public entry
 │   │   ├── parameter/          # fields, filters, pagination, relations, sort
 │   │   └── utils/              # alias/key/option helpers
+│   ├── runtime/                # Process-global state registry (internal, not in the public barrel)
+│   │   ├── cache.ts            # AsyncKeyedCache — keyed get-or-build with concurrent dedupe
+│   │   └── module.ts           # RuntimeRegistry + useRuntimeRegistry() — owns data sources, options, env, factories
 │   ├── seeder/                 # Seeder + factory runtime
 │   │   ├── executor.ts         # SeederExecutor — orchestrates run + tracking table
 │   │   ├── module.ts           # runSeeder / runSeeders
@@ -71,6 +74,7 @@ typeorm-extension/
 | `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError`).                      |
 | `helpers/`       | Entity-shape helpers (`getEntityName`) — used across seeder and query modules.                         |
 | `query/`         | Apply parsed JSON:API query input onto a `SelectQueryBuilder`. Delegates parsing to `rapiq`.           |
+| `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
 | `utils/`         | Generic, framework-free helpers (tsconfig reading, file-path adjustment, object/promise/slash utils).  |
 
@@ -126,4 +130,4 @@ CLI command factories are **not** part of the public barrel — they are interna
 - **Public, programmatic API** → everything else under `src/`, re-exported from `src/index.ts`.
 - **Driver-specific SQL** → `src/database/core/<dialect>/statements.ts` (pure builders), orchestrated by `src/database/core/<dialect>/module.ts` over the connections; native clients live only in `src/database/adapters/`. Adding a new TypeORM driver means one dialect folder in `core/`, one adapter, and one row in `src/database/registry.ts`.
 - **Query application** → `src/query/parameter/<concern>/` — one folder per JSON:API concern (`fields`, `filters`, `pagination`, `relations`, `sort`).
-- **Side-effectful state** (DataSource registry, env cache, factory manager) → singletons in `src/data-source/singleton.ts`, `src/env/module.ts`, `src/seeder/factory/manager.ts`.
+- **Side-effectful state** (DataSource registry, options cache, env cache, factory manager) → one `RuntimeRegistry` in `src/runtime/module.ts`; the public accessors (`setDataSource`/`useDataSource`, `useEnv`/`resetEnv`, `useSeederFactoryManager`/`resetSeederFactoryManager`, …) are thin delegates in their own domains.

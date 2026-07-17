@@ -58,6 +58,24 @@ The TypeORM 1.0 upstream changes that affect `typeorm-extension` consumers:
 
 See the [TypeORM 1.0 release notes](https://typeorm.io/docs/releases/1.0/release-notes/) for the full list of upstream breaking changes.
 
+### Seeder execution no longer registers the data source globally
+
+In v3, constructing a `SeederExecutor` (which `runSeeder` / `runSeeders` do internally) registered the
+given data source under the `default` alias as a side effect — silently repointing what
+`useDataSource()` returns everywhere else in the process.
+
+In v4, the executor leaves the data-source registry untouched. Factories resolved through the
+`factoryManager` passed to `Seeder.run()` are bound to the executor's data source, so factory
+`save()` / `saveMany()` still persist into the seeded database. If other code relies on
+`useDataSource()` returning the seeded data source, register it explicitly:
+
+```typescript
+import { runSeeders, setDataSource } from 'typeorm-extension';
+
+setDataSource(dataSource); // was implicit in v3
+await runSeeders(dataSource);
+```
+
 ## Internal Toolchain (no consumer impact)
 
 For contributors only:
