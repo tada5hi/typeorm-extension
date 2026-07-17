@@ -1,19 +1,17 @@
 import { load } from 'locter';
 import type { EntitySchema, ObjectType } from 'typeorm';
+import { useRuntimeRegistry } from '../../runtime';
 import { resolveFilePaths, resolveFilePatterns } from '../utils';
 import { SeederFactoryManager } from './manager';
 import type { FactoryCallback, SeederFactoryItem } from './type';
 
-let instance : SeederFactoryManager | undefined;
-
 export function useSeederFactoryManager() {
-    if (typeof instance !== 'undefined') {
-        return instance;
+    const registry = useRuntimeRegistry();
+    if (typeof registry.factories === 'undefined') {
+        registry.factories = new SeederFactoryManager();
     }
 
-    instance = new SeederFactoryManager();
-
-    return instance;
+    return registry.factories;
 }
 
 export function setSeederFactory<O extends Record<string, any>, Meta = unknown>(
