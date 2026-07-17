@@ -1,7 +1,7 @@
 import type {
     DatabaseCreateOperation,
     DatabaseDropOperation,
-    IDatabaseConnector,
+    IDatabaseConnectionFactory,
     IDatabaseDialect,
 } from '../type';
 import { hasResultRows } from '../utils';
@@ -13,22 +13,22 @@ import {
 } from './statements';
 
 export class PostgresDialect implements IDatabaseDialect {
-    constructor(protected connector: IDatabaseConnector) {
-        this.connector = connector;
+    constructor(protected connectionFactory: IDatabaseConnectionFactory) {
+        this.connectionFactory = connectionFactory;
     }
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
         const { params } = operation;
 
-        const session = this.connector.session(operation.initialDatabase);
-        await session.open();
+        const connection = this.connectionFactory.create(operation.initialDatabase);
+        await connection.open();
 
         let exists = false;
         let result: unknown;
 
         try {
             if (operation.ifNotExist) {
-                const existsResult = await session.execute(
+                const existsResult = await connection.execute(
                     buildPostgresDatabaseExistsQuery(params.database as string),
                 );
 
@@ -36,10 +36,10 @@ export class PostgresDialect implements IDatabaseDialect {
             }
 
             if (!exists) {
-                result = await session.execute(buildPostgresCreateDatabaseQuery(params));
+                result = await connection.execute(buildPostgresCreateDatabaseQuery(params));
             }
         } finally {
-            await session.close();
+            await connection.close();
         }
 
         if (exists) {
@@ -48,16 +48,16 @@ export class PostgresDialect implements IDatabaseDialect {
 
         /**
          * CREATE DATABASE cannot run in a transaction, and the schema lives
-         * inside the new database — hence a second session, targeted at it.
+         * inside the new database — hence a second connection, targeted at it.
          */
         if (typeof params.schema === 'string' && params.schema !== 'public') {
-            const schemaSession = this.connector.session(params.database);
-            await schemaSession.open();
+            const schemaConnection = this.connectionFactory.create(params.database);
+            await schemaConnection.open();
 
             try {
-                await schemaSession.execute(buildPostgresCreateSchemaQuery(params.schema));
+                await schemaConnection.execute(buildPostgresCreateSchemaQuery(params.schema));
             } finally {
-                await schemaSession.close();
+                await schemaConnection.close();
             }
         }
 
@@ -65,15 +65,15 @@ export class PostgresDialect implements IDatabaseDialect {
     }
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
-        const session = this.connector.session(operation.initialDatabase);
-        await session.open();
+        const connection = this.connectionFactory.create(operation.initialDatabase);
+        await connection.open();
 
         try {
-            return await session.execute(
+            return await connection.execute(
                 buildPostgresDropDatabaseQuery(operation.params.database as string, operation.ifExist),
             );
         } finally {
-            await session.close();
+            await connection.close();
         }
     }
 }

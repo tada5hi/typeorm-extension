@@ -3,39 +3,39 @@ import {
     buildMongoDBConnectionUri,
     buildMongoDBDropDatabaseCommand,
 } from '../../../../src/database/core';
-import { MemoryDatabaseConnector } from '../../../data/database';
+import { MemoryDatabaseConnectionFactory } from '../../../data/database';
 
 describe('src/database/core/mongodb', () => {
-    it('should create database by opening and closing a session', async () => {
-        const connector = new MemoryDatabaseConnector();
-        const dialect = new MongoDBDialect(connector);
+    it('should create database by opening and closing a connection', async () => {
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
+        const dialect = new MongoDBDialect(connectionFactory);
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
         });
 
-        expect(connector.eventTypes()).toEqual(['open', 'close']);
-        expect(connector.events[0]).toEqual({
+        expect(connectionFactory.eventTypes()).toEqual(['open', 'close']);
+        expect(connectionFactory.events[0]).toEqual({
             type: 'open',
-            session: 1,
+            connection: 1,
             database: 'app',
         });
-        expect(connector.openSessions.size).toEqual(0);
+        expect(connectionFactory.openConnections.size).toEqual(0);
     });
 
     it('should drop database with a command document', async () => {
-        const connector = new MemoryDatabaseConnector();
-        const dialect = new MongoDBDialect(connector);
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
+        const dialect = new MongoDBDialect(connectionFactory);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
         });
 
-        expect(connector.eventTypes()).toEqual(['open', 'execute', 'close']);
-        expect(connector.statements()).toEqual(['{"dropDatabase":1}']);
-        expect(connector.openSessions.size).toEqual(0);
+        expect(connectionFactory.eventTypes()).toEqual(['open', 'execute', 'close']);
+        expect(connectionFactory.statements()).toEqual(['{"dropDatabase":1}']);
+        expect(connectionFactory.openConnections.size).toEqual(0);
     });
 
     it('should build the drop database command', () => {

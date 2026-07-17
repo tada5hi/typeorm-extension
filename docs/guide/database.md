@@ -132,13 +132,13 @@ import { dropDatabase } from 'typeorm-extension';
 
 To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions---database) section and read more about it.
 
-## Custom Session
+## Custom Connection
 
 By default, the library opens a raw connection with the driver's native client
 (e.g. `pg`, `mysql2`) to run the `CREATE`/`DROP` statements. For server backed drivers,
-a caller supplied server-level session can be injected instead — for example an
+a caller supplied server-level connection can be injected instead — for example an
 existing admin pool or a tunnelled connection. The library never closes an injected
-session; its lifecycle stays with the caller.
+connection; its lifecycle stays with the caller.
 
 ```typescript
 import { createDatabase } from 'typeorm-extension';
@@ -147,17 +147,17 @@ import { pool } from './admin-pool';
 (async () => {
     await createDatabase({
         options,
-        session: {
+        connection: {
             execute: (statement) => pool.query(statement),
         },
     });
 })();
 ```
 
-The injected object only needs the `execute` part of the `IDatabaseSession` interface.
+The injected object only needs the `execute` part of the `IDatabaseConnection` interface.
 It is treated as already open — the library never opens or closes it. For full control
-over how sessions are opened (e.g. per-database session targeting), implement the
-`IDatabaseConnector` interface instead — both types are exported from the package.
+over how connections are opened (e.g. per-database targeting), implement the
+`IDatabaseConnectionFactory` interface instead — both types are exported from the package.
 
 ::: warning NOTE
 The former per-driver helpers (`createPostgresDatabase`, `dropMySQLDatabase`, ...)

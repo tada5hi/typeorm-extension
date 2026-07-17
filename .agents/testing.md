@@ -50,10 +50,10 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
   - `FakeSelectQueryBuilder.ts` → in-memory query-builder fake; use when asserting that `applyQuery*` makes the right calls without spinning up sqlite.
   - `ormconfig.json` → fixture for legacy config discovery paths.
   - `tsconfig.json` → consumed by tests that exercise `readTSConfig` + `adjustFilePath`.
-- **`test/data/database/`** — in-memory implementations of the database connectors:
-  - `MemoryDatabaseConnector` → recording SQL connector (events: open/execute/close, open-session tracking, pluggable respond callback to simulate server state). Assert `connector.sql()` and lifecycle ordering instead of touching a real server.
-  - `MemoryFileSystem` → same idea for the filesystem effects (better-sqlite3). The mongo dialect uses `MemoryDatabaseConnector` too — its statements are JSON encoded command documents.
-  - Connectors are injected via the dialect constructor (`new PostgresDialect(new MemoryDatabaseConnector())`); end-to-end specs pass `DatabaseDialectOverrides` to `executeDatabaseCreate` / `executeDatabaseDrop`.
+- **`test/data/database/`** — in-memory implementations of the database connection layer:
+  - `MemoryDatabaseConnectionFactory` → recording connection factory (events: open/execute/close, open-connection tracking, pluggable respond callback to simulate server state). Assert `connectionFactory.statements()` and lifecycle ordering instead of touching a real server.
+  - `MemoryFileSystem` → same idea for the filesystem effects (better-sqlite3). The mongo dialect uses `MemoryDatabaseConnectionFactory` too — its statements are JSON encoded command documents.
+  - Connection factories are injected via the dialect constructor (`new PostgresDialect(new MemoryDatabaseConnectionFactory())`); end-to-end specs pass `DatabaseDialectOverrides` to `executeDatabaseCreate` / `executeDatabaseDrop`.
 
 ## Testing Philosophy
 

@@ -13,7 +13,7 @@ export class DriverError extends TypeormExtensionError {
         return new DriverError(`The driver ${driverName} is not supported yet.`);
     }
 
-    static sessionClosed() {
-        return new DriverError('The database session has already been closed.');
+    static connectionClosed() {
+        return new DriverError('The database connection has already been closed.');
     }
 }

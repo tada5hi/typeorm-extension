@@ -3,13 +3,13 @@ import type { MongoDriver } from 'typeorm/driver/mongodb/MongoDriver';
 import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnector,
-    IDatabaseSession,
+    IDatabaseConnection,
+    IDatabaseConnectionFactory,
 } from '../core';
 import { buildMongoDBConnectionUri } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
-export class MongoDBConnector implements IDatabaseConnector {
+export class MongoDBConnectionFactory implements IDatabaseConnectionFactory {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,
@@ -18,7 +18,7 @@ export class MongoDBConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    session(database?: string): IDatabaseSession {
+    create(database?: string): IDatabaseConnection {
         const { options, params } = this;
 
         const uri = buildMongoDBConnectionUri(params, database);
@@ -29,7 +29,7 @@ export class MongoDBConnector implements IDatabaseConnector {
 
         const open = () => {
             if (closed) {
-                return Promise.reject(DriverError.sessionClosed());
+                return Promise.reject(DriverError.connectionClosed());
             }
 
             if (!openPromise) {

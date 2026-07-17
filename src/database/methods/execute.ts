@@ -1,24 +1,24 @@
 import type {
     DatabaseDialectName,
     DatabaseDialectOverrides,
-    IDatabaseConnector,
-    IDatabaseSession,
+    IDatabaseConnection,
+    IDatabaseConnectionFactory,
 } from '../core';
 import { useDatabaseDialectEntry } from '../registry';
 import { synchronizeDatabaseSchema } from '../utils';
 import type { DatabaseCreateContext, DatabaseDropContext } from './type';
 
 /**
- * Wraps a caller supplied session as a connector.
- * The session is treated as already open, and the caller owns the
+ * Wraps a caller supplied connection as a connection factory.
+ * The connection is treated as already open, and the caller owns the
  * lifecycle — open() and close() never touch it.
  */
-class InjectedConnector implements IDatabaseConnector {
-    constructor(protected injected: Pick<IDatabaseSession, 'execute'>) {
+class InjectedConnectionFactory implements IDatabaseConnectionFactory {
+    constructor(protected injected: Pick<IDatabaseConnection, 'execute'>) {
         this.injected = injected;
     }
 
-    session(): IDatabaseSession {
+    create(): IDatabaseConnection {
         const { injected } = this;
 
         return {
@@ -33,10 +33,10 @@ function buildOverrides(
     context: DatabaseCreateContext | DatabaseDropContext,
     overrides: DatabaseDialectOverrides,
 ): DatabaseDialectOverrides {
-    if (context.session && !overrides.connector) {
+    if (context.connection && !overrides.connectionFactory) {
         return {
             ...overrides,
-            connector: new InjectedConnector(context.session),
+            connectionFactory: new InjectedConnectionFactory(context.connection),
         };
     }
 
@@ -46,7 +46,7 @@ function buildOverrides(
 /**
  * Composition root for the create operation: resolves the registry entry,
  * derives connection params once, builds the dialect with its connector
- * (honouring overrides and a caller supplied session) and runs the
+ * (honouring overrides and a caller supplied connection) and runs the
  * schema synchronization exactly once.
  */
 export async function executeDatabaseCreate(

@@ -3,76 +3,76 @@ import {
     buildMySQLCreateDatabaseQuery,
     deriveMySQLCharacterSet,
 } from '../../../../src/database/core';
-import { MemoryDatabaseConnector } from '../../../data/database';
+import { MemoryDatabaseConnectionFactory } from '../../../data/database';
 
 describe('src/database/core/mysql', () => {
     it('should create database', async () => {
-        const connector = new MemoryDatabaseConnector();
-        const dialect = new MySQLDialect(connector);
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
+        const dialect = new MySQLDialect(connectionFactory);
 
         await dialect.create({
             params: { database: 'app' },
             ifNotExist: true,
         });
 
-        expect(connector.statements()).toEqual(['CREATE DATABASE IF NOT EXISTS `app`']);
-        expect(connector.openSessions.size).toEqual(0);
+        expect(connectionFactory.statements()).toEqual(['CREATE DATABASE IF NOT EXISTS `app`']);
+        expect(connectionFactory.openConnections.size).toEqual(0);
     });
 
     it('should create database with derived character set', async () => {
-        const connector = new MemoryDatabaseConnector();
-        const dialect = new MySQLDialect(connector);
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
+        const dialect = new MySQLDialect(connectionFactory);
 
         await dialect.create({
             params: { database: 'app', charset: 'utf8mb4_general_ci' },
             ifNotExist: false,
         });
 
-        expect(connector.statements()).toEqual([
+        expect(connectionFactory.statements()).toEqual([
             'CREATE DATABASE `app` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci',
         ]);
     });
 
-    it('should wrap drop in foreign key check toggles on one session', async () => {
-        const connector = new MemoryDatabaseConnector();
-        const dialect = new MySQLDialect(connector);
+    it('should wrap drop in foreign key check toggles on one connection', async () => {
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
+        const dialect = new MySQLDialect(connectionFactory);
 
         await dialect.drop({
             params: { database: 'app' },
             ifExist: true,
         });
 
-        expect(connector.statements()).toEqual([
+        expect(connectionFactory.statements()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',
             'DROP DATABASE IF EXISTS `app`',
             'SET FOREIGN_KEY_CHECKS=1;',
         ]);
-        expect(connector.events.filter((event) => event.type === 'open')).toHaveLength(1);
-        expect(connector.events.at(-1)?.type).toEqual('close');
-        expect(connector.openSessions.size).toEqual(0);
+        expect(connectionFactory.events.filter((event) => event.type === 'open')).toHaveLength(1);
+        expect(connectionFactory.events.at(-1)?.type).toEqual('close');
+        expect(connectionFactory.openConnections.size).toEqual(0);
     });
 
     it('should restore foreign key checks and close when drop fails', async () => {
-        const connector = new MemoryDatabaseConnector((sql) => {
+        const connectionFactory = new MemoryDatabaseConnectionFactory((sql) => {
             if (sql.startsWith('DROP DATABASE')) {
                 throw new Error('boom');
             }
 
             return { ok: true };
         });
-        const dialect = new MySQLDialect(connector);
+        const dialect = new MySQLDialect(connectionFactory);
 
         await expect(dialect.drop({
             params: { database: 'app' },
             ifExist: true,
         })).rejects.toThrow('boom');
 
-        expect(connector.statements()).toEqual([
+        expect(connectionFactory.statements()).toEqual([
             'SET FOREIGN_KEY_CHECKS=0;',
             'DROP DATABASE IF EXISTS `app`',
             'SET FOREIGN_KEY_CHECKS=1;',
         ]);
-        expect(connector.openSessions.size).toEqual(0);
+        expect(connectionFactory.openConnections.size).toEqual(0);
     });
 
     it('should derive the character set from the collation', () => {

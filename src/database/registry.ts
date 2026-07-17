@@ -2,12 +2,12 @@ import type { DataSourceOptions } from 'typeorm';
 import { DriverError } from '../errors';
 import { hasOwnProperty } from '../utils';
 import {
-    MongoDBConnector,
-    MsSQLConnector,
-    MySQLConnector,
+    MongoDBConnectionFactory,
+    MsSQLConnectionFactory,
+    MySQLConnectionFactory,
     NodeFileSystem,
-    OracleConnector,
-    PostgresConnector,
+    OracleConnectionFactory,
+    PostgresConnectionFactory,
 } from './adapters';
 import type {
     DatabaseDialectName,
@@ -26,7 +26,7 @@ import {
 
 /**
  * The single dispatch site: a closed set of dialects known at build time.
- * Each entry composes a dialect with its connector (overridable for tests
+ * Each entry composes a dialect with its connection factory (overridable for tests
  * and caller supplied connections).
  * Adding a driver = one dialect folder in core/, one adapter, one row here.
  */
@@ -34,38 +34,38 @@ const registry: Record<DatabaseDialectName, DatabaseDialectRegistryEntry> = {
     postgres: {
         buildParams: buildConnectionParams,
         buildDialect: (options, params, overrides) => new PostgresDialect(
-            overrides.connector || new PostgresConnector(options, params),
+            overrides.connectionFactory || new PostgresConnectionFactory(options, params),
         ),
     },
-    // cockroachdb speaks the pg wire protocol and reuses the postgres connector
+    // cockroachdb speaks the pg wire protocol and reuses the postgres connection factory
     cockroachdb: {
         buildParams: buildConnectionParams,
         buildDialect: (options, params, overrides) => new CockroachDBDialect(
-            overrides.connector || new PostgresConnector(options, params),
+            overrides.connectionFactory || new PostgresConnectionFactory(options, params),
         ),
     },
     mysql: {
         buildParams: buildConnectionParams,
         buildDialect: (options, params, overrides) => new MySQLDialect(
-            overrides.connector || new MySQLConnector(options, params),
+            overrides.connectionFactory || new MySQLConnectionFactory(options, params),
         ),
     },
     mssql: {
         buildParams: buildConnectionParams,
         buildDialect: (options, params, overrides) => new MsSQLDialect(
-            overrides.connector || new MsSQLConnector(options, params),
+            overrides.connectionFactory || new MsSQLConnectionFactory(options, params),
         ),
     },
     oracle: {
         buildParams: buildConnectionParams,
         buildDialect: (options, params, overrides) => new OracleDialect(
-            overrides.connector || new OracleConnector(options, params),
+            overrides.connectionFactory || new OracleConnectionFactory(options, params),
         ),
     },
     mongodb: {
         buildParams: buildConnectionParams,
         buildDialect: (options, params, overrides) => new MongoDBDialect(
-            overrides.connector || new MongoDBConnector(options, params),
+            overrides.connectionFactory || new MongoDBConnectionFactory(options, params),
         ),
     },
     'better-sqlite3': {

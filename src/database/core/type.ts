@@ -1,7 +1,7 @@
 import type { DataSourceOptions } from 'typeorm';
 
 /**
- * A session against a database server (never a TypeORM DataSource).
+ * A connection against a database server (never a TypeORM DataSource).
  *
  * execute() takes a statement in the server's native language:
  * SQL text for SQL speaking servers, a JSON encoded command document
@@ -9,10 +9,10 @@ import type { DataSourceOptions } from 'typeorm';
  *
  * Lifecycle: open() performs the handshake once — concurrent and repeated
  * calls share the same attempt — and is optional, since execute() opens
- * the session on demand. close() is terminal: a closed session cannot be
- * reopened, and closing a never-opened session is a no-op.
+ * the connection on demand. close() is terminal: a closed connection cannot
+ * be reopened, and closing a never-opened connection is a no-op.
  */
-export interface IDatabaseSession {
+export interface IDatabaseConnection {
     open(): Promise<void>;
 
     execute(statement: string): Promise<unknown>;
@@ -21,15 +21,15 @@ export interface IDatabaseSession {
 }
 
 /**
- * Connector for database servers.
+ * Factory for database server connections.
  *
- * session() is a cheap factory — no I/O happens before open().
- * The optional database argument overrides the session's target database
+ * create() is cheap — no I/O happens before open().
+ * The optional database argument overrides the connection's target database
  * (e.g. the initial database, or a freshly created database). When omitted,
  * the server side default (maintenance database) is used.
  */
-export interface IDatabaseConnector {
-    session(database?: string): IDatabaseSession;
+export interface IDatabaseConnectionFactory {
+    create(database?: string): IDatabaseConnection;
 }
 
 /**
@@ -90,7 +90,7 @@ export type DatabaseDropOperation = {
 
 /**
  * A dialect owns the create/drop orchestration for one driver type and
- * receives its connector(s) via the constructor.
+ * receives its connection factory (or filesystem) via the constructor.
  *
  * Implementations must stay pure: types, typed errors and pure helpers only —
  * no native clients, no I/O, no environment state.
@@ -110,7 +110,7 @@ export type DatabaseDialectName = 'postgres' | 'cockroachdb' | 'mysql' | 'mssql'
  * Only the slot a dialect actually consumes has an effect.
  */
 export type DatabaseDialectOverrides = {
-    connector?: IDatabaseConnector,
+    connectionFactory?: IDatabaseConnectionFactory,
     fs?: IFileSystem,
     cwd?: string,
 };

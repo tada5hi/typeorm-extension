@@ -1,26 +1,26 @@
 import type {
     DatabaseCreateOperation,
     DatabaseDropOperation,
-    IDatabaseConnector,
+    IDatabaseConnectionFactory,
     IDatabaseDialect,
 } from '../type';
 import { buildOracleCreateDatabaseQuery } from './statements';
 
 export class OracleDialect implements IDatabaseDialect {
-    constructor(protected connector: IDatabaseConnector) {
-        this.connector = connector;
+    constructor(protected connectionFactory: IDatabaseConnectionFactory) {
+        this.connectionFactory = connectionFactory;
     }
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
-        const session = this.connector.session(operation.initialDatabase);
-        await session.open();
+        const connection = this.connectionFactory.create(operation.initialDatabase);
+        await connection.open();
 
         try {
-            return await session.execute(
+            return await connection.execute(
                 buildOracleCreateDatabaseQuery(operation.params.database as string),
             );
         } finally {
-            await session.close();
+            await connection.close();
         }
     }
 

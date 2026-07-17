@@ -3,13 +3,13 @@ import type { OracleDriver } from 'typeorm/driver/oracle/OracleDriver';
 import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnector,
-    IDatabaseSession,
+    IDatabaseConnection,
+    IDatabaseConnectionFactory,
 } from '../core';
 import { buildOracleConnectString } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
-export class OracleConnector implements IDatabaseConnector {
+export class OracleConnectionFactory implements IDatabaseConnectionFactory {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,
@@ -18,7 +18,7 @@ export class OracleConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    session(): IDatabaseSession {
+    create(): IDatabaseConnection {
         const { options, params } = this;
 
         const connectString = params.connectString ||
@@ -37,7 +37,7 @@ export class OracleConnector implements IDatabaseConnector {
 
         const open = () => {
             if (closed) {
-                return Promise.reject(DriverError.sessionClosed());
+                return Promise.reject(DriverError.connectionClosed());
             }
 
             if (!openPromise) {

@@ -1,28 +1,28 @@
 import type {
-    IDatabaseConnector,
-    IDatabaseSession,
+    IDatabaseConnection,
+    IDatabaseConnectionFactory,
 } from '../../../src/database/core';
 
 export type MemoryConnectorEvent =    | {
     type: 'open', 
-    session: number, 
+    connection: number, 
     database?: string 
 } |
     {
         type: 'execute', 
-        session: number, 
+        connection: number, 
         statement: string     
     } |
-    { type: 'close', session: number };
+    { type: 'close', connection: number };
 
 /**
- * Recording in-memory implementation of the SQL connector.
+ * Recording in-memory implementation of the SQL connection factory.
  * The respond callback simulates server state (e.g. "database exists").
  */
-export class MemoryDatabaseConnector implements IDatabaseConnector {
+export class MemoryDatabaseConnectionFactory implements IDatabaseConnectionFactory {
     events: MemoryConnectorEvent[] = [];
 
-    openSessions = new Set<number>();
+    openConnections = new Set<number>();
 
     protected counter = 0;
 
@@ -32,16 +32,16 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
         this.respond = respond || (() => ({ ok: true }));
     }
 
-    session(database?: string): IDatabaseSession {
+    create(database?: string): IDatabaseConnection {
         this.counter += 1;
-        const session = this.counter;
+        const connection = this.counter;
 
         let opened = false;
         let closed = false;
 
         const open = async () => {
             if (closed) {
-                throw new Error('The session has already been closed.');
+                throw new Error('The connection has already been closed.');
             }
 
             if (opened) {
@@ -49,10 +49,10 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
             }
 
             opened = true;
-            this.openSessions.add(session);
+            this.openConnections.add(connection);
             this.events.push({
                 type: 'open', 
-                session, 
+                connection, 
                 database, 
             });
         };
@@ -64,7 +64,7 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
 
                 this.events.push({
                     type: 'execute', 
-                    session, 
+                    connection, 
                     statement,
                 });
                 return this.respond(statement, database);
@@ -80,8 +80,8 @@ export class MemoryDatabaseConnector implements IDatabaseConnector {
                     return;
                 }
 
-                this.openSessions.delete(session);
-                this.events.push({ type: 'close', session });
+                this.openConnections.delete(connection);
+                this.events.push({ type: 'close', connection });
             },
         };
     }

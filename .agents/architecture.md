@@ -31,22 +31,22 @@ The CLI is a *thin* layer — every command just calls a function from the publi
 
 ## Core Design Decisions
 
-### 1. Database dialects behind connectors (core + adapters)
+### 1. Database dialects behind connection factories (core + adapters)
 
 The `database` domain is split hexagonally ([RFC #1400](https://github.com/tada5hi/typeorm-extension/issues/1400)):
 
-- **`src/database/core/`** — the pure side. One folder per dialect (`postgres/`, `mysql/`, `mssql/`, `oracle/`, `mongodb/`, `cockroachdb/`, `sqlite/`), each with `statements.ts` (pure SQL string builders) and `module.ts` (a `class <X>Dialect implements IDatabaseDialect` with its connector injected via the constructor, orchestrating create/drop with `try/finally` lifecycle). Also owns the connector interfaces (`IDatabaseSession`, `IDatabaseConnector`, `IFileSystem`) and `buildConnectionParams()` (DataSourceOptions → dialect-neutral `ConnectionParams`, derived once per operation). Statements are strings in the server's native language — SQL text, or for mongodb a JSON encoded command document executed via `db.command()`. **Dialects must stay pure**: types, typed errors and pure helpers only — no native clients, no I/O, no env state.
-- **`src/database/adapters/`** — the impure side, and the only files touching native clients or `node:fs`. Each adapter (`PostgresConnector`, `MySQLConnector`, `MsSQLConnector`, `OracleConnector`, `MongoDBConnector`, `NodeFileSystem`) acquires its native client lazily in `open()` via TypeORM's `DriverFactory` (`useNativeDriver()` — typeorm stays the single source of client libraries). Adapters are internal — not re-exported from the public barrel.
+- **`src/database/core/`** — the pure side. One folder per dialect (`postgres/`, `mysql/`, `mssql/`, `oracle/`, `mongodb/`, `cockroachdb/`, `sqlite/`), each with `statements.ts` (pure SQL string builders) and `module.ts` (a `class <X>Dialect implements IDatabaseDialect` with its connection factory injected via the constructor, orchestrating create/drop with `try/finally` lifecycle). Also owns the connection interfaces (`IDatabaseConnection`, `IDatabaseConnectionFactory`, `IFileSystem`) and `buildConnectionParams()` (DataSourceOptions → dialect-neutral `ConnectionParams`, derived once per operation). Statements are strings in the server's native language — SQL text, or for mongodb a JSON encoded command document executed via `db.command()`. **Dialects must stay pure**: types, typed errors and pure helpers only — no native clients, no I/O, no env state.
+- **`src/database/adapters/`** — the impure side, and the only files touching native clients or `node:fs`. Each adapter (`PostgresConnectionFactory`, `MySQLConnectionFactory`, `MsSQLConnectionFactory`, `OracleConnectionFactory`, `MongoDBConnectionFactory`, `NodeFileSystem`) acquires its native client lazily in `open()` via TypeORM's `DriverFactory` (`useNativeDriver()` — typeorm stays the single source of client libraries). Adapters are internal — not re-exported from the public barrel.
 - **`src/database/registry.ts`** — the single dispatch site: a closed `Record<DatabaseDialectName, entry>` wiring each dialect to its adapter (`mariadb` resolves to `mysql`; cockroachdb reuses the postgres adapter). No plugin system — driver support is a closed set known at build time. Adding a driver = one dialect folder in `core/`, one adapter, one registry row.
-- **`src/database/methods/execute.ts`** — the composition root (`executeDatabaseCreate` / `executeDatabaseDrop`): resolves the registry entry, derives params once, builds the dialect with its connector (honouring `DatabaseDialectOverrides` for tests and the caller-supplied `session` on the context), and runs `synchronizeDatabaseSchema` exactly once after create.
+- **`src/database/methods/execute.ts`** — the composition root (`executeDatabaseCreate` / `executeDatabaseDrop`): resolves the registry entry, derives params once, builds the dialect with its connection factory (honouring `DatabaseDialectOverrides` for tests and the caller-supplied `connection` on the context), and runs `synchronizeDatabaseSchema` exactly once after create.
 
-Tests inject an in-memory recording server (`test/data/database/`) through the composition root — no live database needed to assert generated SQL, session targeting and close ordering. The per-driver functions (`createPostgresDatabase`, …, in `src/database/driver/`) are deprecated delegates through the same composition root; remove them in the next major.
+Tests inject an in-memory recording server (`test/data/database/`) through the composition root — no live database needed to assert generated SQL, connection targeting and close ordering. The per-driver functions (`createPostgresDatabase`, …, in `src/database/driver/`) are deprecated delegates through the same composition root; remove them in the next major.
 
 The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typeorm-extension` v4+ — stay on `typeorm-extension` v3 if you need it. TypeORM 1.0 also removed the legacy `sqlite` driver (only `better-sqlite3` remains) and renamed deep types like `PostgresConnectionOptions` → `PostgresDataSourceOptions`; the code is already migrated.
 
 ### 2. Operations bypass `DataSource.initialize()`
 
-`createDatabase` / `dropDatabase` cannot use a TypeORM `DataSource`, because the database might not exist yet. Each adapter in `src/database/adapters/` opens a *raw* native client (e.g. `pg.Client`, `mysql2.createConnection`) using the derived `ConnectionParams`, exposes it through the `IDatabaseSession` interface, and the dialect closes the session in a `finally` block. The TypeORM `Driver` object is used only for its native client reference (`driver.postgres`, `driver.mysql`) — never `.connect()`d. Callers may alternatively supply their own server-level session via the context's `session` field; the library never closes a caller-owned session.
+`createDatabase` / `dropDatabase` cannot use a TypeORM `DataSource`, because the database might not exist yet. Each adapter in `src/database/adapters/` opens a *raw* native client (e.g. `pg.Client`, `mysql2.createConnection`) using the derived `ConnectionParams`, exposes it through the `IDatabaseConnection` interface, and the dialect closes the connection in a `finally` block. The TypeORM `Driver` object is used only for its native client reference (`driver.postgres`, `driver.mysql`) — never `.connect()`d. Callers may alternatively supply their own server-level connection via the context's `connection` field; the library never closes a caller-owned connection.
 
 ### 3. DataSource registry with alias-keyed lazy init
 
@@ -149,8 +149,8 @@ Processing:
   1. buildDatabaseXContext() resolves options + flags (context built exactly once)
   2. resolveDatabaseDialectName() → registry entry (dialect + adapter wiring)
   3. buildConnectionParams() derives dialect-neutral connection facts once
-  4. dialect orchestrates over the connectors: adapter connects a raw native client
-     (bypassing TypeORM init), SQL from statements.ts runs, session closes in finally
+  4. dialect orchestrates over the connection factory: adapter connects a raw native client
+     (bypassing TypeORM init), SQL from statements.ts runs, connection closes in finally
   5. (create only) the composition root optionally synchronizes the schema once
 
 Output:
@@ -194,7 +194,7 @@ Output:
 ## Error Handling
 
 - `TypeormExtensionError` (`src/errors/base.ts`) is the root. It extends `Error` and adds nothing on its own — subclasses give semantic meaning.
-- `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by `resolveDatabaseDialectName()` on a registry miss, and `DriverError.sessionClosed()` when a closed session is reused.
+- `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by `resolveDatabaseDialectName()` on a registry miss, and `DriverError.connectionClosed()` when a closed connection is reused.
 - `OptionsError` is thrown when the context builder cannot resolve a DataSource / options.
 - Anywhere else, library code lets the underlying error (TypeORM, the native driver, faker, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
 

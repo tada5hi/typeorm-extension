@@ -24,7 +24,7 @@
 - After changing source, run `npm run build` (catches TS errors that ESLint misses) and `npm test`.
 - After changing source or tests, run `npm run lint` on the affected files (or `npm run lint:fix`).
 - When changing user-facing behavior (CLI flags, public API signatures, env var names, seeder/factory contract), update both `README.MD` and the matching page in `docs/guide/`.
-- Adding a new TypeORM driver: add a dialect folder `src/database/core/<name>/` (`statements.ts` + `module.ts`), an adapter in `src/database/adapters/<name>.ts`, and a row in `src/database/registry.ts`. Then add a spec under `test/unit/database/core/` (using the memory ports from `test/data/database/`) and a docs entry.
+- Adding a new TypeORM driver: add a dialect folder `src/database/core/<name>/` (`statements.ts` + `module.ts`), an adapter in `src/database/adapters/<name>.ts`, and a row in `src/database/registry.ts`. Then add a spec under `test/unit/database/core/` (using the memory connection factory from `test/data/database/`) and a docs entry.
 
 ## Code Style
 

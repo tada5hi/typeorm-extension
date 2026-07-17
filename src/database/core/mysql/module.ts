@@ -1,7 +1,7 @@
 import type {
     DatabaseCreateOperation,
     DatabaseDropOperation,
-    IDatabaseConnector,
+    IDatabaseConnectionFactory,
     IDatabaseDialect,
 } from '../type';
 import {
@@ -15,39 +15,39 @@ import {
  * Serves mysql AND mariadb.
  */
 export class MySQLDialect implements IDatabaseDialect {
-    constructor(protected connector: IDatabaseConnector) {
-        this.connector = connector;
+    constructor(protected connectionFactory: IDatabaseConnectionFactory) {
+        this.connectionFactory = connectionFactory;
     }
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
-        const session = this.connector.session(operation.initialDatabase);
-        await session.open();
+        const connection = this.connectionFactory.create(operation.initialDatabase);
+        await connection.open();
 
         try {
-            return await session.execute(
+            return await connection.execute(
                 buildMySQLCreateDatabaseQuery(operation.params, operation.ifNotExist),
             );
         } finally {
-            await session.close();
+            await connection.close();
         }
     }
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
-        const session = this.connector.session(operation.initialDatabase);
-        await session.open();
+        const connection = this.connectionFactory.create(operation.initialDatabase);
+        await connection.open();
 
         try {
-            await session.execute(MYSQL_FOREIGN_KEY_CHECKS_OFF);
+            await connection.execute(MYSQL_FOREIGN_KEY_CHECKS_OFF);
 
             try {
-                return await session.execute(
+                return await connection.execute(
                     buildMySQLDropDatabaseQuery(operation.params.database as string, operation.ifExist),
                 );
             } finally {
-                await session.execute(MYSQL_FOREIGN_KEY_CHECKS_ON);
+                await connection.execute(MYSQL_FOREIGN_KEY_CHECKS_ON);
             }
         } finally {
-            await session.close();
+            await connection.close();
         }
     }
 }

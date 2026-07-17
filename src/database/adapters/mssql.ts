@@ -3,12 +3,12 @@ import type { SqlServerDriver } from 'typeorm/driver/sqlserver/SqlServerDriver';
 import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnector,
-    IDatabaseSession,
+    IDatabaseConnection,
+    IDatabaseConnectionFactory,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 
-export class MsSQLConnector implements IDatabaseConnector {
+export class MsSQLConnectionFactory implements IDatabaseConnectionFactory {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,
@@ -17,7 +17,7 @@ export class MsSQLConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    session(database?: string): IDatabaseSession {
+    create(database?: string): IDatabaseConnection {
         const { options, params } = this;
 
         const option: Record<string, any> = {
@@ -36,7 +36,7 @@ export class MsSQLConnector implements IDatabaseConnector {
 
         const open = () => {
             if (closed) {
-                return Promise.reject(DriverError.sessionClosed());
+                return Promise.reject(DriverError.connectionClosed());
             }
 
             if (!openPromise) {

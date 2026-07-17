@@ -6,7 +6,7 @@ import {
     executeDatabaseDrop,
 } from '../../../../src/database/methods/execute';
 import { resolveDatabaseDialectName } from '../../../../src/database/registry';
-import { MemoryDatabaseConnector } from '../../../data/database';
+import { MemoryDatabaseConnectionFactory } from '../../../data/database';
 
 const options = {
     type: 'postgres',
@@ -24,35 +24,35 @@ describe('src/database/methods/execute', () => {
     });
 
     it('should execute create through the registry', async () => {
-        const connector = new MemoryDatabaseConnector();
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
 
         await executeDatabaseCreate('postgres', {
             options,
             ifNotExist: false,
             synchronize: false,
-        }, { connector });
+        }, { connectionFactory });
 
-        expect(connector.statements()).toEqual(['CREATE DATABASE "app"']);
-        expect(connector.openSessions.size).toEqual(0);
+        expect(connectionFactory.statements()).toEqual(['CREATE DATABASE "app"']);
+        expect(connectionFactory.openConnections.size).toEqual(0);
     });
 
     it('should execute drop through the registry', async () => {
-        const connector = new MemoryDatabaseConnector();
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
 
         await executeDatabaseDrop('postgres', {
             options,
             ifExist: true,
-        }, { connector });
+        }, { connectionFactory });
 
-        expect(connector.statements()).toEqual(['DROP DATABASE IF EXISTS "app"']);
+        expect(connectionFactory.statements()).toEqual(['DROP DATABASE IF EXISTS "app"']);
     });
 
-    it('should use a caller supplied session and never close it', async () => {
+    it('should use a caller supplied connection and never close it', async () => {
         const executed: string[] = [];
         let closed = 0;
 
-        // a full session shaped object is accepted — only execute is required
-        const session = {
+        // a full connection shaped object is accepted — only execute is required
+        const connection = {
             execute: async (statement: string) => {
                 executed.push(statement);
                 return { ok: true };
@@ -66,19 +66,19 @@ describe('src/database/methods/execute', () => {
             options,
             ifNotExist: false,
             synchronize: false,
-            session,
+            connection,
         });
 
         expect(executed).toEqual(['CREATE DATABASE "app"']);
         expect(closed).toEqual(0);
     });
 
-    it('should drop through a caller supplied session', async () => {
+    it('should drop through a caller supplied connection', async () => {
         const executed: string[] = [];
 
         await dropDatabase({
             options,
-            session: {
+            connection: {
                 execute: async (statement: string) => {
                     executed.push(statement);
                     return { ok: true };

@@ -3,8 +3,8 @@ import type { MysqlDriver } from 'typeorm/driver/mysql/MysqlDriver';
 import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnector,
-    IDatabaseSession,
+    IDatabaseConnection,
+    IDatabaseConnectionFactory,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 import { promisifyCallbackQuery } from './utils';
@@ -12,7 +12,7 @@ import { promisifyCallbackQuery } from './utils';
 /**
  * Serves mysql AND mariadb.
  */
-export class MySQLConnector implements IDatabaseConnector {
+export class MySQLConnectionFactory implements IDatabaseConnectionFactory {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,
@@ -21,7 +21,7 @@ export class MySQLConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    session(database?: string): IDatabaseSession {
+    create(database?: string): IDatabaseConnection {
         const { options, params } = this;
 
         const option: Record<string, any> = {
@@ -40,7 +40,7 @@ export class MySQLConnector implements IDatabaseConnector {
 
         const open = () => {
             if (closed) {
-                return Promise.reject(DriverError.sessionClosed());
+                return Promise.reject(DriverError.connectionClosed());
             }
 
             if (!openPromise) {

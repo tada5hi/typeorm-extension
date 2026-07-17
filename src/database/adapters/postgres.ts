@@ -4,8 +4,8 @@ import type { PostgresDriver } from 'typeorm/driver/postgres/PostgresDriver';
 import { DriverError } from '../../errors';
 import type {
     ConnectionParams,
-    IDatabaseConnector,
-    IDatabaseSession,
+    IDatabaseConnection,
+    IDatabaseConnectionFactory,
 } from '../core';
 import { useNativeDriver } from './typeorm-driver';
 import { promisifyCallbackQuery } from './utils';
@@ -13,7 +13,7 @@ import { promisifyCallbackQuery } from './utils';
 /**
  * Serves postgres AND cockroachdb — both speak the pg wire protocol.
  */
-export class PostgresConnector implements IDatabaseConnector {
+export class PostgresConnectionFactory implements IDatabaseConnectionFactory {
     constructor(
         protected options: DataSourceOptions,
         protected params: ConnectionParams,
@@ -22,7 +22,7 @@ export class PostgresConnector implements IDatabaseConnector {
         this.params = params;
     }
 
-    session(database?: string): IDatabaseSession {
+    create(database?: string): IDatabaseConnection {
         const { options, params } = this;
 
         const data: Record<string, any> = {
@@ -42,7 +42,7 @@ export class PostgresConnector implements IDatabaseConnector {
 
         const open = () => {
             if (closed) {
-                return Promise.reject(DriverError.sessionClosed());
+                return Promise.reject(DriverError.connectionClosed());
             }
 
             if (!openPromise) {
