@@ -6,6 +6,7 @@ import {
     readInt,
 } from 'envix';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
+import { useRuntimeRegistry } from '../runtime';
 import { EnvironmentName, EnvironmentVariableName } from './constants';
 import type { Environment } from './type';
 import {
@@ -13,17 +14,16 @@ import {
     transformLogging,
 } from './utils';
 
-let instance : Environment | undefined;
-
 export function useEnv() : Environment;
 export function useEnv<K extends keyof Environment>(key: K) : Environment[K];
 export function useEnv(key?: string) : any {
-    if (typeof instance !== 'undefined') {
+    const registry = useRuntimeRegistry();
+    if (typeof registry.env !== 'undefined') {
         if (typeof key === 'string') {
-            return instance[key as keyof Environment];
+            return registry.env[key as keyof Environment];
         }
 
-        return instance;
+        return registry.env;
     }
 
     const output: Environment = {
@@ -166,17 +166,15 @@ export function useEnv(key?: string) : any {
         output.type = type as DatabaseType; // todo: maybe validation here
     }
 
-    instance = output;
+    registry.env = output;
 
     if (typeof key === 'string') {
         return output[key as keyof Environment];
     }
 
-    return instance;
+    return output;
 }
 
 export function resetEnv() {
-    if (typeof instance !== 'undefined') {
-        instance = undefined;
-    }
+    useRuntimeRegistry().env = undefined;
 }

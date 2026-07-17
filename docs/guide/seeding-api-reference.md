@@ -172,3 +172,21 @@ export type SeederOptions = {
     factoriesLoad?: boolean
 };
 ```
+
+## `resetSeederFactoryManager`
+
+```typescript
+declare function resetSeederFactoryManager() : void;
+```
+
+Reset the global factory manager: the managed instance is discarded, so the next access
+(`setSeederFactory`, `useSeederFactory`, a seeder run) starts with a fresh, empty manager.
+Factory instances created before the reset keep working. Useful in tests and long-lived
+processes where the manager's registrations would otherwise accumulate for the lifetime of
+the process.
+
+```typescript
+import { resetSeederFactoryManager } from 'typeorm-extension';
+
+resetSeederFactoryManager();
+```

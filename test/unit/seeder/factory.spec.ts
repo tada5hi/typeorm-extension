@@ -1,5 +1,11 @@
 import type { DataSource } from 'typeorm';
-import { useSeederFactory } from '../../../src';
+import {
+    resetSeederFactoryManager,
+    setSeederFactory,
+    useSeederFactory,
+    useSeederFactoryManager,
+} from '../../../src';
+import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import { destroyTestFsDataSource, setupFsDataSource } from '../../data/typeorm/utils';
 import '../../data/factory/user';
@@ -38,5 +44,18 @@ describe('src/seeder/factory/index.ts', () => {
         factory.setLocale('de');
         user = await factory.save();
         expect(user).toBeDefined();
+    });
+
+    it('should reset the factory manager', () => {
+        setSeederFactory(Role, () => new Role());
+
+        const manager = useSeederFactoryManager();
+        expect(manager.items.Role).toBeDefined();
+
+        resetSeederFactoryManager();
+
+        const next = useSeederFactoryManager();
+        expect(next).not.toBe(manager);
+        expect(next.items.Role).toBeUndefined();
     });
 });

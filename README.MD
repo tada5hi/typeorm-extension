@@ -467,6 +467,10 @@ export default class UserSeeder implements Seeder {
 }
 ```
 
+Factories obtained through the `factoryManager` argument are bound to the data source of the
+current seeder run — `save()` and `saveMany()` persist there. A factory used outside a seeder
+run falls back to the data source registered for the `default` alias.
+
 #### Execute
 
 Populate the database from the code base:

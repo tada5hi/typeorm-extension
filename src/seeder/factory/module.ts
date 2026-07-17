@@ -64,7 +64,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         params?: Partial<O>,
         options?: SaveOptions,
     ) : Promise<O> {
-        const dataSource = await useDataSource();
+        const dataSource = this.context.dataSource || await useDataSource();
 
         const entity = await this.make(params, true);
         const entityManager = dataSource.getRepository(this.context.entity);
@@ -103,10 +103,15 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
                 // @ts-ignore
                 value instanceof SeederFactory
             ) {
+                const factory = value as SeederFactory<any>;
+                if (this.context.dataSource && !factory.context.dataSource) {
+                    factory.context.dataSource = this.context.dataSource;
+                }
+
                 if (save) {
-                    entity[key] = await (value as SeederFactory<any>).save();
+                    entity[key] = await factory.save();
                 } else {
-                    entity[key] = await (value as SeederFactory<any>).make();
+                    entity[key] = await factory.make();
                 }
             }
 

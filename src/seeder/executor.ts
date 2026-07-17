@@ -3,12 +3,11 @@ import type { ObjectLiteral } from 'rapiq';
 import { MssqlParameter, Table } from 'typeorm';
 import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
-import { setDataSource } from '../data-source';
 import { useEnv } from '../env';
 import { adjustFilePaths, readTSConfig, resolveFilePath } from '../utils';
 import type { TSConfig } from '../utils';
 import { SeederEntity } from './entity';
-import { prepareSeederFactories, useSeederFactoryManager } from './factory';
+import { SeederFactoryManager, prepareSeederFactories, useSeederFactoryManager } from './factory';
 import type { SeederExecutorOptions, SeederOptions, SeederPrepareElement } from './type';
 import { prepareSeederSeeds } from './utils';
 
@@ -22,8 +21,6 @@ export class SeederExecutor {
     constructor(dataSource: DataSource, options?: SeederExecutorOptions) {
         this.dataSource = dataSource;
         this.options = options || {};
-
-        setDataSource(dataSource);
 
         this.tableName = this.dataSourceOptions.seedTableName || 'seeds';
     }
@@ -119,7 +116,10 @@ export class SeederExecutor {
             `${all.length} seeds were found in the source code.`,
         );
 
-        const factoryManager = useSeederFactoryManager();
+        const factoryManager = new SeederFactoryManager({
+            items: useSeederFactoryManager().items,
+            dataSource: this.dataSource,
+        });
 
         const executed : SeederEntity[] = [];
 
