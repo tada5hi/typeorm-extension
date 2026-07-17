@@ -40,13 +40,13 @@ export class SeederExecutor {
         let queryRunner : QueryRunner | undefined;
         let existing : SeederEntity[] = [];
 
-        if (tracking) {
-            queryRunner = this.dataSource.createQueryRunner();
-            await this.createTableIfNotExist(queryRunner, config.seedTableName);
-            existing = await this.loadExisting(queryRunner, config.seedTableName);
-        }
-
         try {
+            if (tracking) {
+                queryRunner = this.dataSource.createQueryRunner();
+                await this.createTableIfNotExist(queryRunner, config.seedTableName);
+                existing = await this.loadExisting(queryRunner, config.seedTableName);
+            }
+
             const pending = this.filterPending(all, existing, config);
             if (pending.length === 0) {
                 return [];
