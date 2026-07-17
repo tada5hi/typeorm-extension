@@ -75,6 +75,7 @@ describe('src/seeder/factory/index.ts', () => {
             expect(saved.role.id).toBeDefined();
         } finally {
             setSeederFactory(User, userFactoryItem.factoryFn);
+            delete useSeederFactoryManager().items[Role.name];
         }
     });
 
