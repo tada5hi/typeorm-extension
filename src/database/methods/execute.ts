@@ -14,7 +14,7 @@ import type { DatabaseCreateContext, DatabaseDropContext } from './type';
  * lifecycle — open() and close() never touch it.
  */
 class InjectedConnector implements IDatabaseConnector {
-    constructor(protected connection: Pick<IDatabaseSession, 'execute' | 'close'>) {
+    constructor(protected connection: Pick<IDatabaseSession, 'execute'>) {
         this.connection = connection;
     }
 

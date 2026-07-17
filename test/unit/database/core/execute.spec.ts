@@ -51,19 +51,22 @@ describe('src/database/methods/execute', () => {
         const executed: string[] = [];
         let closed = 0;
 
+        // a full session shaped object is accepted — only execute is required
+        const connection = {
+            execute: async (statement: string) => {
+                executed.push(statement);
+                return { ok: true };
+            },
+            close: async () => {
+                closed += 1;
+            },
+        };
+
         await createDatabase({
             options,
             ifNotExist: false,
             synchronize: false,
-            connection: {
-                execute: async (sql: string) => {
-                    executed.push(sql);
-                    return { ok: true };
-                },
-                close: async () => {
-                    closed += 1;
-                },
-            },
+            connection,
         });
 
         expect(executed).toEqual(['CREATE DATABASE "app"']);
@@ -76,11 +79,10 @@ describe('src/database/methods/execute', () => {
         await dropDatabase({
             options,
             connection: {
-                execute: async (sql: string) => {
-                    executed.push(sql);
+                execute: async (statement: string) => {
+                    executed.push(statement);
                     return { ok: true };
                 },
-                close: async () => Promise.resolve(),
             },
         });
 

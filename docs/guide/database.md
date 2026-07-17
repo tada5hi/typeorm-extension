@@ -148,14 +148,14 @@ import { pool } from './admin-pool';
     await createDatabase({
         options,
         connection: {
-            execute: (sql) => pool.query(sql),
-            close: async () => { /* caller owns the pool */ },
+            execute: (statement) => pool.query(statement),
         },
     });
 })();
 ```
 
-The injected object provides the `execute` / `close` part of the `IDatabaseSession` interface and is treated as already open — the library never opens or closes it. For full control
+The injected object only needs the `execute` part of the `IDatabaseSession` interface.
+It is treated as already open — the library never opens or closes it. For full control
 over how connections are opened (e.g. per-database session targeting), implement the
 `IDatabaseConnector` interface instead — both types are exported from the package.
 

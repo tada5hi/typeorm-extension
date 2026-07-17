@@ -27,7 +27,7 @@ export type DatabaseBaseContext = {
      *
      * default: undefined
      */
-    connection?: Pick<IDatabaseSession, 'execute' | 'close'>,
+    connection?: Pick<IDatabaseSession, 'execute'>,
 };
 
 export type DatabaseBaseContextInput = Partial<DatabaseBaseContext>;
