@@ -38,9 +38,22 @@ export interface IDatabaseConnectionFactory {
 export interface IFileSystem {
     assertDirectoryWritable(path: string): Promise<void>;
 
+    /**
+     * Whether the file exists and is writable.
+     * A missing file yields false; any other failure propagates.
+     */
     isFileWritable(path: string): Promise<boolean>;
 
-    removeFile(path: string): Promise<void>;
+    /**
+     * Create an empty file. Fails when the file already exists.
+     */
+    createFile(path: string): Promise<void>;
+
+    /**
+     * Remove the file. Returns false when it did not exist;
+     * any other failure propagates.
+     */
+    removeFile(path: string): Promise<boolean>;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { OptionsError } from '../../../errors';
+import { DriverError, OptionsError } from '../../../errors';
 import type {
     DatabaseCreateOperation,
     DatabaseDropOperation,
@@ -9,7 +9,9 @@ import { resolveSQLiteDatabaseDirectory, resolveSQLiteDatabasePath } from './pat
 
 /**
  * better-sqlite3 never opens a server connection —
- * create/drop are filesystem effects.
+ * create/drop are filesystem effects following SQL database semantics:
+ * create produces the file (or fails when it exists, unless ifNotExist),
+ * drop removes it (or fails when it is missing, unless ifExist).
  */
 export class SQLiteDialect implements IDatabaseDialect {
     constructor(
@@ -25,9 +27,16 @@ export class SQLiteDialect implements IDatabaseDialect {
             throw OptionsError.databaseNotDefined();
         }
 
+        const filePath = resolveSQLiteDatabasePath(operation.params.database, this.cwd);
         const directoryPath = resolveSQLiteDatabaseDirectory(operation.params.database, this.cwd);
 
         await this.fs.assertDirectoryWritable(directoryPath);
+
+        if (operation.ifNotExist && await this.fs.isFileWritable(filePath)) {
+            return undefined;
+        }
+
+        await this.fs.createFile(filePath);
 
         return undefined;
     }
@@ -39,8 +48,10 @@ export class SQLiteDialect implements IDatabaseDialect {
 
         const filePath = resolveSQLiteDatabasePath(operation.params.database, this.cwd);
 
-        if (operation.ifExist && await this.fs.isFileWritable(filePath)) {
-            await this.fs.removeFile(filePath);
+        const removed = await this.fs.removeFile(filePath);
+
+        if (!removed && !operation.ifExist) {
+            throw DriverError.databaseNotFound(operation.params.database);
         }
 
         return undefined;

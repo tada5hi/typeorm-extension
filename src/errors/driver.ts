@@ -16,4 +16,8 @@ export class DriverError extends TypeormExtensionError {
     static connectionClosed() {
         return new DriverError('The database connection has already been closed.');
     }
+
+    static databaseNotFound(database: string) {
+        return new DriverError(`The database ${database} does not exist.`);
+    }
 }

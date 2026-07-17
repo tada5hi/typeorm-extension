@@ -50,7 +50,7 @@ describe('src/database/registry', () => {
         expect(resolveDatabaseDialectName('mariadb')).toEqual('mysql');
     });
 
-    it('should run the sqlite dialect with default rejecting connectors', async () => {
+    it('should run the sqlite dialect through the composition root', async () => {
         const fs = new MemoryFileSystem();
         fs.writableDirectories.add('/data');
 
@@ -60,7 +60,7 @@ describe('src/database/registry', () => {
             synchronize: false,
         }, { fs, cwd: '/data' });
 
-        fs.files.add('/data/app');
+        expect(fs.files.has('/data/app')).toBeTruthy();
 
         await executeDatabaseDrop('better-sqlite3', {
             options: optionsFor('better-sqlite3'),
