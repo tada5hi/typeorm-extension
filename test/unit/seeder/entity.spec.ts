@@ -64,6 +64,15 @@ describe('src/seeder/entity.ts', () => {
             expect(SeederEntity.compare(b, a)).toBeGreaterThan(0);
         });
 
+        it('should fall back to timestamp for equal file names', () => {
+            const a = createEntity({ fileName: 'seed.ts', timestamp: 1 });
+            const b = createEntity({ fileName: 'seed.ts', timestamp: 2 });
+
+            expect(SeederEntity.compare(a, b)).toBeLessThan(0);
+            expect(SeederEntity.compare(b, a)).toBeGreaterThan(0);
+            expect(SeederEntity.compare(a, a)).toEqual(0);
+        });
+
         it('should order by timestamp when a file name is missing', () => {
             const a = createEntity({ timestamp: 1 });
             const b = createEntity({ fileName: 'b-seed.ts', timestamp: 2 });

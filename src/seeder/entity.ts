@@ -81,7 +81,8 @@ export class SeederEntity {
     static compare(a: SeederEntity, b: SeederEntity) : number {
         if (
             typeof a.fileName !== 'undefined' &&
-            typeof b.fileName !== 'undefined'
+            typeof b.fileName !== 'undefined' &&
+            a.fileName !== b.fileName
         ) {
             return a.fileName > b.fileName ? 1 : -1;
         }
