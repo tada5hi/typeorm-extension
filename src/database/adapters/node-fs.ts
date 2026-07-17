@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import type { IFileSystem } from '../core';
+import { hasErrorCode } from './utils';
 
 export class NodeFileSystem implements IFileSystem {
     async assertDirectoryWritable(path: string): Promise<void> {
@@ -11,7 +12,7 @@ export class NodeFileSystem implements IFileSystem {
             await fs.promises.access(path, fs.constants.F_OK | fs.constants.W_OK);
             return true;
         } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+            if (hasErrorCode(error, 'ENOENT')) {
                 return false;
             }
 
@@ -28,7 +29,7 @@ export class NodeFileSystem implements IFileSystem {
             await fs.promises.unlink(path);
             return true;
         } catch (error) {
-            if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+            if (hasErrorCode(error, 'ENOENT')) {
                 return false;
             }
 
