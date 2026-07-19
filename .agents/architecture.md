@@ -24,7 +24,7 @@
        │adapters/   │   │  (faker)     │              │  env merge   │   │  rapiq parse │
        └────────────┘   └──────────────┘              └──────────────┘   └──────────────┘
 
-  Shared infra: src/runtime (state registry), src/env (envix), src/errors, src/utils (file-path/tsconfig/object), src/helpers
+  Shared infra: src/runtime (state registry), src/env (envix), src/errors, src/utils (path-resolver/file-path/tsconfig/object), src/helpers
 ```
 
 The CLI is a *thin* layer — every command just calls a function from the public API.
@@ -169,7 +169,8 @@ Input:
 
 Processing (SeederExecutor.execute — one named stage per step):
   1. resolveConfig(): pure resolveSeederConfig(input, dataSource.options, env) — precedence
-     input ← dataSource.options ← env ← defaults (src/seeder/config.ts) — then JIT path adjustment
+     input ← dataSource.options ← env ← defaults (src/seeder/config.ts) — then path transformation
+     via the executor's PathResolver (preserveFilePaths ⇒ mode 'preserve', else 'auto' with JIT probe)
   2. prepareSeederFactories() loads factory files via glob → registers in the global manager
   3. loadEntities(): prepareSeederSeeds() loads seed files via glob → SeederEntity list,
      ordered by SeederEntity.compare (fileName, then timestamp)
@@ -231,6 +232,7 @@ Seeder config resolver   → src/seeder/config.ts (resolveSeederConfig)
 Factory registry         → src/seeder/factory/manager.ts
 Query applier            → src/query/module.ts
 Per-parameter appliers   → src/query/parameter/<concern>/module.ts
+Path resolver            → src/utils/path-resolver/module.ts (createPathResolver; adjustFilePath(s) delegate to it)
 Env reader               → src/env/module.ts (+ constants.ts for var names)
 ```
 

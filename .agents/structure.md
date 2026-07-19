@@ -43,8 +43,9 @@ typeorm-extension/
 │   │   ├── executor.ts         # SeederExecutor — named pipeline stages + tracking table
 │   │   ├── module.ts           # runSeeder / runSeeders
 │   │   ├── factory/            # SeederFactory + SeederFactoryManager (faker bridge)
-│   │   └── utils/              # template, file path resolution, glob prep
+│   │   └── utils/              # template, seeder file-name derivation, glob prep
 │   └── utils/                  # Pure helpers: object/promise/file-path/tsconfig
+│       └── path-resolver/      # createPathResolver — owns the JIT-vs-compiled path rewrite decision
 ├── test/
 │   ├── jest.config.js          # rootDir is repo root; testRegex /unit/.*
 │   ├── data/                   # Shared fixtures
@@ -77,7 +78,7 @@ typeorm-extension/
 | `query/`         | Apply parsed JSON:API query input onto a `SelectQueryBuilder`. Delegates parsing to `rapiq`.           |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
-| `utils/`         | Generic, framework-free helpers (tsconfig reading, file-path adjustment, object/promise/slash utils).  |
+| `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). |
 
 ## Key Dependencies
 
