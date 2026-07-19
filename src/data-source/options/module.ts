@@ -33,6 +33,7 @@ export async function buildDataSourceOptions(
         directory,
         fileName: context.dataSourceName,
         tsconfig,
+        preserveFilePaths: context.preserveFilePaths,
     });
 
     if (dataSource) {
