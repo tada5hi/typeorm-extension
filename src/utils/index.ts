@@ -4,6 +4,7 @@ export * from './file-path';
 export * from './file-system';
 export * from './has-property';
 export * from './object';
+export * from './path-resolver';
 export * from './promise';
 export * from './separator';
 export * from './slash';

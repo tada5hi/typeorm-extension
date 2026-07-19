@@ -29,4 +29,17 @@ describe('src/data-source/options', () => {
         expect(options.database).toBeDefined();
         expect(options.extra).toBeDefined();
     });
+
+    it('should not transform the discovery directory when preserving file paths', async () => {
+        // 'src' in the directory would be rewritten to 'dist' by the
+        // compiled-mode path transform, so discovery only succeeds when
+        // preserveFilePaths reaches the find step.
+        const options = await buildDataSourceOptions({
+            directory: 'test/data/typeorm/src',
+            preserveFilePaths: true,
+        });
+
+        expect(options).toBeDefined();
+        expect(options.type).toEqual('better-sqlite3');
+    });
 });

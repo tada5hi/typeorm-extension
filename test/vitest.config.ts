@@ -36,7 +36,6 @@ export default defineConfig({
                 'src/database/driver/**/*.{ts,js}',
                 'src/env/utils.ts',
                 'src/errors/*.{ts,js}',
-                'src/utils/**/*.{ts,js}',
             ],
             thresholds: {
                 branches: 80,

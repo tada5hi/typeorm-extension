@@ -1,9 +1,10 @@
 import {
+    adjustFilePath,
     adjustFilePaths,
     transformFilePath,
 } from '../../../src';
 
-describe('src/connection/utils.ts', () => {
+describe('src/utils/file-path.ts', () => {
     it('should change ts to js path', () => {
         let srcPath = 'src/packages/backend/src/data-source.ts';
         expect(transformFilePath(srcPath)).toEqual('src/packages/backend/dist/data-source.js');
@@ -86,6 +87,12 @@ describe('src/connection/utils.ts', () => {
         expect(transformFilePath(srcPath, undefined, 'dummySrc')).toEqual('src/entities.js');
 
         expect(transformFilePath(srcPath, undefined, '../src')).toEqual('src/entities.js');
+    });
+
+    it('should adjust a single path or an array of paths', async () => {
+        expect(await adjustFilePath('src/entities.ts')).toEqual('dist/entities.js');
+        expect(await adjustFilePath(['src/entities.ts', 5])).toEqual(['dist/entities.js', 5]);
+        expect(await adjustFilePath(undefined)).toBeUndefined();
     });
 
     it('should modify connection option(s) for runtime environment', async () => {

@@ -1,8 +1,6 @@
-import { isObject } from 'locter';
 import type { DataSourceOptions } from 'typeorm';
 import { OptionsError } from '../../errors';
-import { adjustFilePaths, readTSConfig } from '../../utils';
-import type { TSConfig } from '../../utils';
+import { PathResolverMode, createPathResolver } from '../../utils';
 import { findDataSource } from '../find';
 import type { DataSourceOptionsBuildContext } from './type';
 import {
@@ -20,34 +18,24 @@ export async function buildDataSourceOptions(
 ) : Promise<DataSourceOptions> {
     const directory : string = context.directory || process.cwd();
 
-    let tsconfig : TSConfig | undefined;
-    if (!context.preserveFilePaths) {
-        if (isObject(context.tsconfig)) {
-            tsconfig = context.tsconfig;
-        } else {
-            tsconfig = await readTSConfig(context.tsconfig);
-        }
-    }
+    const pathResolver = createPathResolver({
+        tsconfig: context.tsconfig,
+        mode: context.preserveFilePaths ?
+            PathResolverMode.PRESERVE :
+            PathResolverMode.AUTO,
+    });
 
     const dataSource = await findDataSource({
         directory,
         fileName: context.dataSourceName,
-        tsconfig,
+        tsconfig: context.tsconfig,
+        preserveFilePaths: context.preserveFilePaths,
     });
 
     if (dataSource) {
-        if (context.preserveFilePaths) {
-            return mergeDataSourceOptionsWithEnv(dataSource.options);
-        }
-
-        const options = await adjustFilePaths(
+        const options = await pathResolver.transformKeys(
             dataSource.options,
-            [
-                'entities',
-                'migrations',
-                'subscribers',
-            ],
-            tsconfig,
+            ['entities', 'migrations', 'subscribers'],
         );
 
         return mergeDataSourceOptionsWithEnv(options);
@@ -55,14 +43,9 @@ export async function buildDataSourceOptions(
 
     const options = readDataSourceOptionsFromEnv();
     if (options) {
-        if (context.preserveFilePaths) {
-            return options;
-        }
-
-        return adjustFilePaths(
+        return pathResolver.transformKeys(
             options,
             ['entities', 'migrations', 'subscribers'],
-            tsconfig,
         );
     }
 

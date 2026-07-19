@@ -1,10 +1,10 @@
 import { defineCommand } from 'citty';
-import { getFileNameExtension, removeFileNameExtension } from 'locter';
+import { removeFileNameExtension } from 'locter';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pascalCase } from 'pascal-case';
-import { buildSeederFileTemplate } from '../../../seeder';
+import { buildSeederFileName, buildSeederFileTemplate } from '../../../seeder';
 import { isDirectory, parseFilePath } from '../../../utils';
 import { runWithExitCode } from '../../exit';
 import { 
@@ -72,20 +72,10 @@ export function defineCLISeedCreateCommand() {
                     );
                 }
 
-                const extension = args.javascript ?
-                    '.js' :
-                    '.ts';
-
-                const nameExtension = getFileNameExtension(sourcePath.name);
                 const nameWithoutExtension = removeFileNameExtension(sourcePath.name);
 
-                let fileName: string;
-                if (nameExtension) {
-                    fileName = `${timestamp}-${sourcePath.name}`;
-                } else {
-                    fileName = `${timestamp}-${sourcePath.name}${extension}`;
-                }
-                const filePath = sourcePath.directory + path.sep + fileName;
+                const fileName = buildSeederFileName(sourcePath.name, timestamp, { javascript: args.javascript });
+                const filePath = path.join(sourcePath.directory, fileName);
                 const template = buildSeederFileTemplate(nameWithoutExtension, timestamp);
 
                 logger.section('Seed');

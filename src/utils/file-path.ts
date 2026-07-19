@@ -1,10 +1,6 @@
-import { isObject } from 'locter';
 import path from 'node:path';
-import { CodeTransformation, isCodeTransformation } from './code-transformation';
 import { canReplaceWindowsSeparator, replaceWindowSeparator } from './separator';
 import { withoutTrailingSlash } from './slash';
-import type { TSConfig } from './tsconfig';
-import { readTSConfig } from './tsconfig';
 
 const stripLeadingModifier = (text: string) => {
     if (text.startsWith('./')) {
@@ -112,56 +108,6 @@ export function transformFilePath(
     }
 
     return stripLeadingModifier(base);
-}
-export async function adjustFilePath<T extends unknown | unknown[]>(
-    input: T,
-    tsconfig?: string | TSConfig,
-): Promise<T> {
-    if (isCodeTransformation(CodeTransformation.JUST_IN_TIME)) {
-        return input;
-    }
-
-    if (!isObject(tsconfig)) {
-        tsconfig = await readTSConfig(tsconfig);
-    }
-
-    const { compilerOptions } = tsconfig;
-
-    if (typeof input === 'string') {
-        return transformFilePath(input, compilerOptions?.outDir) as T;
-    }
-
-    if (Array.isArray(input)) {
-        for (let i = 0; i < input.length; i++) {
-            if (typeof input[i] === 'string') {
-                input[i] = transformFilePath(input[i], compilerOptions?.outDir);
-            }
-        }
-    }
-
-    return input;
-}
-
-export async function adjustFilePaths<T extends Record<string, any>>(
-    input: T,
-    keys?: (keyof T)[],
-    tsconfig?: string | TSConfig,
-): Promise<T> {
-    if (isCodeTransformation(CodeTransformation.JUST_IN_TIME)) {
-        return input;
-    }
-
-    if (!isObject(tsconfig)) {
-        tsconfig = await readTSConfig(tsconfig);
-    }
-
-    keys = keys || Object.keys(input);
-
-    for (const key of keys) {
-        input[key] = await adjustFilePath(input[key], tsconfig);
-    }
-
-    return input;
 }
 
 export function resolveFilePath(filePath: string, root?: string) {

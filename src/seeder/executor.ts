@@ -1,11 +1,10 @@
-import { isObject } from 'locter';
 import type { ObjectLiteral } from 'rapiq';
 import { MssqlParameter, Table } from 'typeorm';
 import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
 import { useEnv } from '../env';
-import { adjustFilePaths, readTSConfig, resolveFilePath } from '../utils';
-import type { TSConfig } from '../utils';
+import { PathResolverMode, createPathResolver } from '../utils';
+import type { IPathResolver } from '../utils';
 import { resolveSeederConfig } from './config';
 import { SeederEntity } from './entity';
 import { SeederFactoryManager, prepareSeederFactories, useSeederFactoryManager } from './factory';
@@ -22,9 +21,18 @@ export class SeederExecutor {
 
     protected options : SeederExecutorOptions;
 
+    protected pathResolver : IPathResolver;
+
     constructor(dataSource: DataSource, options?: SeederExecutorOptions) {
         this.dataSource = dataSource;
         this.options = options || {};
+        this.pathResolver = createPathResolver({
+            root: this.options.root,
+            tsconfig: this.options.tsconfig,
+            mode: this.options.preserveFilePaths ?
+                PathResolverMode.PRESERVE :
+                PathResolverMode.AUTO,
+        });
     }
 
     async execute(input: SeederOptions = {}) : Promise<SeederEntity[]> {
@@ -70,27 +78,10 @@ export class SeederExecutor {
     protected async resolveConfig(input: SeederOptions = {}) : Promise<SeederConfig> {
         const config = resolveSeederConfig(input, this.dataSourceOptions, useEnv());
 
-        if (!this.options.preserveFilePaths) {
-            let tsConfig : TSConfig;
-
-            if (isObject(this.options.tsconfig)) {
-                tsConfig = this.options.tsconfig;
-            } else {
-                tsConfig = await readTSConfig(
-                    resolveFilePath(this.options.tsconfig || 'tsconfig.json', this.options.root),
-                );
-            }
-
-            await adjustFilePaths(
-                config,
-                [
-                    'seeds',
-                    'seedName',
-                    'factories',
-                ],
-                tsConfig,
-            );
-        }
+        await this.pathResolver.transformKeys(
+            config,
+            ['seeds', 'seedName', 'factories'],
+        );
 
         return config;
     }
@@ -146,7 +137,7 @@ export class SeederExecutor {
             return true;
         }
 
-        return resolveFilePath(config.seedName, this.options.root) === seed.filePath;
+        return this.pathResolver.absolutize(config.seedName) === seed.filePath;
     }
 
     protected async runPending(

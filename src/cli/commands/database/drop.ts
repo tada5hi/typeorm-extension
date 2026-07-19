@@ -4,12 +4,10 @@ import { buildDataSourceOptions } from '../../../data-source';
 import type { DatabaseDropContext } from '../../../database';
 import { dropDatabase } from '../../../database';
 import {
-    adjustFilePath,
+    PathResolverMode,
+    createPathResolver,
     parseFilePath,
-    readTSConfig,
-    resolveFilePath,
 } from '../../../utils';
-import type { TSConfig } from '../../../utils';
 import { runWithExitCode } from '../../exit';
 import { LOG_LEVEL_VALUES, createLogger, normalizeLogLevel } from '../../logger';
 
@@ -59,14 +57,15 @@ export function defineCLIDatabaseDropCommand() {
             await runWithExitCode(logger, async () => {
                 logger.info('Dropping database');
 
-                let tsconfig : TSConfig | undefined;
-                let sourcePath = resolveFilePath(args.dataSource, args.root);
-                if (!args.preserveFilePaths) {
-                    tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
-                    sourcePath = await adjustFilePath(sourcePath, tsconfig);
-                }
+                const pathResolver = createPathResolver({
+                    root: args.root,
+                    tsconfig: args.tsconfig,
+                    mode: args.preserveFilePaths ?
+                        PathResolverMode.PRESERVE :
+                        PathResolverMode.AUTO,
+                });
 
-                const source = parseFilePath(sourcePath);
+                const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
                 const pad = 'directory'.length;
@@ -76,7 +75,7 @@ export function defineCLIDatabaseDropCommand() {
                 const dataSourceOptions = await buildDataSourceOptions({
                     directory: source.directory,
                     dataSourceName: source.name,
-                    tsconfig,
+                    tsconfig: await pathResolver.tsconfig(),
                     preserveFilePaths: args.preserveFilePaths,
                 });
 
