@@ -32,6 +32,8 @@ Update any `package.json` scripts:
 
 You can use any TypeScript-aware loader (`tsx`, Node's `--experimental-strip-types`, `bun`, …) — `ts-node` is no longer recommended because its ESM mode requires extra setup.
 
+`ts-node` and `tsx` are detected automatically, so file paths are kept as-is (no `src` → `dist` rewrite). For other loaders, pass `--preserveFilePaths` to get the same behaviour.
+
 ### Minimum Node.js version
 
 | v3 | v4 |

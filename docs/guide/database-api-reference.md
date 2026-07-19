@@ -77,8 +77,8 @@ import { createDatabase, extendDataSourceOptions } from 'typeorm-extension';
 ```
 This is achieved by rewriting the `src` path and `.ts` extension, to the `dist` (outDir) path and `.js` extension.
 
-If the function is **not** called within the ts-node runtime environment, the source path `src/database/entities.ts` for example,
-will be rewritten to `dist/database/entities.js`.
+If the function is **not** called within a just-in-time runtime environment (`ts-node` and `tsx` are detected automatically),
+the source path `src/database/entities.ts` for example, will be rewritten to `dist/database/entities.js`.
 
 **Parameters**
 
