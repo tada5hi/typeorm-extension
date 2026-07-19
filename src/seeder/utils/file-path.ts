@@ -22,10 +22,7 @@ export function resolveFilePaths(
     return filePaths.map((filePath) => resolveFilePath(filePath, root));
 }
 
-/**
- * Exported only for testing purposes
- */
-export function buildFilePathname(files: LocatorInfo[]) {
+function buildFilePathname(files: LocatorInfo[]) {
     return (
         // sorting by name so that we can define the order of execution using file names
         files.sort((a, b) => (a.name > b.name ? 1 : -1)).map((el) => buildFilePath(el))

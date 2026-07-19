@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { buildFilePathname, resolveFilePaths } from '../../../../src';
+import { resolveFilePaths, resolveFilePatterns } from '../../../../src';
 
 describe('src/seeder/utils/file-path.ts', () => {
     describe('resolveFilePaths', () => {
@@ -22,34 +22,14 @@ describe('src/seeder/utils/file-path.ts', () => {
         });
     });
 
-    describe('buildFilePathname', () => {
-        it('should build file path name', () => {
-            const files = [
-                {
-                    directory: '/path/to/dir',
-                    path: '/path/to/dir/2_file.ts',
-                    name: '2_file',
-                    extension: '.ts',
-                },
-                {
-                    directory: '/path/to/dir',
-                    path: '/path/to/dir/1_file.ts',
-                    name: '1_file',
-                    extension: '.ts',
-                },
-                {
-                    directory: '/path/to/dir',
-                    path: '/path/to/dir/0_file.ts',
-                    name: '0_file',
-                    extension: '.ts',
-                },
-            ];
-            const result = buildFilePathname(files);
-            expect(result).toEqual([
-                path.join(path.sep, 'path', 'to', 'dir', '0_file.ts'),
-                path.join(path.sep, 'path', 'to', 'dir', '1_file.ts'),
-                path.join(path.sep, 'path', 'to', 'dir', '2_file.ts'),
-            ]);
+    describe('resolveFilePatterns', () => {
+        it('should glob patterns and order matches by file name', async () => {
+            const result = await resolveFilePatterns(['test/data/seed/*.{ts,js}']);
+
+            expect(result.length).toBeGreaterThanOrEqual(2);
+
+            const names = result.map((el) => path.basename(el));
+            expect(names).toEqual([...names].sort());
         });
     });
 });
