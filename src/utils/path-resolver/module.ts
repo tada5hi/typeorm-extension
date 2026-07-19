@@ -103,32 +103,3 @@ export class PathResolver implements IPathResolver {
 export function createPathResolver(options: PathResolverOptions = {}) : IPathResolver {
     return new PathResolver(options);
 }
-
-export async function adjustFilePath<T extends unknown | unknown[]>(
-    input: T,
-    tsconfig?: string | TSConfig,
-) : Promise<T> {
-    const resolver = createPathResolver({ tsconfig });
-
-    if (typeof input === 'string') {
-        return await resolver.transform(input) as T;
-    }
-
-    if (Array.isArray(input)) {
-        for (let i = 0; i < input.length; i++) {
-            if (typeof input[i] === 'string') {
-                input[i] = await resolver.transform(input[i]);
-            }
-        }
-    }
-
-    return input;
-}
-
-export async function adjustFilePaths<T extends Record<string, any>>(
-    input: T,
-    keys?: (keyof T)[],
-    tsconfig?: string | TSConfig,
-) : Promise<T> {
-    return createPathResolver({ tsconfig }).transformKeys(input, keys);
-}
