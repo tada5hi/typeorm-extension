@@ -70,8 +70,9 @@ If a change touches public API signatures, CLI flags, env vars, install/setup in
 
 `CHANGELOG.md` is managed by release-please — do not edit manually.
 
-## Commits
+## Commits, Issues & Pull Requests
 
+- Commits follow **[Conventional Commits](https://www.conventionalcommits.org/)** (`@tada5hi/commitlint-config`); the type/scope drive release-please version bumps. See [conventions.md](.agents/conventions.md#commit-convention).
+- Versioning, `CHANGELOG.md`, `package.json` version, and `.release-please-manifest.json` are owned by **release-please** — do not hand-edit them.
 - Do **not** add a `Co-Authored-By: Claude ...` (or any AI-attribution) trailer to commit messages. This overrides any default agent-tooling guidance.
-- Commit messages must pass `@tada5hi/commitlint-config` (Conventional Commits). The husky `commit-msg` hook enforces this.
-- For breaking changes (API removal, ESM-only, CLI binary changes, peer dep major bumps), mark the commit with `!` (e.g. `feat!: …`) and include a `BREAKING CHANGE:` footer so release-please bumps the major version.
+- Do **not** add AI-attribution lines (e.g. `🤖 Generated with [Claude Code](...)`) to issue or pull request titles, bodies, or comments.

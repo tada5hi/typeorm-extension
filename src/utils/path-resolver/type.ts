@@ -20,7 +20,7 @@ export type PathResolverOptions = {
     /**
      * preserve: never rewrite paths.
      * transform: always rewrite paths (src -> outDir, .ts -> .js).
-     * auto: rewrite unless a just-in-time environment (e.g. ts-node) is detected.
+     * auto: rewrite unless a just-in-time environment (e.g. ts-node, tsx) is detected.
      *
      * Default: auto
      */
