@@ -1,6 +1,6 @@
 # Upgrading to v4
 
-This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain (ESM-only, Node ≥ 22, new bundler / test runner / linter) **and** moves the typeorm peer-dep to `^1.0.0`. TypeORM `0.3.x` is no longer supported — stay on `typeorm-extension` v3 if you need it.
+This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain (ESM-only, Node ≥ 22, new bundler / test runner / linter) **and** moves the typeorm peer-dep to `^1.1.0`. TypeORM `0.3.x` is no longer supported — stay on `typeorm-extension` v3 if you need it.
 
 ## Breaking Changes
 
@@ -44,11 +44,11 @@ You can use any TypeScript-aware loader (`tsx`, Node's `--experimental-strip-typ
 
 | v3 | v4 |
 |---|---|
-| `typeorm ~0.3.0` | `typeorm ^1.0.0` |
+| `typeorm ~0.3.0` | `typeorm ^1.1.0` |
 
 TypeORM `0.3.x` is **not** supported on `typeorm-extension` v4+. Pick the row that fits you:
 
-- Already on TypeORM `1.0`: upgrade to `typeorm-extension` v4.
+- Already on TypeORM `1.x`: upgrade to `typeorm-extension` v4.
 - Still on TypeORM `0.3.x`: stay on `typeorm-extension` v3 until you can migrate the rest of your app to TypeORM `1.0`.
 
 The TypeORM 1.0 upstream changes that affect `typeorm-extension` consumers:
@@ -77,6 +77,28 @@ import { runSeeders, setDataSource } from 'typeorm-extension';
 setDataSource(dataSource); // was implicit in v3
 await runSeeders(dataSource);
 ```
+
+### Query submodule removed
+
+The query submodule — `applyQuery`, `applyFilters` / `applyQueryFilters`, `applyFields` / `applyQueryFields`,
+`applyRelations` / `applyQueryRelations`, `applyPagination` / `applyQueryPagination`, `applySort` / `applyQuerySort`,
+the `applyQuery*ParseOutput` functions and their option/output types — has been removed, together with the
+hard `rapiq` dependency.
+
+Its successor is **[@rapiq/typeorm](https://rapiq.tada5hi.net/packages/typeorm)**, the dedicated TypeORM
+adapter of the rapiq v2 monorepo. The replacement flow: define a `Schema` for the entity, decode the raw
+URL query string with `URLCodec.decode` (from `@rapiq/codec-url`), and hand the parsed query to
+`TypeormAdapter.execute`, which applies it onto the `SelectQueryBuilder`. It covers everything the old
+submodule did and fixes long-standing limitations (nested `and` / `or` filter compounds, the `contains`
+operator family, collision-free join aliases).
+
+Follow the official migration guide:
+[https://rapiq.tada5hi.net/guide/migration-typeorm-extension](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)
+
+Notes:
+
+- `@rapiq/typeorm` requires `typeorm ^1.1.0` — the same floor as `typeorm-extension` v4.
+- If you still need the old `applyQuery` path (e.g. on typeorm `0.3.x`), stay on `typeorm-extension` v3.
 
 ## Internal Toolchain (no consumer impact)
 
