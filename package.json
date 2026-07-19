@@ -12,6 +12,10 @@
         "type": "git",
         "url": "https://github.com/tada5hi/typeorm-extension.git"
     },
+    "homepage": "https://typeorm-extension.tada5hi.net",
+    "bugs": {
+        "url": "https://github.com/tada5hi/typeorm-extension/issues"
+    },
     "main": "dist/index.mjs",
     "types": "dist/index.d.mts",
     "exports": {
