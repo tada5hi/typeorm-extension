@@ -3,12 +3,10 @@ import process from 'node:process';
 import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../../data-source';
 import { SeederExecutor } from '../../../seeder';
 import {
-    adjustFilePath,
+    PathResolverMode,
+    createPathResolver,
     parseFilePath,
-    readTSConfig,
-    resolveFilePath,
 } from '../../../utils';
-import type { TSConfig } from '../../../utils';
 import { runWithExitCode } from '../../exit';
 import { LOG_LEVEL_VALUES, createLogger, normalizeLogLevel } from '../../logger';
 
@@ -59,16 +57,20 @@ export function defineCLISeedRunCommand() {
             await runWithExitCode(logger, async () => {
                 logger.info('Running seeders');
 
-                let tsconfig : TSConfig | undefined;
-                let sourcePath = resolveFilePath(args.dataSource, args.root);
+                const pathResolver = createPathResolver({
+                    root: args.root,
+                    tsconfig: args.tsconfig,
+                    mode: args.preserveFilePaths ?
+                        PathResolverMode.PRESERVE :
+                        PathResolverMode.AUTO,
+                });
+
                 let { name } = args;
-                if (!args.preserveFilePaths) {
-                    tsconfig = await readTSConfig(resolveFilePath(args.tsconfig, args.root));
-                    sourcePath = await adjustFilePath(sourcePath, tsconfig);
-                    name = await adjustFilePath(name, tsconfig);
+                if (name) {
+                    name = await pathResolver.transform(name);
                 }
 
-                const source = parseFilePath(sourcePath);
+                const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
                 const dsPad = 'directory'.length;
@@ -78,7 +80,7 @@ export function defineCLISeedRunCommand() {
                 const dataSourceOptions = await buildDataSourceOptions({
                     dataSourceName: source.name,
                     directory: source.directory,
-                    tsconfig,
+                    tsconfig: await pathResolver.tsconfig(),
                     preserveFilePaths: args.preserveFilePaths,
                 });
 
@@ -92,7 +94,7 @@ export function defineCLISeedRunCommand() {
                 const dataSource = await useDataSource();
                 const executor = new SeederExecutor(dataSource, {
                     root: args.root,
-                    tsconfig,
+                    tsconfig: await pathResolver.tsconfig(),
                     preserveFilePaths: args.preserveFilePaths,
                 });
 
