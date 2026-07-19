@@ -8,25 +8,22 @@ import path from 'node:path';
 import type { DataSource } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
 import {
-    adjustFilePath,
+    PathResolverMode,
+    createPathResolver,
     isPromise,
-    readTSConfig,
     safeReplaceWindowsSeparator,
 } from '../../utils';
 import type { DataSourceFindOptions } from './type';
-import type { TSConfig } from '../../utils';
 
 export async function findDataSource(
     context: DataSourceFindOptions = {},
 ) : Promise<DataSource | undefined> {
-    let tsconfig : TSConfig | undefined;
-    if (!context.preserveFilePaths) {
-        if (isObject(context.tsconfig)) {
-            tsconfig = context.tsconfig;
-        } else {
-            tsconfig = await readTSConfig(context.tsconfig);
-        }
-    }
+    const pathResolver = createPathResolver({
+        tsconfig: context.tsconfig,
+        mode: context.preserveFilePaths ?
+            PathResolverMode.PRESERVE :
+            PathResolverMode.AUTO,
+    });
 
     const files : string[] = [
         'data-source',
@@ -53,9 +50,7 @@ export async function findDataSource(
             directory = safeReplaceWindowsSeparator(context.directory);
         }
 
-        if (!context.preserveFilePaths) {
-            directory = await adjustFilePath(directory, tsconfig);
-        }
+        directory = await pathResolver.transform(directory);
     }
 
     const lookupPaths = [];
@@ -75,10 +70,8 @@ export async function findDataSource(
 
     files.push(...lookupPaths);
 
-    if (!context.preserveFilePaths) {
-        for (let j = 0; j < files.length; j++) {
-            files[j] = await adjustFilePath(files[j], tsconfig);
-        }
+    for (let j = 0; j < files.length; j++) {
+        files[j] = await pathResolver.transform(files[j]);
     }
 
     for (const file of files) {
