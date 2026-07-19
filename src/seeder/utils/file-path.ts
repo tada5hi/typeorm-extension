@@ -1,7 +1,6 @@
-/* istanbul ignore next */
 import type { LocatorInfo } from 'locter';
 import { buildFilePath, locateMany } from 'locter';
-import path from 'node:path';
+import { resolveFilePath } from '../../utils';
 
 export async function resolveFilePatterns(
     filesPattern: string[],
@@ -20,11 +19,7 @@ export function resolveFilePaths(
     filePaths: string[],
     root?: string,
 ) {
-    return filePaths.map((filePath) => (
-        path.isAbsolute(filePath) ?
-            filePath :
-            path.resolve(root || process.cwd(), filePath)
-    ));
+    return filePaths.map((filePath) => resolveFilePath(filePath, root));
 }
 
 /**
