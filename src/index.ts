@@ -1,5 +1,4 @@
 export * from './errors';
-export * from './query';
 export * from './database';
 export * from './data-source';
 export * from './env';

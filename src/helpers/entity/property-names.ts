@@ -1,6 +1,10 @@
-import type { ObjectLiteral } from 'rapiq';
 import { Repository } from 'typeorm';
-import type { DataSource, EntityMetadata, EntityTarget } from 'typeorm';
+import type {
+    DataSource, 
+    EntityMetadata, 
+    EntityTarget, 
+    ObjectLiteral,
+} from 'typeorm';
 import { getEntityMetadata } from './metadata';
 
 /**

@@ -1,6 +1,10 @@
-import type { ObjectLiteral } from 'rapiq';
 import { MssqlParameter, Table } from 'typeorm';
-import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
+import type {
+    DataSource, 
+    DataSourceOptions, 
+    ObjectLiteral, 
+    QueryRunner,
+} from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
 import { useEnv } from '../env';
 import { PathResolverMode, createPathResolver } from '../utils';

@@ -1,6 +1,6 @@
 # Architecture
 
-`typeorm-extension` is a library, not a service. There are four loosely-coupled feature domains, all built on top of TypeORM, and all reachable either through the public API (`src/index.ts`) or the CLI (`src/cli/index.ts`).
+`typeorm-extension` is a library, not a service. There are three loosely-coupled feature domains, all built on top of TypeORM, and all reachable either through the public API (`src/index.ts`) or the CLI (`src/cli/index.ts`). (The former `query` domain was removed in v4 in favor of [`@rapiq/typeorm`](https://rapiq.tada5hi.net/packages/typeorm).)
 
 ## Overview
 
@@ -10,19 +10,19 @@
                                 │  citty commands             │
                                 └──────────────┬──────────────┘
                                                │ delegates to
-              ┌─────────────────┬──────────────┴──────────────┬─────────────────┐
-              ▼                 ▼                              ▼                 ▼
-       ┌────────────┐   ┌──────────────┐              ┌──────────────┐   ┌──────────────┐
-       │  database  │   │   seeder     │              │ data-source  │   │    query     │
-       │ create/drop│   │  run/track   │              │  registry    │   │  applyQuery  │
-       │   /check   │   │              │              │  +discovery  │   │              │
-       └─────┬──────┘   └──────┬───────┘              └──────┬───────┘   └──────┬───────┘
-             │                 │                             │                  │
-             ▼                 ▼                             ▼                  ▼
-       ┌────────────┐   ┌──────────────┐              ┌──────────────┐   ┌──────────────┐
-       │core/ +     │   │  factory/    │              │  options/    │   │ parameter/   │
-       │adapters/   │   │  (faker)     │              │  env merge   │   │  rapiq parse │
-       └────────────┘   └──────────────┘              └──────────────┘   └──────────────┘
+              ┌────────────────────────────────┼──────────────────────────────┐
+              ▼                                ▼                              ▼
+       ┌────────────┐                  ┌──────────────┐               ┌──────────────┐
+       │  database  │                  │   seeder     │               │ data-source  │
+       │ create/drop│                  │  run/track   │               │  registry    │
+       │   /check   │                  │              │               │  +discovery  │
+       └─────┬──────┘                  └──────┬───────┘               └──────┬───────┘
+             │                                │                              │
+             ▼                                ▼                              ▼
+       ┌────────────┐                  ┌──────────────┐               ┌──────────────┐
+       │core/ +     │                  │  factory/    │               │  options/    │
+       │adapters/   │                  │  (faker)     │               │  env merge   │
+       └────────────┘                  └──────────────┘               └──────────────┘
 
   Shared infra: src/runtime (state registry), src/env (envix), src/errors, src/utils (path-resolver/file-path/tsconfig/object), src/helpers
 ```
@@ -42,7 +42,7 @@ The `database` domain is split hexagonally ([RFC #1400](https://github.com/tada5
 
 Tests inject an in-memory recording server (`test/data/database/`) through the composition root — no live database needed to assert generated SQL, connection targeting and close ordering. The per-driver functions (`createPostgresDatabase`, …, in `src/database/driver/`) are deprecated delegates through the same composition root; remove them in the next major.
 
-The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typeorm-extension` v4+ — stay on `typeorm-extension` v3 if you need it. TypeORM 1.0 also removed the legacy `sqlite` driver (only `better-sqlite3` remains) and renamed deep types like `PostgresConnectionOptions` → `PostgresDataSourceOptions`; the code is already migrated.
+The peer-dep range is `typeorm ^1.1.0`. TypeORM 0.3 is **not** supported on `typeorm-extension` v4+ — stay on `typeorm-extension` v3 if you need it. TypeORM 1.0 also removed the legacy `sqlite` driver (only `better-sqlite3` remains) and renamed deep types like `PostgresConnectionOptions` → `PostgresDataSourceOptions`; the code is already migrated.
 
 ### 2. Operations bypass `DataSource.initialize()`
 
@@ -52,11 +52,7 @@ The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typ
 
 `src/data-source/singleton.ts` stores data sources in the runtime registry's alias-keyed `AsyncKeyedCache`, so `useDataSource(alias)` is idempotent and concurrent-safe (concurrent calls share one build; a failed build is evicted for retry). The default alias is `'default'`. `setDataSource()` registers a pre-built instance; `useDataSource()` builds + initializes one from discovered options if none is registered. This is why the library can be used in apps that never call `findDataSource` themselves.
 
-### 4. Query application delegates parsing to `rapiq`
-
-`query/module.ts` does not parse query strings itself — it calls `parseQuery(input, options)` from `rapiq`, then walks the resulting `ParseOutput` and applies each branch to the `SelectQueryBuilder`. The five `applyQuery<X>ParseOutput` functions in `query/parameter/<x>/` are pure TypeORM-side adapters. **When fixing a query bug, first check whether the bug is in `rapiq` (parsing) or in the apply step (TypeORM translation).**
-
-### 5. Seeder tracking mirrors TypeORM's migration tracking
+### 4. Seeder tracking mirrors TypeORM's migration tracking
 
 `SeederExecutor` (`src/seeder/executor.ts`) follows the same shape as TypeORM's `MigrationExecutor`: a `seeds` table with `id`, `timestamp`, `name`, populated only when tracking is enabled (per-seed `track = true` or executor-level `seedTracking`, resolved from input ← data-source options). MongoDB uses a collection instead. Untracked seeds re-run on every invocation. The per-seed decision lives in `SeederEntity.effectiveTracking(fallback)`; execution order in the static `SeederEntity.compare` comparator. The table name comes from `seedTableName` (input ← data-source options ← `'seeds'`).
 
@@ -184,22 +180,6 @@ Output:
   └── SeederEntity[] of seeds actually executed
 ```
 
-### Query application
-
-```
-Input:
-  └── SelectQueryBuilder<T> + raw query input (req.query shape) + QueryApplyOptions<T>
-
-Processing:
-  1. applyQuery normalizes options (defaults each parameter to `false` if not allow-listed)
-  2. parseQuery(input, options) from rapiq → ParseOutput { fields, filters, pagination, relations, sort }
-  3. For each present branch, call applyQuery<X>ParseOutput(qb, parsed, opts)
-  4. Each apply function mutates the QueryBuilder in place (.select / .where / .leftJoin / .orderBy / .skip+.take)
-
-Output:
-  └── QueryApplyOutput (ParseOutput + defaultAlias) — caller still owns the qb
-```
-
 ## Error Handling
 
 - `TypeormExtensionError` (`src/errors/base.ts`) is the root. It extends `Error` and adds nothing on its own — subclasses give semantic meaning.
@@ -230,8 +210,6 @@ DataSource options merge → src/data-source/options/module.ts + utils/{env,merg
 Seeder runtime           → src/seeder/executor.ts, src/seeder/module.ts
 Seeder config resolver   → src/seeder/config.ts (resolveSeederConfig)
 Factory registry         → src/seeder/factory/manager.ts
-Query applier            → src/query/module.ts
-Per-parameter appliers   → src/query/parameter/<concern>/module.ts
 Path resolver            → src/utils/path-resolver/module.ts (createPathResolver; adjustFilePath(s) delegate to it)
 Env reader               → src/env/module.ts (+ constants.ts for var names)
 ```
