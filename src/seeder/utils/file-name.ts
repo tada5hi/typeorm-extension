@@ -1,4 +1,4 @@
-import { getFileNameExtension } from '../../utils';
+import { getFileNameExtension } from 'locter';
 
 export function buildSeederFileName(
     name: string,

@@ -1,4 +1,4 @@
-import { read } from 'locter';
+import { readAsModule } from 'locter';
 import type { EntitySchema, ObjectType } from 'typeorm';
 import { useRuntimeRegistry } from '../../runtime';
 import { resolveFilePaths, resolveFilePatterns } from '../utils';
@@ -53,7 +53,7 @@ export async function prepareSeederFactories(
         factoryFiles = resolveFilePaths(factoryFiles, root);
 
         for (const factoryFile of factoryFiles) {
-            await read(factoryFile);
+            await readAsModule(factoryFile);
         }
     }
 

@@ -1,5 +1,6 @@
 import { defineCommand } from 'citty';
-import { isDirectory, parseFilePath, removeFileNameExtension  } from '../../../utils';
+import { removeFileNameExtension } from 'locter';
+import { isDirectory, parseFilePath } from '../../../utils';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
