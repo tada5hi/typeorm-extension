@@ -1,5 +1,4 @@
-import { isObject } from 'locter';
-import { hasOwnProperty } from '../../utils';
+import { hasOwnProperty, isObject  } from '../../utils';
 
 /**
  * Whether the (unknown) error carries the given errno code.

@@ -1,18 +1,18 @@
 import {
-    isObject,
-    load,
     locate,
-    removeFileNameExtension,
+    read,
 } from 'locter';
+import { 
+    PathResolverMode, 
+    createPathResolver, 
+    isObject, 
+    isPromise, 
+    removeFileNameExtension, 
+    safeReplaceWindowsSeparator, 
+} from '../../utils';
 import path from 'node:path';
 import type { DataSource } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
-import {
-    PathResolverMode,
-    createPathResolver,
-    isPromise,
-    safeReplaceWindowsSeparator,
-} from '../../utils';
 import type { DataSourceFindOptions } from './type';
 
 export async function findDataSource(
@@ -87,7 +87,7 @@ export async function findDataSource(
         );
 
         if (info) {
-            let moduleRecord = await load(info);
+            let moduleRecord = await read(info);
 
             if (isPromise(moduleRecord)) {
                 moduleRecord = await moduleRecord;

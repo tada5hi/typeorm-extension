@@ -1,4 +1,5 @@
-import { isObject, load } from 'locter';
+import { read } from 'locter';
+import { isObject } from '../object';
 import path from 'node:path';
 import type { TSConfig } from './type';
 
@@ -13,7 +14,7 @@ export async function readTSConfig(input?: string) : Promise<TSConfig> {
         input;
 
     try {
-        const tsConfig = await load(filePath);
+        const tsConfig = await read(filePath);
 
         if (isObject(tsConfig)) {
             return tsConfig;

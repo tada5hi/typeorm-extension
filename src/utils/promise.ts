@@ -1,4 +1,4 @@
-import { isObject } from 'locter';
+import { isObject } from './object';
 
 export function isPromise(p: unknown): p is Promise<unknown> {
     return isObject(p) &&

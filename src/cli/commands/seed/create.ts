@@ -1,11 +1,10 @@
 import { defineCommand } from 'citty';
-import { removeFileNameExtension } from 'locter';
+import { isDirectory, parseFilePath, removeFileNameExtension  } from '../../../utils';
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pascalCase } from 'pascal-case';
 import { buildSeederFileName, buildSeederFileTemplate } from '../../../seeder';
-import { isDirectory, parseFilePath } from '../../../utils';
 import { runWithExitCode } from '../../exit';
 import { 
     CLIUserError, 
