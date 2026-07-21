@@ -110,7 +110,7 @@ Thresholds (enforced — Vitest fails the run below these):
 
 `coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, and `src/errors/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/query/**`, `src/seeder/**`, `src/utils/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
 
-Coverage is uploaded by CI to Codecov via `codecov/codecov-action`.
+The `tests` job in `main.yml` runs `npm run test:coverage` and uploads the report to Codecov via `codecov/codecov-action` on every push / PR. Coverage runs there (not in `release.yml`) so it executes under the pinned Node version: the `tada5hi/monoship` publish step in `release.yml` re-inits the runner to Node 22 via its own `setup-node`, which would leave the native `better-sqlite3` binary (built for the install-step Node) ABI-mismatched for any test step that ran after it.
 
 ## Infrastructure
 
@@ -121,10 +121,10 @@ None required for local runs — every test uses `better-sqlite3 :memory:`. The 
 GitHub Actions (`.github/workflows/main.yml`):
 
 ```
-install → build → (lint || tests)
+install → build → (lint || tests+coverage-upload)
 ```
 
-All jobs use a single Node version (`PRIMARY_NODE_VERSION = 22`). There is no matrix across databases or Node versions. `release.yml` handles `release-please` PRs.
+All jobs use a single Node version (`PRIMARY_NODE_VERSION = 24`). There is no matrix across databases or Node versions. The `tests` job runs `npm run test:coverage` and uploads to Codecov. `release.yml` handles `release-please` PRs + npm publish + docs deploy (no coverage — see above). The install action's cache key includes the Node version so a native binary built for one Node ABI is never restored for another.
 
 ## Writing New Tests
 

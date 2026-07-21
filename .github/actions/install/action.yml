@@ -23,9 +23,9 @@ runs:
               path: |
                   node_modules
                   */*/node_modules
-              key: ${{ runner.os }}-install-${{ hashFiles('**/package-lock.json') }}
+              key: ${{ runner.os }}-node${{ inputs.node-version }}-install-${{ hashFiles('**/package-lock.json') }}
               restore-keys: |
-                  ${{ runner.os }}-install-
+                  ${{ runner.os }}-node${{ inputs.node-version }}-install-
 
         - name: Install
           shell: bash
