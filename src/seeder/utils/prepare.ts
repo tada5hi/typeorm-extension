@@ -1,4 +1,4 @@
-import { load } from 'locter';
+import { readAsModule } from 'locter';
 import path from 'node:path';
 import type { SeederConstructor, SeederPrepareElement } from '../type';
 import { resolveFilePaths, resolveFilePatterns } from './file-path';
@@ -25,7 +25,7 @@ export async function prepareSeederSeeds(
         seedFiles = resolveFilePaths(seedFiles, root);
 
         for (const filePath of seedFiles) {
-            const moduleExports = await load(filePath);
+            const moduleExports = await readAsModule(filePath);
 
             let clazzConstructor : SeederConstructor | undefined;
 

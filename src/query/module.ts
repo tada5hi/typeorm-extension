@@ -1,4 +1,4 @@
-import { isObject } from 'locter';
+import { isObject } from '../utils';
 import type { ParseInput, ParseOutput } from 'rapiq';
 import { parseQuery } from 'rapiq';
 import type { ObjectLiteral, SelectQueryBuilder } from 'typeorm';

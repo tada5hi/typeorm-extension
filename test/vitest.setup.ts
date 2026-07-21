@@ -1,3 +1,3 @@
-import { setModuleLoader } from 'locter';
+import { setModuleReader } from 'locter';
 
-setModuleLoader({ load: (id) => import(id) });
+setModuleReader({ load: (id) => import(id) });
