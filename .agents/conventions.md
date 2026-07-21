@@ -107,9 +107,9 @@ The CLI bundle's `cliRewriteExternal` plugin rewrites cross-domain imports back 
 Settings (`release-please-config.json`):
 
 - `release-type: node`
-- `include-v-in-tag: true` — tags look like `v3.10.0`
-- `prerelease: true`, `prerelease-type: alpha` — pre-1.0 / pre-release semantics apply.
-- `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — `feat:` ⇒ minor, `fix:` ⇒ patch (no major bumps without explicit `BREAKING CHANGE`).
+- `include-component-in-tag: false` — tags look like `v4.0.0-beta.0`
+- `versioning: prerelease` + `prerelease: true`, `prerelease-type: beta` — while the current version is a prerelease of `X.0.0`, further commits (including breaking changes) bump only the prerelease number (`4.0.0-beta.0` → `4.0.0-beta.1`) instead of the major. Cutting the stable `4.0.0` requires an explicit `Release-As: 4.0.0` commit footer (or flipping `prerelease` off).
+- `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — pre-1.0 only: `feat:` ⇒ minor, `fix:` ⇒ patch.
 
 The manifest at `.release-please-manifest.json` tracks the current version.
 
