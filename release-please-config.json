@@ -1,6 +1,7 @@
 {
     "release-type": "node",
     "include-component-in-tag": false,
+    "versioning": "prerelease",
     "prerelease": true,
     "prerelease-type": "beta",
     "bump-minor-pre-major": true,
