@@ -5,6 +5,7 @@
 A TypeScript library that extends [TypeORM](https://typeorm.io) with:
 
 - `create` / `drop` databases across all supported drivers (Postgres, MySQL/MariaDB, MongoDB, MSSQL, Oracle, better-sqlite3, CockroachDB). Note: TypeORM 1.0 removed the legacy `sqlite` driver — use `better-sqlite3`.
+- A schema-drift assertion (`getSchemaDrift` / `assertSchemaMatchesMetadata`) plus guarded, idempotent rename/alter helpers for repair migrations.
 - A seeder/factory system (similar to Laravel) backed by `@faker-js/faker`.
 - A data-source registry with auto-discovery and lazy initialization.
 - A JSON:API-style query parameter parser that applies `fields`, `filters`, `relations`, `sort`, and `page` onto a `SelectQueryBuilder`.
@@ -24,6 +25,7 @@ npm run build:types        # tsc --noEmit (typecheck only)
 npm run build:js           # tsdown — builds dist/ (library) and bin/ (CLI)
 npm test                   # vitest --config test/vitest.config.ts --run
 npm run test:coverage      # vitest with coverage (80% thresholds enforced)
+npm run test:integration   # driver suites — needs a real server, skips itself without TYPEORM_CONNECTION
 npm run lint               # eslint (flat config)
 npm run lint:fix
 npm run docs:dev           # vitepress dev server for docs/
@@ -41,7 +43,7 @@ npm run docs:dev           # vitepress dev server for docs/
 |----------------------------|-------------------------|----------------|
 | `typeorm-extension`        | `src/cli/index.ts`      | `bin/cli.mjs`  |
 
-Commands: `db create`, `db drop`, `seed run`, `seed create` (each is a [citty](https://github.com/unjs/citty) `defineCommand` factory in `src/cli/commands/`). The legacy colon-form names (`db:create`, `db:drop`, `seed:run`, `seed:create`) are still registered as backwards-compatibility aliases at the top level so consumer scripts from v3 keep working.
+Commands: `db create`, `db drift`, `db drop`, `seed run`, `seed create` (each is a [citty](https://github.com/unjs/citty) `defineCommand` factory in `src/cli/commands/`). The legacy colon-form names (`db:create`, `db:drop`, `seed:run`, `seed:create`) are still registered as backwards-compatibility aliases at the top level so consumer scripts from v3 keep working (`db drift` is v4+ only and has no colon-form alias).
 
 ## Documentation
 

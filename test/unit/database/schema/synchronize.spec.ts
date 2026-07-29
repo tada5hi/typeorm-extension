@@ -1,7 +1,7 @@
-import { synchronizeDatabaseSchema } from '../../../src';
-import { createDataSource, createDataSourceOptions } from '../../data/typeorm/factory';
+import { synchronizeDatabaseSchema } from '../../../../src';
+import { createDataSource, createDataSourceOptions } from '../../../data/typeorm/factory';
 
-describe('src/database/utils/schema', () => {
+describe('src/database/schema/synchronize', () => {
     it('should synchronize the schema of a data source instance', async () => {
         const dataSource = createDataSource();
 

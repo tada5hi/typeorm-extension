@@ -166,3 +166,150 @@ are deprecated and will be removed in the next major release. Use `createDatabas
 provided options. For oracle, dropping a database is not supported and the create
 statement is passed through unchanged.
 :::
+
+## Schema Drift
+
+The database schema and the entity metadata are two independent descriptions of the same thing.
+A project which builds its schema with **migrations** in production but with `synchronize()` in tests has no guard
+against the two drifting apart, and the failure mode is silent: nothing breaks until someone runs
+`migration:generate` and gets a migration full of reconciling statements — potentially including a `DROP COLUMN`
+that looks routine in review.
+
+`getSchemaDrift` wraps the same schema comparison `migration:generate` performs and returns the statements which would
+reconcile the database schema with the entity metadata. It never writes to the database.
+
+```typescript
+import { getSchemaDrift } from 'typeorm-extension';
+
+(async () => {
+    const drift = await getSchemaDrift(dataSource);
+
+    if (drift.exists) {
+        for (const statement of drift.up) {
+            console.log(statement.query);
+        }
+    }
+})();
+```
+
+`assertSchemaMatchesMetadata` is the assertion form — it throws a `SchemaDriftError` whose message lists the
+statements and whose `statements` property carries them:
+
+```typescript
+import { SchemaDriftError, assertSchemaMatchesMetadata } from 'typeorm-extension';
+
+try {
+    await assertSchemaMatchesMetadata(dataSource);
+} catch (e) {
+    if (e instanceof SchemaDriftError) {
+        console.log(e.statements);
+    }
+
+    throw e;
+}
+```
+
+Both accept either a `DataSource` or plain `DataSourceOptions`. A data source built from options is built with
+`synchronize`, `migrationsRun` and `dropSchema` disabled and destroyed afterwards; an existing `DataSource` is
+initialized as is (its own options still apply) and never destroyed.
+
+Use it as a CI gate right after the migrations have run:
+
+```
+migration run  ->  revert x N  ->  run  ->  assert zero drift
+```
+
+The `skipWithoutMigrations` option reports no drift when the data source has no migrations registered — useful when
+the same data-source file serves a migration driven environment and a `synchronize()` driven one
+(e.g. `migrations: []` for an in-memory sqlite test database):
+
+```typescript
+await assertSchemaMatchesMetadata(dataSource, { skipWithoutMigrations: true });
+```
+
+The equivalent on the command line is [`typeorm-extension db drift`](./cli#schema-drift).
+
+::: warning NOTE
+`mongodb` has no schema to compare — the drift is always reported as empty for it.
+:::
+
+## Repair Migrations
+
+Fixing schema drift usually means renaming a constraint, which is dialect-asymmetric and easy to get wrong:
+
+- **postgres** renames in place: `ALTER INDEX … RENAME TO`, `ALTER TABLE … RENAME CONSTRAINT`.
+- **mysql** has `ALTER TABLE … RENAME INDEX`, but no `RENAME CONSTRAINT` — a foreign key must be dropped and re-added,
+  and if its column carried no explicit index, mysql created a backing index **under the constraint name** which
+  survives the drop and has to be dealt with before the new constraint is added.
+
+The following helpers own that machinery. The data — which constraint is renamed to what — stays in your migration.
+
+Each helper is **guarded**: it reads the current state back from the database, applies the change only if it is still
+pending and returns whether it did something. A repair migration therefore stays resumable (mysql commits DDL
+regardless of the surrounding transaction) and is safe to run against a database which never had the drift.
+
+```typescript
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { changeColumnType, renameForeignKey, renameIndex } from 'typeorm-extension';
+
+export class RepairSchema1700000000000 implements MigrationInterface {
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await renameIndex(queryRunner, {
+            table: 'auth_events',
+            from: 'IDX_auth_events_actor_name',
+            to: 'IDX_9f6d1a2b3c4d5e6f70819293',
+        });
+
+        await renameForeignKey(queryRunner, {
+            table: 'auth_permissions',
+            from: 'FK_auth_permissions_client',
+            to: 'FK_1a2b3c4d5e6f708192a3b4c5',
+        });
+
+        await changeColumnType(queryRunner, {
+            table: 'auth_permissions',
+            column: 'client_id',
+            from: { type: 'varchar', length: 36 },
+            to: { type: 'varchar', length: 255 },
+        });
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        // ... the same calls with from & to swapped
+    }
+}
+```
+
+`renameForeignKey` preserves the columns, the referenced table/columns and the referential actions of the constraint —
+all of them are read back from the database, so the rename can not silently change the constraint.
+
+On mysql it wraps the drop & re-add in `withForeignKeyChecksDisabled`, which you can also use directly. The constraint
+being recreated was already enforcing, so re-validating it only buys a full table scan plus a failure mode for rows some
+past import inserted with the checks off:
+
+```typescript
+import { withForeignKeyChecksDisabled } from 'typeorm-extension';
+
+await withForeignKeyChecksDisabled(queryRunner, async () => {
+    // ... statements which would otherwise trigger a re-validation
+});
+```
+
+It restores the previous state rather than blindly enabling the checks, so nesting is safe, and it is a transparent
+no-op wrapper on every driver without a session level switch — a migration using it stays portable.
+
+### Driver support
+
+| Helper                         | Drivers                                                                         |
+|--------------------------------|---------------------------------------------------------------------------------|
+| `renameIndex`                  | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
+| `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
+| `changeColumnType`             | all (the statements are built by typeorm itself)                                |
+| `withForeignKeyChecksDisabled` | all (a no-op wrapper outside of `mysql` / `mariadb`)                            |
+
+::: warning NOTE
+An index which backs a **constraint** is not reported as an index by the driver, and `renameIndex` therefore does not
+see it: on postgres a unique constraint lives in `table.uniques` (rename it with `renameForeignKey`'s counterpart,
+`ALTER TABLE … RENAME CONSTRAINT`), and on mysql a foreign key's backing index only becomes visible once the constraint
+is dropped — which `renameForeignKey` handles for you.
+:::

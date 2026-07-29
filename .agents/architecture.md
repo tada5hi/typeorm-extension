@@ -22,6 +22,7 @@
        ┌────────────┐   ┌──────────────┐              ┌──────────────┐   ┌──────────────┐
        │core/ +     │   │  factory/    │              │  options/    │   │ parameter/   │
        │adapters/   │   │  (faker)     │              │  env merge   │   │  rapiq parse │
+       │schema/     │   │              │              │              │   │              │
        └────────────┘   └──────────────┘              └──────────────┘   └──────────────┘
 
   Shared infra: src/runtime (state registry), src/env (envix), src/errors, src/utils (path-resolver/file-path/tsconfig/object), src/helpers
@@ -59,6 +60,27 @@ The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typ
 ### 5. Seeder tracking mirrors TypeORM's migration tracking
 
 `SeederExecutor` (`src/seeder/executor.ts`) follows the same shape as TypeORM's `MigrationExecutor`: a `seeds` table with `id`, `timestamp`, `name`, populated only when tracking is enabled (per-seed `track = true` or executor-level `seedTracking`, resolved from input ← data-source options). MongoDB uses a collection instead. Untracked seeds re-run on every invocation. The per-seed decision lives in `SeederEntity.effectiveTracking(fallback)`; execution order in the static `SeederEntity.compare` comparator. The table name comes from `seedTableName` (input ← data-source options ← `'seeds'`).
+
+### 6. Schema operations are a separate domain from create/drop
+
+`src/database/` splits along the "is there a schema to talk to?" line:
+
+- `methods/` + `core/` + `adapters/` — everything which must work **before** the database exists, over a raw native client.
+- `schema/` — everything which needs an **initialized** `DataSource` / `QueryRunner`: `synchronizeDatabaseSchema`, the drift assertion and the guarded alter helpers.
+
+`getSchemaDrift` wraps `dataSource.driver.createSchemaBuilder().log()` — the same call `migration:generate` makes — and reports the statements which would reconcile the database schema with the entity metadata. A project which builds its schema with migrations in production but with `synchronize()` in tests has no guard against the two descriptions drifting apart; the intended use is a CI gate right after `migration run` (`migration run → revert × N → run → assert zero drift`). `skipWithoutMigrations` short-circuits for a data source wired with `migrations: []` (e.g. sqlite in tests).
+
+The alter helpers (`renameIndex`, `renameForeignKey`, `changeColumnType`) exist because repairing that drift means renaming constraints, which is dialect-asymmetric:
+
+- postgres: `ALTER INDEX … RENAME TO`, `ALTER TABLE … RENAME CONSTRAINT`.
+- mysql: `ALTER TABLE … RENAME INDEX` exists, but there is no `RENAME CONSTRAINT` — the foreign key has to be dropped and re-added, and the backing index mysql created **under the constraint name** survives the drop and has to be renamed (or dropped) first, or the table ends up with a duplicate.
+
+Two invariants shape the implementation:
+
+1. **Every helper is a guarded no-op when it does not apply** (returns `false`). mysql commits DDL regardless of the surrounding transaction, so a repair migration must be resumable after a partial failure and safe to run against a database which never had the drift.
+2. **Current state comes from `queryRunner.getTable()`**, never from caller-supplied metadata — `renameForeignKey` re-adds the constraint with the columns/referenced table/referential actions it read back, so the rename cannot silently change the constraint. Note that mysql's driver hides an index whose name matches a referential constraint, which is exactly why the backing index only becomes visible after the constraint is dropped.
+
+The dialect statements themselves live in `src/database/schema/statements.ts` as pure builders (`resolveSchemaDialect` maps `cockroachdb → postgres`, `mariadb → mysql`, and raises `DriverError.schemaAlterationNotSupported` for the rest). `changeColumnType` is the exception: it delegates to `queryRunner.changeColumn()` and therefore works on every driver. `withForeignKeyChecksDisabled` reads `@@SESSION.foreign_key_checks` first and only restores it if it was on (nesting safe); on a non-mysql driver it just runs the callback so a migration stays portable.
 
 ## Design Patterns
 
@@ -105,7 +127,7 @@ export function createCLIEntryPointCommand() {
     return defineCommand({
         meta: { name: 'typeorm-extension', description: '...' },
         subCommands: {
-            db: defineCLIDatabaseCommand(),       // → db create / db drop
+            db: defineCLIDatabaseCommand(),       // → db create / db drift / db drop
             seed: defineCLISeedCommand(),         // → seed create / seed run
             // Legacy colon-form aliases (kept for v3 backwards compatibility).
             'db:create': defineCLIDatabaseCreateCommand(),
@@ -205,6 +227,7 @@ Output:
 - `TypeormExtensionError` (`src/errors/base.ts`) is the root. It extends `Error` and adds nothing on its own — subclasses give semantic meaning.
 - `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by `resolveDatabaseDialectName()` on a registry miss, and `DriverError.connectionClosed()` when a closed connection is reused.
 - `OptionsError` is thrown when the context builder cannot resolve a DataSource / options.
+- `SchemaDriftError` is thrown by `assertSchemaMatchesMetadata()` and carries the reconciling `statements` (its message lists them, so an unhandled throw in CI is already the report).
 - Anywhere else, library code lets the underlying error (TypeORM, the native driver, faker, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
 
 ## File Structure (architecture → paths)
@@ -222,7 +245,9 @@ Connector interfaces (types) → src/database/core/type.ts
 Native client adapters   → src/database/adapters/<driver>.ts
 Deprecated delegates     → src/database/driver/<driver>.ts (removed next major)
 Context builders         → src/database/utils/context.ts
-Schema sync after create → src/database/utils/schema.ts
+Schema sync after create → src/database/schema/synchronize.ts
+Schema drift assertion   → src/database/schema/drift.ts
+Guarded schema alters    → src/database/schema/alter.ts (+ statements.ts — pure DDL builders)
 Runtime state registry   → src/runtime/module.ts (+ cache.ts — AsyncKeyedCache)
 DataSource registry      → src/data-source/singleton.ts (delegates to src/runtime)
 DataSource discovery     → src/data-source/find/module.ts
