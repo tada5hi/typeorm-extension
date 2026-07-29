@@ -45,7 +45,8 @@
         "docs:dev": "vitepress dev docs --temp .temp",
         "docs:build": "vitepress build docs --temp .temp",
         "docs:help": "vitepress --help",
-        "prepare": "husky"
+        "prepare": "husky",
+        "test:integration": "vitest --config test/vitest.integration.config.ts --run"
     },
     "keywords": [
         "database",
@@ -91,6 +92,11 @@
         "eslint": "^10.8.0",
         "eslint-plugin-vue": "^10.10.0",
         "husky": "^9.1.7",
+        "mongodb": "^7.5.0",
+        "mssql": "^12.7.0",
+        "mysql2": "^3.23.2",
+        "oracledb": "^7.0.1",
+        "pg": "^8.22.0",
         "tsdown": "^0.22.14",
         "typeorm": "^1.1.0",
         "typescript": "^6.0.3",

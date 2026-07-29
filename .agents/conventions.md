@@ -25,6 +25,7 @@
 - After changing source or tests, run `npm run lint` on the affected files (or `npm run lint:fix`).
 - When changing user-facing behavior (CLI flags, public API signatures, env var names, seeder/factory contract), update both `README.MD` and the matching page in `docs/guide/`.
 - Adding a new TypeORM driver: add a dialect folder `src/database/core/<name>/` (`statements.ts` + `module.ts`), an adapter in `src/database/adapters/<name>.ts`, and a row in `src/database/registry.ts`. Then add a spec under `test/unit/database/core/` (using the memory connection factory from `test/data/database/`) and a docs entry.
+- Teaching the guarded schema helpers a new dialect: add the rows to `src/database/schema/alter/dialect.ts`, branch in `src/database/schema/alter/statements.ts`, extend `test/unit/database/schema/alter/`, and widen `supportsSchemaAlter` in `test/data/typeorm/integration.ts` (the driver is likely already in `INTEGRATION_DRIVERS` and the `integration` matrix in `main.yml`).
 
 ## Code Style
 
@@ -115,7 +116,7 @@ The manifest at `.release-please-manifest.json` tracks the current version.
 
 ## CI/CD
 
-- `main.yml` runs on push to `master` and on PRs: `install → build → (lint || tests)` on Node 24. The `tests` job runs `npm run test:coverage` and uploads to Codecov via `codecov/codecov-action` (the badge in `README.MD` points to the report).
+- `main.yml` runs on push to `master` and on PRs: `install → build → (lint || tests || integration)` on Node 24. The `tests` job runs `npm run test:coverage` and uploads to Codecov via `codecov/codecov-action` (the badge in `README.MD` points to the report). The `integration` job is a `fail-fast: false` matrix over `postgres` / `cockroachdb` / `mysql` / `mariadb` / `mssql` / `mongodb` / `oracle` service containers running `npm run test:integration`.
 - `release.yml` runs the release-please action and (on merge of a release PR) publishes to npm + deploys docs. It does **not** run coverage: the `monoship` publish step re-inits the runner to Node 22, so any later test step would hit a `better-sqlite3` native-ABI mismatch against the Node-24 install. Coverage therefore lives in `main.yml` where the Node version stays pinned.
 
 ## Documentation Site

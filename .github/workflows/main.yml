@@ -87,3 +87,114 @@ jobs:
               with:
                   token: ${{ secrets.codecov }}
                   directory: ./coverage/
+
+    integration:
+        name: Test (${{ matrix.driver }})
+        needs: [build]
+        runs-on: ubuntu-latest
+
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                    - driver: postgres
+                      image: postgres:18-alpine
+                      port: 5432
+                      username: test
+                      password: test
+                      database: test
+                      health: pg_isready -U test -d test
+                    - driver: cockroachdb
+                      image: cockroachdb/cockroach:v24.3.8
+                      args: start-single-node --insecure
+                      port: 26257
+                      username: root
+                      password: ''
+                      database: defaultdb
+                      health: curl -f http://localhost:8080/health?ready=1
+                    - driver: mysql
+                      image: mysql:9
+                      port: 3306
+                      username: root
+                      password: test
+                      database: test
+                      health: mysqladmin ping -h 127.0.0.1 -ptest
+                    - driver: mariadb
+                      image: mariadb:11
+                      port: 3306
+                      username: root
+                      password: test
+                      database: test
+                      health: healthcheck.sh --connect --innodb_initialized
+                    - driver: mssql
+                      image: mcr.microsoft.com/mssql/server:2022-latest
+                      port: 1433
+                      username: sa
+                      password: Admin12345
+                      database: master
+                      health: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Admin12345 -C -Q "SELECT 1"
+                    - driver: mongodb
+                      image: mongo:8
+                      port: 27017
+                      username: ''
+                      password: ''
+                      database: test
+                      health: mongosh --quiet --eval "db.adminCommand('ping')"
+                    # ~4 min until the instance is up, hence the higher retry count
+                    - driver: oracle
+                      image: gvenzl/oracle-free:23-slim-faststart
+                      port: 1521
+                      username: system
+                      password: Admin12345
+                      database: FREEPDB1
+                      health: healthcheck.sh
+                      retries: 60
+
+        services:
+            database:
+                image: ${{ matrix.image }}
+                # every image ignores the variables meant for the others
+                env:
+                    POSTGRES_USER: test
+                    POSTGRES_PASSWORD: test
+                    POSTGRES_DB: test
+                    MYSQL_ROOT_PASSWORD: test
+                    MYSQL_DATABASE: test
+                    MARIADB_ROOT_PASSWORD: test
+                    MARIADB_DATABASE: test
+                    ACCEPT_EULA: 'Y'
+                    SA_PASSWORD: Admin12345
+                    MSSQL_PID: Express
+                    COCKROACH_ARGS: ${{ matrix.args }}
+                    ORACLE_PASSWORD: Admin12345
+                ports:
+                    - ${{ matrix.port }}:${{ matrix.port }}
+                options: >-
+                    --health-cmd "${{ matrix.health }}"
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries ${{ matrix.retries || 30 }}
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v7
+
+            - name: Install
+              uses: ./.github/actions/install
+              with:
+                  node-version: ${{ env.PRIMARY_NODE_VERSION }}
+
+            - name: Build
+              uses: ./.github/actions/build
+
+            - name: Run integration tests
+              run: |
+                  npm run test:integration
+              env:
+                  TYPEORM_CONNECTION: ${{ matrix.driver }}
+                  TYPEORM_HOST: 127.0.0.1
+                  TYPEORM_PORT: ${{ matrix.port }}
+                  TYPEORM_USERNAME: ${{ matrix.username }}
+                  TYPEORM_PASSWORD: ${{ matrix.password }}
+                  TYPEORM_DATABASE: ${{ matrix.database }}
+                  TYPEORM_SERVICE_NAME: ${{ matrix.database }}
