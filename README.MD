@@ -26,6 +26,8 @@ This is a library to
   - [Database](#database)
     - [Create](#create)
     - [Drop](#drop)
+    - [Schema Drift](#schema-drift)
+    - [Repair Migrations](#repair-migrations)
   - [Instances](#instances)
     - [Single](#single)
     - [Multiple](#multiple)
@@ -290,12 +292,8 @@ stays resumable (mysql commits DDL regardless of the surrounding transaction) an
 never had the drift.
 
 ```typescript
-import {
-    changeColumnType,
-    renameForeignKey,
-    renameIndex,
-    withForeignKeyChecksDisabled,
-} from 'typeorm-extension';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { changeColumnType, renameForeignKey, renameIndex } from 'typeorm-extension';
 
 export class RepairSchema1700000000000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {

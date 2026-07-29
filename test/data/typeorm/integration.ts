@@ -85,6 +85,20 @@ export function supportsDatabaseExistenceCheck(driver?: IntegrationDriver) : boo
     return supportsSchemaMetadata(driver) && driver !== 'cockroachdb';
 }
 
+/**
+ * An empty variable is a value, not an absence — the drivers which run without
+ * authentication are configured with an explicitly empty user/password.
+ */
+function readEnv(...keys: string[]) : string | undefined {
+    for (const key of keys) {
+        if (typeof process.env[key] === 'string') {
+            return process.env[key];
+        }
+    }
+
+    return undefined;
+}
+
 export function createIntegrationDataSourceOptions(
     entities: any[] = [],
     override: Record<string, any> = {},
@@ -94,15 +108,15 @@ export function createIntegrationDataSourceOptions(
         throw new Error('No integration driver is configured (TYPEORM_CONNECTION).');
     }
 
-    const port = process.env.TYPEORM_PORT || process.env.DB_PORT;
+    const port = readEnv('TYPEORM_PORT', 'DB_PORT');
 
     const options : Record<string, any> = {
         type,
-        host: process.env.TYPEORM_HOST || process.env.DB_HOST || '127.0.0.1',
+        host: readEnv('TYPEORM_HOST', 'DB_HOST') ?? '127.0.0.1',
         port: port ? Number.parseInt(port, 10) : DEFAULT_PORT[type],
-        username: process.env.TYPEORM_USERNAME || process.env.DB_USER || 'root',
-        password: process.env.TYPEORM_PASSWORD || process.env.DB_PASS || '',
-        database: process.env.TYPEORM_DATABASE || process.env.DB_NAME || 'test',
+        username: readEnv('TYPEORM_USERNAME', 'DB_USER') ?? 'root',
+        password: readEnv('TYPEORM_PASSWORD', 'DB_PASS') ?? '',
+        database: readEnv('TYPEORM_DATABASE', 'DB_NAME') ?? 'test',
         entities,
         migrations: [],
         ...override,
@@ -118,7 +132,7 @@ export function createIntegrationDataSourceOptions(
     }
 
     if (type === 'oracle') {
-        options.serviceName = process.env.TYPEORM_SERVICE_NAME || options.database;
+        options.serviceName = readEnv('TYPEORM_SERVICE_NAME') || options.database;
     }
 
     return options as DataSourceOptions;

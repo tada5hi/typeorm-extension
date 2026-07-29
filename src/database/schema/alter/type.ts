@@ -31,7 +31,24 @@ export type SchemaRenameForeignKeyInput = {
     /**
      * Desired constraint name.
      */
-    to: string
+    to: string,
+
+    /**
+     * Definition used to re-create the constraint when neither `from` nor `to`
+     * exists — the state a run interrupted between the drop and the re-add
+     * leaves behind on mysql, where the definition can no longer be read back.
+     *
+     * Ignored while `from` still exists: the normal path always describes the
+     * constraint from the database, so a rename can not silently change it.
+     *
+     * Either all three of columns/referencedTable/referencedColumns are given,
+     * or none of them.
+     */
+    columns?: string[],
+    referencedTable?: string,
+    referencedColumns?: string[],
+    onDelete?: string,
+    onUpdate?: string
 };
 
 export type SchemaAddForeignKeyInput = {

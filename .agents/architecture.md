@@ -80,7 +80,9 @@ Two invariants shape the implementation:
 1. **Every helper is a guarded no-op when it does not apply** (returns `false`). mysql commits DDL regardless of the surrounding transaction, so a repair migration must be resumable after a partial failure and safe to run against a database which never had the drift.
 2. **Current state comes from `queryRunner.getTable()`**, never from caller-supplied metadata — `renameForeignKey` re-adds the constraint with the columns/referenced table/referential actions it read back, so the rename cannot silently change the constraint. Note that mysql's driver hides an index whose name matches a referential constraint, which is exactly why the backing index only becomes visible after the constraint is dropped.
 
-The dialect statements themselves live in `src/database/schema/statements.ts` as pure builders (`resolveSchemaDialect` maps `cockroachdb → postgres`, `mariadb → mysql`, and raises `DriverError.schemaAlterationNotSupported` for the rest). `changeColumnType` is the exception: it delegates to `queryRunner.changeColumn()` and therefore works on every driver. `withForeignKeyChecksDisabled` reads `@@SESSION.foreign_key_checks` first and only restores it if it was on (nesting safe); on a non-mysql driver it just runs the callback so a migration stays portable.
+There is exactly one hole those two cannot close together: on mysql a run interrupted between the `DROP` and the `ADD` leaves *neither* name in the database, and the definition is gone with the constraint, so a retry has nothing to read back. `SchemaRenameForeignKeyInput` therefore takes an optional `columns` / `referencedTable` / `referencedColumns` / `onDelete` / `onUpdate` definition which is consulted **only** in that state — while `from` exists, invariant 2 still holds. A partially supplied definition raises `OptionsError` rather than being ignored.
+
+The dialect statements themselves live in `src/database/schema/alter/statements.ts` as pure builders (`resolveSchemaDialect` maps `cockroachdb → postgres`, `mariadb → mysql`, and raises `DriverError.schemaAlterationNotSupported` for the rest). `changeColumnType` is the exception: it delegates to `queryRunner.changeColumn()` and therefore works on every driver. `withForeignKeyChecksDisabled` reads `@@SESSION.foreign_key_checks` first and only restores it if it was on (nesting safe); on a non-mysql driver it just runs the callback so a migration stays portable.
 
 ## Design Patterns
 
@@ -246,8 +248,9 @@ Native client adapters   → src/database/adapters/<driver>.ts
 Deprecated delegates     → src/database/driver/<driver>.ts (removed next major)
 Context builders         → src/database/utils/context.ts
 Schema sync after create → src/database/schema/synchronize.ts
-Schema drift assertion   → src/database/schema/drift.ts
-Guarded schema alters    → src/database/schema/alter.ts (+ statements.ts — pure DDL builders)
+Schema drift assertion   → src/database/schema/drift/module.ts
+Guarded schema alters    → src/database/schema/alter/{indices,foreign-keys,columns,checks}.ts
+Pure schema DDL builders → src/database/schema/alter/statements.ts (+ dialect.ts — resolveSchemaDialect)
 Runtime state registry   → src/runtime/module.ts (+ cache.ts — AsyncKeyedCache)
 DataSource registry      → src/data-source/singleton.ts (delegates to src/runtime)
 DataSource discovery     → src/data-source/find/module.ts

@@ -39,7 +39,16 @@ export async function changeColumnType(
 
     const next = column.clone();
     next.type = normalizeType(input.to.type);
-    next.length = normalizeColumnLength(input.to.length);
+
+    if (typeof input.to.length !== 'undefined') {
+        next.length = normalizeColumnLength(input.to.length);
+    } else if (next.type.toLowerCase() !== normalizeType(column.type).toLowerCase()) {
+        // the type changed and no length was asked for, so the current one
+        // does not carry over (varchar(255) -> text, not text(255))
+        next.length = '';
+    }
+    // same type without a length: keep the current one — a nullability-only
+    // repair must not silently widen varchar(255) to varchar
 
     if (typeof input.to.nullable === 'boolean') {
         next.isNullable = input.to.nullable;

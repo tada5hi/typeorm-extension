@@ -3,6 +3,7 @@ import {
     MYSQL_FOREIGN_KEY_CHECKS_OFF,
     MYSQL_FOREIGN_KEY_CHECKS_ON,
     MYSQL_FOREIGN_KEY_CHECKS_SELECT,
+    OptionsError,
     renameForeignKey,
 } from '../../../../../src';
 import { FakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
@@ -136,6 +137,93 @@ describe('src/database/schema/alter/foreign-keys', () => {
         });
 
         expect(output).toBeFalsy();
+        expect(queryRunner.queries).toEqual([]);
+    });
+
+    it('should restore an interrupted rename from the supplied definition', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'mysql',
+            // neither name is present — the drop committed, the re-add did not
+            tables: [createTable({ indices: [{ name: 'FK_from', columnNames: ['roleId'] }] })],
+            respond: () => [{ value: 1 }],
+        });
+
+        const output = await renameForeignKey(queryRunner as any, {
+            table: 'user',
+            from: 'FK_from',
+            to: 'FK_to',
+            columns: ['roleId'],
+            referencedTable: 'role',
+            referencedColumns: ['id'],
+            onDelete: 'CASCADE',
+        });
+
+        expect(output).toBeTruthy();
+        expect(queryRunner.queries).toEqual([
+            MYSQL_FOREIGN_KEY_CHECKS_SELECT,
+            MYSQL_FOREIGN_KEY_CHECKS_OFF,
+            'ALTER TABLE `user` RENAME INDEX `FK_from` TO `FK_to`',
+            'ALTER TABLE `user` ADD CONSTRAINT `FK_to` FOREIGN KEY (`roleId`) ' +
+            'REFERENCES `role` (`id`) ON DELETE CASCADE',
+            MYSQL_FOREIGN_KEY_CHECKS_ON,
+        ]);
+    });
+
+    it('should not touch indices while restoring on postgres', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'postgres',
+            tables: [createTable({ indices: [{ name: 'FK_from', columnNames: ['roleId'] }] })],
+        });
+
+        const output = await renameForeignKey(queryRunner as any, {
+            table: 'user',
+            from: 'FK_from',
+            to: 'FK_to',
+            columns: ['roleId'],
+            referencedTable: 'role',
+            referencedColumns: ['id'],
+        });
+
+        expect(output).toBeTruthy();
+        expect(queryRunner.queries).toEqual([
+            'ALTER TABLE "user" ADD CONSTRAINT "FK_to" FOREIGN KEY ("roleId") REFERENCES "role" ("id")',
+        ]);
+    });
+
+    it('should prefer the definition of the database over the supplied one', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'postgres',
+            tables: [createTable({ foreignKeys: TABLE_FOREIGN_KEYS })],
+        });
+
+        const output = await renameForeignKey(queryRunner as any, {
+            table: 'user',
+            from: 'FK_from',
+            to: 'FK_to',
+            columns: ['somethingElse'],
+            referencedTable: 'other',
+            referencedColumns: ['id'],
+        });
+
+        expect(output).toBeTruthy();
+        expect(queryRunner.queries).toEqual([
+            'ALTER TABLE "user" RENAME CONSTRAINT "FK_from" TO "FK_to"',
+        ]);
+    });
+
+    it('should throw for a partially supplied definition', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable()],
+        });
+
+        await expect(renameForeignKey(queryRunner as any, {
+            table: 'user',
+            from: 'FK_from',
+            to: 'FK_to',
+            columns: ['roleId'],
+        })).rejects.toThrow(OptionsError);
+
         expect(queryRunner.queries).toEqual([]);
     });
 

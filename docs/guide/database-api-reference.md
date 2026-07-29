@@ -204,9 +204,10 @@ declare function renameIndex(
 
 Supported for `postgres`, `cockroachdb`, `mysql` and `mariadb`; throws a `DriverError` for any other driver.
 
-An index which backs a constraint is not reported as an index by the driver and is therefore not seen by this function —
-on postgres a unique constraint lives in `table.uniques`, and on mysql a foreign key's backing index only becomes
-visible once the constraint is dropped (which [renameForeignKey](#renameforeignkey) handles).
+An index which backs a constraint is not reported as an index by the driver and is therefore not seen by this function.
+On mysql that is a foreign key's backing index, which only becomes visible once the constraint is dropped — handled for
+you by [renameForeignKey](#renameforeignkey). On postgres it is a unique constraint, which lives in `table.uniques`:
+renaming one is **not** covered by these helpers and needs a raw `ALTER TABLE … RENAME CONSTRAINT`.
 
 ## `renameForeignKey`
 
@@ -224,8 +225,29 @@ postgres renames the constraint in place. mysql has no `RENAME CONSTRAINT`, so t
 inside [withForeignKeyChecksDisabled](#withforeignkeychecksdisabled), and the backing index mysql may have created under
 the constraint name is renamed (or dropped, if the target name is already taken) in between.
 
-A no-op (returning `false`) if the table does not exist, a constraint is already named `to`, or no constraint is
-named `from`. Supported for `postgres`, `cockroachdb`, `mysql` and `mariadb`; throws a `DriverError` otherwise.
+A no-op (returning `false`) if the table does not exist or a constraint is already named `to`.
+Supported for `postgres`, `cockroachdb`, `mysql` and `mariadb`; throws a `DriverError` otherwise.
+
+If **neither** name exists — what a mysql run interrupted between the drop and the re-add leaves behind, where the
+definition is gone with the constraint — the optional definition on the input is used to restore it:
+
+```typescript
+await renameForeignKey(queryRunner, {
+    table: 'auth_permissions',
+    from: 'FK_old',
+    to: 'FK_new',
+
+    // only consulted when neither FK_old nor FK_new is present
+    columns: ['client_id'],
+    referencedTable: 'auth_clients',
+    referencedColumns: ['id'],
+    onDelete: 'CASCADE',
+});
+```
+
+While `from` still exists the definition is ignored and read from the database instead, so the normal path can not
+silently change the constraint. Without a definition the interrupted state stays a no-op; a partially supplied one
+(e.g. `columns` without `referencedTable`) throws an `OptionsError`.
 
 ## `changeColumnType`
 

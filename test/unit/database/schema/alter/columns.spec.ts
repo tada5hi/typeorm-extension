@@ -32,6 +32,48 @@ describe('src/database/schema/alter/columns', () => {
         expect(queryRunner.changedColumns[0].to.isNullable).toBeTruthy();
     });
 
+    it('should keep the length if only the nullability changes', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable()],
+        });
+
+        const output = await changeColumnType(queryRunner as any, {
+            table: 'user',
+            column: 'roleId',
+            from: {
+                type: 'varchar',
+                nullable: true,
+            },
+            to: {
+                type: 'varchar',
+                nullable: false,
+            },
+        });
+
+        expect(output).toBeTruthy();
+        expect(queryRunner.changedColumns[0].to.length).toEqual('36');
+        expect(queryRunner.changedColumns[0].to.isNullable).toBeFalsy();
+    });
+
+    it('should drop the length if the type changes without one', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable()],
+        });
+
+        const output = await changeColumnType(queryRunner as any, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'varchar' },
+            to: { type: 'text' },
+        });
+
+        expect(output).toBeTruthy();
+        expect(queryRunner.changedColumns[0].to.type).toEqual('text');
+        expect(queryRunner.changedColumns[0].to.length).toEqual('');
+    });
+
     it('should change the nullability', async () => {
         const queryRunner = new FakeQueryRunner({
             type: 'mysql',

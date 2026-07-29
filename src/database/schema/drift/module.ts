@@ -39,8 +39,9 @@ function buildEmptyDrift() : SchemaDrift {
  *
  * The inspection itself never writes to the database. A data source built from
  * the passed options is therefore built with `synchronize`, `migrationsRun` and
- * `dropSchema` disabled — an already existing DataSource is initialized as is,
- * so its own options still apply.
+ * `dropSchema` disabled, and an uninitialized DataSource which has any of them
+ * enabled is left untouched and inspected through an own instance — otherwise
+ * initializing it would mutate (or drop) the very schema being inspected.
  */
 export async function getSchemaDrift(
     input: DataSource | DataSourceOptions,

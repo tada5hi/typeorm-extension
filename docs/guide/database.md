@@ -283,6 +283,23 @@ export class RepairSchema1700000000000 implements MigrationInterface {
 `renameForeignKey` preserves the columns, the referenced table/columns and the referential actions of the constraint —
 all of them are read back from the database, so the rename can not silently change the constraint.
 
+There is one state it can not read them back from: on mysql the `DROP` and the `ADD` are separate, auto-committed
+statements, so a run interrupted between them leaves neither the old nor the new constraint behind. Pass the definition
+along to make that recoverable — it is only consulted when neither name is present:
+
+```typescript
+await renameForeignKey(queryRunner, {
+    table: 'auth_permissions',
+    from: 'FK_auth_permissions_client',
+    to: 'FK_1a2b3c4d5e6f708192a3b4c5',
+
+    columns: ['client_id'],
+    referencedTable: 'auth_clients',
+    referencedColumns: ['id'],
+    onDelete: 'CASCADE',
+});
+```
+
 On mysql it wraps the drop & re-add in `withForeignKeyChecksDisabled`, which you can also use directly. The constraint
 being recreated was already enforcing, so re-validating it only buys a full table scan plus a failure mode for rows some
 past import inserted with the checks off:
@@ -309,7 +326,10 @@ no-op wrapper on every driver without a session level switch — a migration usi
 
 ::: warning NOTE
 An index which backs a **constraint** is not reported as an index by the driver, and `renameIndex` therefore does not
-see it: on postgres a unique constraint lives in `table.uniques` (rename it with `renameForeignKey`'s counterpart,
-`ALTER TABLE … RENAME CONSTRAINT`), and on mysql a foreign key's backing index only becomes visible once the constraint
-is dropped — which `renameForeignKey` handles for you.
+see it.
+
+On mysql that is the backing index of a foreign key, which only becomes visible once the constraint is dropped —
+`renameForeignKey` deals with it for you. On postgres it is a unique constraint, which lives in `table.uniques`.
+Renaming a unique constraint is **not** covered by these helpers: `renameForeignKey` only handles foreign keys, so
+issue the `ALTER TABLE … RENAME CONSTRAINT` yourself via `queryRunner.query()`.
 :::

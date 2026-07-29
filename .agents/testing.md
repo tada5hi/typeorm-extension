@@ -58,7 +58,7 @@ Write assertions in terms the *driver* agrees with, not in terms of one dialect'
 
 ### Unit + integration in one suite
 
-The codebase doesn't separate unit and integration tests. Everything lives under `test/unit/`, and most suites instantiate a real `DataSource` (against `better-sqlite3 :memory:`) rather than mocking TypeORM. Example: `test/unit/database/index.spec.ts` actually calls `buildDataSourceOptions` and `checkDatabase` end-to-end.
+The default suite under `test/unit/` doesn't separate unit from integration tests: most of its suites instantiate a real `DataSource` (against `better-sqlite3 :memory:`) rather than mocking TypeORM. What lives in `test/integration/` instead is everything that needs a *real database server* — see the driver suite above. Example: `test/unit/database/index.spec.ts` actually calls `buildDataSourceOptions` and `checkDatabase` end-to-end.
 
 The handful of cases that *do* avoid the real ORM (pure query-builder transforms) use `test/data/typeorm/FakeSelectQueryBuilder.ts` — a hand-rolled minimal stand-in. Use it rather than reaching for `jest.fn()` mocks.
 
