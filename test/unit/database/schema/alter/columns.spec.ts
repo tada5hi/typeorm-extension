@@ -1,5 +1,5 @@
 import { Table } from 'typeorm';
-import { changeColumnType } from '../../../../../src';
+import { DriverError, changeColumnType } from '../../../../../src';
 import { FakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { createDataSource } from '../../../../data/typeorm/factory';
 import { createTable } from '../../../../data/typeorm/table';
@@ -211,6 +211,61 @@ describe('src/database/schema/alter/columns', () => {
         expect(queryRunner.changedColumns.length).toEqual(1);
         expect(queryRunner.changedColumns[0].from).toEqual('roleId');
         expect(queryRunner.changedColumns[0].to.length).toEqual('255');
+    });
+
+    it('should refuse to flatten a generated column on mysql', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable({
+                columns: [
+                    {
+                        name: 'total',
+                        type: 'int',
+                        generatedType: 'STORED',
+                        // typeorm reads the expression from its own metadata
+                        // table, and reports it empty when there is no row
+                        asExpression: '',
+                    },
+                ],
+            })],
+        });
+
+        await expect(changeColumnType(queryRunner as any, {
+            table: 'user',
+            column: 'total',
+            from: { type: 'int' },
+            to: { type: 'bigint' },
+        })).rejects.toThrow(DriverError);
+
+        expect(queryRunner.queries).toEqual([]);
+        expect(queryRunner.changedColumns).toEqual([]);
+    });
+
+    it('should restate the expression of a generated column on mysql', async () => {
+        const queryRunner = new FakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable({
+                columns: [
+                    {
+                        name: 'total',
+                        type: 'int',
+                        generatedType: 'STORED',
+                        asExpression: 'char_length(`name`) + 1',
+                    },
+                ],
+            })],
+        });
+
+        expect(await changeColumnType(queryRunner as any, {
+            table: 'user',
+            column: 'total',
+            from: { type: 'int' },
+            to: { type: 'bigint' },
+        })).toBeTruthy();
+
+        expect(queryRunner.queries).toEqual([
+            'ALTER TABLE `user` MODIFY COLUMN `total` bigint AS (char_length(`name`) + 1) STORED',
+        ]);
     });
 
     it('should be a no-op if the change is already applied', async () => {

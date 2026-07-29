@@ -66,9 +66,10 @@ export type SchemaAddForeignKeyInput = {
 };
 
 /**
- * A column definition as mysql expects it after `MODIFY COLUMN`, which
- * replaces the previous one in full — so every attribute the column carries
- * has to be restated, or the server drops it.
+ * The column as the database reports it, for a dialect which replaces the
+ * definition in full (mysql's `MODIFY COLUMN`) — everything it does not
+ * restate is dropped by the server. Dialects which only name the new type
+ * (postgres) read nothing but `type` and `nullable`.
  */
 export type SchemaColumnDefinition = {
     name: string,

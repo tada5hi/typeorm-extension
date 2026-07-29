@@ -1,3 +1,4 @@
+import { DriverError } from '../../../../../src';
 import {
     buildAddForeignKeyQuery,
     buildChangeColumnTypeQueries,
@@ -234,9 +235,32 @@ describe('src/database/schema/alter/statements', () => {
                     'ALTER TABLE `user` MODIFY COLUMN `email` text COMMENT \'it\'\'s a c:\\\\path\'',
                 ]);
             });
+
+            it('should refuse a generated column whose expression is unknown', () => {
+                // typeorm reads the expression from its own metadata table —
+                // without it, restating the definition would silently turn the
+                // column into a regular one and drop what it computes
+                expect(() => buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'total',
+                    type: 'bigint',
+                    generatedType: 'STORED',
+                    asExpression: '',
+                })).toThrow(DriverError);
+            });
         });
 
         describe('postgres', () => {
+            it('should alter a generated column, since it only names the type', () => {
+                expect(buildChangeColumnTypeQueries('postgres', 'user', {
+                    name: 'total',
+                    type: 'bigint',
+                    generatedType: 'STORED',
+                    asExpression: '',
+                })).toEqual([
+                    'ALTER TABLE "user" ALTER COLUMN "total" TYPE bigint',
+                ]);
+            });
+
             it('should alter the type and the nullability', () => {
                 expect(buildChangeColumnTypeQueries('postgres', 'user', {
                     name: 'email',

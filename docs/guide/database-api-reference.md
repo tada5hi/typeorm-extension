@@ -272,6 +272,14 @@ Since mysql replaces the column definition in full, every attribute of the colum
 collation, `UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE`, the values of an `enum`) is restated from the description the
 database reports back, not from the passed input.
 
+Two mysql caveats follow from that:
+
+- A **generated column** can only be restated together with its expression, which typeorm reads from its own
+  `typeorm_metadata` table. When that row is missing the expression comes back empty, and the helper throws a
+  `DriverError` instead of altering the column into a regular one.
+- `ZEROFILL` is **not** preserved — typeorm does not read it into `TableColumn` at all, so there is nothing to restate.
+  It is a display attribute mysql deprecated in 8.0.17, and typeorm's own statements drop it just the same.
+
 ## `withForeignKeyChecksDisabled`
 
 Run a callback with the mysql/mariadb foreign key checks disabled and restore the previous state afterwards.

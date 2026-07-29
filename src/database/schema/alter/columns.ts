@@ -10,7 +10,10 @@ import { matchesColumnType, normalizeColumnLength } from './utils';
  * comment, charset, AUTO_INCREMENT, …) instead of dropping it.
  *
  * The primary key is deliberately left out: the column already carries it,
- * and repeating it would be a second one.
+ * and repeating it would be a second one. mysql's `ZEROFILL` is missing for a
+ * different reason — typeorm does not read it into `TableColumn` at all, so a
+ * zerofill column loses the attribute (it is a display width mysql deprecated
+ * in 8.0.17, and typeorm's own statements drop it just the same).
  */
 function buildColumnDefinition(driver: Driver, column: TableColumn) : SchemaColumnDefinition {
     return {

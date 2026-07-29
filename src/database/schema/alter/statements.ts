@@ -1,3 +1,4 @@
+import { DriverError } from '../../../errors';
 import type {
     SchemaAddForeignKeyInput,
     SchemaColumnDefinition,
@@ -184,6 +185,14 @@ export function buildChangeColumnTypeQueries(
     const path = escapeSchemaPath(dialect, table);
 
     if (dialect === 'mysql') {
+        if (column.generatedType && !column.asExpression) {
+            // restating the definition without the `AS` would turn a generated
+            // column into a regular one, and drop every value it computes.
+            // typeorm reads the expression from its own metadata table, so it
+            // is empty whenever there is no row describing this column.
+            throw DriverError.columnGenerationExpressionUnknown(column.name);
+        }
+
         return [`ALTER TABLE ${path} MODIFY COLUMN ${buildColumnDefinition(column)}`];
     }
 
