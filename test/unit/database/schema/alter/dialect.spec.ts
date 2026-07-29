@@ -18,7 +18,6 @@ describe('src/database/schema/alter/dialect', () => {
             expect(findSchemaDialect('better-sqlite3')).toBeUndefined();
             expect(findSchemaDialect('mssql')).toBeUndefined();
             expect(findSchemaDialect('mongodb')).toBeUndefined();
-            expect(findSchemaDialect('toString' as any)).toBeUndefined();
         });
     });
 

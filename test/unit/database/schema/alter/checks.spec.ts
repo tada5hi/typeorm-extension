@@ -4,7 +4,7 @@ import {
     MYSQL_FOREIGN_KEY_CHECKS_SELECT,
     withForeignKeyChecksDisabled,
 } from '../../../../../src';
-import { FakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
+import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 
 describe('src/database/schema/alter/checks', () => {
     it('should build the expected statements', () => {
@@ -14,13 +14,13 @@ describe('src/database/schema/alter/checks', () => {
     });
 
     it('should disable and restore the checks on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             respond: () => [{ value: 1 }],
         });
 
         const output = await withForeignKeyChecksDisabled(
-            queryRunner as any,
+            queryRunner,
             async () => 'done',
         );
 
@@ -33,12 +33,12 @@ describe('src/database/schema/alter/checks', () => {
     });
 
     it('should not restore checks which were already disabled', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             respond: () => [{ value: 0 }],
         });
 
-        await withForeignKeyChecksDisabled(queryRunner as any, async () => 'done');
+        await withForeignKeyChecksDisabled(queryRunner, async () => 'done');
 
         expect(queryRunner.queries).toEqual([
             MYSQL_FOREIGN_KEY_CHECKS_SELECT,
@@ -47,12 +47,12 @@ describe('src/database/schema/alter/checks', () => {
     });
 
     it('should restore the checks if the previous state can not be read', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             respond: () => undefined,
         });
 
-        await withForeignKeyChecksDisabled(queryRunner as any, async () => 'done');
+        await withForeignKeyChecksDisabled(queryRunner, async () => 'done');
 
         expect(queryRunner.queries).toEqual([
             MYSQL_FOREIGN_KEY_CHECKS_SELECT,
@@ -62,12 +62,12 @@ describe('src/database/schema/alter/checks', () => {
     });
 
     it('should restore the checks if the callback throws', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mariadb',
             respond: () => [{ value: 1 }],
         });
 
-        await expect(withForeignKeyChecksDisabled(queryRunner as any, async () => {
+        await expect(withForeignKeyChecksDisabled(queryRunner, async () => {
             throw new Error('foo');
         })).rejects.toThrow('foo');
 
@@ -79,10 +79,10 @@ describe('src/database/schema/alter/checks', () => {
     });
 
     it('should pass through on a driver without foreign key checks', async () => {
-        const queryRunner = new FakeQueryRunner({ type: 'postgres' });
+        const queryRunner = createFakeQueryRunner({ type: 'postgres' });
 
         const output = await withForeignKeyChecksDisabled(
-            queryRunner as any,
+            queryRunner,
             async () => 'done',
         );
 

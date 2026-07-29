@@ -1,17 +1,17 @@
 import { Table } from 'typeorm';
 import { DriverError, changeColumnType } from '../../../../../src';
-import { FakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
+import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { createDataSource } from '../../../../data/typeorm/factory';
 import { createTable } from '../../../../data/typeorm/table';
 
 describe('src/database/schema/alter/columns', () => {
     it('should change the column type in place on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: {
@@ -35,7 +35,7 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should restate the attributes of the column on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mariadb',
             tables: [createTable({
                 columns: [
@@ -52,7 +52,7 @@ describe('src/database/schema/alter/columns', () => {
             })],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'email',
             from: {
@@ -74,7 +74,7 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should restate the auto increment of a primary key on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({
                 columns: [
@@ -90,7 +90,7 @@ describe('src/database/schema/alter/columns', () => {
             })],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'id',
             from: { type: 'int' },
@@ -104,12 +104,12 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should keep the length if only the nullability changes', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: {
@@ -129,12 +129,12 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should drop the length if the type changes without one', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: { type: 'varchar' },
@@ -148,7 +148,7 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should change the column type in place on postgres', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'postgres',
             tables: [new Table({
                 name: 'user',
@@ -163,7 +163,7 @@ describe('src/database/schema/alter/columns', () => {
             })],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: {
@@ -188,12 +188,12 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should delegate to typeorm for a driver without statements', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'better-sqlite3',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: {
@@ -214,7 +214,7 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should refuse to flatten a generated column on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({
                 columns: [
@@ -230,7 +230,7 @@ describe('src/database/schema/alter/columns', () => {
             })],
         });
 
-        await expect(changeColumnType(queryRunner as any, {
+        await expect(changeColumnType(queryRunner, {
             table: 'user',
             column: 'total',
             from: { type: 'int' },
@@ -242,7 +242,7 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should restate the expression of a generated column on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({
                 columns: [
@@ -256,7 +256,7 @@ describe('src/database/schema/alter/columns', () => {
             })],
         });
 
-        expect(await changeColumnType(queryRunner as any, {
+        expect(await changeColumnType(queryRunner, {
             table: 'user',
             column: 'total',
             from: { type: 'int' },
@@ -269,12 +269,12 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should be a no-op if the change is already applied', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: {
@@ -293,12 +293,12 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should be a no-op if the column matches neither description', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: { type: 'int' },
@@ -311,12 +311,12 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should be a no-op if the column does not exist', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'user',
             column: 'foo',
             from: { type: 'varchar' },
@@ -327,9 +327,9 @@ describe('src/database/schema/alter/columns', () => {
     });
 
     it('should be a no-op if the table does not exist', async () => {
-        const queryRunner = new FakeQueryRunner({ type: 'mysql' });
+        const queryRunner = createFakeQueryRunner({ type: 'mysql' });
 
-        const output = await changeColumnType(queryRunner as any, {
+        const output = await changeColumnType(queryRunner, {
             table: 'foo',
             column: 'roleId',
             from: { type: 'varchar' },

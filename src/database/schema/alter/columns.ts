@@ -68,7 +68,7 @@ export async function changeColumnType(
     }
 
     const { driver } = queryRunner.dataSource;
-    const normalizeType = (type: string) => driver.normalizeType({ type: type as any });
+    const normalizeType = (type: string) => driver.normalizeType({ type });
 
     if (
         matchesColumnType(column, input.to, normalizeType) ||
