@@ -77,6 +77,13 @@ export type ConnectionParams = {
     // mssql
     domain?: string,
 
+    /**
+     * Driver specific connection options which are not connection facts of their
+     * own, e.g. the tedious `options` object of the mssql driver
+     * (encrypt, trustServerCertificate, instanceName, ...).
+     */
+    driverOptions?: Record<string, any>,
+
     charset?: string,
     characterSet?: string,
 

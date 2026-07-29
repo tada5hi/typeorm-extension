@@ -25,6 +25,9 @@ export class MsSQLConnectionFactory implements IDatabaseConnectionFactory {
             password: params.password,
             server: params.host,
             port: params.port || 1433,
+            // encrypt / trustServerCertificate / instanceName / ... — without these
+            // the create/drop connection would not reach a server the DataSource can
+            ...(params.driverOptions ? { options: params.driverOptions } : {}),
             ...(params.extra ? params.extra : {}),
             ...(params.domain ? { domain: params.domain } : {}),
             ...(typeof database === 'string' ? { database } : {}),
