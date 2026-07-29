@@ -15,6 +15,7 @@ import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import {
     createIntegrationDataSourceOptions,
+    supportsConversionExpression,
     supportsForeignKeyChecks,
     supportsForeignKeyColumnAlter,
     supportsSchemaAlter,
@@ -236,6 +237,55 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
         const dialect = resolveSchemaDialect(dataSource.options.type);
 
         expect(escapeSchemaIdentifier(dialect, 'user')).toEqual(dataSource.driver.escape('user'));
+    });
+
+    it.runIf(supportsConversionExpression(driver))('should convert values a cast can not', async () => {
+        const queryRunner = dataSource.createQueryRunner();
+
+        try {
+            await queryRunner.createTable(new Table({
+                name: 'tex_cast',
+                columns: [
+                    {
+                        name: 'id', 
+                        type: 'varchar', 
+                        length: '36', 
+                        isPrimary: true,
+                    },
+                    {
+                        name: 'amount', 
+                        type: 'varchar', 
+                        length: '36', 
+                    },
+                ],
+            }), true);
+
+            try {
+                await queryRunner.query('INSERT INTO tex_cast (id, amount) VALUES (\'a\', \'42\')');
+
+                const input = {
+                    table: 'tex_cast',
+                    column: 'amount',
+                    from: { type: 'varchar', length: 36 },
+                    to: { type: 'integer' },
+                };
+
+                // there is no assignment cast from a string type to integer
+                await expect(changeColumnType(queryRunner, input)).rejects.toThrow();
+
+                expect(await changeColumnType(queryRunner, {
+                    ...input,
+                    using: `${dataSource.driver.escape('amount')}::integer`,
+                })).toBeTruthy();
+
+                const [row] = await queryRunner.query('SELECT amount FROM tex_cast');
+                expect(`${row.amount}`).toEqual('42');
+            } finally {
+                await queryRunner.dropTable('tex_cast', true);
+            }
+        } finally {
+            await queryRunner.release();
+        }
     });
 
     it.runIf(supportsSchemaAlter(driver))('should keep an awkward default and comment', async () => {

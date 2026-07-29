@@ -251,7 +251,12 @@ export function buildChangeColumnTypeQueries(
     }
 
     const name = escapeSchemaIdentifier(dialect, column.name);
-    const queries = [`ALTER TABLE ${path} ALTER COLUMN ${name} TYPE ${column.type}`];
+
+    // without a USING expression the values are converted with the assignment
+    // cast between the two types, and the change is refused when there is none
+    const using = column.using ? ` USING ${column.using}` : '';
+
+    const queries = [`ALTER TABLE ${path} ALTER COLUMN ${name} TYPE ${column.type}${using}`];
 
     if (typeof column.nullable === 'boolean') {
         queries.push(

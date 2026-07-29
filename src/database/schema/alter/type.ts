@@ -113,6 +113,10 @@ export type SchemaColumnDefinition = {
      * Raw SQL, as the database reports it.
      */
     default?: unknown,
+    /**
+     * postgres only — raw SQL computing the new value from the old one.
+     */
+    using?: string,
     onUpdate?: string,
     autoIncrement?: boolean,
     comment?: string
@@ -138,5 +142,18 @@ export type SchemaChangeColumnTypeInput = SchemaStrictInput & {
      * column does not match it (e.g. because it is already migrated).
      */
     from: SchemaColumnType,
-    to: SchemaColumnType
+    to: SchemaColumnType,
+    /**
+     * postgres/cockroachdb only — raw SQL computing the new value from the old
+     * one, e.g. `client_id::uuid`.
+     *
+     * `ALTER COLUMN ... TYPE` converts the values with the assignment cast
+     * between the two types, and refuses the change when there is none. Pass an
+     * expression to describe the conversion in that case; without one, postgres
+     * rejects the statement rather than touching the data.
+     *
+     * Raises a `DriverError` on a dialect which has no counterpart, rather than
+     * ignoring it and leaving the server to coerce the values its own way.
+     */
+    using?: string
 };

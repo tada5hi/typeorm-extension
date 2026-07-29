@@ -274,6 +274,22 @@ Since mysql replaces the column definition in full, every attribute of the colum
 collation, `UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE`, the values of an `enum`) is restated from the description the
 database reports back, not from the passed input.
 
+postgres converts the values with the assignment cast between the two types and refuses a change which has none
+(`text` to `integer`, for example). Pass `using` — raw SQL computing the new value from the old one — for those:
+
+```typescript
+await changeColumnType(queryRunner, {
+    table: 'auth_permissions',
+    column: 'client_id',
+    from: { type: 'varchar', length: 36 },
+    to: { type: 'uuid' },
+    using: '"client_id"::uuid',
+});
+```
+
+`using` is postgres/cockroachdb only. On any other dialect it raises a `DriverError` rather than being dropped, since
+ignoring it would leave the server to coerce the values on its own terms — which is what passing it was meant to avoid.
+
 Two mysql caveats follow from that:
 
 - A **generated column** can only be restated together with its expression, which typeorm reads from its own

@@ -71,6 +71,14 @@ export function supportsForeignKeyColumnAlter(driver?: IntegrationDriver) : bool
 }
 
 /**
+ * Whether a conversion expression (`using`) can be expressed, which is what a
+ * type change without an assignment cast between the two types needs.
+ */
+export function supportsConversionExpression(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres' || driver === 'cockroachdb';
+}
+
+/**
  * Whether the driver has a relational schema to compare against
  * the entity metadata at all.
  */

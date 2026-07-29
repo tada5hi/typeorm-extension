@@ -1,5 +1,5 @@
 import type { Driver, QueryRunner, TableColumn } from 'typeorm';
-import { SchemaAlterationError } from '../../../errors';
+import { DriverError, SchemaAlterationError } from '../../../errors';
 import { findSchemaDialect } from './dialect';
 import { buildChangeColumnTypeQueries } from './statements';
 import type { SchemaChangeColumnTypeInput, SchemaColumnDefinition } from './type';
@@ -57,6 +57,10 @@ function buildColumnDefinition(driver: Driver, column: TableColumn) : SchemaColu
  * Widening a column a foreign key depends on additionally needs
  * {@see withForeignKeyChecksDisabled} on mysql, and is refused outright by
  * mariadb — there the constraint has to be dropped around the change.
+ *
+ * postgres converts the values with the assignment cast between the two types
+ * and refuses a change which has none; pass `using` to describe the conversion
+ * for those.
  *
  * @throws SchemaAlterationError if the column matches neither description and
  *         `strict`.
@@ -126,7 +130,15 @@ export async function changeColumnType(
         next.isNullable = input.to.nullable;
     }
 
-    const dialect = findSchemaDialect(queryRunner.dataSource.options.type);
+    const { type } = queryRunner.dataSource.options;
+    const dialect = findSchemaDialect(type);
+
+    if (input.using && dialect !== 'postgres') {
+        // ignoring it would leave the server to coerce the values its own way,
+        // which is exactly what the expression was passed to prevent
+        throw DriverError.columnConversionExpressionNotSupported(type);
+    }
+
     if (!dialect) {
         await queryRunner.changeColumn(table, column, next);
 
@@ -136,7 +148,10 @@ export async function changeColumnType(
     const queries = buildChangeColumnTypeQueries(
         dialect,
         input.table,
-        buildColumnDefinition(driver, next),
+        {
+            ...buildColumnDefinition(driver, next),
+            using: input.using,
+        },
     );
 
     for (const query of queries) {

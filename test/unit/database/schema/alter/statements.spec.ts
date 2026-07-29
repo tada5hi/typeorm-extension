@@ -338,6 +338,20 @@ describe('src/database/schema/alter/statements', () => {
                 ]);
             });
 
+            it('should convert the values with a using expression', () => {
+                // without one the values are converted with the assignment cast
+                // between the two types, and postgres refuses a change with none
+                expect(buildChangeColumnTypeQueries('postgres', 'user', {
+                    name: 'roleId',
+                    type: 'integer',
+                    nullable: false,
+                    using: '"roleId"::integer',
+                })).toEqual([
+                    'ALTER TABLE "user" ALTER COLUMN "roleId" TYPE integer USING "roleId"::integer',
+                    'ALTER TABLE "user" ALTER COLUMN "roleId" SET NOT NULL',
+                ]);
+            });
+
             it('should not restate the definition of the column', () => {
                 // postgres keeps the default, the comment and the identity —
                 // only mysql replaces the definition in full

@@ -213,6 +213,72 @@ describe('src/database/schema/alter/columns', () => {
         expect(queryRunner.changedColumns[0].to.length).toEqual('255');
     });
 
+    it('should pass a using expression through on postgres', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'postgres',
+            tables: [new Table({
+                name: 'user',
+                columns: [
+                    {
+                        name: 'roleId',
+                        type: 'character varying',
+                        length: '36',
+                        isNullable: true,
+                    },
+                ],
+            })],
+        });
+
+        expect(await changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'varchar' },
+            to: { type: 'integer' },
+            using: '"roleId"::integer',
+        })).toBeTruthy();
+
+        expect(queryRunner.queries).toEqual([
+            'ALTER TABLE "user" ALTER COLUMN "roleId" TYPE integer USING "roleId"::integer',
+            'ALTER TABLE "user" ALTER COLUMN "roleId" DROP NOT NULL',
+        ]);
+    });
+
+    it('should refuse a using expression on a dialect without one', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable()],
+        });
+
+        // ignoring it would leave mysql to coerce the values its own way
+        await expect(changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'varchar' },
+            to: { type: 'int' },
+            using: 'CAST(`roleId` AS SIGNED)',
+        })).rejects.toThrow(DriverError);
+
+        expect(queryRunner.queries).toEqual([]);
+        expect(queryRunner.changedColumns).toEqual([]);
+    });
+
+    it('should refuse a using expression on a driver without statements', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'better-sqlite3',
+            tables: [createTable()],
+        });
+
+        await expect(changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'varchar' },
+            to: { type: 'int' },
+            using: 'CAST("roleId" AS INTEGER)',
+        })).rejects.toThrow(DriverError);
+
+        expect(queryRunner.changedColumns).toEqual([]);
+    });
+
     it('should refuse to flatten a generated column on mysql', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'mysql',
