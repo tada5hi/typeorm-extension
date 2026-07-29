@@ -132,14 +132,15 @@ jobs:
                       username: sa
                       password: Admin12345
                       database: master
-                      health: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Admin12345 -C -Q "SELECT 1"
+                      # no double quotes — the health command is itself wrapped in them below
+                      health: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Admin12345 -C -Q 'SELECT 1'
                     - driver: mongodb
                       image: mongo:8
                       port: 27017
                       username: ''
                       password: ''
                       database: test
-                      health: mongosh --quiet --eval "db.adminCommand('ping')"
+                      health: mongosh --quiet --eval 'db.adminCommand({ ping: 1 })'
                     # ~4 min until the instance is up, hence the higher retry count
                     - driver: oracle
                       image: gvenzl/oracle-free:23-slim-faststart
