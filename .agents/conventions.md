@@ -117,6 +117,7 @@ The manifest at `.release-please-manifest.json` tracks the current version.
 ## CI/CD
 
 - `main.yml` runs on push to `master` and on PRs: `install → build → (lint || tests || integration)` on Node 24. The `tests` job runs `npm run test:coverage` and uploads to Codecov via `codecov/codecov-action` (the badge in `README.MD` points to the report). The `integration` job is a `fail-fast: false` matrix over `postgres` / `cockroachdb` / `mysql` / `mariadb` / `mssql` / `mongodb` / `oracle` service containers running `npm run test:integration`.
+- Validate a changed workflow with `npx js-yaml .github/workflows/main.yml` (spec-compliant — `yaml-lint` accepts plain scalars containing `: `, which GitHub rejects with "This run likely failed because of a workflow file issue" and zero started jobs). Health commands are interpolated into `--health-cmd "…"`, so they must be double-quoted in YAML and must not contain double quotes of their own.
 - `release.yml` runs the release-please action and (on merge of a release PR) publishes to npm + deploys docs. It does **not** run coverage: the `monoship` publish step re-inits the runner to Node 22, so any later test step would hit a `better-sqlite3` native-ABI mismatch against the Node-24 install. Coverage therefore lives in `main.yml` where the Node version stays pinned.
 
 ## Documentation Site
