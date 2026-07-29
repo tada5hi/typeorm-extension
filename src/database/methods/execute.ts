@@ -5,7 +5,7 @@ import type {
     IDatabaseConnectionFactory,
 } from '../core';
 import { useDatabaseDialectEntry } from '../registry';
-import { synchronizeDatabaseSchema } from '../utils';
+import { synchronizeDatabaseSchema } from '../schema';
 import type { DatabaseCreateContext, DatabaseDropContext } from './type';
 
 /**

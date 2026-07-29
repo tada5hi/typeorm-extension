@@ -13,6 +13,10 @@ export class DriverError extends TypeormExtensionError {
         return new DriverError(`The driver ${driverName} is not supported yet.`);
     }
 
+    static schemaAlterationNotSupported(driverName: string) {
+        return new DriverError(`Schema alterations are not supported for the driver ${driverName}.`);
+    }
+
     static connectionClosed() {
         return new DriverError('The database connection has already been closed.');
     }

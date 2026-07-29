@@ -26,6 +26,8 @@ This is a library to
   - [Database](#database)
     - [Create](#create)
     - [Drop](#drop)
+    - [Schema Drift](#schema-drift)
+    - [Repair Migrations](#repair-migrations)
   - [Instances](#instances)
     - [Single](#single)
     - [Multiple](#multiple)
@@ -56,6 +58,7 @@ To read the docs, visit [https://typeorm-extension.tada5hi.net](https://typeorm-
 The following commands are available in the terminal:
 - `typeorm-extension db create` to create the database
 - `typeorm-extension db drop` to drop the database
+- `typeorm-extension db drift` to assert that the database schema matches the entity metadata
 - `typeorm-extension seed run` to seed the database
 - `typeorm-extension seed create` to create a new seeder
 
@@ -67,6 +70,7 @@ If the application has not yet been built and you want to run the CLI against Ty
 "scripts": {
     "db:create":   "tsx ./node_modules/typeorm-extension/bin/cli.mjs db create",
     "db:drop":     "tsx ./node_modules/typeorm-extension/bin/cli.mjs db drop",
+    "db:drift":    "tsx ./node_modules/typeorm-extension/bin/cli.mjs db drift",
     "seed:run":    "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed run",
     "seed:create": "tsx ./node_modules/typeorm-extension/bin/cli.mjs seed create"
 }
@@ -79,16 +83,17 @@ for the seeder- & factory-location.
 
 | Option                  | Commands                                          | Default         | Description                                                                                                                                                                                                                           |
 |-------------------------|---------------------------------------------------|-----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--root` or `-r`        | `db create`, `db drop`, `seed run`, `seed create` | `process.cwd()` | Root directory of the project.                                                                                                                                                                                                        |
-| `--tsconfig` or `-tc`   | `db create`, `db drop`, `seed run`                | `tsconfig.json` | Name (or relative path incl. name) of the tsconfig file.                                                                                                                                                                              |
-| `--dataSource` or `-d`  | `db create`, `db drop`, `seed run`                | `data-source`   | Name (or relative path incl. name) of the data-source file.                                                                                                                                                                           |
+| `--root` or `-r`        | `db create`, `db drift`, `db drop`, `seed create`, `seed run` | `process.cwd()` | Root directory of the project.                                                                                                                                                                                                        |
+| `--tsconfig` or `-tc`   | `db create`, `db drift`, `db drop`, `seed run` | `tsconfig.json` | Name (or relative path incl. name) of the tsconfig file.                                                                                                                                                                              |
+| `--dataSource` or `-d`  | `db create`, `db drift`, `db drop`, `seed run` | `data-source`   | Name (or relative path incl. name) of the data-source file.                                                                                                                                                                           |
 | `--synchronize` or `-s` | `db create`                                       | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                      |
 | `--initialDatabase`     | `db create`                                       | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always connect to a database. If no database is provided, the database name will be equal to the connection user name. |
+| `--skipWithoutMigrations` | `db drift`                                      | `false`         | Report no drift if the data-source has no migrations registered.                                                                                                                                                                      |
 | `--name` or `-n`        | `seed create` (required), `seed run` (optional)   | `undefined`     | Name (or relative path incl. name) of the seeder. Required on `seed create`; on `seed run` restricts execution to the matching seeder.                                                                                                |
 | `--timestamp` or `-t`   | `seed create`                                     | `Date.now()`    | Custom timestamp used in the generated seeder filename.                                                                                                                                                                               |
 | `--javascript` or `-j`  | `seed create`                                     | `false`         | Generate a seeder file for JavaScript instead of TypeScript.                                                                                                                                                                          |
-| `--preserveFilePaths`   | `db create`, `db drop`, `seed run`                | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                       |
-| `--log-level`           | `db create`, `db drop`, `seed create`, `seed run` | `info`          | Logger verbosity. One of `silent`, `info`, `debug`.                                                                                                                                                                                   |
+| `--preserveFilePaths`   | `db create`, `db drift`, `db drop`, `seed run` | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                       |
+| `--log-level`           | `db create`, `db drift`, `db drop`, `seed create`, `seed run` | `info`          | Logger verbosity. One of `silent`, `info`, `debug`.                                                                                                                                                                                   |
 
 #### CLI Examples
 **`Database Create`**
@@ -98,6 +103,11 @@ tsx ./node_modules/typeorm-extension/bin/cli.mjs db create  -d src/data-source.t
 **`Database Drop`**
 ```shell
 tsx ./node_modules/typeorm-extension/bin/cli.mjs db drop  -d src/data-source.ts
+```
+
+**`Database Drift`**
+```shell
+tsx ./node_modules/typeorm-extension/bin/cli.mjs db drift  -d src/data-source.ts
 ```
 
 **`Seed Run`**
@@ -249,6 +259,71 @@ import { dropDatabase } from 'typeorm-extension';
 To get a better overview and understanding of the
 [dropDatabase](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#dropDatabase)
 function, check out the documentation.
+
+#### Schema Drift
+
+Compare the database schema against the entity metadata and get back the statements which would reconcile them.
+
+Run it right after the migrations to close the blind spot of a project which builds its schema with migrations in
+production but with `synchronize()` in tests — the two descriptions can drift apart silently, and it only surfaces
+when the next generated migration reconciles them.
+
+```typescript
+import { assertSchemaMatchesMetadata, getSchemaDrift } from 'typeorm-extension';
+
+(async () => {
+    const drift = await getSchemaDrift(dataSource);
+    if (drift.exists) {
+        console.log(drift.up.map((statement) => statement.query));
+    }
+
+    // ... or let it throw a SchemaDriftError listing the statements
+    await assertSchemaMatchesMetadata(dataSource);
+})();
+```
+
+The same check is available on the command line as `typeorm-extension db drift`, which exits with code `1` on drift.
+
+#### Repair Migrations
+
+Renaming a constraint is dialect-asymmetric and easy to get wrong. These helpers read the current state back from the
+database, apply the change only if it is still pending, and return whether they did something — so a repair migration
+stays resumable (mysql commits DDL regardless of the surrounding transaction) and safe to run against a database which
+never had the drift.
+
+```typescript
+import type { MigrationInterface, QueryRunner } from 'typeorm';
+import { changeColumnType, renameForeignKey, renameIndex } from 'typeorm-extension';
+
+export class RepairSchema1700000000000 implements MigrationInterface {
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await renameIndex(queryRunner, {
+            table: 'auth_events',
+            from: 'IDX_auth_events_actor_name',
+            to: 'IDX_9f6d1a2b3c4d5e6f70819293',
+        });
+
+        await renameForeignKey(queryRunner, {
+            table: 'auth_permissions',
+            from: 'FK_auth_permissions_client',
+            to: 'FK_1a2b3c4d5e6f708192a3b4c5',
+        });
+
+        await changeColumnType(queryRunner, {
+            table: 'auth_permissions',
+            column: 'client_id',
+            from: { type: 'varchar', length: 36 },
+            to: { type: 'varchar', length: 255 },
+        });
+    }
+}
+```
+
+`renameIndex` and `renameForeignKey` support `postgres`, `cockroachdb`, `mysql` and `mariadb` and throw a `DriverError`
+on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere.
+
+To get a better overview and understanding of these functions, check out the
+[documentation](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html).
 
 ### Instances
 

@@ -53,6 +53,9 @@ export function buildConnectionParams(options: DataSourceOptions): ConnectionPar
         ...(driverOptions.serviceName ? { serviceName: driverOptions.serviceName } : {}),
         ...(driverOptions.template ? { template: driverOptions.template } : {}),
         ...(options.extra ? { extra: options.extra } : {}),
+        // typeorm hands its own driver its options.options (e.g. the tedious config
+        // of the mssql driver) — create/drop must connect with the same settings
+        ...(driverOptions.options ? { driverOptions: driverOptions.options } : {}),
         ...(driverOptions.domain ? { domain: driverOptions.domain } : {}),
         ...(driverOptions.schema ? { schema: driverOptions.schema } : {}),
     };
