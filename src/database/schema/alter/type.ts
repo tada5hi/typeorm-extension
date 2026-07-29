@@ -19,6 +19,17 @@ export type SchemaRenameIndexInput = {
     to: string
 };
 
+/**
+ * What a foreign key constraint consists of, beyond its name.
+ */
+export type SchemaForeignKeyMeta = {
+    columns: string[],
+    referencedTable: string,
+    referencedColumns: string[],
+    onDelete?: string,
+    onUpdate?: string
+};
+
 export type SchemaRenameForeignKeyInput = {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
@@ -34,21 +45,14 @@ export type SchemaRenameForeignKeyInput = {
     to: string,
 
     /**
-     * Definition used to re-create the constraint when neither `from` nor `to`
-     * exists — the state a run interrupted between the drop and the re-add
-     * leaves behind on mysql, where the definition can no longer be read back.
+     * Used to re-create the constraint when neither `from` nor `to` exists —
+     * the state a run interrupted between the drop and the re-add leaves behind
+     * on mysql, where it can no longer be read back from the database.
      *
      * Ignored while `from` still exists: the normal path always describes the
      * constraint from the database, so a rename can not silently change it.
-     *
-     * Either all three of columns/referencedTable/referencedColumns are given,
-     * or none of them.
      */
-    columns?: string[],
-    referencedTable?: string,
-    referencedColumns?: string[],
-    onDelete?: string,
-    onUpdate?: string
+    meta?: SchemaForeignKeyMeta
 };
 
 export type SchemaAddForeignKeyInput = {

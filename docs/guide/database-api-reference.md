@@ -229,7 +229,7 @@ A no-op (returning `false`) if the table does not exist or a constraint is alrea
 Supported for `postgres`, `cockroachdb`, `mysql` and `mariadb`; throws a `DriverError` otherwise.
 
 If **neither** name exists — what a mysql run interrupted between the drop and the re-add leaves behind, where the
-definition is gone with the constraint — the optional definition on the input is used to restore it:
+constraint took its own description with it — the optional `meta` is used to restore it:
 
 ```typescript
 await renameForeignKey(queryRunner, {
@@ -238,16 +238,17 @@ await renameForeignKey(queryRunner, {
     to: 'FK_new',
 
     // only consulted when neither FK_old nor FK_new is present
-    columns: ['client_id'],
-    referencedTable: 'auth_clients',
-    referencedColumns: ['id'],
-    onDelete: 'CASCADE',
+    meta: {
+        columns: ['client_id'],
+        referencedTable: 'auth_clients',
+        referencedColumns: ['id'],
+        onDelete: 'CASCADE',
+    },
 });
 ```
 
-While `from` still exists the definition is ignored and read from the database instead, so the normal path can not
-silently change the constraint. Without a definition the interrupted state stays a no-op; a partially supplied one
-(e.g. `columns` without `referencedTable`) throws an `OptionsError`.
+While `from` still exists `meta` is ignored and the description is read from the database instead, so the normal path
+can not silently change the constraint. Without `meta` the interrupted state stays a no-op.
 
 ## `changeColumnType`
 
@@ -320,13 +321,25 @@ export type SchemaRenameIndexInput = {
 
 ## SchemaRenameForeignKeyInput
 ```typescript
+export type SchemaForeignKeyMeta = {
+    columns: string[],
+    referencedTable: string,
+    referencedColumns: string[],
+    onDelete?: string,
+    onUpdate?: string
+};
+
 export type SchemaRenameForeignKeyInput = {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
      */
     table: string,
     from: string,
-    to: string
+    to: string,
+    /**
+     * Only consulted when neither `from` nor `to` exists.
+     */
+    meta?: SchemaForeignKeyMeta
 };
 ```
 

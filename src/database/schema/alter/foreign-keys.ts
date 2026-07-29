@@ -1,5 +1,4 @@
 import type { QueryRunner } from 'typeorm';
-import { OptionsError } from '../../../errors';
 import { withForeignKeyChecksDisabled } from './checks';
 import { resolveSchemaDialect } from './dialect';
 import {
@@ -9,11 +8,7 @@ import {
     buildRenameForeignKeyQuery,
     buildRenameIndexQuery,
 } from './statements';
-import type {
-    SchemaAddForeignKeyInput,
-    SchemaDialect,
-    SchemaRenameForeignKeyInput,
-} from './type';
+import type { SchemaDialect, SchemaRenameForeignKeyInput } from './type';
 import { findTableForeignKey, findTableIndex } from './utils';
 
 /**
@@ -48,53 +43,17 @@ async function alignForeignKeyBackingIndex(
 }
 
 /**
- * The caller supplied constraint definition, if it is complete.
- *
- * @throws OptionsError for a partially supplied definition — silently ignoring
- * half of it would turn a typo into a missing constraint.
- */
-function buildForeignKeyDefinition(
-    input: SchemaRenameForeignKeyInput,
-) : SchemaAddForeignKeyInput | undefined {
-    const parts = [
-        input.columns && input.columns.length > 0,
-        !!input.referencedTable,
-        input.referencedColumns && input.referencedColumns.length > 0,
-    ];
-
-    if (parts.every((part) => !part)) {
-        return undefined;
-    }
-
-    if (!parts.every((part) => !!part)) {
-        throw new OptionsError(
-            'The foreign key definition is incomplete: columns, referencedTable and referencedColumns must be provided together.',
-        );
-    }
-
-    return {
-        table: input.table,
-        name: input.to,
-        columns: input.columns as string[],
-        referencedTable: input.referencedTable as string,
-        referencedColumns: input.referencedColumns as string[],
-        onDelete: input.onDelete,
-        onUpdate: input.onUpdate,
-    };
-}
-
-/**
  * Neither name is present. On mysql that is what a run interrupted between the
- * drop and the re-add leaves behind, and the definition is gone with the
- * constraint — so it can only be restored from the caller supplied one.
+ * drop and the re-add leaves behind, and the constraint took its own
+ * description with it — so it can only be restored from the passed meta.
  */
 async function recreateForeignKey(
     queryRunner: QueryRunner,
     dialect: SchemaDialect,
     input: SchemaRenameForeignKeyInput,
 ) : Promise<boolean> {
-    const definition = buildForeignKeyDefinition(input);
-    if (!definition) {
+    const { meta } = input;
+    if (!meta) {
         return false;
     }
 
@@ -103,7 +62,15 @@ async function recreateForeignKey(
             await alignForeignKeyBackingIndex(queryRunner, input);
         }
 
-        await queryRunner.query(buildAddForeignKeyQuery(dialect, definition));
+        await queryRunner.query(buildAddForeignKeyQuery(dialect, {
+            table: input.table,
+            name: input.to,
+            columns: meta.columns,
+            referencedTable: meta.referencedTable,
+            referencedColumns: meta.referencedColumns,
+            onDelete: meta.onDelete,
+            onUpdate: meta.onUpdate,
+        }));
     });
 
     return true;
@@ -121,12 +88,10 @@ async function recreateForeignKey(
  *
  * A no-op (returning false) if the table does not exist or a constraint is
  * already named `to`. If neither name exists — the state an interrupted mysql
- * rename leaves behind, where the definition is gone with the constraint — the
- * caller supplied definition is used to restore it; without one this stays a
- * no-op.
+ * rename leaves behind, where the constraint took its own description with it —
+ * the passed `meta` is used to restore it; without it this stays a no-op.
  *
  * @throws DriverError for a driver which can not express the rename.
- * @throws OptionsError for a partially supplied constraint definition.
  */
 export async function renameForeignKey(
     queryRunner: QueryRunner,

@@ -3,7 +3,6 @@ import {
     MYSQL_FOREIGN_KEY_CHECKS_OFF,
     MYSQL_FOREIGN_KEY_CHECKS_ON,
     MYSQL_FOREIGN_KEY_CHECKS_SELECT,
-    OptionsError,
     renameForeignKey,
 } from '../../../../../src';
 import { FakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
@@ -140,7 +139,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
         expect(queryRunner.queries).toEqual([]);
     });
 
-    it('should restore an interrupted rename from the supplied definition', async () => {
+    it('should restore an interrupted rename from the passed meta', async () => {
         const queryRunner = new FakeQueryRunner({
             type: 'mysql',
             // neither name is present — the drop committed, the re-add did not
@@ -152,10 +151,12 @@ describe('src/database/schema/alter/foreign-keys', () => {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-            columns: ['roleId'],
-            referencedTable: 'role',
-            referencedColumns: ['id'],
-            onDelete: 'CASCADE',
+            meta: {
+                columns: ['roleId'],
+                referencedTable: 'role',
+                referencedColumns: ['id'],
+                onDelete: 'CASCADE',
+            },
         });
 
         expect(output).toBeTruthy();
@@ -179,9 +180,11 @@ describe('src/database/schema/alter/foreign-keys', () => {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-            columns: ['roleId'],
-            referencedTable: 'role',
-            referencedColumns: ['id'],
+            meta: {
+                columns: ['roleId'],
+                referencedTable: 'role',
+                referencedColumns: ['id'],
+            },
         });
 
         expect(output).toBeTruthy();
@@ -190,7 +193,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
         ]);
     });
 
-    it('should prefer the definition of the database over the supplied one', async () => {
+    it('should prefer the description of the database over the passed meta', async () => {
         const queryRunner = new FakeQueryRunner({
             type: 'postgres',
             tables: [createTable({ foreignKeys: TABLE_FOREIGN_KEYS })],
@@ -200,9 +203,11 @@ describe('src/database/schema/alter/foreign-keys', () => {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-            columns: ['somethingElse'],
-            referencedTable: 'other',
-            referencedColumns: ['id'],
+            meta: {
+                columns: ['somethingElse'],
+                referencedTable: 'other',
+                referencedColumns: ['id'],
+            },
         });
 
         expect(output).toBeTruthy();
@@ -211,19 +216,19 @@ describe('src/database/schema/alter/foreign-keys', () => {
         ]);
     });
 
-    it('should throw for a partially supplied definition', async () => {
+    it('should be a no-op for an interrupted rename without meta', async () => {
         const queryRunner = new FakeQueryRunner({
             type: 'mysql',
-            tables: [createTable()],
+            tables: [createTable({ indices: [{ name: 'FK_from', columnNames: ['roleId'] }] })],
         });
 
-        await expect(renameForeignKey(queryRunner as any, {
+        const output = await renameForeignKey(queryRunner as any, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-            columns: ['roleId'],
-        })).rejects.toThrow(OptionsError);
+        });
 
+        expect(output).toBeFalsy();
         expect(queryRunner.queries).toEqual([]);
     });
 

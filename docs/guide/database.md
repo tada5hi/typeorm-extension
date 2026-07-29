@@ -284,8 +284,8 @@ export class RepairSchema1700000000000 implements MigrationInterface {
 all of them are read back from the database, so the rename can not silently change the constraint.
 
 There is one state it can not read them back from: on mysql the `DROP` and the `ADD` are separate, auto-committed
-statements, so a run interrupted between them leaves neither the old nor the new constraint behind. Pass the definition
-along to make that recoverable — it is only consulted when neither name is present:
+statements, so a run interrupted between them leaves neither the old nor the new constraint behind. Pass `meta` along to
+make that recoverable — it is only consulted when neither name is present:
 
 ```typescript
 await renameForeignKey(queryRunner, {
@@ -293,10 +293,12 @@ await renameForeignKey(queryRunner, {
     from: 'FK_auth_permissions_client',
     to: 'FK_1a2b3c4d5e6f708192a3b4c5',
 
-    columns: ['client_id'],
-    referencedTable: 'auth_clients',
-    referencedColumns: ['id'],
-    onDelete: 'CASCADE',
+    meta: {
+        columns: ['client_id'],
+        referencedTable: 'auth_clients',
+        referencedColumns: ['id'],
+        onDelete: 'CASCADE',
+    },
 });
 ```
 
