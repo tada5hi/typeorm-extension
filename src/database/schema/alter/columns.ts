@@ -1,8 +1,10 @@
 import type { Driver, QueryRunner, TableColumn } from 'typeorm';
+import { SchemaAlterationError } from '../../../errors';
 import { findSchemaDialect } from './dialect';
 import { buildChangeColumnTypeQueries } from './statements';
 import type { SchemaChangeColumnTypeInput, SchemaColumnDefinition } from './type';
-import { matchesColumnType, normalizeColumnLength } from './utils';
+import type { SchemaColumnDescriber } from './utils';
+import { isStrict, matchesColumnType, normalizeColumnLength } from './utils';
 
 /**
  * Describe the column as the database reports it, so a dialect which replaces
@@ -39,9 +41,12 @@ function buildColumnDefinition(driver: Driver, column: TableColumn) : SchemaColu
  * Change the type (and optionally the nullability) of a column, but only if it
  * still matches the `from` description.
  *
- * A no-op (returning false) if the table/column does not exist, the column
- * already matches `to`, or it matches neither — which keeps a repair migration
- * resumable and safe to run against a database which never had the drift.
+ * Returns false when the column already matches `to`, which keeps a repair
+ * migration resumable and safe to run against a database which never had the
+ * drift. When the column matches neither description (or is missing) the
+ * database is not in a state this can act on, and `strict` (the default)
+ * raises a `SchemaAlterationError` rather than reporting a repair which did
+ * not happen.
  *
  * The column is altered in place, so it keeps the values it holds. That is the
  * reason the statement is built here: typeorm's `changeColumn` drops and
@@ -52,6 +57,9 @@ function buildColumnDefinition(driver: Driver, column: TableColumn) : SchemaColu
  * Widening a column a foreign key depends on additionally needs
  * {@see withForeignKeyChecksDisabled} on mysql, and is refused outright by
  * mariadb — there the constraint has to be dropped around the change.
+ *
+ * @throws SchemaAlterationError if the column matches neither description and
+ *         `strict`.
  */
 export async function changeColumnType(
     queryRunner: QueryRunner,
@@ -59,21 +67,45 @@ export async function changeColumnType(
 ) : Promise<boolean> {
     const table = await queryRunner.getTable(input.table);
     if (!table) {
+        if (isStrict(input)) {
+            throw SchemaAlterationError.tableNotFound(input.table);
+        }
+
         return false;
     }
 
     const column = table.findColumnByName(input.column);
     if (!column) {
+        if (isStrict(input)) {
+            throw SchemaAlterationError.columnNotFound(input.table, input.column);
+        }
+
         return false;
     }
 
     const { driver } = queryRunner.dataSource;
     const normalizeType = (type: string) => driver.normalizeType({ type });
+    const describer : SchemaColumnDescriber = {
+        normalizeType,
+        describeType: (type, length) => {
+            const probe = column.clone();
+            probe.type = normalizeType(type);
+            probe.length = normalizeColumnLength(length);
 
-    if (
-        matchesColumnType(column, input.to, normalizeType) ||
-        !matchesColumnType(column, input.from, normalizeType)
-    ) {
+            return driver.createFullType(probe);
+        },
+    };
+
+    // already applied
+    if (matchesColumnType(column, input.to, describer)) {
+        return false;
+    }
+
+    if (!matchesColumnType(column, input.from, describer)) {
+        if (isStrict(input)) {
+            throw SchemaAlterationError.columnMismatch(input.table, input.column);
+        }
+
         return false;
     }
 

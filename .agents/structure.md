@@ -34,7 +34,7 @@ typeorm-extension/
 │   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
-│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError
+│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError
 │   ├── helpers/                # entity helpers (getEntityName, etc.)
 │   ├── query/                  # JSON:API-style query parameter application (rapiq-backed)
 │   │   ├── module.ts           # applyQuery() / applyQueryParseOutput() — public entry
@@ -79,7 +79,7 @@ typeorm-extension/
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
 | `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
-| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError`). |
+| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError`). |
 | `helpers/`       | Entity-shape helpers (`getEntityName`) — used across seeder and query modules.                         |
 | `query/`         | Apply parsed JSON:API query input onto a `SelectQueryBuilder`. Delegates parsing to `rapiq`.           |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |

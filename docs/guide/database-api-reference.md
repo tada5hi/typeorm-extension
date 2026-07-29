@@ -192,8 +192,8 @@ Throws a `SchemaDriftError` whose message lists the reconciling statements and w
 
 ## `renameIndex`
 
-Rename an index. A no-op (returning `false`) if the table does not exist, an index is already named `to`,
-or no index is named `from`.
+Rename an index. Returns `false` when an index is already named `to`. When neither name exists — or the table does not
+— a `SchemaAlterationError` is raised unless `strict: false` is passed.
 
 ```typescript
 declare function renameIndex(
@@ -225,7 +225,8 @@ postgres renames the constraint in place. mysql has no `RENAME CONSTRAINT`, so t
 inside [withForeignKeyChecksDisabled](#withforeignkeychecksdisabled), and the backing index mysql may have created under
 the constraint name is renamed (or dropped, if the target name is already taken) in between.
 
-A no-op (returning `false`) if the table does not exist or a constraint is already named `to`.
+Returns `false` when a constraint is already named `to`. When neither name exists and no `meta` describes the
+constraint — or the table does not exist — a `SchemaAlterationError` is raised unless `strict: false` is passed.
 Supported for `postgres`, `cockroachdb`, `mysql` and `mariadb`; throws a `DriverError` otherwise.
 
 If **neither** name exists — what a mysql run interrupted between the drop and the re-add leaves behind, where the
@@ -261,7 +262,8 @@ declare function changeColumnType(
 ): Promise<boolean>;
 ```
 
-A no-op (returning `false`) if the table/column does not exist, the column already matches `to`, or it matches neither.
+Returns `false` when the column already matches `to`. When it matches neither description — or the table/column does
+not exist — a `SchemaAlterationError` is raised unless `strict: false` is passed.
 
 The column is altered **in place**, so it keeps the values it holds — `ALTER COLUMN … TYPE` on postgres/cockroachdb,
 `MODIFY COLUMN` on mysql/mariadb. That is the reason the statement is built here: typeorm's `changeColumn` drops and
@@ -279,6 +281,26 @@ Two mysql caveats follow from that:
   `DriverError` instead of altering the column into a regular one.
 - `ZEROFILL` is **not** preserved — typeorm does not read it into `TableColumn` at all, so there is nothing to restate.
   It is a display attribute mysql deprecated in 8.0.17, and typeorm's own statements drop it just the same.
+
+## Guard semantics
+
+Every guarded helper takes `strict` (default `true`):
+
+| Database state | `strict: true` (default) | `strict: false` |
+|:---------------|:-------------------------|:----------------|
+| Change is pending | applies it, returns `true` | applies it, returns `true` |
+| Already in the desired state | returns `false` | returns `false` |
+| In neither state (wrong name, wrong type, missing table/column) | throws `SchemaAlterationError` | returns `false` |
+
+Being already in the desired state is never an error — that is what keeps a repair migration resumable. The strict mode
+only covers the third row, where the migration's description of the database is wrong and returning `false` would let a
+repair which never happened pass for a successful one.
+
+::: warning NOTE
+Every helper reads the table back with `queryRunner.getTable()`. For a table containing a **generated column** typeorm
+resolves the generation expression from its own `typeorm_metadata` table, so on a database where that table is absent
+the call fails with `relation "typeorm_metadata" does not exist` before the helper does anything.
+:::
 
 ## `withForeignKeyChecksDisabled`
 

@@ -1,4 +1,4 @@
-import { DriverError, renameIndex } from '../../../../../src';
+import { DriverError, SchemaAlterationError, renameIndex } from '../../../../../src';
 import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { createTable } from '../../../../data/typeorm/table';
 
@@ -55,32 +55,52 @@ describe('src/database/schema/alter/indices', () => {
         expect(queryRunner.queries).toEqual([]);
     });
 
-    it('should be a no-op if the index does not exist', async () => {
+    it('should raise if neither index exists', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await renameIndex(queryRunner, {
+        // returning quietly would report a repair which did not happen
+        await expect(renameIndex(queryRunner, {
             table: 'user',
             from: 'IDX_from',
             to: 'IDX_to',
-        });
+        })).rejects.toThrow(SchemaAlterationError);
 
-        expect(output).toBeFalsy();
         expect(queryRunner.queries).toEqual([]);
     });
 
-    it('should be a no-op if the table does not exist', async () => {
+    it('should raise if the table does not exist', async () => {
         const queryRunner = createFakeQueryRunner({ type: 'mysql' });
 
-        const output = await renameIndex(queryRunner, {
+        await expect(renameIndex(queryRunner, {
             table: 'user',
             from: 'IDX_from',
             to: 'IDX_to',
+        })).rejects.toThrow(SchemaAlterationError);
+    });
+
+    it('should stay a no-op without strict', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable()],
         });
 
-        expect(output).toBeFalsy();
+        expect(await renameIndex(queryRunner, {
+            table: 'user',
+            from: 'IDX_from',
+            to: 'IDX_to',
+            strict: false,
+        })).toBeFalsy();
+
+        expect(await renameIndex(queryRunner, {
+            table: 'unknown',
+            from: 'IDX_from',
+            to: 'IDX_to',
+            strict: false,
+        })).toBeFalsy();
+
         expect(queryRunner.queries).toEqual([]);
     });
 

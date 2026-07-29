@@ -3,6 +3,7 @@ import {
     MYSQL_FOREIGN_KEY_CHECKS_OFF,
     MYSQL_FOREIGN_KEY_CHECKS_ON,
     MYSQL_FOREIGN_KEY_CHECKS_SELECT,
+    SchemaAlterationError,
     renameForeignKey,
 } from '../../../../../src';
 import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
@@ -216,48 +217,68 @@ describe('src/database/schema/alter/foreign-keys', () => {
         ]);
     });
 
-    it('should be a no-op for an interrupted rename without meta', async () => {
+    it('should raise for an interrupted rename without meta', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({ indices: [{ name: 'FK_from', columnNames: ['roleId'] }] })],
         });
 
-        const output = await renameForeignKey(queryRunner, {
+        // the constraint took its description with it, so there is nothing
+        // left to rename — reporting success would be a lie
+        await expect(renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-        });
+        })).rejects.toThrow(SchemaAlterationError);
 
-        expect(output).toBeFalsy();
         expect(queryRunner.queries).toEqual([]);
     });
 
-    it('should be a no-op if the constraint does not exist', async () => {
+    it('should raise if neither constraint exists', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'postgres',
             tables: [createTable()],
         });
 
-        const output = await renameForeignKey(queryRunner, {
+        await expect(renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-        });
+        })).rejects.toThrow(SchemaAlterationError);
 
-        expect(output).toBeFalsy();
         expect(queryRunner.queries).toEqual([]);
     });
 
-    it('should be a no-op if the table does not exist', async () => {
+    it('should raise if the table does not exist', async () => {
         const queryRunner = createFakeQueryRunner({ type: 'postgres' });
 
-        const output = await renameForeignKey(queryRunner, {
+        await expect(renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
+        })).rejects.toThrow(SchemaAlterationError);
+    });
+
+    it('should stay a no-op without strict', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'postgres',
+            tables: [createTable()],
         });
 
-        expect(output).toBeFalsy();
+        expect(await renameForeignKey(queryRunner, {
+            table: 'user',
+            from: 'FK_from',
+            to: 'FK_to',
+            strict: false,
+        })).toBeFalsy();
+
+        expect(await renameForeignKey(queryRunner, {
+            table: 'unknown',
+            from: 'FK_from',
+            to: 'FK_to',
+            strict: false,
+        })).toBeFalsy();
+
         expect(queryRunner.queries).toEqual([]);
     });
 

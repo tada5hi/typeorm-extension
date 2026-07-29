@@ -12,4 +12,5 @@ export type {
     SchemaForeignKeyMeta,
     SchemaRenameForeignKeyInput,
     SchemaRenameIndexInput,
+    SchemaStrictInput,
 } from './type';

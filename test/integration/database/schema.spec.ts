@@ -9,6 +9,8 @@ import {
     renameIndex,
     withForeignKeyChecksDisabled,
 } from '../../../src';
+import { resolveSchemaDialect } from '../../../src/database/schema/alter/dialect';
+import { escapeSchemaIdentifier } from '../../../src/database/schema/alter/statements';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import {
@@ -225,6 +227,59 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
             expect((await getSchemaDrift(dataSource)).exists).toBeFalsy();
 
             await repository.delete(user.id);
+        } finally {
+            await queryRunner.release();
+        }
+    });
+
+    it.runIf(supportsSchemaAlter(driver))('should escape an identifier the way the driver does', async () => {
+        const dialect = resolveSchemaDialect(dataSource.options.type);
+
+        expect(escapeSchemaIdentifier(dialect, 'user')).toEqual(dataSource.driver.escape('user'));
+    });
+
+    it.runIf(supportsSchemaAlter(driver))('should keep an awkward default and comment', async () => {
+        const queryRunner = dataSource.createQueryRunner();
+
+        try {
+            await queryRunner.createTable(new Table({
+                name: 'tex_quoted',
+                columns: [
+                    {
+                        name: 'id', 
+                        type: 'varchar', 
+                        length: '36', 
+                        isPrimary: true,
+                    },
+                    {
+                        name: 'label',
+                        type: 'varchar',
+                        length: '36',
+                        default: '\'it\'\'s\'',
+                        comment: 'it\'s a c:\\path',
+                    },
+                ],
+            }), true);
+
+            try {
+                const before = (await queryRunner.getTable('tex_quoted'))!.findColumnByName('label')!;
+
+                expect(await changeColumnType(queryRunner, {
+                    table: 'tex_quoted',
+                    column: 'label',
+                    from: { type: 'varchar', length: 36 },
+                    to: { type: 'varchar', length: 128 },
+                })).toBeTruthy();
+
+                // mysql restates the whole definition, so the escaping of the
+                // literals in it has to survive a round trip through the server
+                const after = (await queryRunner.getTable('tex_quoted'))!.findColumnByName('label')!;
+
+                expect(after.default).toEqual(before.default);
+                expect(after.comment).toEqual(before.comment);
+            } finally {
+                await queryRunner.dropTable('tex_quoted', true);
+            }
         } finally {
             await queryRunner.release();
         }

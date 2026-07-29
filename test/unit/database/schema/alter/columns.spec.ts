@@ -1,5 +1,5 @@
 import { Table } from 'typeorm';
-import { DriverError, changeColumnType } from '../../../../../src';
+import { DriverError, SchemaAlterationError, changeColumnType } from '../../../../../src';
 import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { createDataSource } from '../../../../data/typeorm/factory';
 import { createTable } from '../../../../data/typeorm/table';
@@ -292,51 +292,82 @@ describe('src/database/schema/alter/columns', () => {
         expect(queryRunner.changedColumns).toEqual([]);
     });
 
-    it('should be a no-op if the column matches neither description', async () => {
+    it('should raise if the column matches neither description', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner, {
+        // the migration's description of the database is wrong — returning
+        // quietly would report a repair which did not happen
+        await expect(changeColumnType(queryRunner, {
             table: 'user',
             column: 'roleId',
             from: { type: 'int' },
             to: { type: 'bigint' },
-        });
+        })).rejects.toThrow(SchemaAlterationError);
 
-        expect(output).toBeFalsy();
         expect(queryRunner.queries).toEqual([]);
         expect(queryRunner.changedColumns).toEqual([]);
     });
 
-    it('should be a no-op if the column does not exist', async () => {
+    it('should raise if the column does not exist', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable()],
         });
 
-        const output = await changeColumnType(queryRunner, {
+        await expect(changeColumnType(queryRunner, {
             table: 'user',
             column: 'foo',
             from: { type: 'varchar' },
             to: { type: 'text' },
-        });
-
-        expect(output).toBeFalsy();
+        })).rejects.toThrow(SchemaAlterationError);
     });
 
-    it('should be a no-op if the table does not exist', async () => {
+    it('should raise if the table does not exist', async () => {
         const queryRunner = createFakeQueryRunner({ type: 'mysql' });
 
-        const output = await changeColumnType(queryRunner, {
+        await expect(changeColumnType(queryRunner, {
             table: 'foo',
             column: 'roleId',
             from: { type: 'varchar' },
             to: { type: 'text' },
+        })).rejects.toThrow(SchemaAlterationError);
+    });
+
+    it('should stay a no-op without strict', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'mysql',
+            tables: [createTable()],
         });
 
-        expect(output).toBeFalsy();
+        expect(await changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'int' },
+            to: { type: 'bigint' },
+            strict: false,
+        })).toBeFalsy();
+
+        expect(await changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'foo',
+            from: { type: 'varchar' },
+            to: { type: 'text' },
+            strict: false,
+        })).toBeFalsy();
+
+        expect(await changeColumnType(queryRunner, {
+            table: 'unknown',
+            column: 'roleId',
+            from: { type: 'varchar' },
+            to: { type: 'text' },
+            strict: false,
+        })).toBeFalsy();
+
+        expect(queryRunner.queries).toEqual([]);
+        expect(queryRunner.changedColumns).toEqual([]);
     });
 
     it('should change the column type of a real data source', async () => {

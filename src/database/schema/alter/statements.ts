@@ -20,6 +20,60 @@ function escapeSchemaString(value: string) : string {
         .replace(/\0/g, '')}'`;
 }
 
+/**
+ * Whether the body of a quoted literal escapes its quotes, i.e. whether
+ * wrapping it in quotes again yields the same value.
+ */
+function isEscapedStringBody(value: string) : boolean {
+    let index = 0;
+
+    while (index < value.length) {
+        const char = value[index];
+
+        if (char === '\\') {
+            index += 2;
+            continue;
+        }
+
+        if (char === '\'') {
+            if (value[index + 1] !== '\'') {
+                return false;
+            }
+
+            index += 2;
+            continue;
+        }
+
+        index += 1;
+    }
+
+    return true;
+}
+
+/**
+ * A default as the driver reports it, ready to be repeated in a definition.
+ *
+ * typeorm builds a mysql string default by wrapping the raw value in quotes
+ * without escaping what is inside it, so a default holding a quote comes back
+ * as a literal the server can not parse (`'it's'`). Repairing it is not a
+ * guess: a malformed literal can only have come from that wrapping, while a
+ * properly escaped one (mariadb reports those) is passed through untouched.
+ */
+function buildDefault(value: unknown) : string {
+    if (
+        typeof value !== 'string' ||
+        value.length < 2 ||
+        !value.startsWith('\'') ||
+        !value.endsWith('\'')
+    ) {
+        return `${value}`;
+    }
+
+    const body = value.slice(1, -1);
+
+    return isEscapedStringBody(body) ? value : escapeSchemaString(body);
+}
+
 export function escapeSchemaIdentifier(dialect: SchemaDialect, name: string) : string {
     if (dialect === 'mysql') {
         return `\`${name.replace(/`/g, '``')}\``;
@@ -147,7 +201,7 @@ function buildColumnDefinition(column: SchemaColumnDefinition) : string {
         typeof column.default !== 'undefined' &&
         column.default !== null
     ) {
-        definition += ` DEFAULT ${column.default}`;
+        definition += ` DEFAULT ${buildDefault(column.default)}`;
     }
 
     if (column.onUpdate) {

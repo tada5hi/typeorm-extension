@@ -4,7 +4,22 @@
  */
 export type SchemaDialect = 'postgres' | 'mysql';
 
-export type SchemaRenameIndexInput = {
+/**
+ * Every guarded alteration takes it: raise a `SchemaAlterationError` when the
+ * database is in neither the expected nor the desired state, rather than
+ * returning `false` and leaving a repair migration to report success without
+ * having repaired anything.
+ *
+ * Being already in the desired state is never an error — that is what keeps a
+ * run resumable, and it returns `false` in both modes.
+ *
+ * @default true
+ */
+export type SchemaStrictInput = {
+    strict?: boolean
+};
+
+export type SchemaRenameIndexInput = SchemaStrictInput & {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
      */
@@ -30,7 +45,7 @@ export type SchemaForeignKeyMeta = {
     onUpdate?: string
 };
 
-export type SchemaRenameForeignKeyInput = {
+export type SchemaRenameForeignKeyInput = SchemaStrictInput & {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
      */
@@ -112,7 +127,7 @@ export type SchemaColumnType = {
     nullable?: boolean
 };
 
-export type SchemaChangeColumnTypeInput = {
+export type SchemaChangeColumnTypeInput = SchemaStrictInput & {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
      */

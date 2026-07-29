@@ -1,4 +1,5 @@
 import type { QueryRunner } from 'typeorm';
+import { SchemaAlterationError } from '../../../errors';
 import { withForeignKeyChecksDisabled } from './checks';
 import { resolveSchemaDialect } from './dialect';
 import {
@@ -9,7 +10,7 @@ import {
     buildRenameIndexQuery,
 } from './statements';
 import type { SchemaDialect, SchemaRenameForeignKeyInput } from './type';
-import { findTableForeignKey, findTableIndex } from './utils';
+import { findTableForeignKey, findTableIndex, isStrict } from './utils';
 
 /**
  * mysql creates a backing index under the constraint name for a foreign key
@@ -54,6 +55,10 @@ async function recreateForeignKey(
 ) : Promise<boolean> {
     const { meta } = input;
     if (!meta) {
+        if (isStrict(input)) {
+            throw SchemaAlterationError.foreignKeyNotFound(input.table, input.from);
+        }
+
         return false;
     }
 
@@ -86,12 +91,15 @@ async function recreateForeignKey(
  * enforcing) and to take care of the backing index it may have created under
  * the constraint name.
  *
- * A no-op (returning false) if the table does not exist or a constraint is
- * already named `to`. If neither name exists — the state an interrupted mysql
+ * Returns false when a constraint is already named `to`, which keeps a repair
+ * migration resumable. If neither name exists — the state an interrupted mysql
  * rename leaves behind, where the constraint took its own description with it —
- * the passed `meta` is used to restore it; without it this stays a no-op.
+ * the passed `meta` is used to restore it; without it `strict` (the default)
+ * raises a `SchemaAlterationError`, since there is nothing left to rename.
  *
  * @throws DriverError for a driver which can not express the rename.
+ * @throws SchemaAlterationError if neither name exists (and no `meta` describes
+ *         the constraint) and `strict`.
  */
 export async function renameForeignKey(
     queryRunner: QueryRunner,
@@ -101,6 +109,10 @@ export async function renameForeignKey(
 
     const table = await queryRunner.getTable(input.table);
     if (!table) {
+        if (isStrict(input)) {
+            throw SchemaAlterationError.tableNotFound(input.table);
+        }
+
         return false;
     }
 

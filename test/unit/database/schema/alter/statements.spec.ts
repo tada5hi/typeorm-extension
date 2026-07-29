@@ -236,6 +236,52 @@ describe('src/database/schema/alter/statements', () => {
                 ]);
             });
 
+            it('should repair a default typeorm quoted without escaping', () => {
+                // the mysql loader wraps the raw value in quotes as it is, so
+                // a default holding a quote comes back as a broken literal
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'label',
+                    type: 'varchar(128)',
+                    nullable: false,
+                    default: '\'it\'s\'',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `label` varchar(128) NOT NULL DEFAULT \'it\'\'s\'',
+                ]);
+            });
+
+            it('should leave an escaped default untouched', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'label',
+                    type: 'varchar(128)',
+                    nullable: false,
+                    default: '\'it\'\'s\'',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `label` varchar(128) NOT NULL DEFAULT \'it\'\'s\'',
+                ]);
+            });
+
+            it('should leave a backslash escaped default untouched', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'label',
+                    type: 'varchar(128)',
+                    nullable: false,
+                    default: '\'it\\\'s\'',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `label` varchar(128) NOT NULL DEFAULT \'it\\\'s\'',
+                ]);
+            });
+
+            it('should leave an expression default untouched', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'created_at',
+                    type: 'timestamp',
+                    nullable: false,
+                    default: 'CURRENT_TIMESTAMP',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP',
+                ]);
+            });
+
             it('should refuse a generated column whose expression is unknown', () => {
                 // typeorm reads the expression from its own metadata table —
                 // without it, restating the definition would silently turn the

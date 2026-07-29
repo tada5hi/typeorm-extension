@@ -74,6 +74,8 @@ The alter helpers (`renameIndex`, `renameForeignKey`, `changeColumnType`) exist 
 
 For a column that is `queryRunner.changeColumn()`: it drops and re-adds the column *"to avoid data conversion"* as soon as the type or the length differs — on postgres, cockroachdb, mysql, mariadb, mssql and oracle alike (only the sqlite runners recreate the table and copy the values over). On a populated table that silently discards the column's contents, and it fails outright on a column a foreign key depends on. `changeColumnType` therefore builds the in-place statement itself ([#1424](https://github.com/tada5hi/typeorm-extension/issues/1424)).
 
+**This is a stopgap.** The underlying bug is [typeorm#3357](https://github.com/typeorm/typeorm/issues/3357) (open since 2019); the maintainers are implementing it themselves in [typeorm#11620](https://github.com/typeorm/typeorm/pull/11620) and have stated they will close community PRs for it, so do **not** send one. Once a typeorm release ships the in-place alteration, `changeColumnType` should shrink back to the guard around `queryRunner.changeColumn()` and `alter/statements.ts` should lose its column builders.
+
 The renames are dialect-asymmetric on top of that:
 
 - postgres: `ALTER INDEX … RENAME TO`, `ALTER TABLE … RENAME CONSTRAINT`.
@@ -81,7 +83,7 @@ The renames are dialect-asymmetric on top of that:
 
 Two invariants shape the implementation:
 
-1. **Every helper is a guarded no-op when it does not apply** (returns `false`). mysql commits DDL regardless of the surrounding transaction, so a repair migration must be resumable after a partial failure and safe to run against a database which never had the drift.
+1. **Every helper is a guarded no-op when the change is already applied** (returns `false`). mysql commits DDL regardless of the surrounding transaction, so a repair migration must be resumable after a partial failure and safe to run against a database which never had the drift. A state which is *neither* the expected nor the desired one is a different matter: it means the migration's description of the database is wrong, and `strict` (`SchemaStrictInput`, on by default) raises `SchemaAlterationError` there — a repair migration which repairs nothing is otherwise indistinguishable from a successful one. `isStrict(input)` in `alter/utils.ts` is the single reader of the flag.
 2. **Current state comes from `queryRunner.getTable()`**, never from caller-supplied metadata — `renameForeignKey` re-adds the constraint with the columns/referenced table/referential actions it read back, so the rename cannot silently change the constraint. Note that mysql's driver hides an index whose name matches a referential constraint, which is exactly why the backing index only becomes visible after the constraint is dropped.
 
 There is exactly one hole those two cannot close together: on mysql a run interrupted between the `DROP` and the `ADD` leaves *neither* name in the database, and the constraint took its own description with it, so a retry has nothing to read back. `SchemaRenameForeignKeyInput` therefore takes an optional `meta` (`SchemaForeignKeyMeta`) which is consulted **only** in that state — while `from` exists, invariant 2 still holds. It is one nested object rather than five flat fields so that "all of columns/referencedTable/referencedColumns or none" is a type error instead of a runtime check.
@@ -234,6 +236,7 @@ Output:
 - `DriverError` (e.g. `DriverError.notSupported(type)`) is thrown by `resolveDatabaseDialectName()` on a registry miss, and `DriverError.connectionClosed()` when a closed connection is reused.
 - `OptionsError` is thrown when the context builder cannot resolve a DataSource / options.
 - `SchemaDriftError` is thrown by `assertSchemaMatchesMetadata()` and carries the reconciling `statements` (its message lists them, so an unhandled throw in CI is already the report).
+- `SchemaAlterationError` is thrown by the guarded alter helpers when the database is in neither the expected nor the desired state and `strict` is on (the default).
 - Anywhere else, library code lets the underlying error (TypeORM, the native driver, faker, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
 
 ## File Structure (architecture → paths)

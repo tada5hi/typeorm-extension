@@ -323,6 +323,11 @@ export class RepairSchema1700000000000 implements MigrationInterface {
 on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere — `changeColumnType` alters
 the column in place (keeping its values) on the four drivers above and falls back to typeorm for the rest.
 
+Each helper returns `false` when the change is already applied, which keeps a repair migration resumable. If the
+database is in **neither** the expected nor the desired state it raises a `SchemaAlterationError` instead of returning
+quietly, since a repair migration which repairs nothing would otherwise pass for a successful one — pass
+`strict: false` per call to opt out.
+
 To get a better overview and understanding of these functions, check out the
 [documentation](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html).
 
