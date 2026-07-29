@@ -338,7 +338,7 @@ no-op wrapper on every driver without a session level switch — a migration usi
 |--------------------------------|---------------------------------------------------------------------------------|
 | `renameIndex`                  | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
 | `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
-| `changeColumnType`             | all — altered in place on `postgres`, `cockroachdb`, `mysql`, `mariadb`         |
+| `changeColumnType`             | all — altered in place on every relational driver but sqlite                    |
 | `withForeignKeyChecksDisabled` | all (a no-op wrapper outside of `mysql` / `mariadb`)                            |
 
 ::: warning NOTE
@@ -347,8 +347,7 @@ drops and re-adds the column *"to avoid data conversion"* as soon as the type or
 cockroachdb, mysql, mariadb, mssql and oracle alike. On a populated table that silently discards every value in the
 column, so the helper emits `ALTER COLUMN … TYPE` / `MODIFY COLUMN` instead.
 
-For a driver it has no statements for it still goes through typeorm, which is safe on sqlite (the table is recreated
-and the values are copied over) but **not** on mssql and oracle — alter a populated column manually there.
+Only sqlite still goes through typeorm, which is safe there: the table is recreated and the values are copied over.
 
 On mysql, widening a column a foreign key depends on additionally needs
 [`withForeignKeyChecksDisabled`](#withforeignkeychecksdisabled); mariadb refuses to alter either end of a constraint

@@ -187,6 +187,67 @@ describe('src/database/schema/alter/columns', () => {
         expect(queryRunner.changedColumns).toEqual([]);
     });
 
+    it('should alter the column in place on mssql', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'mssql',
+            tables: [createTable()],
+        });
+
+        expect(await changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'varchar', length: 36 },
+            to: { type: 'varchar', length: 255 },
+        })).toBeTruthy();
+
+        expect(queryRunner.queries).toEqual([
+            'ALTER TABLE "user" ALTER COLUMN "roleId" varchar(255) NULL',
+        ]);
+        expect(queryRunner.changedColumns).toEqual([]);
+    });
+
+    it('should alter the column in place on oracle', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'oracle',
+            tables: [createTable()],
+        });
+
+        expect(await changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'varchar', length: 36 },
+            to: {
+                type: 'varchar',
+                length: 255,
+                nullable: false,
+            },
+        })).toBeTruthy();
+
+        // the nullability changes here, so it is stated
+        expect(queryRunner.queries).toEqual([
+            'ALTER TABLE "user" MODIFY "roleId" varchar(255) NOT NULL',
+        ]);
+        expect(queryRunner.changedColumns).toEqual([]);
+    });
+
+    it('should leave the nullability alone on oracle when it does not change', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'oracle',
+            tables: [createTable()],
+        });
+
+        expect(await changeColumnType(queryRunner, {
+            table: 'user',
+            column: 'roleId',
+            from: { type: 'varchar', length: 36 },
+            to: { type: 'varchar', length: 255 },
+        })).toBeTruthy();
+
+        expect(queryRunner.queries).toEqual([
+            'ALTER TABLE "user" MODIFY "roleId" varchar(255)',
+        ]);
+    });
+
     it('should delegate to typeorm for a driver without statements', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'better-sqlite3',

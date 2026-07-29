@@ -1,6 +1,6 @@
 import type { Driver, QueryRunner, TableColumn } from 'typeorm';
 import { DriverError, SchemaAlterationError } from '../../../errors';
-import { findSchemaDialect } from './dialect';
+import { findSchemaColumnDialect } from './dialect';
 import { buildChangeColumnTypeQueries } from './statements';
 import type { SchemaChangeColumnTypeInput, SchemaColumnDefinition } from './type';
 import type { SchemaColumnDescriber } from './utils';
@@ -131,7 +131,7 @@ export async function changeColumnType(
     }
 
     const { type } = queryRunner.dataSource.options;
-    const dialect = findSchemaDialect(type);
+    const dialect = findSchemaColumnDialect(type);
 
     if (input.using && dialect !== 'postgres') {
         // ignoring it would leave the server to coerce the values its own way,
@@ -150,6 +150,7 @@ export async function changeColumnType(
         input.table,
         {
             ...buildColumnDefinition(driver, next),
+            nullabilityChanged: next.isNullable !== column.isNullable,
             using: input.using,
         },
     );

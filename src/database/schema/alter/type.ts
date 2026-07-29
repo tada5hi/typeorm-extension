@@ -5,6 +5,12 @@
 export type SchemaDialect = 'postgres' | 'mysql';
 
 /**
+ * Dialects which can alter a column in place — a superset of the ones which
+ * can express a rename: mssql and oracle can do the former but not the latter.
+ */
+export type SchemaColumnDialect = SchemaDialect | 'mssql' | 'oracle';
+
+/**
  * Every guarded alteration takes it: raise a `SchemaAlterationError` when the
  * database is in neither the expected nor the desired state, rather than
  * returning `false` and leaving a repair migration to report success without
@@ -97,6 +103,12 @@ export type SchemaColumnDefinition = {
      * rejects the clause on a generated column.
      */
     nullable?: boolean,
+    /**
+     * Whether `nullable` differs from what the column carries today. oracle
+     * refuses a clause which only restates the current state
+     * (ORA-01442 / ORA-01451), so it states one only when it changes.
+     */
+    nullabilityChanged?: boolean,
     /**
      * Values of an `enum` / `set` column.
      */

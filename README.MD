@@ -321,7 +321,8 @@ export class RepairSchema1700000000000 implements MigrationInterface {
 
 `renameIndex` and `renameForeignKey` support `postgres`, `cockroachdb`, `mysql` and `mariadb` and throw a `DriverError`
 on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere — `changeColumnType` alters
-the column in place (keeping its values) on the four drivers above and falls back to typeorm for the rest.
+the column in place (keeping its values) on every relational driver but sqlite, which typeorm handles safely by
+recreating the table.
 
 Each helper returns `false` when the change is already applied, which keeps a repair migration resumable. If the
 database is in **neither** the expected nor the desired state it raises a `SchemaAlterationError` instead of returning

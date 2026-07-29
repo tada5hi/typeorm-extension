@@ -1,6 +1,6 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DriverError } from '../../../errors';
-import type { SchemaDialect } from './type';
+import type { SchemaColumnDialect, SchemaDialect } from './type';
 
 /**
  * mariadb is served by the mysql statements, cockroachdb by the postgres ones.
@@ -16,7 +16,27 @@ const dialects = new Map<string, SchemaDialect>([
 ]);
 
 /**
- * The dialect to build the statements with, or undefined for a driver
+ * mssql and oracle can not express either rename, but they can alter a column
+ * in place — which typeorm otherwise does by dropping and re-adding it.
+ */
+const columnDialects = new Map<string, SchemaColumnDialect>([
+    ...dialects,
+    ['mssql', 'mssql'],
+    ['oracle', 'oracle'],
+]);
+
+/**
+ * The dialect to build a column alteration with, or undefined for a driver
+ * this module has no statements for.
+ */
+export function findSchemaColumnDialect(
+    type: DataSourceOptions['type'],
+) : SchemaColumnDialect | undefined {
+    return columnDialects.get(type);
+}
+
+/**
+ * The dialect to build the rename statements with, or undefined for a driver
  * this module has none for.
  */
 export function findSchemaDialect(type: DataSourceOptions['type']) : SchemaDialect | undefined {

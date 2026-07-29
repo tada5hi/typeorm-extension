@@ -2,6 +2,7 @@ import { DriverError } from '../../../errors';
 import type {
     SchemaAddForeignKeyInput,
     SchemaColumnDefinition,
+    SchemaColumnDialect,
     SchemaDialect,
     SchemaRenameForeignKeyInput,
     SchemaRenameIndexInput,
@@ -74,7 +75,7 @@ function buildDefault(value: unknown) : string {
     return isEscapedStringBody(body) ? value : escapeSchemaString(body);
 }
 
-export function escapeSchemaIdentifier(dialect: SchemaDialect, name: string) : string {
+export function escapeSchemaIdentifier(dialect: SchemaColumnDialect, name: string) : string {
     if (dialect === 'mysql') {
         return `\`${name.replace(/`/g, '``')}\``;
     }
@@ -85,7 +86,7 @@ export function escapeSchemaIdentifier(dialect: SchemaDialect, name: string) : s
 /**
  * Escape a (potentially schema/database qualified) path, e.g. public.user.
  */
-export function escapeSchemaPath(dialect: SchemaDialect, path: string) : string {
+export function escapeSchemaPath(dialect: SchemaColumnDialect, path: string) : string {
     return path
         .split('.')
         .map((part) => escapeSchemaIdentifier(dialect, part))
@@ -232,11 +233,12 @@ function buildColumnDefinition(column: SchemaColumnDefinition) : string {
  * in full and therefore restates it.
  */
 export function buildChangeColumnTypeQueries(
-    dialect: SchemaDialect,
+    dialect: SchemaColumnDialect,
     table: string,
     column: SchemaColumnDefinition,
 ) : string[] {
     const path = escapeSchemaPath(dialect, table);
+    const name = escapeSchemaIdentifier(dialect, column.name);
 
     if (dialect === 'mysql') {
         if (column.generatedType && !column.asExpression) {
@@ -250,7 +252,35 @@ export function buildChangeColumnTypeQueries(
         return [`ALTER TABLE ${path} MODIFY COLUMN ${buildColumnDefinition(column)}`];
     }
 
-    const name = escapeSchemaIdentifier(dialect, column.name);
+    if (dialect === 'mssql') {
+        // the default and the identity are constraints of their own here and
+        // survive untouched, but leaving the nullability out makes the column
+        // nullable — so it is always stated
+        let definition = `${name} ${column.type}`;
+
+        if (column.collation) {
+            definition += ` COLLATE ${column.collation}`;
+        }
+
+        if (typeof column.nullable === 'boolean') {
+            definition += column.nullable ? ' NULL' : ' NOT NULL';
+        }
+
+        return [`ALTER TABLE ${path} ALTER COLUMN ${definition}`];
+    }
+
+    if (dialect === 'oracle') {
+        // MODIFY keeps everything it does not name, and oracle rejects a
+        // clause which only restates the current nullability
+        // (ORA-01442 / ORA-01451)
+        let definition = `${name} ${column.type}`;
+
+        if (column.nullabilityChanged && typeof column.nullable === 'boolean') {
+            definition += column.nullable ? ' NULL' : ' NOT NULL';
+        }
+
+        return [`ALTER TABLE ${path} MODIFY ${definition}`];
+    }
 
     // without a USING expression the values are converted with the assignment
     // cast between the two types, and the change is refused when there is none

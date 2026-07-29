@@ -295,6 +295,76 @@ describe('src/database/schema/alter/statements', () => {
             });
         });
 
+        describe('mssql', () => {
+            it('should alter the column in place', () => {
+                expect(buildChangeColumnTypeQueries('mssql', 'user', {
+                    name: 'email',
+                    type: 'nvarchar(64)',
+                    nullable: false,
+                })).toEqual([
+                    'ALTER TABLE "user" ALTER COLUMN "email" nvarchar(64) NOT NULL',
+                ]);
+            });
+
+            it('should always state the nullability', () => {
+                // leaving it out makes the column nullable
+                expect(buildChangeColumnTypeQueries('mssql', 'user', {
+                    name: 'email',
+                    type: 'nvarchar(64)',
+                    nullable: true,
+                    nullabilityChanged: false,
+                })).toEqual([
+                    'ALTER TABLE "user" ALTER COLUMN "email" nvarchar(64) NULL',
+                ]);
+            });
+
+            it('should restate the collation', () => {
+                expect(buildChangeColumnTypeQueries('mssql', 'dbo.user', {
+                    name: 'email',
+                    type: 'nvarchar(64)',
+                    nullable: false,
+                    collation: 'SQL_Latin1_General_CP1_CI_AS',
+                })).toEqual([
+                    'ALTER TABLE "dbo"."user" ALTER COLUMN "email" nvarchar(64) ' +
+                    'COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL',
+                ]);
+            });
+        });
+
+        describe('oracle', () => {
+            it('should alter the column in place', () => {
+                expect(buildChangeColumnTypeQueries('oracle', 'user', {
+                    name: 'email',
+                    type: 'varchar2(64)',
+                    nullable: false,
+                    nullabilityChanged: false,
+                })).toEqual([
+                    'ALTER TABLE "user" MODIFY "email" varchar2(64)',
+                ]);
+            });
+
+            it('should state the nullability only when it changes', () => {
+                // oracle rejects a clause restating the current state
+                expect(buildChangeColumnTypeQueries('oracle', 'user', {
+                    name: 'email',
+                    type: 'varchar2(64)',
+                    nullable: false,
+                    nullabilityChanged: true,
+                })).toEqual([
+                    'ALTER TABLE "user" MODIFY "email" varchar2(64) NOT NULL',
+                ]);
+
+                expect(buildChangeColumnTypeQueries('oracle', 'user', {
+                    name: 'email',
+                    type: 'varchar2(64)',
+                    nullable: true,
+                    nullabilityChanged: true,
+                })).toEqual([
+                    'ALTER TABLE "user" MODIFY "email" varchar2(64) NULL',
+                ]);
+            });
+        });
+
         describe('postgres', () => {
             it('should alter a generated column, since it only names the type', () => {
                 expect(buildChangeColumnTypeQueries('postgres', 'user', {
