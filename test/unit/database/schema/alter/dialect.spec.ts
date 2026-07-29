@@ -1,4 +1,5 @@
-import { DriverError, hasForeignKeyChecks, resolveSchemaDialect } from '../../../../../src';
+import { DriverError } from '../../../../../src';
+import { hasForeignKeyChecks, resolveSchemaDialect } from '../../../../../src/database/schema/alter/dialect';
 
 describe('src/database/schema/alter/dialect', () => {
     describe('resolveSchemaDialect', () => {

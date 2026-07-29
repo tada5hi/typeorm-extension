@@ -6,7 +6,7 @@ import {
     buildRenameIndexQuery,
     escapeSchemaIdentifier,
     escapeSchemaPath,
-} from '../../../../../src';
+} from '../../../../../src/database/schema/alter/statements';
 
 describe('src/database/schema/alter/statements', () => {
     describe('escaping', () => {
