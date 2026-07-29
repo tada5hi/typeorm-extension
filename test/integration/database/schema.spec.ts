@@ -1,5 +1,5 @@
 import type { DataSource, QueryRunner } from 'typeorm';
-import { TableIndex, DataSource as TypeORMDataSource } from 'typeorm';
+import { Table, TableIndex, DataSource as TypeORMDataSource } from 'typeorm';
 import {
     DriverError,
     MYSQL_FOREIGN_KEY_CHECKS_SELECT,
@@ -9,11 +9,15 @@ import {
     renameIndex,
     withForeignKeyChecksDisabled,
 } from '../../../src';
+import { resolveSchemaDialect } from '../../../src/database/schema/alter/dialect';
+import { escapeSchemaIdentifier } from '../../../src/database/schema/alter/statements';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import {
     createIntegrationDataSourceOptions,
+    supportsConversionExpression,
     supportsForeignKeyChecks,
+    supportsForeignKeyColumnAlter,
     supportsSchemaAlter,
     supportsSchemaMetadata,
     useIntegrationDriver,
@@ -164,10 +168,17 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
         }
     });
 
-    it('should change a column type', async () => {
+    it('should change a column type without losing the values', async () => {
         const queryRunner = dataSource.createQueryRunner();
+        const repository = dataSource.getRepository(User);
 
         try {
+            const user = await repository.save(repository.create({
+                firstName: 'foo',
+                lastName: 'bar',
+                email: 'foo@bar.baz',
+            }));
+
             // the driver decides how a string column materializes —
             // character varying on postgres, varchar(255) on mysql
             const current = (await queryRunner.getTable('user'))!.findColumnByName('email')!;
@@ -193,6 +204,12 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
             const table = await queryRunner.getTable('user');
             expect(table!.findColumnByName('email')!.length).toEqual('64');
 
+            // the column is altered in place — mysql's changeColumn would have
+            // dropped & re-added it, and with it every value it holds
+            expect(await repository.findOneBy({ id: user.id })).toEqual(
+                expect.objectContaining({ email: 'foo@bar.baz' }),
+            );
+
             // running it again is a no-op
             expect(await changeColumnType(queryRunner, input)).toBeFalsy();
 
@@ -209,6 +226,195 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
             })).toBeTruthy();
 
             expect((await getSchemaDrift(dataSource)).exists).toBeFalsy();
+
+            await repository.delete(user.id);
+        } finally {
+            await queryRunner.release();
+        }
+    });
+
+    it.runIf(supportsSchemaAlter(driver))('should escape an identifier the way the driver does', async () => {
+        const dialect = resolveSchemaDialect(dataSource.options.type);
+
+        expect(escapeSchemaIdentifier(dialect, 'user')).toEqual(dataSource.driver.escape('user'));
+    });
+
+    it.runIf(supportsConversionExpression(driver))('should convert values a cast can not', async () => {
+        const queryRunner = dataSource.createQueryRunner();
+
+        try {
+            await queryRunner.createTable(new Table({
+                name: 'tex_cast',
+                columns: [
+                    {
+                        name: 'id', 
+                        type: 'varchar', 
+                        length: '36', 
+                        isPrimary: true,
+                    },
+                    {
+                        name: 'amount', 
+                        type: 'varchar', 
+                        length: '36', 
+                    },
+                ],
+            }), true);
+
+            try {
+                await queryRunner.query('INSERT INTO tex_cast (id, amount) VALUES (\'a\', \'42\')');
+
+                const input = {
+                    table: 'tex_cast',
+                    column: 'amount',
+                    from: { type: 'varchar', length: 36 },
+                    to: { type: 'integer' },
+                };
+
+                // there is no assignment cast from a string type to integer
+                await expect(changeColumnType(queryRunner, input)).rejects.toThrow();
+
+                expect(await changeColumnType(queryRunner, {
+                    ...input,
+                    using: `${dataSource.driver.escape('amount')}::integer`,
+                })).toBeTruthy();
+
+                const [row] = await queryRunner.query('SELECT amount FROM tex_cast');
+                expect(`${row.amount}`).toEqual('42');
+            } finally {
+                await queryRunner.dropTable('tex_cast', true);
+            }
+        } finally {
+            await queryRunner.release();
+        }
+    });
+
+    it.runIf(supportsSchemaAlter(driver))('should keep an awkward default and comment', async () => {
+        const queryRunner = dataSource.createQueryRunner();
+
+        try {
+            await queryRunner.createTable(new Table({
+                name: 'tex_quoted',
+                columns: [
+                    {
+                        name: 'id', 
+                        type: 'varchar', 
+                        length: '36', 
+                        isPrimary: true,
+                    },
+                    {
+                        name: 'label',
+                        type: 'varchar',
+                        length: '36',
+                        default: '\'it\'\'s\'',
+                        comment: 'it\'s a c:\\path',
+                    },
+                ],
+            }), true);
+
+            try {
+                const before = (await queryRunner.getTable('tex_quoted'))!.findColumnByName('label')!;
+
+                expect(await changeColumnType(queryRunner, {
+                    table: 'tex_quoted',
+                    column: 'label',
+                    from: { type: 'varchar', length: 36 },
+                    to: { type: 'varchar', length: 128 },
+                })).toBeTruthy();
+
+                // mysql restates the whole definition, so the escaping of the
+                // literals in it has to survive a round trip through the server
+                const after = (await queryRunner.getTable('tex_quoted'))!.findColumnByName('label')!;
+
+                expect(after.default).toEqual(before.default);
+                expect(after.comment).toEqual(before.comment);
+            } finally {
+                await queryRunner.dropTable('tex_quoted', true);
+            }
+        } finally {
+            await queryRunner.release();
+        }
+    });
+
+    /**
+     * The tables are created here rather than taken from the fixtures, because
+     * widening is only expressible on a foreign key over a string column —
+     * mysql requires the two ends of a numeric one to keep the same size.
+     */
+    it.runIf(supportsForeignKeyColumnAlter(driver))('should widen a foreign key column', async () => {
+        const queryRunner = dataSource.createQueryRunner();
+
+        try {
+            await queryRunner.createTable(new Table({
+                name: 'tex_parent',
+                columns: [
+                    {
+                        name: 'id', 
+                        type: 'varchar', 
+                        length: '36', 
+                        isPrimary: true,
+                    },
+                ],
+            }), true);
+
+            await queryRunner.createTable(new Table({
+                name: 'tex_child',
+                columns: [
+                    {
+                        name: 'id', 
+                        type: 'varchar', 
+                        length: '36', 
+                        isPrimary: true,
+                    },
+                    {
+                        name: 'parent_id', 
+                        type: 'varchar', 
+                        length: '36', 
+                    },
+                ],
+                foreignKeys: [
+                    {
+                        name: 'FK_tex_child_parent',
+                        columnNames: ['parent_id'],
+                        referencedTableName: 'tex_parent',
+                        referencedColumnNames: ['id'],
+                    },
+                ],
+            }), true);
+
+            try {
+                await queryRunner.query('INSERT INTO `tex_parent` (`id`) VALUES (\'p\')');
+                await queryRunner.query('INSERT INTO `tex_child` (`id`, `parent_id`) VALUES (\'c\', \'p\')');
+
+                await withForeignKeyChecksDisabled(queryRunner, async () => {
+                    expect(await changeColumnType(queryRunner, {
+                        table: 'tex_child',
+                        column: 'parent_id',
+                        from: { type: 'varchar', length: 36 },
+                        to: { type: 'varchar', length: 255 },
+                    })).toBeTruthy();
+                });
+
+                // asked from the server rather than from the driver, which
+                // reports 255 as `` — the default length it assumes for a
+                // varchar of a table it has no entity metadata for
+                const [column] = await queryRunner.query(
+                    'SELECT CHARACTER_MAXIMUM_LENGTH AS size FROM information_schema.COLUMNS ' +
+                    'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = \'tex_child\' ' +
+                    'AND COLUMN_NAME = \'parent_id\'',
+                );
+                expect(`${column.size}`).toEqual('255');
+
+                // dropping the column would have been refused outright
+                // (ER_FK_COLUMN_CANNOT_DROP), even with the checks disabled
+                const table = await queryRunner.getTable('tex_child');
+                expect(table!.foreignKeys.length).toEqual(1);
+
+                expect(await queryRunner.query('SELECT `parent_id` FROM `tex_child`'))
+                    .toEqual([{ parent_id: 'p' }]);
+            } finally {
+                await queryRunner.dropTable('tex_child', true);
+                await queryRunner.dropTable('tex_parent', true);
+            }
         } finally {
             await queryRunner.release();
         }

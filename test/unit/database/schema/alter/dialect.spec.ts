@@ -1,7 +1,26 @@
 import { DriverError } from '../../../../../src';
-import { hasForeignKeyChecks, resolveSchemaDialect } from '../../../../../src/database/schema/alter/dialect';
+import {
+    findSchemaDialect,
+    hasForeignKeyChecks,
+    resolveSchemaDialect,
+} from '../../../../../src/database/schema/alter/dialect';
 
 describe('src/database/schema/alter/dialect', () => {
+    describe('findSchemaDialect', () => {
+        it('should find supported drivers', () => {
+            expect(findSchemaDialect('postgres')).toEqual('postgres');
+            expect(findSchemaDialect('cockroachdb')).toEqual('postgres');
+            expect(findSchemaDialect('mysql')).toEqual('mysql');
+            expect(findSchemaDialect('mariadb')).toEqual('mysql');
+        });
+
+        it('should stay undefined for a driver without statements', () => {
+            expect(findSchemaDialect('better-sqlite3')).toBeUndefined();
+            expect(findSchemaDialect('mssql')).toBeUndefined();
+            expect(findSchemaDialect('mongodb')).toBeUndefined();
+        });
+    });
+
     describe('resolveSchemaDialect', () => {
         it('should resolve supported drivers', () => {
             expect(resolveSchemaDialect('postgres')).toEqual('postgres');

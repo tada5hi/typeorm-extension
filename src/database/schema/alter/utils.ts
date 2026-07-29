@@ -1,6 +1,14 @@
 import type { Table, TableColumn } from 'typeorm';
 import { isObject } from '../../../utils';
-import type { SchemaColumnType } from './type';
+import type { SchemaColumnType, SchemaStrictInput } from './type';
+
+/**
+ * Guarded alterations raise on an unexpected database state unless told
+ * otherwise.
+ */
+export function isStrict(input: SchemaStrictInput) : boolean {
+    return input.strict !== false;
+}
 
 export function findTableIndex(table: Table, name: string) {
     return table.indices.find((index) => index.name === name);
@@ -42,6 +50,21 @@ export function normalizeColumnLength(length?: string | number | null) : string 
     return `${length}`;
 }
 
+export type SchemaColumnDescriber = {
+    /**
+     * The driver's own spelling of a type, e.g. varchar -> character varying.
+     */
+    normalizeType: (type: string) => string,
+    /**
+     * The full type the server would report, e.g. varchar + 255 ->
+     * varchar(255). Resolves the default length of a type, which the driver
+     * leaves empty on the loaded column: mysql reports a `varchar(255)` as
+     * length `''` for a table it has no entity metadata for, and comparing the
+     * raw values would call that a mismatch.
+     */
+    describeType: (type: string, length?: string | number) => string,
+};
+
 /**
  * Whether a column still matches a (partial) type description.
  * length & nullable are only compared if they are defined.
@@ -49,8 +72,10 @@ export function normalizeColumnLength(length?: string | number | null) : string 
 export function matchesColumnType(
     column: TableColumn,
     input: SchemaColumnType,
-    normalizeType: (type: string) => string,
+    describer: SchemaColumnDescriber,
 ) : boolean {
+    const { normalizeType, describeType } = describer;
+
     if (
         normalizeType(input.type).toLowerCase() !==
         normalizeType(column.type).toLowerCase()
@@ -60,7 +85,8 @@ export function matchesColumnType(
 
     if (
         typeof input.length !== 'undefined' &&
-        normalizeColumnLength(input.length) !== normalizeColumnLength(column.length)
+        describeType(input.type, input.length).toLowerCase() !==
+        describeType(column.type, column.length).toLowerCase()
     ) {
         return false;
     }

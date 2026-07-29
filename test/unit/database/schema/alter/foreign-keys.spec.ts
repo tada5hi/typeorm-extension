@@ -3,19 +3,20 @@ import {
     MYSQL_FOREIGN_KEY_CHECKS_OFF,
     MYSQL_FOREIGN_KEY_CHECKS_ON,
     MYSQL_FOREIGN_KEY_CHECKS_SELECT,
+    SchemaAlterationError,
     renameForeignKey,
 } from '../../../../../src';
-import { FakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
+import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { TABLE_FOREIGN_KEYS, createTable } from '../../../../data/typeorm/table';
 
 describe('src/database/schema/alter/foreign-keys', () => {
     it('should rename the constraint on postgres', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'postgres',
             tables: [createTable({ foreignKeys: TABLE_FOREIGN_KEYS })],
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        const output = await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -28,7 +29,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
     });
 
     it('should drop, rename the backing index and re-add the constraint on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({ foreignKeys: TABLE_FOREIGN_KEYS })],
             respond: (query, runner) => {
@@ -41,7 +42,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
             },
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        const output = await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -60,7 +61,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
     });
 
     it('should drop the backing index if the target index already exists on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({ foreignKeys: TABLE_FOREIGN_KEYS })],
             respond: (query, runner) => {
@@ -77,7 +78,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
             },
         });
 
-        await renameForeignKey(queryRunner as any, {
+        await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -90,7 +91,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
     });
 
     it('should not touch indices if the column carried an explicit one on mysql', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({ foreignKeys: TABLE_FOREIGN_KEYS })],
             respond: (query, runner) => {
@@ -102,7 +103,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
             },
         });
 
-        await renameForeignKey(queryRunner as any, {
+        await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -119,7 +120,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
     });
 
     it('should be a no-op if the rename is already applied', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({
                 foreignKeys: [{
@@ -129,7 +130,7 @@ describe('src/database/schema/alter/foreign-keys', () => {
             })],
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        const output = await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -140,14 +141,14 @@ describe('src/database/schema/alter/foreign-keys', () => {
     });
 
     it('should restore an interrupted rename from the passed meta', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             // neither name is present — the drop committed, the re-add did not
             tables: [createTable({ indices: [{ name: 'FK_from', columnNames: ['roleId'] }] })],
             respond: () => [{ value: 1 }],
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        const output = await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -171,12 +172,12 @@ describe('src/database/schema/alter/foreign-keys', () => {
     });
 
     it('should not touch indices while restoring on postgres', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'postgres',
             tables: [createTable({ indices: [{ name: 'FK_from', columnNames: ['roleId'] }] })],
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        const output = await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -194,12 +195,12 @@ describe('src/database/schema/alter/foreign-keys', () => {
     });
 
     it('should prefer the description of the database over the passed meta', async () => {
-        const queryRunner = new FakeQueryRunner({
+        const queryRunner = createFakeQueryRunner({
             type: 'postgres',
             tables: [createTable({ foreignKeys: TABLE_FOREIGN_KEYS })],
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        const output = await renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
@@ -216,55 +217,75 @@ describe('src/database/schema/alter/foreign-keys', () => {
         ]);
     });
 
-    it('should be a no-op for an interrupted rename without meta', async () => {
-        const queryRunner = new FakeQueryRunner({
+    it('should raise for an interrupted rename without meta', async () => {
+        const queryRunner = createFakeQueryRunner({
             type: 'mysql',
             tables: [createTable({ indices: [{ name: 'FK_from', columnNames: ['roleId'] }] })],
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        // the constraint took its description with it, so there is nothing
+        // left to rename — reporting success would be a lie
+        await expect(renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-        });
+        })).rejects.toThrow(SchemaAlterationError);
 
-        expect(output).toBeFalsy();
         expect(queryRunner.queries).toEqual([]);
     });
 
-    it('should be a no-op if the constraint does not exist', async () => {
-        const queryRunner = new FakeQueryRunner({
+    it('should raise if neither constraint exists', async () => {
+        const queryRunner = createFakeQueryRunner({
             type: 'postgres',
             tables: [createTable()],
         });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        await expect(renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
-        });
+        })).rejects.toThrow(SchemaAlterationError);
 
-        expect(output).toBeFalsy();
         expect(queryRunner.queries).toEqual([]);
     });
 
-    it('should be a no-op if the table does not exist', async () => {
-        const queryRunner = new FakeQueryRunner({ type: 'postgres' });
+    it('should raise if the table does not exist', async () => {
+        const queryRunner = createFakeQueryRunner({ type: 'postgres' });
 
-        const output = await renameForeignKey(queryRunner as any, {
+        await expect(renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',
+        })).rejects.toThrow(SchemaAlterationError);
+    });
+
+    it('should stay a no-op without strict', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'postgres',
+            tables: [createTable()],
         });
 
-        expect(output).toBeFalsy();
+        expect(await renameForeignKey(queryRunner, {
+            table: 'user',
+            from: 'FK_from',
+            to: 'FK_to',
+            strict: false,
+        })).toBeFalsy();
+
+        expect(await renameForeignKey(queryRunner, {
+            table: 'unknown',
+            from: 'FK_from',
+            to: 'FK_to',
+            strict: false,
+        })).toBeFalsy();
+
         expect(queryRunner.queries).toEqual([]);
     });
 
     it('should throw for a driver which can not express the rename', async () => {
-        const queryRunner = new FakeQueryRunner({ type: 'oracle' });
+        const queryRunner = createFakeQueryRunner({ type: 'oracle' });
 
-        await expect(renameForeignKey(queryRunner as any, {
+        await expect(renameForeignKey(queryRunner, {
             table: 'user',
             from: 'FK_from',
             to: 'FK_to',

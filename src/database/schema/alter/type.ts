@@ -4,7 +4,28 @@
  */
 export type SchemaDialect = 'postgres' | 'mysql';
 
-export type SchemaRenameIndexInput = {
+/**
+ * Dialects which can alter a column in place — a superset of the ones which
+ * can express a rename: mssql and oracle can do the former but not the latter.
+ */
+export type SchemaColumnDialect = SchemaDialect | 'mssql' | 'oracle';
+
+/**
+ * Every guarded alteration takes it: raise a `SchemaAlterationError` when the
+ * database is in neither the expected nor the desired state, rather than
+ * returning `false` and leaving a repair migration to report success without
+ * having repaired anything.
+ *
+ * Being already in the desired state is never an error — that is what keeps a
+ * run resumable, and it returns `false` in both modes.
+ *
+ * @default true
+ */
+export type SchemaStrictInput = {
+    strict?: boolean
+};
+
+export type SchemaRenameIndexInput = SchemaStrictInput & {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
      */
@@ -30,7 +51,7 @@ export type SchemaForeignKeyMeta = {
     onUpdate?: string
 };
 
-export type SchemaRenameForeignKeyInput = {
+export type SchemaRenameForeignKeyInput = SchemaStrictInput & {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
      */
@@ -65,6 +86,54 @@ export type SchemaAddForeignKeyInput = {
     onUpdate?: string
 };
 
+/**
+ * The column as the database reports it, for a dialect which replaces the
+ * definition in full (mysql's `MODIFY COLUMN`) — everything it does not
+ * restate is dropped by the server. Dialects which only name the new type
+ * (postgres) read nothing but `type` and `nullable`.
+ */
+export type SchemaColumnDefinition = {
+    name: string,
+    /**
+     * Full type incl. length/precision, e.g. `varchar(255)`.
+     */
+    type: string,
+    /**
+     * Rendered as `NOT NULL` / `NULL`. Left out when undefined — mariadb
+     * rejects the clause on a generated column.
+     */
+    nullable?: boolean,
+    /**
+     * Whether `nullable` differs from what the column carries today. oracle
+     * refuses a clause which only restates the current state
+     * (ORA-01442 / ORA-01451), so it states one only when it changes.
+     */
+    nullabilityChanged?: boolean,
+    /**
+     * Values of an `enum` / `set` column.
+     */
+    enum?: string[],
+    unsigned?: boolean,
+    charset?: string,
+    collation?: string,
+    /**
+     * Expression of a generated column, and whether it is `VIRTUAL`/`STORED`.
+     */
+    asExpression?: string,
+    generatedType?: string,
+    /**
+     * Raw SQL, as the database reports it.
+     */
+    default?: unknown,
+    /**
+     * postgres only — raw SQL computing the new value from the old one.
+     */
+    using?: string,
+    onUpdate?: string,
+    autoIncrement?: boolean,
+    comment?: string
+};
+
 export type SchemaColumnType = {
     type: string,
     length?: string | number,
@@ -74,7 +143,7 @@ export type SchemaColumnType = {
     nullable?: boolean
 };
 
-export type SchemaChangeColumnTypeInput = {
+export type SchemaChangeColumnTypeInput = SchemaStrictInput & {
     /**
      * Table name, optionally schema qualified (e.g. `public.user`).
      */
@@ -85,5 +154,18 @@ export type SchemaChangeColumnTypeInput = {
      * column does not match it (e.g. because it is already migrated).
      */
     from: SchemaColumnType,
-    to: SchemaColumnType
+    to: SchemaColumnType,
+    /**
+     * postgres/cockroachdb only — raw SQL computing the new value from the old
+     * one, e.g. `client_id::uuid`.
+     *
+     * `ALTER COLUMN ... TYPE` converts the values with the assignment cast
+     * between the two types, and refuses the change when there is none. Pass an
+     * expression to describe the conversion in that case; without one, postgres
+     * rejects the statement rather than touching the data.
+     *
+     * Raises a `DriverError` on a dialect which has no counterpart, rather than
+     * ignoring it and leaving the server to coerce the values its own way.
+     */
+    using?: string
 };

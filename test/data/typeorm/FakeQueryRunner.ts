@@ -1,4 +1,9 @@
-import type { DataSourceOptions, Table, TableColumn } from 'typeorm';
+import type {
+    DataSourceOptions, 
+    QueryRunner, 
+    Table, 
+    TableColumn,
+} from 'typeorm';
 
 export type FakeQueryRunnerOptions = {
     type: DataSourceOptions['type'],
@@ -52,6 +57,11 @@ export class FakeQueryRunner {
 
                     return value;
                 },
+                createFullType: (column: { type?: any, length?: string }) : string => {
+                    const value = `${column.type}`;
+
+                    return column.length ? `${value}(${column.length})` : value;
+                },
             },
         };
     }
@@ -81,4 +91,17 @@ export class FakeQueryRunner {
             to,
         });
     }
+}
+
+/**
+ * The fake, typed as the query runner the helpers take.
+ *
+ * Only the schema inspection & alteration surface is implemented, so the
+ * assertion is unavoidable — keeping it here means no spec needs one, and the
+ * returned value is still the fake, with its recorded queries and tables.
+ */
+export function createFakeQueryRunner(
+    options: FakeQueryRunnerOptions,
+) : FakeQueryRunner & QueryRunner {
+    return new FakeQueryRunner(options) as FakeQueryRunner & QueryRunner;
 }

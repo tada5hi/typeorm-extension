@@ -248,6 +248,21 @@ Each helper is **guarded**: it reads the current state back from the database, a
 pending and returns whether it did something. A repair migration therefore stays resumable (mysql commits DDL
 regardless of the surrounding transaction) and is safe to run against a database which never had the drift.
 
+A guard only covers the state the change would produce. If the database is in **neither** the expected nor the desired
+state — a mistyped constraint name, a column which is not the type the migration believes it is — the helper raises a
+`SchemaAlterationError` instead of returning quietly, because a repair migration which repairs nothing is otherwise
+indistinguishable from a successful one. Pass `strict: false` to get the silent no-op back:
+
+```typescript
+await renameIndex(queryRunner, {
+    table: 'auth_events',
+    from: 'IDX_auth_events_actor_name',
+    to: 'IDX_9f6d1a2b3c4d5e6f70819293',
+    // this database may never have had the index at all
+    strict: false,
+});
+```
+
 ```typescript
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { changeColumnType, renameForeignKey, renameIndex } from 'typeorm-extension';
@@ -323,8 +338,28 @@ no-op wrapper on every driver without a session level switch — a migration usi
 |--------------------------------|---------------------------------------------------------------------------------|
 | `renameIndex`                  | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
 | `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
-| `changeColumnType`             | all (the statements are built by typeorm itself)                                |
+| `changeColumnType`             | all — altered in place on every relational driver but sqlite                    |
 | `withForeignKeyChecksDisabled` | all (a no-op wrapper outside of `mysql` / `mariadb`)                            |
+
+::: warning NOTE
+`changeColumnType` builds its own statement rather than delegating to `queryRunner.changeColumn()`, because typeorm
+drops and re-adds the column *"to avoid data conversion"* as soon as the type or the length differs — on postgres,
+cockroachdb, mysql, mariadb, mssql and oracle alike. On a populated table that silently discards every value in the
+column, so the helper emits `ALTER COLUMN … TYPE` / `MODIFY COLUMN` instead.
+
+Only sqlite still goes through typeorm, which is safe there: the table is recreated and the values are copied over.
+
+On mysql, widening a column a foreign key depends on additionally needs
+[`withForeignKeyChecksDisabled`](#withforeignkeychecksdisabled); mariadb refuses to alter either end of a constraint
+outright (error 1832/1833), so the constraint has to be dropped around the change there.
+:::
+
+::: warning NOTE
+Every helper reads the table back with `queryRunner.getTable()` first. For a table which contains a **generated
+column**, typeorm looks the generation expression up in its own `typeorm_metadata` table — so on a database where that
+table does not exist (one built by something other than typeorm), the call fails with `relation "typeorm_metadata" does
+not exist` before the helper does anything.
+:::
 
 ::: warning NOTE
 An index which backs a **constraint** is not reported as an index by the driver, and `renameIndex` therefore does not
