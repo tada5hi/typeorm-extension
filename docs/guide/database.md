@@ -323,8 +323,22 @@ no-op wrapper on every driver without a session level switch — a migration usi
 |--------------------------------|---------------------------------------------------------------------------------|
 | `renameIndex`                  | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
 | `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` — throws a `DriverError` otherwise |
-| `changeColumnType`             | all (the statements are built by typeorm itself)                                |
+| `changeColumnType`             | all — altered in place on `postgres`, `cockroachdb`, `mysql`, `mariadb`         |
 | `withForeignKeyChecksDisabled` | all (a no-op wrapper outside of `mysql` / `mariadb`)                            |
+
+::: warning NOTE
+`changeColumnType` builds its own statement rather than delegating to `queryRunner.changeColumn()`, because typeorm
+drops and re-adds the column *"to avoid data conversion"* as soon as the type or the length differs — on postgres,
+cockroachdb, mysql, mariadb, mssql and oracle alike. On a populated table that silently discards every value in the
+column, so the helper emits `ALTER COLUMN … TYPE` / `MODIFY COLUMN` instead.
+
+For a driver it has no statements for it still goes through typeorm, which is safe on sqlite (the table is recreated
+and the values are copied over) but **not** on mssql and oracle — alter a populated column manually there.
+
+On mysql, widening a column a foreign key depends on additionally needs
+[`withForeignKeyChecksDisabled`](#withforeignkeychecksdisabled); mariadb refuses to alter either end of a constraint
+outright (error 1832/1833), so the constraint has to be dropped around the change there.
+:::
 
 ::: warning NOTE
 An index which backs a **constraint** is not reported as an index by the driver, and `renameIndex` therefore does not

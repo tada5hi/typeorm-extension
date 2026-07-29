@@ -320,7 +320,8 @@ export class RepairSchema1700000000000 implements MigrationInterface {
 ```
 
 `renameIndex` and `renameForeignKey` support `postgres`, `cockroachdb`, `mysql` and `mariadb` and throw a `DriverError`
-on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere.
+on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere — `changeColumnType` alters
+the column in place (keeping its values) on the four drivers above and falls back to typeorm for the rest.
 
 To get a better overview and understanding of these functions, check out the
 [documentation](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html).

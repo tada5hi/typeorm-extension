@@ -65,6 +65,43 @@ export type SchemaAddForeignKeyInput = {
     onUpdate?: string
 };
 
+/**
+ * A column definition as mysql expects it after `MODIFY COLUMN`, which
+ * replaces the previous one in full — so every attribute the column carries
+ * has to be restated, or the server drops it.
+ */
+export type SchemaColumnDefinition = {
+    name: string,
+    /**
+     * Full type incl. length/precision, e.g. `varchar(255)`.
+     */
+    type: string,
+    /**
+     * Rendered as `NOT NULL` / `NULL`. Left out when undefined — mariadb
+     * rejects the clause on a generated column.
+     */
+    nullable?: boolean,
+    /**
+     * Values of an `enum` / `set` column.
+     */
+    enum?: string[],
+    unsigned?: boolean,
+    charset?: string,
+    collation?: string,
+    /**
+     * Expression of a generated column, and whether it is `VIRTUAL`/`STORED`.
+     */
+    asExpression?: string,
+    generatedType?: string,
+    /**
+     * Raw SQL, as the database reports it.
+     */
+    default?: unknown,
+    onUpdate?: string,
+    autoIncrement?: boolean,
+    comment?: string
+};
+
 export type SchemaColumnType = {
     type: string,
     length?: string | number,

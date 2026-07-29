@@ -28,6 +28,7 @@ Not every driver can do everything, so `test/data/typeorm/integration.ts` expose
 |----------------------------------|--------------------------|------------------------------------------------------------------------------------------|
 | `supportsSchemaAlter`            | mssql, oracle, mongodb   | the rename helpers have no statements for them (they assert a `DriverError` instead)       |
 | `supportsForeignKeyChecks`       | everything but mysql/mariadb | no session level switch                                                                |
+| `supportsForeignKeyColumnAlter`  | everything but mysql     | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
 | `supportsSchemaMetadata`         | mongodb                  | no relational schema to compare, and the fixtures use relations                            |
 | `supportsDatabaseDrop`           | oracle                   | `OracleDialect.drop` is a documented no-op                                                 |
 | `supportsDatabaseExistenceCheck` | cockroachdb, mongodb     | `checkDatabase` derives `exists` from a failing `initialize()`, which cockroachdb does not do for a missing database |
@@ -43,7 +44,7 @@ npm run test:integration
 | Suite                                    | Covers                                                                                     |
 |------------------------------------------|--------------------------------------------------------------------------------------------|
 | `test/integration/database/drift.spec.ts`   | `getSchemaDrift` / `assertSchemaMatchesMetadata` against a real schema, including a deliberately diverged column |
-| `test/integration/database/schema.spec.ts`  | `renameIndex` / `renameForeignKey` / `changeColumnType` round-trips incl. idempotence and "drift appears → repair → drift gone"; nesting-safe `withForeignKeyChecksDisabled` |
+| `test/integration/database/schema.spec.ts`  | `renameIndex` / `renameForeignKey` / `changeColumnType` round-trips incl. idempotence and "drift appears → repair → drift gone"; that a column keeps its values and its foreign key across an alteration; nesting-safe `withForeignKeyChecksDisabled` |
 | `test/integration/database/methods.spec.ts` | `createDatabase` / `dropDatabase` / `checkDatabase` — the only coverage `src/database/adapters/**` gets, since it is excluded from the coverage gate |
 
 The suites bring the schema to a known state by dropping the two fixture tables and running `synchronize(false)` — **not** `synchronize(true)`, which drops the whole schema and which oracle refuses from within a pluggable database (`ORA-65040`).

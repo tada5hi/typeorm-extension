@@ -262,7 +262,15 @@ declare function changeColumnType(
 ```
 
 A no-op (returning `false`) if the table/column does not exist, the column already matches `to`, or it matches neither.
-Works on every driver, since the statements are built by typeorm itself.
+
+The column is altered **in place**, so it keeps the values it holds — `ALTER COLUMN … TYPE` on postgres/cockroachdb,
+`MODIFY COLUMN` on mysql/mariadb. That is the reason the statement is built here: typeorm's `changeColumn` drops and
+re-adds the column as soon as the type or the length differs, which empties it. Drivers without statements of their own
+still go through typeorm — safe on sqlite, which recreates the table and copies the values over.
+
+Since mysql replaces the column definition in full, every attribute of the column (default, comment, charset,
+collation, `UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE`, the values of an `enum`) is restated from the description the
+database reports back, not from the passed input.
 
 ## `withForeignKeyChecksDisabled`
 

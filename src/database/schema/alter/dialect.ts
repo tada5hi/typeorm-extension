@@ -14,11 +14,24 @@ const dialects : Record<string, SchemaDialect> = {
 };
 
 /**
+ * The dialect to build the statements with, or undefined for a driver
+ * this module has none for.
+ */
+export function findSchemaDialect(type: DataSourceOptions['type']) : SchemaDialect | undefined {
+    if (hasOwnProperty(dialects, type)) {
+        return dialects[type] as SchemaDialect;
+    }
+
+    return undefined;
+}
+
+/**
  * @throws DriverError
  */
 export function resolveSchemaDialect(type: DataSourceOptions['type']) : SchemaDialect {
-    if (hasOwnProperty(dialects, type)) {
-        return dialects[type] as SchemaDialect;
+    const dialect = findSchemaDialect(type);
+    if (dialect) {
+        return dialect;
     }
 
     throw DriverError.schemaAlterationNotSupported(type);

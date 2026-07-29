@@ -1,6 +1,36 @@
-import type { QueryRunner } from 'typeorm';
-import type { SchemaChangeColumnTypeInput } from './type';
+import type { Driver, QueryRunner, TableColumn } from 'typeorm';
+import { findSchemaDialect } from './dialect';
+import { buildChangeColumnTypeQueries } from './statements';
+import type { SchemaChangeColumnTypeInput, SchemaColumnDefinition } from './type';
 import { matchesColumnType, normalizeColumnLength } from './utils';
+
+/**
+ * Describe the column as the database reports it, so a dialect which replaces
+ * the definition in full can restate every attribute it carries (default,
+ * comment, charset, AUTO_INCREMENT, …) instead of dropping it.
+ *
+ * The primary key is deliberately left out: the column already carries it,
+ * and repeating it would be a second one.
+ */
+function buildColumnDefinition(driver: Driver, column: TableColumn) : SchemaColumnDefinition {
+    return {
+        name: column.name,
+        type: driver.createFullType(column),
+        // a generated column takes its nullability from its expression,
+        // and mariadb rejects the clause on one outright
+        nullable: column.asExpression ? undefined : column.isNullable,
+        enum: column.enum,
+        unsigned: column.unsigned,
+        charset: column.charset,
+        collation: column.collation,
+        asExpression: column.asExpression,
+        generatedType: column.generatedType,
+        default: column.default,
+        onUpdate: column.onUpdate,
+        autoIncrement: column.isGenerated && column.generationStrategy === 'increment',
+        comment: column.comment,
+    };
+}
 
 /**
  * Change the type (and optionally the nullability) of a column, but only if it
@@ -10,8 +40,15 @@ import { matchesColumnType, normalizeColumnLength } from './utils';
  * already matches `to`, or it matches neither — which keeps a repair migration
  * resumable and safe to run against a database which never had the drift.
  *
- * Unlike the rename helpers this works on every driver, since the statements
- * are built by typeorm itself.
+ * The column is altered in place, so it keeps the values it holds. That is the
+ * reason the statement is built here: typeorm's `changeColumn` drops and
+ * re-adds the column as soon as the type or the length differs, which empties
+ * it. Drivers this module has no dialect for still go through typeorm — safe
+ * on sqlite, which recreates the table and copies the values over.
+ *
+ * Widening a column a foreign key depends on additionally needs
+ * {@see withForeignKeyChecksDisabled} on mysql, and is refused outright by
+ * mariadb — there the constraint has to be dropped around the change.
  */
 export async function changeColumnType(
     queryRunner: QueryRunner,
@@ -54,7 +91,22 @@ export async function changeColumnType(
         next.isNullable = input.to.nullable;
     }
 
-    await queryRunner.changeColumn(table, column, next);
+    const dialect = findSchemaDialect(queryRunner.dataSource.options.type);
+    if (!dialect) {
+        await queryRunner.changeColumn(table, column, next);
+
+        return true;
+    }
+
+    const queries = buildChangeColumnTypeQueries(
+        dialect,
+        input.table,
+        buildColumnDefinition(driver, next),
+    );
+
+    for (const query of queries) {
+        await queryRunner.query(query);
+    }
 
     return true;
 }

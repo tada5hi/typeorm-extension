@@ -52,6 +52,11 @@ export class FakeQueryRunner {
 
                     return value;
                 },
+                createFullType: (column: { type?: any, length?: string }) : string => {
+                    const value = `${column.type}`;
+
+                    return column.length ? `${value}(${column.length})` : value;
+                },
             },
         };
     }

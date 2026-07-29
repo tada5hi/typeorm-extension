@@ -70,7 +70,11 @@ The peer-dep range is `typeorm ^1.0.0`. TypeORM 0.3 is **not** supported on `typ
 
 `getSchemaDrift` wraps `dataSource.driver.createSchemaBuilder().log()` — the same call `migration:generate` makes — and reports the statements which would reconcile the database schema with the entity metadata. A project which builds its schema with migrations in production but with `synchronize()` in tests has no guard against the two descriptions drifting apart; the intended use is a CI gate right after `migration run` (`migration run → revert × N → run → assert zero drift`). `skipWithoutMigrations` short-circuits for a data source wired with `migrations: []` (e.g. sqlite in tests).
 
-The alter helpers (`renameIndex`, `renameForeignKey`, `changeColumnType`) exist because repairing that drift means renaming constraints, which is dialect-asymmetric:
+The alter helpers (`renameIndex`, `renameForeignKey`, `changeColumnType`) exist because repairing that drift means renaming constraints and altering columns, neither of which typeorm exposes safely.
+
+For a column that is `queryRunner.changeColumn()`: it drops and re-adds the column *"to avoid data conversion"* as soon as the type or the length differs — on postgres, cockroachdb, mysql, mariadb, mssql and oracle alike (only the sqlite runners recreate the table and copy the values over). On a populated table that silently discards the column's contents, and it fails outright on a column a foreign key depends on. `changeColumnType` therefore builds the in-place statement itself ([#1424](https://github.com/tada5hi/typeorm-extension/issues/1424)).
+
+The renames are dialect-asymmetric on top of that:
 
 - postgres: `ALTER INDEX … RENAME TO`, `ALTER TABLE … RENAME CONSTRAINT`.
 - mysql: `ALTER TABLE … RENAME INDEX` exists, but there is no `RENAME CONSTRAINT` — the foreign key has to be dropped and re-added, and the backing index mysql created **under the constraint name** survives the drop and has to be renamed (or dropped) first, or the table ends up with a duplicate.
@@ -82,7 +86,7 @@ Two invariants shape the implementation:
 
 There is exactly one hole those two cannot close together: on mysql a run interrupted between the `DROP` and the `ADD` leaves *neither* name in the database, and the constraint took its own description with it, so a retry has nothing to read back. `SchemaRenameForeignKeyInput` therefore takes an optional `meta` (`SchemaForeignKeyMeta`) which is consulted **only** in that state — while `from` exists, invariant 2 still holds. It is one nested object rather than five flat fields so that "all of columns/referencedTable/referencedColumns or none" is a type error instead of a runtime check.
 
-The dialect statements themselves live in `src/database/schema/alter/statements.ts` as pure builders (`resolveSchemaDialect` maps `cockroachdb → postgres`, `mariadb → mysql`, and raises `DriverError.schemaAlterationNotSupported` for the rest). `changeColumnType` is the exception: it delegates to `queryRunner.changeColumn()` and therefore works on every driver. `withForeignKeyChecksDisabled` reads `@@SESSION.foreign_key_checks` first and only restores it if it was on (nesting safe); on a non-mysql driver it just runs the callback so a migration stays portable.
+The dialect statements themselves live in `src/database/schema/alter/statements.ts` as pure builders. `src/database/schema/alter/dialect.ts` resolves the dialect twice over: `findSchemaDialect` maps `cockroachdb → postgres` and `mariadb → mysql` and returns `undefined` for the rest, `resolveSchemaDialect` raises `DriverError.schemaAlterationNotSupported` instead. The renames use the throwing form, `changeColumnType` the optional one — an unknown driver falls back to `queryRunner.changeColumn()`, so it keeps working on every driver. Note what each dialect's statement has to carry: postgres names the new type and nothing else (`ALTER COLUMN … TYPE`, plus a `SET`/`DROP NOT NULL` of its own), while mysql's `MODIFY COLUMN` **replaces the definition in full** — so `buildColumnDefinition` restates every attribute (default, comment, charset, collation, `UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE`, enum values) from the `TableColumn` read back from the database. Anything left out of that description is dropped by the server, which makes invariant 2 load-bearing here too. `withForeignKeyChecksDisabled` reads `@@SESSION.foreign_key_checks` first and only restores it if it was on (nesting safe); on a non-mysql driver it just runs the callback so a migration stays portable.
 
 ## Design Patterns
 
@@ -250,7 +254,7 @@ Context builders         → src/database/utils/context.ts
 Schema sync after create → src/database/schema/synchronize.ts
 Schema drift assertion   → src/database/schema/drift/module.ts
 Guarded schema alters    → src/database/schema/alter/{indices,foreign-keys,columns,checks}.ts
-Pure schema DDL builders → src/database/schema/alter/statements.ts (+ dialect.ts — resolveSchemaDialect)
+Pure schema DDL builders → src/database/schema/alter/statements.ts (+ dialect.ts — find/resolveSchemaDialect)
 Runtime state registry   → src/runtime/module.ts (+ cache.ts — AsyncKeyedCache)
 DataSource registry      → src/data-source/singleton.ts (delegates to src/runtime)
 DataSource discovery     → src/data-source/find/module.ts

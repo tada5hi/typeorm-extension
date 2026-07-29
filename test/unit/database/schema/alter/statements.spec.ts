@@ -1,5 +1,6 @@
 import {
     buildAddForeignKeyQuery,
+    buildChangeColumnTypeQueries,
     buildDropForeignKeyQuery,
     buildDropIndexQuery,
     buildRenameForeignKeyQuery,
@@ -125,6 +126,161 @@ describe('src/database/schema/alter/statements', () => {
                 'ALTER TABLE "public"."user" ADD CONSTRAINT "FK_to" ' +
                 'FOREIGN KEY ("realm_id", "client_id") REFERENCES "public"."client" ("realm_id", "id")',
             );
+        });
+    });
+
+    describe('buildChangeColumnTypeQueries', () => {
+        describe('mysql', () => {
+            it('should alter the column in place', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'email',
+                    type: 'varchar(255)',
+                    nullable: false,
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `email` varchar(255) NOT NULL',
+                ]);
+            });
+
+            it('should qualify the table with its database', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'app.user', {
+                    name: 'email',
+                    type: 'text',
+                    nullable: true,
+                })).toEqual([
+                    'ALTER TABLE `app`.`user` MODIFY COLUMN `email` text NULL',
+                ]);
+            });
+
+            it('should leave out the nullability if it is not stated', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'total',
+                    type: 'int',
+                    asExpression: '`a` + `b`',
+                    generatedType: 'STORED',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `total` int AS (`a` + `b`) STORED',
+                ]);
+            });
+
+            it('should default a generated column to VIRTUAL', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'total',
+                    type: 'int',
+                    asExpression: '`a` + `b`',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `total` int AS (`a` + `b`) VIRTUAL',
+                ]);
+            });
+
+            it('should restate every attribute of the column', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'id',
+                    type: 'bigint',
+                    nullable: false,
+                    unsigned: true,
+                    autoIncrement: true,
+                    comment: 'the id',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `id` bigint UNSIGNED NOT NULL ' +
+                    'AUTO_INCREMENT COMMENT \'the id\'',
+                ]);
+            });
+
+            it('should restate the charset, the default and the update action', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'updated_at',
+                    type: 'varchar(64)',
+                    nullable: false,
+                    charset: 'utf8mb4',
+                    collation: 'utf8mb4_bin',
+                    default: 'CURRENT_TIMESTAMP',
+                    onUpdate: 'CURRENT_TIMESTAMP',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `updated_at` varchar(64) ' +
+                    'CHARACTER SET \'utf8mb4\' COLLATE \'utf8mb4_bin\' NOT NULL ' +
+                    'DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+                ]);
+            });
+
+            it('should keep a falsy default', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'amount',
+                    type: 'int',
+                    nullable: false,
+                    default: 0,
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `amount` int NOT NULL DEFAULT 0',
+                ]);
+            });
+
+            it('should restate the values of an enum column', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'status',
+                    type: 'enum',
+                    nullable: false,
+                    enum: ['active', 'it\'s complicated'],
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `status` ' +
+                    'enum(\'active\', \'it\'\'s complicated\') NOT NULL',
+                ]);
+            });
+
+            it('should escape a comment', () => {
+                expect(buildChangeColumnTypeQueries('mysql', 'user', {
+                    name: 'email',
+                    type: 'text',
+                    comment: 'it\'s a c:\\path',
+                })).toEqual([
+                    'ALTER TABLE `user` MODIFY COLUMN `email` text COMMENT \'it\'\'s a c:\\\\path\'',
+                ]);
+            });
+        });
+
+        describe('postgres', () => {
+            it('should alter the type and the nullability', () => {
+                expect(buildChangeColumnTypeQueries('postgres', 'user', {
+                    name: 'email',
+                    type: 'character varying(255)',
+                    nullable: false,
+                })).toEqual([
+                    'ALTER TABLE "user" ALTER COLUMN "email" TYPE character varying(255)',
+                    'ALTER TABLE "user" ALTER COLUMN "email" SET NOT NULL',
+                ]);
+            });
+
+            it('should drop the nullability', () => {
+                expect(buildChangeColumnTypeQueries('postgres', 'public.user', {
+                    name: 'email',
+                    type: 'text',
+                    nullable: true,
+                })).toEqual([
+                    'ALTER TABLE "public"."user" ALTER COLUMN "email" TYPE text',
+                    'ALTER TABLE "public"."user" ALTER COLUMN "email" DROP NOT NULL',
+                ]);
+            });
+
+            it('should leave out the nullability if it is not stated', () => {
+                expect(buildChangeColumnTypeQueries('postgres', 'user', {
+                    name: 'email',
+                    type: 'text',
+                })).toEqual([
+                    'ALTER TABLE "user" ALTER COLUMN "email" TYPE text',
+                ]);
+            });
+
+            it('should not restate the definition of the column', () => {
+                // postgres keeps the default, the comment and the identity —
+                // only mysql replaces the definition in full
+                expect(buildChangeColumnTypeQueries('postgres', 'user', {
+                    name: 'id',
+                    type: 'bigint',
+                    autoIncrement: true,
+                    default: '0',
+                    comment: 'the id',
+                })).toEqual([
+                    'ALTER TABLE "user" ALTER COLUMN "id" TYPE bigint',
+                ]);
+            });
         });
     });
 });

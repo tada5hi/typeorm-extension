@@ -1,9 +1,23 @@
 import type {
     SchemaAddForeignKeyInput,
+    SchemaColumnDefinition,
     SchemaDialect,
     SchemaRenameForeignKeyInput,
     SchemaRenameIndexInput,
 } from './type';
+
+/**
+ * Quote a value mysql expects as a string literal (a charset name,
+ * an enum value, a comment). Single quotes rather than the double ones
+ * typeorm uses, since those are identifiers under `ANSI_QUOTES`.
+ */
+function escapeSchemaString(value: string) : string {
+    return `'${value
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, '\'\'')
+        // not allowed in a comment
+        .replace(/\0/g, '')}'`;
+}
 
 export function escapeSchemaIdentifier(dialect: SchemaDialect, name: string) : string {
     if (dialect === 'mysql') {
@@ -95,4 +109,93 @@ export function buildAddForeignKeyQuery(dialect: SchemaDialect, input: SchemaAdd
     }
 
     return query;
+}
+
+/**
+ * mysql's `MODIFY COLUMN` replaces the previous definition in full, so the
+ * rendered one has to restate the whole column, not just what changed.
+ */
+function buildColumnDefinition(column: SchemaColumnDefinition) : string {
+    let definition = `${escapeSchemaIdentifier('mysql', column.name)} ${column.type}`;
+
+    if (column.enum) {
+        definition += `(${column.enum.map(escapeSchemaString).join(', ')})`;
+    }
+
+    if (column.unsigned) {
+        definition += ' UNSIGNED';
+    }
+
+    if (column.charset) {
+        definition += ` CHARACTER SET ${escapeSchemaString(column.charset)}`;
+    }
+
+    if (column.collation) {
+        definition += ` COLLATE ${escapeSchemaString(column.collation)}`;
+    }
+
+    if (column.asExpression) {
+        definition += ` AS (${column.asExpression}) ${column.generatedType || 'VIRTUAL'}`;
+    }
+
+    if (typeof column.nullable === 'boolean') {
+        definition += column.nullable ? ' NULL' : ' NOT NULL';
+    }
+
+    if (
+        typeof column.default !== 'undefined' &&
+        column.default !== null
+    ) {
+        definition += ` DEFAULT ${column.default}`;
+    }
+
+    if (column.onUpdate) {
+        definition += ` ON UPDATE ${column.onUpdate}`;
+    }
+
+    if (column.autoIncrement) {
+        definition += ' AUTO_INCREMENT';
+    }
+
+    if (column.comment) {
+        definition += ` COMMENT ${escapeSchemaString(column.comment)}`;
+    }
+
+    return definition;
+}
+
+/**
+ * Alter a column in place, keeping the values it holds.
+ *
+ * typeorm builds no statement for this: its `changeColumn` drops and re-adds
+ * the column "to avoid data conversion" as soon as the type or the length
+ * differs — on every driver but sqlite, which recreates the whole table and
+ * copies the values over.
+ *
+ * postgres names the new type and nothing else, so the rest of the definition
+ * (default, comment, identity) stays as it is; mysql replaces the definition
+ * in full and therefore restates it.
+ */
+export function buildChangeColumnTypeQueries(
+    dialect: SchemaDialect,
+    table: string,
+    column: SchemaColumnDefinition,
+) : string[] {
+    const path = escapeSchemaPath(dialect, table);
+
+    if (dialect === 'mysql') {
+        return [`ALTER TABLE ${path} MODIFY COLUMN ${buildColumnDefinition(column)}`];
+    }
+
+    const name = escapeSchemaIdentifier(dialect, column.name);
+    const queries = [`ALTER TABLE ${path} ALTER COLUMN ${name} TYPE ${column.type}`];
+
+    if (typeof column.nullable === 'boolean') {
+        queries.push(
+            `ALTER TABLE ${path} ALTER COLUMN ${name} ` +
+            `${column.nullable ? 'DROP' : 'SET'} NOT NULL`,
+        );
+    }
+
+    return queries;
 }
