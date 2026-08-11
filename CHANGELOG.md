@@ -18,6 +18,33 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.0.0](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0-beta.3...v4.0.0) (2026-08-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* **seeder:** the factory callback receives the setMeta() payload as its first argument instead of a Faker instance, and SeederFactory.setLocale() is removed. Import a generator in the factory file and select the locale through its own API, for example "import { fakerDE as faker } from '@faker-js/faker'".
+* The query submodule (applyQuery, applyQueryFields, applyQueryFilters, applyQueryRelations, applyQueryPagination, applyQuerySort and their option/output types) is no longer exported. Use @rapiq/typeorm instead.
+
+### Features
+
+* remove query submodule in favor of @rapiq/adapter-typeorm ([#1413](https://github.com/tada5hi/typeorm-extension/issues/1413)) ([bd364fa](https://github.com/tada5hi/typeorm-extension/commit/bd364fae909d09a278b739bc6d28a13bc5b6101e))
+
+
+### Bug Fixes
+
+* correct and consolidate the entity helpers ([#1430](https://github.com/tada5hi/typeorm-extension/issues/1430)) ([b7ebcc9](https://github.com/tada5hi/typeorm-extension/commit/b7ebcc96a0b665ebda23f60884d7db2df9e08dce))
+
+
+### Miscellaneous Chores
+
+* graduate the release line to stable 4.0.0 ([3e8deb2](https://github.com/tada5hi/typeorm-extension/commit/3e8deb2a5ed4d10d902894e4121af1f603364afe))
+
+
+### Code Refactoring
+
+* **seeder:** decouple the factory callback from faker ([#1431](https://github.com/tada5hi/typeorm-extension/issues/1431)) ([94dd012](https://github.com/tada5hi/typeorm-extension/commit/94dd012b42289e7c658c4b34ff72476c6f0f4e2e))
+
 ## [4.0.0-beta.3](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-07-29)
 
 
