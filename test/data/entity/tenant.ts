@@ -1,13 +1,15 @@
 import {
     Column,
     Entity,
+    OneToMany,
     PrimaryColumn,
     Unique,
 } from 'typeorm';
+import { Membership } from './membership';
 
 /**
- * Fixture for an entity with a composite primary key
- * and a unique constraint next to it.
+ * Fixture for an entity with a composite primary key, a unique constraint next
+ * to it, and an inverse relation which owns no join columns.
  */
 @Unique(['name'])
 @Entity({ name: 'tenants' })
@@ -20,4 +22,7 @@ export class Tenant {
 
     @Column({ type: 'varchar', nullable: true })
     name: string | null;
+
+    @OneToMany(() => Membership, (membership: Membership) => membership.tenant)
+    memberships?: Membership[];
 }

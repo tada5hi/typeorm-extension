@@ -62,9 +62,16 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
             }
         }
 
+        // Nothing to look the relation up by. A relation which does not own the
+        // foreign key (one-to-many, ...) never has join columns, and querying
+        // without a condition would match an arbitrary row.
+        if (skipRelation || columns.length === 0) {
+            continue;
+        }
+
         // A composite foreign key can only be looked up if every join column is
         // provided. Querying by a subset of them could match an unrelated row.
-        if (skipRelation || columns.length !== relation.joinColumns.length) {
+        if (columns.length !== relation.joinColumns.length) {
             continue;
         }
 
