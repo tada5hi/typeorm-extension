@@ -7,6 +7,7 @@ import type {
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
 import { EntityMetadataError } from '../../errors';
+import { getEntityName } from './name';
 
 /**
  * Receive metadata for a given repository or entity-target.
@@ -25,13 +26,11 @@ export async function getEntityMetadata<T extends ObjectLiteral>(
 
     dataSource = dataSource || await useDataSource();
 
-    const index = dataSource.entityMetadatas.findIndex(
-        (entityMetadata) => entityMetadata.target === input,
-    );
-
-    if (index === -1) {
-        throw EntityMetadataError.notRegistered(input);
+    // The lookup is delegated to typeorm, so every entity-target
+    // representation (class, entity schema, name, ...) is resolved alike.
+    if (!dataSource.hasMetadata(input)) {
+        throw EntityMetadataError.notRegistered(getEntityName(input as any));
     }
 
-    return dataSource.entityMetadatas[index];
+    return dataSource.getMetadata(input);
 }
