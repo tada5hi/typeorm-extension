@@ -27,6 +27,13 @@
 - Adding a new TypeORM driver: add a dialect folder `src/database/core/<name>/` (`statements.ts` + `module.ts`), an adapter in `src/database/adapters/<name>.ts`, and a row in `src/database/registry.ts`. Then add a spec under `test/unit/database/core/` (using the memory connection factory from `test/data/database/`) and a docs entry.
 - Teaching the guarded schema helpers a new dialect: add the rows to `src/database/schema/alter/dialect.ts`, branch in `src/database/schema/alter/statements.ts`, extend `test/unit/database/schema/alter/`, and widen `supportsSchemaAlter` in `test/data/typeorm/integration.ts` (the driver is likely already in `INTEGRATION_DRIVERS` and the `integration` matrix in `main.yml`).
 
+## Writing Style (prose)
+
+Applies to user-facing prose: `README.MD`, `docs/guide/*.md`, issue/PR text, commit bodies.
+
+- **Avoid the em dash ("—")** as much as possible. Rewrite with a comma, colon, period, parentheses, or split the sentence. This also applies to newly written agent-doc prose; existing `.agents/` text is grandfathered and rewritten opportunistically when a section is touched anyway.
+- **Keep descriptions precise, short and easy to follow.** Prefer plain sentences over nested clauses.
+
 ## Code Style
 
 - **Module format**: ESM-only (`"type": "module"` + `module: ESNext`). tsdown emits a single `.mjs` bundle. A small tsdown plugin (`typeormDeepImportExtension` in `tsdown.config.ts`) rewrites bare `typeorm/<deep>` imports to add `.js` for Node's strict ESM resolver.

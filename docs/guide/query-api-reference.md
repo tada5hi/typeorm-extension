@@ -4,8 +4,8 @@
 
 The query submodule (`applyQuery`, `applyQueryFields`, `applyQueryFilters`, `applyQueryRelations`,
 `applyQueryPagination`, `applyQuerySort`, ...) was removed in v4.
-Its successor is [@rapiq/adapter-typeorm](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm) —
-the dedicated TypeORM adapter of the [rapiq](https://github.com/Tada5hi/rapiq) v2 monorepo.
+Its successor is [@rapiq/adapter-typeorm](https://github.com/tada5hi/rapiq/tree/master/packages/adapter-typeorm),
+the dedicated TypeORM adapter of the [rapiq](https://github.com/tada5hi/rapiq) v2 monorepo.
 
 :::
 
@@ -18,6 +18,6 @@ If you still need the old `applyQuery` path (e.g. on typeorm `0.3.x`), stay on `
 
 ::: info Scheduled for removal
 This page is kept during the v4 release cycle to route former `applyQuery` users to the successor.
-With the next major release (v5) it will be removed — the [rapiq documentation](https://rapiq.tada5hi.net)
+With the next major release (v5) it will be removed; the [rapiq documentation](https://rapiq.tada5hi.net)
 is the canonical reference.
 :::

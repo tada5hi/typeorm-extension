@@ -171,7 +171,7 @@ if (drift.exists) {
 ```
 
 A data source built from the passed options is built with `synchronize`, `migrationsRun` and `dropSchema` disabled and
-destroyed afterwards. An existing `DataSource` is initialized as is — its own options still apply — and never destroyed.
+destroyed afterwards. An existing `DataSource` is initialized as is (its own options still apply) and never destroyed.
 
 **References**
 - [SchemaDrift](#schemadrift)
@@ -192,8 +192,8 @@ Throws a `SchemaDriftError` whose message lists the reconciling statements and w
 
 ## `renameIndex`
 
-Rename an index. Returns `false` when an index is already named `to`. When neither name exists — or the table does not
-— a `SchemaAlterationError` is raised unless `strict: false` is passed.
+Rename an index. Returns `false` when an index is already named `to`. When neither name exists (or the table does not),
+a `SchemaAlterationError` is raised unless `strict: false` is passed.
 
 ```typescript
 declare function renameIndex(
@@ -205,13 +205,13 @@ declare function renameIndex(
 Supported for `postgres`, `cockroachdb`, `mysql` and `mariadb`; throws a `DriverError` for any other driver.
 
 An index which backs a constraint is not reported as an index by the driver and is therefore not seen by this function.
-On mysql that is a foreign key's backing index, which only becomes visible once the constraint is dropped — handled for
-you by [renameForeignKey](#renameforeignkey). On postgres it is a unique constraint, which lives in `table.uniques`:
+On mysql that is a foreign key's backing index, which only becomes visible once the constraint is dropped; it is handled
+for you by [renameForeignKey](#renameforeignkey). On postgres it is a unique constraint, which lives in `table.uniques`:
 renaming one is **not** covered by these helpers and needs a raw `ALTER TABLE … RENAME CONSTRAINT`.
 
 ## `renameForeignKey`
 
-Rename a foreign key constraint, preserving its columns, its referenced table/columns and its referential actions —
+Rename a foreign key constraint, preserving its columns, its referenced table/columns and its referential actions,
 all of which are read back from the database.
 
 ```typescript
@@ -226,11 +226,11 @@ inside [withForeignKeyChecksDisabled](#withforeignkeychecksdisabled), and the ba
 the constraint name is renamed (or dropped, if the target name is already taken) in between.
 
 Returns `false` when a constraint is already named `to`. When neither name exists and no `meta` describes the
-constraint — or the table does not exist — a `SchemaAlterationError` is raised unless `strict: false` is passed.
+constraint (or the table does not exist), a `SchemaAlterationError` is raised unless `strict: false` is passed.
 Supported for `postgres`, `cockroachdb`, `mysql` and `mariadb`; throws a `DriverError` otherwise.
 
-If **neither** name exists — what a mysql run interrupted between the drop and the re-add leaves behind, where the
-constraint took its own description with it — the optional `meta` is used to restore it:
+If **neither** name exists (what a mysql run interrupted between the drop and the re-add leaves behind, where the
+constraint took its own description with it), the optional `meta` is used to restore it:
 
 ```typescript
 await renameForeignKey(queryRunner, {
@@ -262,10 +262,10 @@ declare function changeColumnType(
 ): Promise<boolean>;
 ```
 
-Returns `false` when the column already matches `to`. When it matches neither description — or the table/column does
-not exist — a `SchemaAlterationError` is raised unless `strict: false` is passed.
+Returns `false` when the column already matches `to`. When it matches neither description (or the table/column does
+not exist), a `SchemaAlterationError` is raised unless `strict: false` is passed.
 
-The column is altered **in place**, so it keeps the values it holds — `ALTER COLUMN … TYPE` on postgres/cockroachdb,
+The column is altered **in place**, so it keeps the values it holds: `ALTER COLUMN … TYPE` on postgres/cockroachdb,
 `MODIFY COLUMN` on mysql/mariadb, `ALTER COLUMN` on mssql and `MODIFY` on oracle. That is the reason the statement is
 built here: typeorm's `changeColumn` drops and re-adds the column as soon as the type or the length differs, which
 empties it (and fails outright once the table holds a row it can not re-add as `NOT NULL`). Only sqlite still goes
@@ -276,7 +276,7 @@ collation, `UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE`, the values of an `enum`) i
 database reports back, not from the passed input.
 
 postgres converts the values with the assignment cast between the two types and refuses a change which has none
-(`text` to `integer`, for example). Pass `using` — raw SQL computing the new value from the old one — for those:
+(`text` to `integer`, for example). Pass `using` (raw SQL computing the new value from the old one) for those:
 
 ```typescript
 await changeColumnType(queryRunner, {
@@ -289,14 +289,14 @@ await changeColumnType(queryRunner, {
 ```
 
 `using` is postgres/cockroachdb only. On any other dialect it raises a `DriverError` rather than being dropped, since
-ignoring it would leave the server to coerce the values on its own terms — which is what passing it was meant to avoid.
+ignoring it would leave the server to coerce the values on its own terms, which is what passing it was meant to avoid.
 
 Two mysql caveats follow from that:
 
 - A **generated column** can only be restated together with its expression, which typeorm reads from its own
   `typeorm_metadata` table. When that row is missing the expression comes back empty, and the helper throws a
   `DriverError` instead of altering the column into a regular one.
-- `ZEROFILL` is **not** preserved — typeorm does not read it into `TableColumn` at all, so there is nothing to restate.
+- `ZEROFILL` is **not** preserved: typeorm does not read it into `TableColumn` at all, so there is nothing to restate.
   It is a display attribute mysql deprecated in 8.0.17, and typeorm's own statements drop it just the same.
 
 ## Guard semantics
@@ -309,7 +309,7 @@ Every guarded helper takes `strict` (default `true`):
 | Already in the desired state | returns `false` | returns `false` |
 | In neither state (wrong name, wrong type, missing table/column) | throws `SchemaAlterationError` | returns `false` |
 
-Being already in the desired state is never an error — that is what keeps a repair migration resumable. The strict mode
+Being already in the desired state is never an error; that is what keeps a repair migration resumable. The strict mode
 only covers the third row, where the migration's description of the database is wrong and returning `false` would let a
 repair which never happened pass for a successful one.
 

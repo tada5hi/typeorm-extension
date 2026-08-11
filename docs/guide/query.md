@@ -3,16 +3,16 @@
 ::: warning Removed in v4
 
 The query submodule (`applyQuery`, `applyFilters`, ...) was removed in v4.
-Its successor is [@rapiq/adapter-typeorm](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm) —
-the dedicated TypeORM adapter of the [rapiq](https://github.com/Tada5hi/rapiq) v2 monorepo.
+Its successor is [@rapiq/adapter-typeorm](https://github.com/tada5hi/rapiq/tree/master/packages/adapter-typeorm),
+the dedicated TypeORM adapter of the [rapiq](https://github.com/tada5hi/rapiq) v2 monorepo.
 
 :::
 
 The query pipeline is now fully self-contained in rapiq: decoding the raw URL query string
 (`@rapiq/codec-url`), typed schema validation (`@rapiq/core`) and application onto the
-`SelectQueryBuilder` (`@rapiq/adapter-typeorm`) — `typeorm-extension` is no longer involved.
+`SelectQueryBuilder` (`@rapiq/adapter-typeorm`). `typeorm-extension` is no longer involved.
 
-The [monorepo](https://github.com/Tada5hi/rapiq) hosts more than the TypeORM adapter: adapters for
+The [monorepo](https://github.com/tada5hi/rapiq) hosts more than the TypeORM adapter: adapters for
 drizzle, prisma, raw SQL and in-memory collections, plus pluggable input parsers (e.g. a MongoDB-style
 filter parser and an expression parser).
 
@@ -25,6 +25,6 @@ If you still need the old `applyQuery` path (e.g. on typeorm `0.3.x`), stay on `
 
 ::: info Scheduled for removal
 This page is kept during the v4 release cycle to route former `applyQuery` users to the successor.
-With the next major release (v5) it will be removed — the [rapiq documentation](https://rapiq.tada5hi.net)
+With the next major release (v5) it will be removed; the [rapiq documentation](https://rapiq.tada5hi.net)
 is the canonical reference.
 :::

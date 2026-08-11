@@ -259,7 +259,7 @@ function, check out the documentation.
 Compare the database schema against the entity metadata and get back the statements which would reconcile them.
 
 Run it right after the migrations to close the blind spot of a project which builds its schema with migrations in
-production but with `synchronize()` in tests — the two descriptions can drift apart silently, and it only surfaces
+production but with `synchronize()` in tests: the two descriptions can drift apart silently, and it only surfaces
 when the next generated migration reconciles them.
 
 ```typescript
@@ -281,7 +281,7 @@ The same check is available on the command line as `typeorm-extension db drift`,
 #### Repair Migrations
 
 Renaming a constraint is dialect-asymmetric and easy to get wrong. These helpers read the current state back from the
-database, apply the change only if it is still pending, and return whether they did something — so a repair migration
+database, apply the change only if it is still pending, and return whether they did something. That way a repair migration
 stays resumable (mysql commits DDL regardless of the surrounding transaction) and safe to run against a database which
 never had the drift.
 
@@ -314,13 +314,13 @@ export class RepairSchema1700000000000 implements MigrationInterface {
 ```
 
 `renameIndex` and `renameForeignKey` support `postgres`, `cockroachdb`, `mysql` and `mariadb` and throw a `DriverError`
-on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere — `changeColumnType` alters
+on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere: `changeColumnType` alters
 the column in place (keeping its values) on every relational driver but sqlite, which typeorm handles safely by
 recreating the table.
 
 Each helper returns `false` when the change is already applied, which keeps a repair migration resumable. If the
 database is in **neither** the expected nor the desired state it raises a `SchemaAlterationError` instead of returning
-quietly, since a repair migration which repairs nothing would otherwise pass for a successful one — pass
+quietly, since a repair migration which repairs nothing would otherwise pass for a successful one. Pass
 `strict: false` per call to opt out.
 
 To get a better overview and understanding of these functions, check out the
@@ -550,7 +550,7 @@ export default class UserSeeder implements Seeder {
 ```
 
 Factories obtained through the `factoryManager` argument are bound to the data source of the
-current seeder run — `save()` and `saveMany()` persist there. A factory used outside a seeder
+current seeder run, so `save()` and `saveMany()` persist there. A factory used outside a seeder
 run falls back to the data source registered for the `default` alias.
 
 #### Execute
@@ -608,14 +608,14 @@ import UserFactory from './user.factory';
 ### Query
 
 The query submodule (`applyQuery`, `applyFilters`, ...) was removed in v4.
-Its successor is [@rapiq/adapter-typeorm](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm) — the dedicated
-TypeORM adapter of the [rapiq](https://github.com/Tada5hi/rapiq) v2 monorepo. The query pipeline is now fully
+Its successor is [@rapiq/adapter-typeorm](https://github.com/tada5hi/rapiq/tree/master/packages/adapter-typeorm), the dedicated
+TypeORM adapter of the [rapiq](https://github.com/tada5hi/rapiq) v2 monorepo. The query pipeline is now fully
 **self-contained** in rapiq: decoding the raw URL query string (`@rapiq/codec-url`), typed schema
-validation (`@rapiq/core`) and application onto the `SelectQueryBuilder` (`@rapiq/adapter-typeorm`) —
+validation (`@rapiq/core`) and application onto the `SelectQueryBuilder` (`@rapiq/adapter-typeorm`).
 `typeorm-extension` is no longer involved. On top of the full `applyQuery` use case it adds typed
 schemas, nested `and` / `or` filter compounds, the `contains` operator family and collision-free join aliases.
 
-The [monorepo](https://github.com/Tada5hi/rapiq) hosts more than the TypeORM adapter: adapters for
+The [monorepo](https://github.com/tada5hi/rapiq) hosts more than the TypeORM adapter: adapters for
 drizzle, prisma, raw SQL and in-memory collections, plus pluggable input parsers (e.g. a MongoDB-style
 filter parser and an expression parser). If rapiq is useful to you, consider giving the repo a ⭐ on GitHub.
 
@@ -701,7 +701,7 @@ export const codec = createURLCodec(registry);
 ```
 
 The request handler then decodes the raw query parameters against the schema and lets the adapter apply
-the result onto the query builder — shown here with [express](https://www.npmjs.com/package/express),
+the result onto the query builder. It is shown here with [express](https://www.npmjs.com/package/express),
 but the flow is framework-agnostic:
 
 ```typescript
@@ -740,7 +740,7 @@ To move over from the removed submodule, follow the migration guide:
 [https://rapiq.tada5hi.net/guide/migration-typeorm-extension](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)
 
 > **Note**: This section is kept during the v4 release cycle to route former `applyQuery` users to the
-> successor. With the next major release (v5) it will be removed from the README and docs — the
+> successor. With the next major release (v5) it will be removed from the README and docs; the
 > [rapiq documentation](https://rapiq.tada5hi.net) is the canonical reference.
 
 ## Contributing

@@ -1,6 +1,6 @@
 # Upgrading to v4
 
-This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain (ESM-only, Node ≥ 22, new bundler / test runner / linter) **and** moves the typeorm peer-dep to `^1.1.0`. TypeORM `0.3.x` is no longer supported — stay on `typeorm-extension` v3 if you need it.
+This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes the toolchain (ESM-only, Node ≥ 22, new bundler / test runner / linter) **and** moves the typeorm peer-dep to `^1.1.0`. TypeORM `0.3.x` is no longer supported. Stay on `typeorm-extension` v3 if you need it.
 
 ## Breaking Changes
 
@@ -11,7 +11,7 @@ This is the migration guide for upgrading from **v3** to **v4**. v4 modernizes t
 | | v3 | v4 |
 |---|---|---|
 | `main` | `dist/index.cjs` | `dist/index.mjs` |
-| `module` | `dist/index.mjs` | — |
+| `module` | `dist/index.mjs` | _removed_ |
 | `types` | `dist/index.d.ts` | `dist/index.d.mts` |
 
 ### Single CLI binary
@@ -30,7 +30,7 @@ Update any `package.json` scripts:
 + "db:create": "tsx ./node_modules/typeorm-extension/bin/cli.mjs db:create"
 ```
 
-You can use any TypeScript-aware loader (`tsx`, Node's `--experimental-strip-types`, `bun`, …) — `ts-node` is no longer recommended because its ESM mode requires extra setup.
+You can use any TypeScript-aware loader (`tsx`, Node's `--experimental-strip-types`, `bun`, …). `ts-node` is no longer recommended because its ESM mode requires extra setup.
 
 `ts-node` and `tsx` are detected automatically, so file paths are kept as-is (no `src` → `dist` rewrite). For other loaders, pass `--preserveFilePaths` to get the same behaviour.
 
@@ -53,7 +53,7 @@ TypeORM `0.3.x` is **not** supported on `typeorm-extension` v4+. Pick the row th
 
 The TypeORM 1.0 upstream changes that affect `typeorm-extension` consumers:
 
-- **`sqlite` driver removed** — TypeORM 1.0 dropped the `sqlite` package; only `better-sqlite3` is supported. `typeorm-extension` follows suit and only handles `better-sqlite3` in `createDatabase` / `dropDatabase` / `TYPEORM_CONNECTION`.
+- **`sqlite` driver removed**: TypeORM 1.0 dropped the `sqlite` package; only `better-sqlite3` is supported. `typeorm-extension` follows suit and only handles `better-sqlite3` in `createDatabase` / `dropDatabase` / `TYPEORM_CONNECTION`.
 - **MongoDB**: requires `mongodb` `^7.0.0`.
 - **MySQL**: only the `mysql2` package is supported (the legacy `mysql` package is removed).
 - **Node.js**: TypeORM 1.0 requires Node `^20.19.0 || ^22.13.0 || >=24.11.0`. `typeorm-extension` v4 already requires Node `>=22.0.0`.
@@ -63,7 +63,7 @@ See the [TypeORM 1.0 release notes](https://typeorm.io/docs/releases/1.0/release
 ### Seeder execution no longer registers the data source globally
 
 In v3, constructing a `SeederExecutor` (which `runSeeder` / `runSeeders` do internally) registered the
-given data source under the `default` alias as a side effect — silently repointing what
+given data source under the `default` alias as a side effect, silently repointing what
 `useDataSource()` returns everywhere else in the process.
 
 In v4, the executor leaves the data-source registry untouched. Factories resolved through the
@@ -80,12 +80,12 @@ await runSeeders(dataSource);
 
 ### Query submodule removed
 
-The query submodule — `applyQuery`, `applyFilters` / `applyQueryFilters`, `applyFields` / `applyQueryFields`,
+The query submodule (`applyQuery`, `applyFilters` / `applyQueryFilters`, `applyFields` / `applyQueryFields`,
 `applyRelations` / `applyQueryRelations`, `applyPagination` / `applyQueryPagination`, `applySort` / `applyQuerySort`,
-the `applyQuery*ParseOutput` functions and their option/output types — has been removed, together with the
+the `applyQuery*ParseOutput` functions and their option/output types) has been removed, together with the
 hard `rapiq` dependency.
 
-Its successor is **[@rapiq/adapter-typeorm](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm)**, the dedicated TypeORM
+Its successor is **[@rapiq/adapter-typeorm](https://github.com/tada5hi/rapiq/tree/master/packages/adapter-typeorm)**, the dedicated TypeORM
 adapter of the rapiq v2 monorepo. The replacement flow: define a `Schema` for the entity, decode the raw
 URL query string with `URLCodec.decode` (from `@rapiq/codec-url`), and hand the parsed query to
 `TypeormAdapter.execute`, which applies it onto the `SelectQueryBuilder`. It covers everything the old
@@ -97,7 +97,7 @@ Follow the official migration guide:
 
 Notes:
 
-- `@rapiq/adapter-typeorm` requires `typeorm ^1.1.0` — the same floor as `typeorm-extension` v4.
+- `@rapiq/adapter-typeorm` requires `typeorm ^1.1.0`, the same floor as `typeorm-extension` v4.
 - If you still need the old `applyQuery` path (e.g. on typeorm `0.3.x`), stay on `typeorm-extension` v3.
 
 ## Internal Toolchain (no consumer impact)

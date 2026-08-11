@@ -47,7 +47,7 @@ printing the statements which would reconcile them.
 
 It is meant as a CI gate right after the migrations have run. A project which builds its schema with migrations in
 production but with `synchronize()` in tests has no guard against the two descriptions drifting apart, and the failure
-mode stays silent until someone generates the next migration — which may then contain data-destroying statements that
+mode stays silent until someone generates the next migration, which may then contain data-destroying statements that
 look routine in review:
 
 ```
@@ -58,7 +58,7 @@ migration run  ->  revert x N  ->  run  ->  db drift
 tsx ./node_modules/typeorm-extension/bin/cli.mjs db drift -d src/data-source.ts
 ```
 
-Pass `--skipWithoutMigrations` to exit successfully if the data-source has no migrations registered — useful when the
+Pass `--skipWithoutMigrations` to exit successfully if the data-source has no migrations registered. This is useful when the
 same data-source file serves a migration driven environment and a `synchronize()` driven one
 (e.g. `migrations: []` for an in-memory sqlite test database).
 
