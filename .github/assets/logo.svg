@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="typeorm-extension">
+    <defs>
+        <linearGradient id="mark" x1="4" y1="116" x2="116" y2="4" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#4338ca"/>
+            <stop offset="1" stop-color="#06b6d4"/>
+        </linearGradient>
+        <linearGradient id="shine" x1="60" y1="4" x2="60" y2="74" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
+            <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+        </linearGradient>
+    </defs>
+    <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#mark)"/>
+    <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#shine)"/>
+    <g stroke="#ffffff" stroke-width="9" stroke-linecap="round">
+        <ellipse cx="50" cy="32" rx="25" ry="9.5"/>
+        <path d="M25 32v46"/>
+        <path d="M75 32v46"/>
+        <path d="M25 55a25 9.5 0 0 0 50 0"/>
+        <path d="M25 78a25 9.5 0 0 0 50 0"/>
+    </g>
+    <circle cx="88" cy="88" r="17.5" fill="url(#mark)"/>
+    <circle cx="88" cy="88" r="17.5" fill="url(#shine)"/>
+    <g stroke="#ffffff" stroke-width="9" stroke-linecap="round">
+        <path d="M78.5 88h19"/>
+        <path d="M88 78.5v19"/>
+    </g>
+</svg>

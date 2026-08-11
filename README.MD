@@ -1,10 +1,16 @@
-# Typeorm Extension 🚀
+<p align="center">
+  <img src=".github/assets/logo.svg" alt="typeorm-extension" width="120">
+</p>
 
-[![npm version](https://badge.fury.io/js/typeorm-extension.svg)](https://badge.fury.io/js/typeorm-extension)
-[![codecov](https://codecov.io/gh/Tada5hi/typeorm-extension/branch/master/graph/badge.svg?token=4KNSG8L13V)](https://codecov.io/gh/Tada5hi/typeorm-extension)
-[![Master Workflow](https://github.com/Tada5hi/typeorm-extension/workflows/CI/badge.svg)](https://github.com/Tada5hi/typeorm-extension)
-[![Known Vulnerabilities](https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json)](https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json)
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+<h1 align="center">typeorm-extension</h1>
+
+<p align="center">
+  <a href="https://badge.fury.io/js/typeorm-extension"><img src="https://badge.fury.io/js/typeorm-extension.svg" alt="npm version"></a>
+  <a href="https://codecov.io/gh/Tada5hi/typeorm-extension"><img src="https://codecov.io/gh/Tada5hi/typeorm-extension/branch/master/graph/badge.svg?token=4KNSG8L13V" alt="codecov"></a>
+  <a href="https://github.com/Tada5hi/typeorm-extension"><img src="https://github.com/Tada5hi/typeorm-extension/workflows/CI/badge.svg" alt="Master Workflow"></a>
+  <a href="https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json"><img src="https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json" alt="Known Vulnerabilities"></a>
+  <a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits"></a>
+</p>
 
 This is a library to
 - `create`, `drop` & `seed` the (default-) database 🔥

@@ -3,7 +3,11 @@ import { defineConfig } from 'vitepress';
 export default defineConfig({
     title: 'typeorm-extension',
     base: '/',
+    head: [
+        ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+    ],
     themeConfig: {
+        logo: { src: '/logo.svg', alt: 'typeorm-extension' },
         socialLinks: [
             { icon: 'github', link: 'https://github.com/tada5hi/typeorm-extension' },
         ],
