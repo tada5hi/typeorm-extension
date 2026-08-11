@@ -135,8 +135,8 @@ To get a better overview and understanding of the [dropDatabase](#dropdatabase) 
 ## Custom Connection
 
 By default, the library opens a raw connection with the driver's native client
-(e.g. `pg`, `mysql2`) to run the `CREATE`/`DROP` statements. For server backed drivers,
-a caller supplied server-level connection can be injected instead, for example an
+(e.g. `pg`, `mysql2`) to run the `CREATE`/`DROP` statements. For server-backed drivers,
+a caller-supplied server-level connection can be injected instead, for example an
 existing admin pool or a tunnelled connection. The library never closes an injected
 connection; its lifecycle stays with the caller.
 
@@ -330,7 +330,7 @@ await withForeignKeyChecksDisabled(queryRunner, async () => {
 ```
 
 It restores the previous state rather than blindly enabling the checks, so nesting is safe, and it is a transparent
-no-op wrapper on every driver without a session level switch, so a migration using it stays portable.
+no-op wrapper on every driver without a session-level switch, so a migration using it stays portable.
 
 ### Driver support
 
@@ -339,7 +339,7 @@ no-op wrapper on every driver without a session level switch, so a migration usi
 | `renameIndex`                  | `postgres`, `cockroachdb`, `mysql`, `mariadb` (throws a `DriverError` otherwise) |
 | `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` (throws a `DriverError` otherwise) |
 | `changeColumnType`             | all (altered in place on every relational driver but sqlite)                    |
-| `withForeignKeyChecksDisabled` | all (a no-op wrapper outside of `mysql` / `mariadb`)                            |
+| `withForeignKeyChecksDisabled` | all (a no-op wrapper outside `mysql` / `mariadb`)                               |
 
 ::: warning NOTE
 `changeColumnType` builds its own statement rather than delegating to `queryRunner.changeColumn()`, because typeorm

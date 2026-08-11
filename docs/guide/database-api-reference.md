@@ -331,7 +331,7 @@ declare function withForeignKeyChecksDisabled<T>(
 ```
 
 It reads `@@SESSION.foreign_key_checks` first and only restores it if it was enabled, so nesting is safe. On a driver
-without a session level switch it is a transparent no-op wrapper, which keeps a migration using it portable.
+without a session-level switch it is a transparent no-op wrapper, which keeps a migration using it portable.
 
 ## SchemaDrift
 ```typescript

@@ -27,7 +27,7 @@ Not every driver can do everything, so `test/data/typeorm/integration.ts` expose
 | Predicate                        | False for                | Because                                                                                  |
 |----------------------------------|--------------------------|------------------------------------------------------------------------------------------|
 | `supportsSchemaAlter`            | mssql, oracle, mongodb   | the rename helpers have no statements for them (they assert a `DriverError` instead)       |
-| `supportsForeignKeyChecks`       | everything but mysql/mariadb | no session level switch                                                                |
+| `supportsForeignKeyChecks`       | everything but mysql/mariadb | no session-level switch                                                                |
 | `supportsForeignKeyColumnAlter`  | everything but mysql     | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
 | `supportsSchemaMetadata`         | mongodb                  | no relational schema to compare, and the fixtures use relations                            |
 | `supportsDatabaseDrop`           | oracle                   | `OracleDialect.drop` is a documented no-op                                                 |

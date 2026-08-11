@@ -725,6 +725,7 @@ the result onto the query builder. It is shown here with [express](https://www.n
 but the flow is framework-agnostic:
 
 ```typescript
+import { ParseError } from '@rapiq/core';
 import { TypeormAdapter } from '@rapiq/adapter-typeorm';
 import { useDataSource } from 'typeorm-extension';
 import { codec } from './codec';
@@ -737,7 +738,16 @@ import { User } from './entities';
  * - url: /users?page[limit]=10&page[offset]=0&include=profile&filter[id]=1&fields[user]=id,name
  */
 app.get('/users', async (req, res) => {
-    const query = codec.decode(req.query, { schema: 'user' });
+    let query;
+    try {
+        query = codec.decode(req.query, { schema: 'user' });
+    } catch (e) {
+        // e.g. a malformed filter expression
+        if (e instanceof ParseError) {
+            return res.status(400).json({ error: e.message });
+        }
+        throw e;
+    }
     if (!query) {
         return res.status(400).json({ error: 'Invalid query input.' });
     }
@@ -759,7 +769,7 @@ app.get('/users', async (req, res) => {
 });
 ```
 
-A production-shaped version with schema-violation handling (`throwOnFailure`, `ParseError` to `400`) is in the
+A production-shaped version with strict schema-violation handling (`throwOnFailure`) is in the
 [Express + TypeORM recipe](https://rapiq.tada5hi.net/guide/recipes/express-typeorm); the client side is covered by the
 [frontend recipe](https://rapiq.tada5hi.net/guide/recipes/frontend).
 
