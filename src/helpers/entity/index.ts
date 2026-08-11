@@ -1,4 +1,3 @@
-export * from './error';
 export * from './name';
 export * from './property-names';
 export * from './metadata';

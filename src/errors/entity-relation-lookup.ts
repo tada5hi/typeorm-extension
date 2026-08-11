@@ -1,6 +1,6 @@
-import { TypeormExtensionError } from '../../errors';
+import { TypeormExtensionError } from './base';
 
-type TypeormRelationLookupErrorOptions = {
+type EntityRelationLookupErrorOptions = {
     message: string,
     relation: string,
     columns: string[]
@@ -17,7 +17,7 @@ export class EntityRelationLookupError extends TypeormExtensionError {
      */
     public columns: string[];
 
-    constructor(options: TypeormRelationLookupErrorOptions) {
+    constructor(options: EntityRelationLookupErrorOptions) {
         super(options.message);
 
         this.relation = options.relation;

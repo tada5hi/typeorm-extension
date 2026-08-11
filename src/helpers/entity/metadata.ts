@@ -6,17 +6,12 @@ import type {
     ObjectLiteral,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import { TypeormExtensionError } from '../../errors';
-
-export class EntityMetadataError extends TypeormExtensionError {
-    static notRegistered(entity: unknown) {
-        return new EntityMetadataError(`The entity ${entity} is not registered.`);
-    }
-}
+import { EntityMetadataError } from '../../errors';
 
 /**
  * Receive metadata for a given repository or entity-target.
  *
+ * @experimental
  * @param input
  * @param dataSource
  */

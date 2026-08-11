@@ -5,7 +5,7 @@ import type {
     ObjectLiteral,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import { EntityRelationLookupError } from './error';
+import { EntityRelationLookupError } from '../../errors';
 import { getEntityMetadata } from './metadata';
 
 type EntityRelationColumnsValidateOptions<T> = {

@@ -34,7 +34,7 @@ typeorm-extension/
 │   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
-│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError
+│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError + EntityMetadataError + EntityRelationLookupError (one class per file)
 │   ├── helpers/                # Entity runtime helpers
 │   │   └── entity/             # name, metadata, property-names, join-column validation, uniqueness
 │   ├── runtime/                # Process-global state registry (internal, not in the public barrel)
@@ -77,8 +77,8 @@ typeorm-extension/
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
 | `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
-| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError`). |
-| `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager); the rest are public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |
+| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError` / `EntityMetadataError` / `EntityRelationLookupError`). One class per file; every error a consumer may catch lives here, not next to its thrower. |
+| `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager) and is the only stable one; the rest stay `@experimental` public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
 | `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). |
