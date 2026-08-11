@@ -1,4 +1,4 @@
-import { isObject } from 'locter';
+import { isObject } from '../object';
 import { CodeTransformation, isCodeTransformation } from '../code-transformation';
 import { resolveFilePath, transformFilePath } from '../file-path';
 import type { TSConfig } from '../tsconfig';

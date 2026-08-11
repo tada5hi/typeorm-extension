@@ -14,7 +14,7 @@ typeorm-extension/
 │   │   ├── logger.ts           # TTY-aware logger (info/success/warn/error/debug + section/kv/blank) + CLIUserError
 │   │   ├── exit.ts             # runWithExitCode wrapper + ExitCode enum
 │   │   └── commands/
-│   │       ├── database/       # `db` parent + `create`/`drop` subcommands (citty defineCommand)
+│   │       ├── database/       # `db` parent + `create`/`drift`/`drop` subcommands (citty defineCommand)
 │   │       └── seed/           # `seed` parent + `create`/`run` subcommands
 │   ├── data-source/            # DataSource discovery, options, and singleton registry
 │   │   ├── find/               # findDataSource() — locate data-source file on disk
@@ -27,9 +27,14 @@ typeorm-extension/
 │   │   ├── adapters/           # native client glue behind the connection interfaces (only files touching pg/mysql2/mssql/... or node:fs)
 │   │   ├── registry.ts         # the single dialect dispatch table (closed set)
 │   │   ├── driver/             # deprecated per-driver delegates (removed next major)
-│   │   └── utils/              # context builders, schema sync, migration helpers
+│   │   ├── schema/             # schema level ops against an initialized DataSource / QueryRunner
+│   │   │   ├── synchronize.ts  # synchronizeDatabaseSchema — run migrations or synchronize()
+│   │   │   ├── drift.ts        # getSchemaDrift / assertSchemaMatchesMetadata
+│   │   │   ├── alter/          # guarded renameIndex / renameForeignKey / changeColumnType / withForeignKeyChecksDisabled
+│   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
+│   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
-│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError
+│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError
 │   ├── helpers/                # entity helpers (getEntityName, etc.)
 │   ├── runtime/                # Process-global state registry (internal, not in the public barrel)
 │   │   ├── cache.ts            # AsyncKeyedCache — keyed get-or-build with concurrent dedupe
@@ -49,7 +54,7 @@ typeorm-extension/
 │   │   ├── entity/             # User, Role TypeORM entities
 │   │   ├── factory/            # Faker factories for the fixtures
 │   │   ├── seed/               # Seeders that use the factories
-│   │   ├── typeorm/            # DataSource fixtures (sync, async, default)
+│   │   ├── typeorm/            # DataSource fixtures (sync, async, default) + FakeQueryRunner
 │   │   └── tsconfig.json
 │   └── unit/                   # Test suites mirroring src/ folder names
 ├── docs/                       # VitePress site (guide/, index.md)
@@ -69,8 +74,9 @@ typeorm-extension/
 | `cli/`           | Process entry for the `typeorm-extension` binary. Thin wrapper over the public API.                   |
 | `data-source/`   | Locate, build, and cache `DataSource` instances by alias. Backbone for every other feature.            |
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
+| `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
-| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError`).                      |
+| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError`). |
 | `helpers/`       | Entity-shape helpers (`getEntityName`, `isEntityUnique`, etc.) — used by the seeder module and consumers. |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
@@ -125,4 +131,5 @@ CLI command factories are **not** part of the public barrel — they are interna
 - **CLI parsing** → `src/cli/` (citty only).
 - **Public, programmatic API** → everything else under `src/`, re-exported from `src/index.ts`.
 - **Driver-specific SQL** → `src/database/core/<dialect>/statements.ts` (pure builders), orchestrated by `src/database/core/<dialect>/module.ts` over the connections; native clients live only in `src/database/adapters/`. Adding a new TypeORM driver means one dialect folder in `core/`, one adapter, and one row in `src/database/registry.ts`.
+- **Schema-level DDL** → `src/database/schema/alter/statements.ts` (pure per-dialect builders, driven by `resolveSchemaDialect` in `alter/dialect.ts`), orchestrated over a typeorm `QueryRunner` by one file per concern (`alter/indices.ts`, `alter/foreign-keys.ts`, `alter/columns.ts`, `alter/checks.ts`). Only `postgres`/`cockroachdb` and `mysql`/`mariadb` are known to the dialect table: the renames raise `DriverError.schemaAlterationNotSupported` for every other driver, `changeColumnType` falls back to `queryRunner.changeColumn()` instead (`findSchemaDialect` vs. `resolveSchemaDialect`). `alter/index.ts` deliberately re-exports **only** the four helpers and their input types — the statement builders, the escapers and `resolveSchemaDialect` stay internal, and their specs import them by path. Don't widen that barrel to `export *`: every symbol in it is a compatibility promise.
 - **Side-effectful state** (DataSource registry, options cache, env cache, factory manager) → one `RuntimeRegistry` in `src/runtime/module.ts`; the public accessors (`setDataSource`/`useDataSource`, `useEnv`/`resetEnv`, `useSeederFactoryManager`/`resetSeederFactoryManager`, …) are thin delegates in their own domains.

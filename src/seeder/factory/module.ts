@@ -1,8 +1,8 @@
 import type { Faker, FakerOptions, LocaleDefinition } from '@faker-js/faker';
-import { isObject, load } from 'locter';
+import { readAsModule } from 'locter';
+import { hasOwnProperty, isObject, isPromise  } from '../../utils';
 import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import { hasOwnProperty, isPromise } from '../../utils';
 import type { SeederFactoryContext } from './type';
 
 export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
@@ -134,7 +134,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
         const options : FakerOptions = { locale: [] };
 
-        const fakerExports = await load('@faker-js/faker');
+        const fakerExports = await readAsModule('@faker-js/faker');
 
         let names : string[];
         if (this.locale) {

@@ -4,6 +4,8 @@ export const MYSQL_FOREIGN_KEY_CHECKS_OFF = 'SET FOREIGN_KEY_CHECKS=0;';
 
 export const MYSQL_FOREIGN_KEY_CHECKS_ON = 'SET FOREIGN_KEY_CHECKS=1;';
 
+export const MYSQL_FOREIGN_KEY_CHECKS_SELECT = 'SELECT @@SESSION.foreign_key_checks AS `value`;';
+
 /**
  * Infer the CHARACTER SET from a collation (charset) when it is not
  * explicitly configured, e.g. utf8mb4_general_ci -> utf8mb4.

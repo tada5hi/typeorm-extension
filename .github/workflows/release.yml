@@ -61,18 +61,6 @@ jobs:
                 if: steps.release.outputs.releases_created == 'true'
                 uses: tada5hi/monoship@v2
 
-            -   name: Coverage
-                if: steps.release.outputs.releases_created == 'true'
-                run: |
-                    npm run test:coverage
-
-            -   name: Upload report
-                if: steps.release.outputs.releases_created == 'true'
-                uses: codecov/codecov-action@v5.5.2
-                with:
-                    token: ${{ secrets.codecov }}
-                    directory: ./coverage/
-
             -   name: Build docs package
                 if: steps.release.outputs.releases_created == 'true'
                 run: npm run docs:build

@@ -1,5 +1,4 @@
-import { isObject } from 'locter';
-import { hasOwnProperty } from '../../utils';
+import { hasOwnProperty, isObject  } from '../../utils';
 
 export function hasResultRows(input: unknown): boolean {
     return isObject(input) &&

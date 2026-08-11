@@ -63,6 +63,34 @@ describe('src/database/core/params', () => {
         expect(params.extra).toEqual({ trustServerCertificate: true });
     });
 
+    it('should carry the driver specific options of mssql', () => {
+        const params = buildConnectionParams({
+            type: 'mssql',
+            host: 'localhost',
+            username: 'sa',
+            password: 'secret',
+            database: 'app',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true,
+            },
+        } as DataSourceOptions);
+
+        expect(params.driverOptions).toEqual({
+            encrypt: false,
+            trustServerCertificate: true,
+        });
+    });
+
+    it('should omit the driver specific options if there are none', () => {
+        const params = buildConnectionParams({
+            type: 'postgres',
+            host: 'localhost',
+        } as DataSourceOptions);
+
+        expect(params.driverOptions).toBeUndefined();
+    });
+
     it('should build params from a connection url', () => {
         const params = buildConnectionParams({
             type: 'postgres',

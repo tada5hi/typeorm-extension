@@ -1,8 +1,10 @@
 import { defineCommand } from 'citty';
 import { defineCLIDatabaseCreateCommand } from './create';
+import { defineCLIDatabaseDriftCommand } from './drift';
 import { defineCLIDatabaseDropCommand } from './drop';
 
 export * from './create';
+export * from './drift';
 export * from './drop';
 
 export function defineCLIDatabaseCommand() {
@@ -13,6 +15,7 @@ export function defineCLIDatabaseCommand() {
         },
         subCommands: {
             create: defineCLIDatabaseCreateCommand(),
+            drift: defineCLIDatabaseDriftCommand(),
             drop: defineCLIDatabaseDropCommand(),
         },
     });

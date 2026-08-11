@@ -18,6 +18,51 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.0.0-beta.3](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0-beta.2...v4.0.0-beta.3) (2026-07-29)
+
+
+### Bug Fixes
+
+* alter the column in place in changeColumnType ([#1425](https://github.com/tada5hi/typeorm-extension/issues/1425)) ([108f360](https://github.com/tada5hi/typeorm-extension/commit/108f360379072d8f34acd2a72d4b12e1557c82a2))
+
+## [4.0.0-beta.2](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0-beta.1...v4.0.0-beta.2) (2026-07-29)
+
+
+### Features
+
+* schema drift assertion + guarded repair migration helpers ([#1422](https://github.com/tada5hi/typeorm-extension/issues/1422)) ([ed938e1](https://github.com/tada5hi/typeorm-extension/commit/ed938e131491a9fe085ef238c925d993bbaae4ba))
+
+
+### Bug Fixes
+
+* **deps:** bump the minorandpatch group across 1 directory with 6 updates ([#1419](https://github.com/tada5hi/typeorm-extension/issues/1419)) ([85325c5](https://github.com/tada5hi/typeorm-extension/commit/85325c566458577fec154412e7871f4d7310fb78))
+
+## [4.0.0-beta.1](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0-beta.0...v4.0.0-beta.1) (2026-07-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* The unused factoriesLoad property no longer exists on SeederOptions. Remove it from your options objects; factories provided via the factories property (or discovered via env/data-source options) are always loaded.
+* new SeederExecutor(dataSource), runSeeder() and runSeeders() no longer register the given data source under the 'default' alias. Call setDataSource() explicitly if other code relies on useDataSource() returning it.
+* For better-sqlite3, createDatabase creates the database file itself (previously it only verified the directory was writable), and dropDatabase without ifExist fails on a missing file (previously a silent no-op).
+* The driver plumbing exports (createSimple*Connection, executeSimple*Query, buildDriverOptions, createDriver, getCharsetFromDataSourceOptions, getCharacterSetFromDataSourceOptions, DriverOptions) are no longer part of the public API. Use createDatabase/dropDatabase, or implement the IDatabaseConnectionFactory/IDatabaseConnection interfaces for custom connection handling.
+
+### Features
+
+* apply SQL database semantics to the sqlite dialect ([#1404](https://github.com/tada5hi/typeorm-extension/issues/1404)) ([567a92a](https://github.com/tada5hi/typeorm-extension/commit/567a92a6af73ec05a9897e3170bf42bfdaa555ee))
+* pure seeder-config resolver + SeederExecutor decomposition ([#1409](https://github.com/tada5hi/typeorm-extension/issues/1409)) ([39d2900](https://github.com/tada5hi/typeorm-extension/commit/39d290007bdd5191b6b84555bbfd358638b07504))
+
+
+### Bug Fixes
+
+* detect tsx as a just-in-time environment ([#1412](https://github.com/tada5hi/typeorm-extension/issues/1412)) ([5cbacef](https://github.com/tada5hi/typeorm-extension/commit/5cbacef22bf850fe09c0da5e1d794ad157b958b9))
+* remove the seeder executor's global data-source registration side effect ([#1406](https://github.com/tada5hi/typeorm-extension/issues/1406)) ([ed21216](https://github.com/tada5hi/typeorm-extension/commit/ed212164f25a78a0b6f577dd40dabf55870a4fc5))
+
+
+### Code Refactoring
+
+* split database layer into dialect core and connection-factory adapters ([#1401](https://github.com/tada5hi/typeorm-extension/issues/1401)) ([5470a4e](https://github.com/tada5hi/typeorm-extension/commit/5470a4e633e268d84da8968c072ba6494a5e930e)), closes [#1400](https://github.com/tada5hi/typeorm-extension/issues/1400)
+
 ## [4.0.0-beta.0](https://github.com/tada5hi/typeorm-extension/compare/v3.9.0...v4.0.0-beta.0) (2026-05-21)
 
 

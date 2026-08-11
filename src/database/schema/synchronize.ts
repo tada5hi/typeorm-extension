@@ -1,23 +1,11 @@
-import type { DataSourceOptions, Migration } from 'typeorm';
-import { DataSource, InstanceChecker } from 'typeorm';
+import type { DataSource, DataSourceOptions, Migration } from 'typeorm';
+import { useInitializedDataSource } from './utils';
 
 export async function synchronizeDatabaseSchema(
     input: DataSource | DataSourceOptions,
 ) : Promise<Migration[]> {
-    let dataSource: DataSource;
-    let options: DataSourceOptions;
-
-    if (InstanceChecker.isDataSource(input)) {
-        dataSource = input;
-        options = dataSource.options;
-    } else {
-        options = input;
-        dataSource = new DataSource(options);
-    }
-
-    if (!dataSource.isInitialized) {
-        await dataSource.initialize();
-    }
+    const { dataSource, owned } = await useInitializedDataSource(input);
+    const { options } = dataSource;
 
     let migrationsCount = 0;
     if (options.migrations) {
@@ -34,7 +22,7 @@ export async function synchronizeDatabaseSchema(
         await dataSource.synchronize(false);
     }
 
-    if (!InstanceChecker.isDataSource(input)) {
+    if (owned) {
         await dataSource.destroy();
     }
 

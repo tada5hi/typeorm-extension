@@ -25,6 +25,7 @@
 - After changing source or tests, run `npm run lint` on the affected files (or `npm run lint:fix`).
 - When changing user-facing behavior (CLI flags, public API signatures, env var names, seeder/factory contract), update both `README.MD` and the matching page in `docs/guide/`.
 - Adding a new TypeORM driver: add a dialect folder `src/database/core/<name>/` (`statements.ts` + `module.ts`), an adapter in `src/database/adapters/<name>.ts`, and a row in `src/database/registry.ts`. Then add a spec under `test/unit/database/core/` (using the memory connection factory from `test/data/database/`) and a docs entry.
+- Teaching the guarded schema helpers a new dialect: add the rows to `src/database/schema/alter/dialect.ts`, branch in `src/database/schema/alter/statements.ts`, extend `test/unit/database/schema/alter/`, and widen `supportsSchemaAlter` in `test/data/typeorm/integration.ts` (the driver is likely already in `INTEGRATION_DRIVERS` and the `integration` matrix in `main.yml`).
 
 ## Code Style
 
@@ -107,17 +108,17 @@ The CLI bundle's `cliRewriteExternal` plugin rewrites cross-domain imports back 
 Settings (`release-please-config.json`):
 
 - `release-type: node`
-- `include-v-in-tag: true` — tags look like `v3.10.0`
-- `prerelease: true`, `prerelease-type: alpha` — pre-1.0 / pre-release semantics apply.
-- `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — `feat:` ⇒ minor, `fix:` ⇒ patch (no major bumps without explicit `BREAKING CHANGE`).
+- `include-component-in-tag: false` — tags look like `v4.0.0-beta.0`
+- `versioning: prerelease` + `prerelease: true`, `prerelease-type: beta` — while the current version is a prerelease of `X.0.0`, further commits (including breaking changes) bump only the prerelease number (`4.0.0-beta.0` → `4.0.0-beta.1`) instead of the major. Cutting the stable `4.0.0` requires an explicit `Release-As: 4.0.0` commit footer (or flipping `prerelease` off).
+- `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — pre-1.0 only: `feat:` ⇒ minor, `fix:` ⇒ patch.
 
 The manifest at `.release-please-manifest.json` tracks the current version.
 
 ## CI/CD
 
-- `main.yml` runs on push to `master` and on PRs: `install → build → (lint || tests)` on Node 22.
-- `release.yml` runs the release-please action and (on merge of a release PR) publishes to npm.
-- Codecov receives coverage uploads via `codecov/codecov-action` (the badge in `README.MD` points to the report).
+- `main.yml` runs on push to `master` and on PRs: `install → build → (lint || tests || integration)` on Node 24. The `tests` job runs `npm run test:coverage` and uploads to Codecov via `codecov/codecov-action` (the badge in `README.MD` points to the report). The `integration` job is a `fail-fast: false` matrix over `postgres` / `cockroachdb` / `mysql` / `mariadb` / `mssql` / `mongodb` / `oracle` service containers running `npm run test:integration`.
+- Validate a changed workflow with `npx js-yaml .github/workflows/main.yml` (spec-compliant — `yaml-lint` accepts plain scalars containing `: `, which GitHub rejects with "This run likely failed because of a workflow file issue" and zero started jobs). Health commands are interpolated into `--health-cmd "…"`, so they must be double-quoted in YAML and must not contain double quotes of their own.
+- `release.yml` runs the release-please action and (on merge of a release PR) publishes to npm + deploys docs. It does **not** run coverage: the `monoship` publish step re-inits the runner to Node 22, so any later test step would hit a `better-sqlite3` native-ABI mismatch against the Node-24 install. Coverage therefore lives in `main.yml` where the Node version stays pinned.
 
 ## Documentation Site
 
