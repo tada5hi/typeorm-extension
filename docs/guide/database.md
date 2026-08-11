@@ -350,7 +350,7 @@ column, so the helper emits `ALTER COLUMN … TYPE` / `MODIFY COLUMN` instead.
 Only sqlite still goes through typeorm, which is safe there: the table is recreated and the values are copied over.
 
 On mysql, widening a column a foreign key depends on additionally needs
-[`withForeignKeyChecksDisabled`](#withforeignkeychecksdisabled); mariadb refuses to alter either end of a constraint
+[`withForeignKeyChecksDisabled`](./database-api-reference#withforeignkeychecksdisabled); mariadb refuses to alter either end of a constraint
 outright (error 1832/1833), so the constraint has to be dropped around the change there.
 :::
 

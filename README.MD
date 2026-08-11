@@ -718,6 +718,9 @@ import { User } from './entities';
  */
 app.get('/users', async (req, res) => {
     const query = codec.decode(req.query, { schema: 'user' });
+    if (!query) {
+        return res.status(400).json({ error: 'Invalid query input.' });
+    }
 
     const dataSource = await useDataSource();
     const queryBuilder = dataSource.getRepository(User).createQueryBuilder('user');
@@ -735,6 +738,9 @@ app.get('/users', async (req, res) => {
     });
 });
 ```
+
+A production-shaped version with schema-violation handling (`throwOnFailure`, `ParseError` to `400`) is in the
+[Express + TypeORM recipe](https://rapiq.tada5hi.net/guide/recipes/express-typeorm).
 
 To move over from the removed submodule, follow the migration guide:
 [https://rapiq.tada5hi.net/guide/migration-typeorm-extension](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)

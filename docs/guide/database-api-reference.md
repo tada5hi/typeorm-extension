@@ -192,7 +192,7 @@ Throws a `SchemaDriftError` whose message lists the reconciling statements and w
 
 ## `renameIndex`
 
-Rename an index. Returns `false` when an index is already named `to`. When neither name exists (or the table does not),
+Rename an index. Returns `false` when an index is already named `to`. When neither name exists (or the table does not exist),
 a `SchemaAlterationError` is raised unless `strict: false` is passed.
 
 ```typescript
