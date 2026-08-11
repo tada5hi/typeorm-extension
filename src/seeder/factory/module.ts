@@ -1,6 +1,4 @@
-import type { Faker, FakerOptions, LocaleDefinition } from '@faker-js/faker';
-import { readAsModule } from 'locter';
-import { hasOwnProperty, isObject, isPromise  } from '../../utils';
+import { hasOwnProperty, isPromise  } from '../../utils';
 import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
 import type { SeederFactoryContext } from './type';
@@ -9,10 +7,6 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     public readonly context: SeederFactoryContext<O, Meta>;
 
     public meta: Meta | undefined;
-
-    protected faker : Faker | undefined;
-
-    protected locale : string[] | undefined;
 
     // --------------------------------------------------------------
 
@@ -28,19 +22,10 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         return this;
     }
 
-    public setLocale(value: string | string[]) {
-        this.faker = undefined;
-
-        this.locale = Array.isArray(value) ?
-            value :
-            [value];
-    }
-
     // --------------------------------------------------------------
 
     public async make(params?: Partial<O>, save?: boolean) {
-        const faker = await this.useFaker();
-        const factoryFn = this.context.factoryFn(faker, this.meta);
+        const factoryFn = this.context.factoryFn(this.meta);
         let entity : O;
         if (isPromise(factoryFn)) {
             entity = await this.resolve(await factoryFn, save);
@@ -125,43 +110,5 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         }
 
         return entity;
-    }
-
-    protected async useFaker() : Promise<Faker> {
-        if (typeof this.faker !== 'undefined') {
-            return this.faker;
-        }
-
-        const options : FakerOptions = { locale: [] };
-
-        const fakerExports = await readAsModule('@faker-js/faker');
-
-        let names : string[];
-        if (this.locale) {
-            names = Array.isArray(this.locale) ?
-                this.locale :
-                [this.locale];
-        } else {
-            names = ['en'];
-        }
-
-        for (const name of names) {
-            if (
-                hasOwnProperty(fakerExports, 'default') &&
-                isObject(fakerExports.default) &&
-                hasOwnProperty(fakerExports.default, name)
-            ) {
-                (options.locale as LocaleDefinition[]).push(fakerExports.default[name] as LocaleDefinition);
-                continue;
-            }
-
-            if (hasOwnProperty(fakerExports, name)) {
-                (options.locale as LocaleDefinition[]).push(fakerExports[name] as LocaleDefinition);
-            }
-        }
-
-        this.faker = new fakerExports.Faker(options);
-
-        return this.faker!;
     }
 }

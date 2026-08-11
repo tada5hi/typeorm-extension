@@ -44,8 +44,12 @@ This is a library to
 ## Installation
 
 ```bash
-npm install typeorm-extension --save
+npm install typeorm-extension typeorm --save
 ```
+
+`typeorm` is a peer dependency and is required in the range `^1.1.0`. Seeder factories generate their data
+with a library of your choice, so nothing else is required. The examples below use
+[faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker`).
 
 ## Documentation
 
@@ -490,15 +494,16 @@ export class User {
 To create entities with random data, create a factory for each desired entity.
 The definition of a factory is **optional**.
 
-The factory callback provides an instance of the [faker](https://fakerjs.dev/guide/) library as function argument,
-to populate the entity with random data.
+The factory callback returns the entity to persist. Pick any data generator you like and import it in the
+factory file. The examples use [faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker`).
 
 **`user.factory.ts`**
 ```typescript
+import { faker } from '@faker-js/faker';
 import { setSeederFactory } from 'typeorm-extension';
 import { User } from './user';
 
-export default setSeederFactory(User, (faker) => {
+export default setSeederFactory(User, () => {
     const user = new User();
     user.firstName = faker.person.firstName('male');
     user.lastName = faker.person.lastName('male');
@@ -507,6 +512,10 @@ export default setSeederFactory(User, (faker) => {
     return user;
 })
 ```
+
+Since the generator instance belongs to the factory file, locales and reproducible runs are configured
+through the generator's own API, for example `import { fakerDE as faker } from '@faker-js/faker'`
+or `faker.seed(1234)`.
 
 #### Seed
 And last but not least, create a seeder. The seeder can be called by the cli command `seed:run` or in the codebase

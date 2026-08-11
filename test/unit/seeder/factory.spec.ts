@@ -36,14 +36,28 @@ describe('src/seeder/factory/index.ts', () => {
         }
     });
 
-    it('should create with different locales', async () => {
-        const factory = useSeederFactory(User);
-        let user = await factory.save();
-        expect(user).toBeDefined();
+    it('should pass meta to the factory callback', async () => {
+        type RoleMeta = { name: string };
 
-        factory.setLocale('de');
-        user = await factory.save();
-        expect(user).toBeDefined();
+        setSeederFactory(Role, (meta?: RoleMeta) => {
+            const role = new Role();
+            role.name = meta?.name ?? 'fallback';
+
+            return role;
+        });
+
+        try {
+            const role = await useSeederFactory<Role, RoleMeta>(Role)
+                .setMeta({ name: 'admin' })
+                .make();
+
+            expect(role.name).toEqual('admin');
+
+            const unset = await useSeederFactory<Role, RoleMeta>(Role).make();
+            expect(unset.name).toEqual('fallback');
+        } finally {
+            delete useSeederFactoryManager().items[Role.name];
+        }
     });
 
     it('should resolve nested factories and thenable properties', async () => {
@@ -54,10 +68,10 @@ describe('src/seeder/factory/index.ts', () => {
             return role;
         });
 
-        setSeederFactory(User, (faker) => {
+        setSeederFactory(User, () => {
             const user = new User();
-            user.firstName = faker.person.firstName();
-            user.lastName = faker.person.lastName();
+            user.firstName = 'nested';
+            user.lastName = 'nested';
             user.email = { then: (resolve: (value: string) => void) => resolve('nested@example.com') } as unknown as string;
             user.role = useSeederFactory(Role) as unknown as Role;
 

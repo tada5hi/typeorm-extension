@@ -44,7 +44,7 @@ typeorm-extension/
 │   │   ├── config.ts           # resolveSeederConfig — pure precedence resolver (input ← ds options ← env ← defaults)
 │   │   ├── executor.ts         # SeederExecutor — named pipeline stages + tracking table
 │   │   ├── module.ts           # runSeeder / runSeeders
-│   │   ├── factory/            # SeederFactory + SeederFactoryManager (faker bridge)
+│   │   ├── factory/            # SeederFactory + SeederFactoryManager (generator-agnostic)
 │   │   └── utils/              # template, seeder file-name derivation, glob prep
 │   └── utils/                  # Pure helpers: object/promise/file-path/tsconfig
 │       └── path-resolver/      # createPathResolver — owns the JIT-vs-compiled path rewrite decision
@@ -88,7 +88,6 @@ typeorm-extension/
 | Dependency           | Role                                                                                          |
 |----------------------|-----------------------------------------------------------------------------------------------|
 | `typeorm` (peer)     | The ORM being extended. Requires `^1.1.0` (TypeORM 0.3 is no longer supported).                |
-| `@faker-js/faker`    | Optional peer — only required when using `SeederFactory`.                                     |
 | `locter`             | Glob + file loading (used to discover data-source / seed / factory files).                    |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |

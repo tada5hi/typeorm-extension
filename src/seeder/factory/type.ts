@@ -1,7 +1,9 @@
-import type { Faker } from '@faker-js/faker';
 import type { DataSource, EntitySchema, ObjectType } from 'typeorm';
 
-export type FactoryCallback<O, Meta = unknown> = (faker: Faker, meta: Meta) => O | Promise<O>;
+/**
+ * The meta argument is undefined, as long as SeederFactory.setMeta() was not called.
+ */
+export type FactoryCallback<O, Meta = unknown> = (meta: Meta | undefined) => O | Promise<O>;
 
 export type SeederFactoryItem = {
     factoryFn: FactoryCallback<any, any>,
@@ -11,7 +13,7 @@ export type SeederFactoryItem = {
 export type SeederFactoryContext<O, Meta = unknown> = {
     name: string,
     entity: ObjectType<O> | EntitySchema<O>,
-    factoryFn: FactoryCallback<O, Meta | undefined>,
+    factoryFn: FactoryCallback<O, Meta>,
     dataSource?: DataSource
 };
 

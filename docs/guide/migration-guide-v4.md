@@ -78,6 +78,68 @@ setDataSource(dataSource); // was implicit in v3
 await runSeeders(dataSource);
 ```
 
+### Factory callback no longer receives a faker instance
+
+In v3, the factory callback was handed a `Faker` instance built by this package, and
+`@faker-js/faker` was a peer dependency that every consumer installed, even projects that never
+seed anything.
+
+In v4, `typeorm-extension` no longer depends on a data generator at all. The callback signature is
+`(meta) => Entity`, and the factory file imports the generator itself. faker keeps working exactly
+as before, it is just yours now:
+
+```typescript
+// v3
+export default setSeederFactory(User, (faker) => {
+    const user = new User();
+    user.firstName = faker.person.firstName();
+
+    return user;
+});
+
+// v4
+import { faker } from '@faker-js/faker';
+
+export default setSeederFactory(User, () => {
+    const user = new User();
+    user.firstName = faker.person.firstName();
+
+    return user;
+});
+```
+
+Install it yourself if you use it: `npm install @faker-js/faker`. It was pulled in as a peer dependency
+before, so it has to become a dependency of your project now. Use `--save-dev` only if seeders never run
+from a production install.
+
+TypeScript reports the change at the call site in both spellings a v3 factory can have. An
+un-annotated `(faker) => ...` makes the parameter `unknown`, and an annotated `(faker: Faker) => ...`
+is rejected because the callback argument may be `undefined`:
+
+```
+Argument of type '(faker: Faker) => User' is not assignable to parameter of type
+'FactoryCallback<User, Faker>'. Type 'Faker | undefined' is not assignable to type 'Faker'.
+```
+
+Plain JavaScript projects get no compile-time signal at all, so check every factory file there for a
+callback that still expects a generator argument.
+
+The same rule applies when you do use the meta payload: declare the parameter as optional, because it
+is `undefined` until `setMeta()` is called.
+
+```typescript
+setSeederFactory(User, (meta?: { lastName?: string }) => { ... });
+```
+
+`SeederFactory.setLocale()` is removed as well. Select the locale (and seed the generator for
+reproducible runs) through the generator's own API:
+
+```typescript
+import { fakerDE as faker } from '@faker-js/faker';
+
+faker.seed(1234);
+```
+
 ### Query submodule removed
 
 The query submodule (`applyQuery`, `applyFilters` / `applyQueryFilters`, `applyFields` / `applyQueryFields`,

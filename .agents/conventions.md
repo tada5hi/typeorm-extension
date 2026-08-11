@@ -52,7 +52,7 @@ Applies to user-facing prose: `README.MD`, `docs/guide/*.md`, issue/PR text, com
 - **Functions**: camelCase verb-first (`createDatabase`, `findDataSource`, `useDataSource`, `buildDatabaseCreateContext`).
 - **Hook-style accessors**: `use*` (`useDataSource`, `useEnv`, `useSeederFactoryManager`). These return cached/singleton state.
 - **Registry mutators**: `set*` / `has*` / `unset*` / `reset*` (see `src/data-source/singleton.ts`, `src/env/module.ts`).
-- **Context/options types**: `XContextInput` (loose, user-supplied) → `XContext` (resolved) → driver receives the resolved one. Example: `DatabaseCreateContextInput` → `DatabaseCreateContext`.
+- **Context/options types**: `XContextInput` (loose, user-supplied) → `XContext` (resolved) → driver receives the resolved one. Example: `DatabaseCreateContextInput` → `DatabaseCreateContext`. De facto second axis: a `*Context` carries live objects (a `DataSource`, a connection, an entity class, a callback), while a plain config bag is `*Options` (`SeederOptions`, `DataSourceFindOptions`, `PathResolverOptions`). `DataSourceOptionsBuildContext` is the one type not following it.
 - **CLI commands**: `defineCLI<Noun><Verb>Command()` factory returning a citty `defineCommand` instance (e.g. `defineCLIDatabaseCreateCommand`). Parent commands that only group subcommands use the same `defineCLI<Noun>Command()` shape (e.g. `defineCLIDatabaseCommand`).
 
 ## File Organization
