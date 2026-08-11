@@ -700,6 +700,26 @@ registry.add(defineSchema<User>({
 export const codec = createURLCodec(registry);
 ```
 
+The codec owns both directions. A client builds the query string with `encode`, from a typed query
+instead of string concatenation (no registry needed on the client):
+
+```typescript
+import { defineQuery } from '@rapiq/core';
+import { createURLCodec } from '@rapiq/codec-url';
+import type { User } from './entities';
+
+const codec = createURLCodec();
+
+const query = defineQuery<User>({
+    fields: ['id', 'name'],
+    filters: { id: 1 },
+    relations: ['profile'],
+    pagination: { limit: 10, offset: 0 },
+});
+
+const response = await fetch(`/users?${codec.encode(query)}`);
+```
+
 The request handler then decodes the raw query parameters against the schema and lets the adapter apply
 the result onto the query builder. It is shown here with [express](https://www.npmjs.com/package/express),
 but the flow is framework-agnostic:
@@ -737,26 +757,6 @@ app.get('/users', async (req, res) => {
         }
     });
 });
-```
-
-The codec owns both directions. A client builds the wire form of the request example above with `encode`,
-from a typed query instead of string concatenation (no registry needed on the client):
-
-```typescript
-import { defineQuery } from '@rapiq/core';
-import { createURLCodec } from '@rapiq/codec-url';
-import type { User } from './entities';
-
-const codec = createURLCodec();
-
-const query = defineQuery<User>({
-    fields: ['id', 'name'],
-    filters: { id: 1 },
-    relations: ['profile'],
-    pagination: { limit: 10, offset: 0 },
-});
-
-const response = await fetch(`/users?${codec.encode(query)}`);
 ```
 
 A production-shaped version with schema-violation handling (`throwOnFailure`, `ParseError` to `400`) is in the
