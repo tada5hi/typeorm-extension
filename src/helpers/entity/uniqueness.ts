@@ -40,46 +40,65 @@ function transformUndefinedToNull<T>(input: undefined | T) : T {
 }
 
 /**
- * Build the where expression for a set of column values.
- *
- * The target expression matches the row which the write would produce, so its
- * conditions are combined with AND. The source expression is the negation of
- * one such match, used to exclude the row which is being updated from the
- * result, so its conditions are combined with OR. Combining them with AND
- * would only exclude a row which differs in every single column, and a
- * composite primary key sharing one column with it would slip through.
+ * Prefixing the property with the query alias is what lets the query builder
+ * translate it to the column name of the database.
  */
-function applyWhereExpression(
+function buildPropertyPath(alias: string, key: string) : string {
+    return `${alias}.${key}`;
+}
+
+/**
+ * Match the row which the write would produce: every column has to hold the
+ * given value, so the conditions are combined with AND.
+ */
+function applyMatchExpression(
     qb: WhereExpressionBuilder,
     alias: string,
     data: Record<string, any>,
-    type: 'source' | 'target',
 ) {
     const keys = Object.keys(data);
     for (const [index, key] of keys.entries()) {
         const value = transformUndefinedToNull(data[key]);
-
-        // The alias prefix lets the query builder translate the property name
-        // to the column name of the database.
-        const propertyPath = `${alias}.${key}`;
+        const propertyPath = buildPropertyPath(alias, key);
 
         if (value === null) {
-            if (type === 'target') {
-                qb.andWhere(`${propertyPath} IS NULL`);
-            } else {
-                qb.orWhere(`${propertyPath} IS NOT NULL`);
-            }
+            qb.andWhere(`${propertyPath} IS NULL`);
 
             continue;
         }
 
-        const bindingKey = `filter_${type}_${index}`;
+        const bindingKey = `match_${index}`;
 
-        if (type === 'target') {
-            qb.andWhere(`${propertyPath} = :${bindingKey}`, { [bindingKey]: value });
+        qb.andWhere(`${propertyPath} = :${bindingKey}`, { [bindingKey]: value });
+    }
+}
+
+/**
+ * Exclude one specific row, identified by the given columns.
+ *
+ * This is the negation of a match, and the negation of a conjunction is a
+ * disjunction: a row is a different one as soon as a single column differs.
+ * Combining the conditions with AND instead would only exclude a row which
+ * differs in every column, so a row sharing one column of a composite primary
+ * key with the excluded one would be dropped from the result as well.
+ */
+function applyExclusionExpression(
+    qb: WhereExpressionBuilder,
+    alias: string,
+    data: Record<string, any>,
+) {
+    const keys = Object.keys(data);
+    for (const [index, key] of keys.entries()) {
+        const value = transformUndefinedToNull(data[key]);
+        const propertyPath = buildPropertyPath(alias, key);
+
+        if (value === null) {
+            qb.orWhere(`${propertyPath} IS NOT NULL`);
 
             continue;
         }
+
+        const bindingKey = `exclude_${index}`;
 
         qb.orWhere(`${propertyPath} != :${bindingKey}`, { [bindingKey]: value });
     }
@@ -166,17 +185,16 @@ export async function isEntityUnique<T extends ObjectLiteral>(
         const alias = 'entity';
         const queryBuilder = repository.createQueryBuilder(alias);
         queryBuilder.where(new Brackets((qb) => {
-            applyWhereExpression(
+            applyMatchExpression(
                 qb,
                 alias,
                 resolveColumnGroupValues(columnGroup, options.entity, options.entityExisting),
-                'target',
             );
         }));
 
         if (options.entityExisting) {
             queryBuilder.andWhere(new Brackets((qb) => {
-                applyWhereExpression(qb, alias, pickRecord(options.entityExisting!, primaryColumnNames), 'source');
+                applyExclusionExpression(qb, alias, pickRecord(options.entityExisting!, primaryColumnNames));
             }));
         }
 
