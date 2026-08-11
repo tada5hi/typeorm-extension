@@ -115,9 +115,10 @@ The CLI bundle's `cliRewriteExternal` plugin rewrites cross-domain imports back 
 Settings (`release-please-config.json`):
 
 - `release-type: node`
-- `include-component-in-tag: false` — tags look like `v4.0.0-beta.0`
-- `versioning: prerelease` + `prerelease: true`, `prerelease-type: beta` — while the current version is a prerelease of `X.0.0`, further commits (including breaking changes) bump only the prerelease number (`4.0.0-beta.0` → `4.0.0-beta.1`) instead of the major. Cutting the stable `4.0.0` requires an explicit `Release-As: 4.0.0` commit footer (or flipping `prerelease` off).
-- `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — pre-1.0 only: `feat:` ⇒ minor, `fix:` ⇒ patch.
+- `include-component-in-tag: false` — tags look like `v4.0.0`
+- `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — pre-1.0 only: `feat:` ⇒ minor, `fix:` ⇒ patch. Inert on a 4.x line, kept for a future 0.x package.
+
+Versions are plain semver: `feat!:` / a `BREAKING CHANGE:` footer bumps the major, `feat:` the minor, `fix:` the patch. The `versioning: prerelease` + `prerelease: true` + `prerelease-type: beta` trio was removed when `4.0.0` was cut. During the v4 beta it kept every commit (breaking ones included) on the prerelease counter (`4.0.0-beta.0` → `4.0.0-beta.1`), which is why the GA commit carried an explicit `Release-As: 4.0.0` footer: without it release-please would have computed `5.0.0` from the breaking commits since the last beta. Put those three keys back to open a new prerelease line.
 
 The manifest at `.release-please-manifest.json` tracks the current version.
 
