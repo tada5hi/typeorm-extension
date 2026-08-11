@@ -47,6 +47,10 @@ This is a library to
 npm install typeorm-extension --save
 ```
 
+`typeorm` is a peer dependency and must be installed as well. Seeder factories generate their data with a
+library of your choice, so nothing else is required. The examples below use
+[faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker --save-dev`).
+
 ## Documentation
 
 To read the docs, visit [https://typeorm-extension.tada5hi.net](https://typeorm-extension.tada5hi.net)
