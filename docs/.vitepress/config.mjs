@@ -46,6 +46,7 @@ export default defineConfig({
                     items: [
                         { text: 'Database', link: '/guide/database-api-reference' },
                         { text: 'DataSource', link: '/guide/datasource-api-reference' },
+                        { text: 'Entity', link: '/guide/entity-api-reference' },
                         { text: 'Seeding', link: '/guide/seeding-api-reference' },
                     ],
                 },
