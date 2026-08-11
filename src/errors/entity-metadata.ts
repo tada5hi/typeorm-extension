@@ -5,7 +5,7 @@ export class EntityMetadataError extends TypeormExtensionError {
         super(message || 'An entity metadata related error has occurred');
     }
 
-    static notRegistered(entity: unknown) {
-        return new EntityMetadataError(`The entity ${entity} is not registered.`);
+    static notRegistered(name: string) {
+        return new EntityMetadataError(`The entity ${name} is not registered.`);
     }
 }

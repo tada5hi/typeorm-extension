@@ -26,5 +26,5 @@ export class Membership {
         { name: 'tenantRegion', referencedColumnName: 'region' },
         { name: 'tenantCode', referencedColumnName: 'code' },
     ])
-    tenant: Tenant;
+    tenant?: Tenant | null;
 }
