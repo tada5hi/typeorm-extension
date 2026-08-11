@@ -89,7 +89,7 @@
         "@types/node": "^25.9.1",
         "@vitest/coverage-v8": "^4.1.10",
         "better-sqlite3": "^12.11.1",
-        "eslint": "^10.8.0",
+        "eslint": "^10.8.1",
         "eslint-plugin-vue": "^10.10.0",
         "husky": "^9.1.7",
         "mongodb": "^7.5.0",
