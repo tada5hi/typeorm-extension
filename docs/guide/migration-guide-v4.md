@@ -85,7 +85,7 @@ The query submodule — `applyQuery`, `applyFilters` / `applyQueryFilters`, `app
 the `applyQuery*ParseOutput` functions and their option/output types — has been removed, together with the
 hard `rapiq` dependency.
 
-Its successor is **[@rapiq/typeorm](https://rapiq.tada5hi.net/packages/typeorm)**, the dedicated TypeORM
+Its successor is **[@rapiq/adapter-typeorm](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm)**, the dedicated TypeORM
 adapter of the rapiq v2 monorepo. The replacement flow: define a `Schema` for the entity, decode the raw
 URL query string with `URLCodec.decode` (from `@rapiq/codec-url`), and hand the parsed query to
 `TypeormAdapter.execute`, which applies it onto the `SelectQueryBuilder`. It covers everything the old
@@ -97,7 +97,7 @@ Follow the official migration guide:
 
 Notes:
 
-- `@rapiq/typeorm` requires `typeorm ^1.1.0` — the same floor as `typeorm-extension` v4.
+- `@rapiq/adapter-typeorm` requires `typeorm ^1.1.0` — the same floor as `typeorm-extension` v4.
 - If you still need the old `applyQuery` path (e.g. on typeorm `0.3.x`), stay on `typeorm-extension` v3.
 
 ## Internal Toolchain (no consumer impact)

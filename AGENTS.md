@@ -10,7 +10,7 @@ A TypeScript library that extends [TypeORM](https://typeorm.io) with:
 - A data-source registry with auto-discovery and lazy initialization.
 - A CLI (`typeorm-extension`) wrapping the above for use in npm scripts.
 
-The former JSON:API-style query submodule (`applyQuery`, ...) was removed in v4 in favor of [`@rapiq/typeorm`](https://rapiq.tada5hi.net/packages/typeorm) (see the [migration guide](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)).
+The former JSON:API-style query submodule (`applyQuery`, ...) was removed in v4 in favor of [`@rapiq/adapter-typeorm`](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm) (see the [migration guide](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)). The README's Query section still promotes the successor with examples during the v4 cycle; it is scheduled for removal in v5.
 
 Published to npm as `typeorm-extension`. `typeorm` and `@faker-js/faker` are peer dependencies.
 

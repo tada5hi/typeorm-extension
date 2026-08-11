@@ -1,6 +1,6 @@
 # Architecture
 
-`typeorm-extension` is a library, not a service. There are three loosely-coupled feature domains, all built on top of TypeORM, and all reachable either through the public API (`src/index.ts`) or the CLI (`src/cli/index.ts`). (The former `query` domain was removed in v4 in favor of [`@rapiq/typeorm`](https://rapiq.tada5hi.net/packages/typeorm).)
+`typeorm-extension` is a library, not a service. There are three loosely-coupled feature domains, all built on top of TypeORM, and all reachable either through the public API (`src/index.ts`) or the CLI (`src/cli/index.ts`). (The former `query` domain was removed in v4 in favor of [`@rapiq/adapter-typeorm`](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm).)
 
 ## Overview
 

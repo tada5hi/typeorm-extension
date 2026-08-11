@@ -608,12 +608,140 @@ import UserFactory from './user.factory';
 ### Query
 
 The query submodule (`applyQuery`, `applyFilters`, ...) was removed in v4.
-Its successor is [@rapiq/typeorm](https://rapiq.tada5hi.net/packages/typeorm) — the dedicated TypeORM adapter
-of the [rapiq](https://rapiq.tada5hi.net) v2 monorepo. It covers the full `applyQuery` use case
-(raw `req.query` decoding, typed schemas, nested filter compounds, collision-free join aliases) and more.
+Its successor is [@rapiq/adapter-typeorm](https://github.com/Tada5hi/rapiq/tree/master/packages/adapter-typeorm) — the dedicated
+TypeORM adapter of the [rapiq](https://github.com/Tada5hi/rapiq) v2 monorepo. The query pipeline is now fully
+**self-contained** in rapiq: decoding the raw URL query string (`@rapiq/codec-url`), typed schema
+validation (`@rapiq/core`) and application onto the `SelectQueryBuilder` (`@rapiq/adapter-typeorm`) —
+`typeorm-extension` is no longer involved. On top of the full `applyQuery` use case it adds typed
+schemas, nested `and` / `or` filter compounds, the `contains` operator family and collision-free join aliases.
 
-To move over, follow the migration guide:
+The [monorepo](https://github.com/Tada5hi/rapiq) hosts more than the TypeORM adapter: adapters for
+drizzle, prisma, raw SQL and in-memory collections, plus pluggable input parsers (e.g. a MongoDB-style
+filter parser and an expression parser). If rapiq is useful to you, consider giving the repo a ⭐ on GitHub.
+
+```bash
+npm install @rapiq/core @rapiq/codec-url @rapiq/adapter-typeorm --save
+```
+
+For demonstration purposes, two simple entities with a relation between them are used:
+
+```typescript
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    Index,
+    OneToOne,
+    JoinColumn
+} from 'typeorm';
+
+@Entity()
+export class User {
+    @PrimaryGeneratedColumn({unsigned: true})
+    id: number;
+
+    @Column({type: 'varchar', length: 30})
+    @Index({unique: true})
+    name: string;
+
+    @Column({type: 'varchar', length: 255, default: null, nullable: true})
+    email: string;
+
+    @OneToOne(() => Profile)
+    profile: Profile;
+}
+
+@Entity()
+export class Profile {
+    @PrimaryGeneratedColumn({unsigned: true})
+    id: number;
+
+    @Column({type: 'varchar', length: 255, default: null, nullable: true})
+    avatar: string;
+
+    @Column({type: 'varchar', length: 255, default: null, nullable: true})
+    cover: string;
+
+    @OneToOne(() => User)
+    @JoinColumn()
+    user: User;
+}
+```
+
+Instead of passing loose options per call (as `applyQuery` did), the allowed query features are declared
+once as a typed **schema** and registered alongside a codec:
+
+```typescript
+import { SchemaRegistry, defineSchema } from '@rapiq/core';
+import { createURLCodec } from '@rapiq/codec-url';
+import { Profile, User } from './entities';
+
+const registry = new SchemaRegistry();
+
+registry.add(defineSchema<Profile>({
+    name: 'profile',
+    fields: { allowed: ['id', 'avatar'] },
+    filters: { allowed: ['id'] },
+}));
+
+registry.add(defineSchema<User>({
+    name: 'user',
+    fields: {
+        allowed: ['id', 'name', 'email'],
+        default: ['id', 'name'],
+    },
+    filters: { allowed: ['id', 'name', 'profile.id'] },
+    relations: { allowed: ['profile'] },
+    sort: { allowed: ['id', 'name'], default: { id: 'DESC' } },
+    pagination: { maxLimit: 20 },
+    schemaMapping: { profile: 'profile' },
+}));
+
+export const codec = createURLCodec(registry);
+```
+
+The request handler then decodes the raw query parameters against the schema and lets the adapter apply
+the result onto the query builder — shown here with [express](https://www.npmjs.com/package/express),
+but the flow is framework-agnostic:
+
+```typescript
+import { TypeormAdapter } from '@rapiq/adapter-typeorm';
+import { useDataSource } from 'typeorm-extension';
+import { codec } from './codec';
+import { User } from './entities';
+
+/**
+ * Get many users.
+ *
+ * Request example
+ * - url: /users?page[limit]=10&page[offset]=0&include=profile&filter[id]=1&fields[user]=id,name
+ */
+app.get('/users', async (req, res) => {
+    const query = codec.decode(req.query, { schema: 'user' });
+
+    const dataSource = await useDataSource();
+    const queryBuilder = dataSource.getRepository(User).createQueryBuilder('user');
+
+    const { pagination } = new TypeormAdapter({ queryBuilder }).execute(query);
+
+    const [entities, total] = await queryBuilder.getManyAndCount();
+
+    res.json({
+        data: entities,
+        meta: {
+            total,
+            ...pagination
+        }
+    });
+});
+```
+
+To move over from the removed submodule, follow the migration guide:
 [https://rapiq.tada5hi.net/guide/migration-typeorm-extension](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)
+
+> **Note**: This section is kept during the v4 release cycle to route former `applyQuery` users to the
+> successor. With the next major release (v5) it will be removed from the README and docs — the
+> [rapiq documentation](https://rapiq.tada5hi.net) is the canonical reference.
 
 ## Contributing
 
