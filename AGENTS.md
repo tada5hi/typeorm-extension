@@ -6,14 +6,14 @@ A TypeScript library that extends [TypeORM](https://typeorm.io) with:
 
 - `create` / `drop` databases across all supported drivers (Postgres, MySQL/MariaDB, MongoDB, MSSQL, Oracle, better-sqlite3, CockroachDB). Note: TypeORM 1.0 removed the legacy `sqlite` driver — use `better-sqlite3`.
 - A schema-drift assertion (`getSchemaDrift` / `assertSchemaMatchesMetadata`) plus guarded, idempotent rename/alter helpers for repair migrations.
-- A seeder/factory system (similar to Laravel) backed by `@faker-js/faker`.
+- A seeder/factory system (similar to Laravel). The factory callback brings its own data generator; the library ships none.
 - Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`) for downstream CRUD layers.
 - A data-source registry with auto-discovery and lazy initialization.
 - A CLI (`typeorm-extension`) wrapping the above for use in npm scripts.
 
 The former JSON:API-style query submodule (`applyQuery`, ...) was removed in v4 in favor of [`@rapiq/adapter-typeorm`](https://github.com/tada5hi/rapiq/tree/master/packages/adapter-typeorm) (see the [migration guide](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)). The README's Query section still promotes the successor with examples during the v4 cycle; it is scheduled for removal in v5.
 
-Published to npm as `typeorm-extension`. `typeorm` and `@faker-js/faker` are peer dependencies.
+Published to npm as `typeorm-extension`. `typeorm` is the only peer dependency. `@faker-js/faker` is a devDependency used by the fixtures and the docs examples; it is not required by consumers.
 
 ## Quick Reference
 

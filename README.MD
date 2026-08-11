@@ -490,15 +490,16 @@ export class User {
 To create entities with random data, create a factory for each desired entity.
 The definition of a factory is **optional**.
 
-The factory callback provides an instance of the [faker](https://fakerjs.dev/guide/) library as function argument,
-to populate the entity with random data.
+The factory callback returns the entity to persist. Pick any data generator you like and import it in the
+factory file. The examples use [faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker --save-dev`).
 
 **`user.factory.ts`**
 ```typescript
+import { faker } from '@faker-js/faker';
 import { setSeederFactory } from 'typeorm-extension';
 import { User } from './user';
 
-export default setSeederFactory(User, (faker) => {
+export default setSeederFactory(User, () => {
     const user = new User();
     user.firstName = faker.person.firstName('male');
     user.lastName = faker.person.lastName('male');
@@ -507,6 +508,10 @@ export default setSeederFactory(User, (faker) => {
     return user;
 })
 ```
+
+Since the generator instance belongs to the factory file, locales and reproducible runs are configured
+the way the library documents them, for example `import { fakerDE as faker } from '@faker-js/faker'`
+or `faker.seed(1234)`.
 
 #### Seed
 And last but not least, create a seeder. The seeder can be called by the cli command `seed:run` or in the codebase

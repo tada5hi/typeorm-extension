@@ -208,6 +208,45 @@ export type SeederConfig = {
 The fully resolved counterpart of [SeederOptions](#seederoptions): no optional
 seeds/factories/tracking fields, defaults already applied.
 
+## `setSeederFactory`
+
+```typescript
+declare function setSeederFactory<O extends Record<string, any>, Meta = unknown>(
+    entity: ObjectType<O> | EntitySchema<O>,
+    factoryFn: FactoryCallback<O, Meta>
+) : SeederFactoryItem;
+```
+
+Register a factory for an entity with the global factory manager. Data generation is up to
+the callback: import whichever generator library you prefer, this package does not provide one.
+
+```typescript
+import { faker } from '@faker-js/faker';
+import { setSeederFactory } from 'typeorm-extension';
+import { User } from './user';
+
+export default setSeederFactory(User, () => {
+    const user = new User();
+    user.firstName = faker.person.firstName();
+
+    return user;
+});
+```
+
+**References**
+- [FactoryCallback](#factorycallback)
+
+## `FactoryCallback`
+
+```typescript
+type FactoryCallback<O, Meta = unknown> = (meta: Meta) => O | Promise<O>;
+```
+
+The callback receives the value assigned through `SeederFactory.setMeta()` and nothing else.
+It is `undefined` when `setMeta()` was not called. The callback may be synchronous or
+asynchronous, and may return other factories or promises as property values: they are
+resolved (and persisted, for `save()`) before the entity itself.
+
 ## `resetSeederFactoryManager`
 
 ```typescript

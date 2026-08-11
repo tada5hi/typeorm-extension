@@ -21,7 +21,7 @@
              ▼                                ▼                              ▼
        ┌────────────┐                  ┌──────────────┐               ┌──────────────┐
        │core/ +     │                  │  factory/    │               │  options/    │
-       │adapters/ + │                  │  (faker)     │               │  env merge   │
+       │adapters/ + │                  │              │               │  env merge   │
        │schema/     │                  │              │               │              │
        └────────────┘                  └──────────────┘               └──────────────┘
 
@@ -165,7 +165,7 @@ Each command body runs inside `runWithExitCode(logger, async () => { … })` (`s
 
 ### Factory pattern (seeder/factory)
 
-`setSeederFactory(Entity, callback)` registers a faker-driven generator with the global `SeederFactoryManager`. A `Seeder.run(dataSource, factoryManager)` impl calls `factoryManager.get(Entity).createMany(n)`. The factory `callback` receives a `Faker` instance from `@faker-js/faker` (peer dep — only loaded when factories are actually used). The manager handed to `run()` is bound to the executor's data source (sharing the global `items`), so `save()` / `saveMany()` persist there; factories resolved outside a run fall back to `useDataSource()`.
+`setSeederFactory(Entity, callback)` registers a generator callback with the global `SeederFactoryManager`. A `Seeder.run(dataSource, factoryManager)` impl calls `factoryManager.get(Entity).saveMany(n)`. The library is **generator-agnostic**: `FactoryCallback` is `(meta) => O | Promise<O>` and its only argument is the payload from `SeederFactory.setMeta()`. Data generation belongs to the consumer, who imports faker (or anything else) in the factory file. Before v4 a `Faker` instance was injected and `@faker-js/faker` was a peer dependency; that coupled the package to faker's export shape (`new fakerExports.Faker({ locale })` built by reflection), forced the dependency on every consumer and made `faker.seed()` unreachable. `setLocale()` went with it: locale selection is now `import { fakerDE as faker }`. Keep it that way, no generator import belongs in `src/`. The manager handed to `run()` is bound to the executor's data source (sharing the global `items`), so `save()` / `saveMany()` persist there; factories resolved outside a run fall back to `useDataSource()`.
 
 ## Data Flow
 
@@ -217,7 +217,7 @@ Output:
 - `OptionsError` is thrown when the context builder cannot resolve a DataSource / options.
 - `SchemaDriftError` is thrown by `assertSchemaMatchesMetadata()` and carries the reconciling `statements` (its message lists them, so an unhandled throw in CI is already the report).
 - `SchemaAlterationError` is thrown by the guarded alter helpers when the database is in neither the expected nor the desired state and `strict` is on (the default).
-- Anywhere else, library code lets the underlying error (TypeORM, the native driver, faker, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
+- Anywhere else, library code lets the underlying error (TypeORM, the native driver, a factory callback, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
 
 ## File Structure (architecture → paths)
 

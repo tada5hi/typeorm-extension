@@ -78,6 +78,51 @@ setDataSource(dataSource); // was implicit in v3
 await runSeeders(dataSource);
 ```
 
+### Factory callback no longer receives a faker instance
+
+In v3, the factory callback was handed a `Faker` instance built by this package, and
+`@faker-js/faker` was a peer dependency that every consumer installed, even projects that never
+seed anything.
+
+In v4, `typeorm-extension` no longer depends on a data generator at all. The callback signature is
+`(meta) => Entity`, and the factory file imports the generator itself. faker keeps working exactly
+as before, it is just yours now:
+
+```typescript
+// v3
+export default setSeederFactory(User, (faker) => {
+    const user = new User();
+    user.firstName = faker.person.firstName();
+
+    return user;
+});
+
+// v4
+import { faker } from '@faker-js/faker';
+
+export default setSeederFactory(User, () => {
+    const user = new User();
+    user.firstName = faker.person.firstName();
+
+    return user;
+});
+```
+
+Install it yourself if you use it: `npm install @faker-js/faker --save-dev`.
+
+TypeScript reports the change at the call site, because the first parameter is now the `setMeta()`
+payload (`unknown` by default). Plain JavaScript projects get no compile-time signal, so check every
+factory file for a callback that still expects a generator argument.
+
+`SeederFactory.setLocale()` is removed as well. Select the locale (and seed the generator for
+reproducible runs) through the generator's own API:
+
+```typescript
+import { fakerDE as faker } from '@faker-js/faker';
+
+faker.seed(1234);
+```
+
 ### Query submodule removed
 
 The query submodule (`applyQuery`, `applyFilters` / `applyQueryFilters`, `applyFields` / `applyQueryFields`,
