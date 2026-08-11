@@ -18,11 +18,12 @@ All helpers accept an optional `DataSource`. If none is provided, the
 
 ```typescript
 declare function getEntityName<O>(
-    entity: ObjectType<O> | EntitySchema<O>
+    entity: ObjectType<O> | EntitySchema<O> | string
 ) : string;
 ```
 
-Resolve the name of an entity, whether it is defined as a class or as an `EntitySchema`.
+Resolve the name of an entity, whether it is defined as a class, as an
+`EntitySchema` or already given as a name.
 
 **Example**
 
@@ -48,6 +49,8 @@ declare function getEntityMetadata<T extends ObjectLiteral>(
 ```
 
 Receive the `EntityMetadata` for a given repository or entity target.
+The lookup is delegated to TypeORM, so every entity target representation is
+accepted: a class, an `EntitySchema`, or the entity/table name as a string.
 Throws an `EntityMetadataError` if the entity is not registered on the data source.
 
 **Example**
@@ -99,6 +102,19 @@ input entity. Throws an `EntityRelationLookupError` when a join column does not
 reference anything (`notReferenced`) or the referenced entity does not exist
 (`notFound`).
 
+The input entity is **modified in place** and returned, so the return value and
+the argument are the same object. Pass a copy if the caller needs the payload
+untouched.
+
+A relation is skipped when it can not be resolved unambiguously:
+
+- a nullable join column is `null` (the foreign key references nothing), or
+- only part of a composite foreign key is provided (a lookup by the remaining
+  columns could match an unrelated row).
+
+Each relation is looked up with its own query, so the number of queries grows
+with the number of relations carrying a join column value.
+
 Typical use case: validating a write payload that carries foreign key ids
 (e.g. `realm_id`) before saving, while also resolving the related records in
 one step.
@@ -138,11 +154,26 @@ declare function isEntityUnique<T extends ObjectLiteral>(
 
 Check whether a given entity payload would violate one of the entity's unique
 constraints (or unique indices, if no explicit constraints are defined).
-Composite unique keys containing a `null` column are treated as present once,
-so a second row with the same non-null members is reported as a conflict.
 
-Pass the currently persisted record as `entityExisting` on updates, so the row
-being updated does not conflict with itself.
+Pass the currently persisted record as `entityExisting` on updates. It serves
+two purposes: the row being updated does not conflict with itself, and columns
+of a unique group which the payload does not define keep their persisted value,
+because an update leaves them untouched. Without `entityExisting`, an undefined
+column is treated as `null`, which is what an insert would store.
+
+::: warning Stricter than the database
+
+A composite unique key containing a `null` is treated as present once, so a
+second row with the same non-null members is reported as a conflict. Most SQL
+engines consider `NULL` values distinct in a unique index and would accept that
+row. The check is therefore stricter than the constraint the database enforces.
+
+The check also runs outside of any transaction, so a concurrent write between
+the check and the write can still produce a duplicate. Keep the unique
+constraint on the table: it is the only mechanism which actually guarantees
+uniqueness.
+
+:::
 
 **Example**
 
