@@ -739,8 +739,29 @@ app.get('/users', async (req, res) => {
 });
 ```
 
+The codec owns both directions. A client builds the wire form of the request example above with `encode`,
+from a typed query instead of string concatenation (no registry needed on the client):
+
+```typescript
+import { defineQuery } from '@rapiq/core';
+import { createURLCodec } from '@rapiq/codec-url';
+import type { User } from './entities';
+
+const codec = createURLCodec();
+
+const query = defineQuery<User>({
+    fields: ['id', 'name'],
+    filters: { id: 1 },
+    relations: ['profile'],
+    pagination: { limit: 10, offset: 0 },
+});
+
+const response = await fetch(`/users?${codec.encode(query)}`);
+```
+
 A production-shaped version with schema-violation handling (`throwOnFailure`, `ParseError` to `400`) is in the
-[Express + TypeORM recipe](https://rapiq.tada5hi.net/guide/recipes/express-typeorm).
+[Express + TypeORM recipe](https://rapiq.tada5hi.net/guide/recipes/express-typeorm); the client side is covered by the
+[frontend recipe](https://rapiq.tada5hi.net/guide/recipes/frontend).
 
 To move over from the removed submodule, follow the migration guide:
 [https://rapiq.tada5hi.net/guide/migration-typeorm-extension](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)
