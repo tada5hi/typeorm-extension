@@ -26,11 +26,11 @@ export function setSeederFactory<O extends Record<string, any>, Meta = unknown>(
     return manager.set(entity, factoryFn);
 }
 
-export function useSeederFactory<O extends Record<string, any>>(
+export function useSeederFactory<O extends Record<string, any>, Meta = unknown>(
     entity: ObjectType<O> | EntitySchema<O>,
 ) {
     const manager = useSeederFactoryManager();
-    return manager.get(entity);
+    return manager.get<O, Meta>(entity);
 }
 
 export async function prepareSeederFactories(

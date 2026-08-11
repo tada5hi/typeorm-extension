@@ -236,16 +236,42 @@ export default setSeederFactory(User, () => {
 **References**
 - [FactoryCallback](#factorycallback)
 
+## `useSeederFactory`
+
+```typescript
+declare function useSeederFactory<O extends Record<string, any>, Meta = unknown>(
+    entity: ObjectType<O> | EntitySchema<O>
+) : SeederFactory<O, Meta>;
+```
+
+Obtain a factory for a registered entity from the global factory manager. Each call returns a
+new `SeederFactory` instance, so `setMeta()` on one does not affect the others. Pass the `Meta`
+type argument to type-check the `setMeta()` payload.
+
+```typescript
+import { useSeederFactory } from 'typeorm-extension';
+import { User } from './user';
+
+const users = await useSeederFactory<User, { lastName?: string }>(User)
+    .setMeta({ lastName: 'Barrows' })
+    .saveMany(5);
+```
+
+Factories obtained this way persist into the data source registered for the `default` alias.
+Inside a seeder, use the `factoryManager` passed to `run()` instead: those factories are bound
+to the data source of the current run.
+
 ## `FactoryCallback`
 
 ```typescript
-type FactoryCallback<O, Meta = unknown> = (meta: Meta) => O | Promise<O>;
+type FactoryCallback<O, Meta = unknown> = (meta: Meta | undefined) => O | Promise<O>;
 ```
 
 The callback receives the value assigned through `SeederFactory.setMeta()` and nothing else.
-It is `undefined` when `setMeta()` was not called. The callback may be synchronous or
-asynchronous, and may return other factories or promises as property values: they are
-resolved (and persisted, for `save()`) before the entity itself.
+The argument is `undefined` when `setMeta()` was not called, which is why the parameter has to
+be declared as optional (`(meta?: Meta) => …`) or handled as possibly undefined. The callback
+may be synchronous or asynchronous, and may return other factories or promises as property
+values: they are resolved (and persisted, for `save()`) before the entity itself.
 
 ## `resetSeederFactoryManager`
 

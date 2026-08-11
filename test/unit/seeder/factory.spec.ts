@@ -37,19 +37,24 @@ describe('src/seeder/factory/index.ts', () => {
     });
 
     it('should pass meta to the factory callback', async () => {
-        setSeederFactory(Role, (meta: { name: string }) => {
+        type RoleMeta = { name: string };
+
+        setSeederFactory(Role, (meta?: RoleMeta) => {
             const role = new Role();
-            role.name = meta.name;
+            role.name = meta?.name ?? 'fallback';
 
             return role;
         });
 
         try {
-            const role = await useSeederFactory(Role)
+            const role = await useSeederFactory<Role, RoleMeta>(Role)
                 .setMeta({ name: 'admin' })
                 .make();
 
             expect(role.name).toEqual('admin');
+
+            const unset = await useSeederFactory<Role, RoleMeta>(Role).make();
+            expect(unset.name).toEqual('fallback');
         } finally {
             delete useSeederFactoryManager().items[Role.name];
         }

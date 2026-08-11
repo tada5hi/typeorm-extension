@@ -110,9 +110,24 @@ export default setSeederFactory(User, () => {
 
 Install it yourself if you use it: `npm install @faker-js/faker --save-dev`.
 
-TypeScript reports the change at the call site, because the first parameter is now the `setMeta()`
-payload (`unknown` by default). Plain JavaScript projects get no compile-time signal, so check every
-factory file for a callback that still expects a generator argument.
+TypeScript reports the change at the call site in both spellings a v3 factory can have. An
+un-annotated `(faker) => ...` makes the parameter `unknown`, and an annotated `(faker: Faker) => ...`
+is rejected because the callback argument may be `undefined`:
+
+```
+Argument of type '(faker: Faker) => User' is not assignable to parameter of type
+'FactoryCallback<User, Faker>'. Type 'Faker | undefined' is not assignable to type 'Faker'.
+```
+
+Plain JavaScript projects get no compile-time signal at all, so check every factory file there for a
+callback that still expects a generator argument.
+
+The same rule applies when you do use the meta payload: declare the parameter as optional, because it
+is `undefined` until `setMeta()` is called.
+
+```typescript
+setSeederFactory(User, (meta?: { lastName?: string }) => { ... });
+```
 
 `SeederFactory.setLocale()` is removed as well. Select the locale (and seed the generator for
 reproducible runs) through the generator's own API:
