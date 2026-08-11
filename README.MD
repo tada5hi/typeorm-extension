@@ -27,6 +27,7 @@ This is a library to
     - [Create](#create)
     - [Drop](#drop)
     - [Schema Drift](#schema-drift)
+    - [Generate Migration](#generate-migration)
     - [Repair Migrations](#repair-migrations)
   - [Instances](#instances)
     - [Single](#single)
@@ -287,6 +288,27 @@ import { assertSchemaMatchesMetadata, getSchemaDrift } from 'typeorm-extension';
 ```
 
 The same check is available on the command line as `typeorm-extension db drift`, which exits with code `1` on drift.
+
+#### Generate Migration
+
+`generateMigration` writes a migration file from the same schema comparison, using typeorm's own statements and file
+templates. The data source must already be initialized.
+
+```typescript
+import { generateMigration } from 'typeorm-extension';
+
+(async () => {
+    await generateMigration({
+        dataSource,
+        name: 'add-role',
+        directoryPath: 'src/migrations',
+    });
+})();
+```
+
+The file is written as `<timestamp>-<name>.<language>`, by default into `migrations/`. Set `language: 'js'` (plus
+`esm: true` for `export class` syntax) for a JavaScript migration, or `preview: true` to receive the statements without
+writing a file.
 
 #### Repair Migrations
 

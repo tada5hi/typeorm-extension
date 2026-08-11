@@ -31,6 +31,21 @@ export type MigrationGenerateCommandContext = {
     prettify?: boolean,
 
     /**
+     * Language of the generated migration file. It also determines the file extension.
+     *
+     * @default 'ts'
+     */
+    language?: 'ts' | 'js',
+
+    /**
+     * Generate an ESM (export class) instead of a CommonJS (module.exports) migration.
+     * Only applies to the language js.
+     *
+     * @default false
+     */
+    esm?: boolean,
+
+    /**
      * Only return up- & down-statements instead of backing up the migration to the file system.
      */
     preview?: boolean

@@ -1,87 +1,67 @@
-import { pascalCase } from 'pascal-case';
 import path from 'node:path';
-import fs from 'node:fs';
-import process from 'node:process';
+import { CommandUtils } from 'typeorm/commands/CommandUtils';
 import { MigrationGenerateCommand } from 'typeorm/commands/MigrationGenerateCommand';
+import { resolveFilePath } from '../../utils';
 import type { MigrationGenerateCommandContext, MigrationGenerateResult } from './type';
 
+/**
+ * typeorm keeps the statement escaping, the query-parameter formatting and both file
+ * templates as protected statics on its migration:generate command. Subclassing is the
+ * only way to reach them, and reusing them keeps the generated file byte-identical to
+ * the output of `typeorm migration:generate`.
+ */
 class GenerateCommand extends MigrationGenerateCommand {
-    static prettify(query: string) {
-        return this.prettifyQuery(query);
-    }
-}
+    static buildStatement(query: string, parameters: any[] | undefined, prettify?: boolean) : string {
+        const statement = prettify ? this.prettifyQuery(query) : query;
 
-function queryParams(parameters: any[] | undefined): string {
-    if (!parameters || !parameters.length) {
-        return '';
+        return `await queryRunner.query(\`${this.escapeTemplateLiteral(statement)}\`${this.queryParams(parameters)});`;
     }
 
-    return `, ${JSON.stringify(parameters)}`;
-}
+    static buildContent(
+        context: Required<Pick<MigrationGenerateCommandContext, 'name' | 'timestamp' | 'language' | 'esm'>>,
+        up: string[],
+        down: string[],
+    ) : string {
+        // the templates expect the statements already indented to their place in the class body.
+        const upStatements = up.map((statement) => `        ${statement}`);
+        const downStatements = down.map((statement) => `        ${statement}`);
 
-function buildTemplate(
-    name: string,
-    timestamp: number,
-    upStatements: string[],
-    downStatements: string[],
-): string {
-    const migrationName = `${pascalCase(name)}${timestamp}`;
+        if (context.language === 'js') {
+            return this.getJavascriptTemplate(
+                context.name,
+                context.timestamp,
+                upStatements,
+                downStatements,
+                context.esm,
+            );
+        }
 
-    const up = upStatements.map((statement) => `        ${statement}`);
-    const down = downStatements.map((statement) => `        ${statement}`);
-
-    return `import type { MigrationInterface, QueryRunner } from 'typeorm';
-
-export class ${migrationName} implements MigrationInterface {
-    name = '${migrationName}';
-
-    public async up(queryRunner: QueryRunner): Promise<void> {
-${up.join(`
-`)}
+        return this.getTemplate(
+            context.name,
+            context.timestamp,
+            upStatements,
+            downStatements,
+        );
     }
-    public async down(queryRunner: QueryRunner): Promise<void> {
-${down.join(`
-`)}
-    }
-}
-`;
 }
 
 export async function generateMigration(
     context: MigrationGenerateCommandContext,
 ) : Promise<MigrationGenerateResult> {
-    context.name = context.name || 'Default';
+    const name = context.name || 'Default';
+    const timestamp = context.timestamp || Date.now();
+    const language = context.language || 'ts';
 
-    const timestamp = context.timestamp || new Date().getTime();
-    const fileName = `${timestamp}-${context.name}.ts`;
+    const sqlInMemory = await context.dataSource.driver.createSchemaBuilder().log();
 
-    const { dataSource } = context;
+    const up = sqlInMemory.upQueries.map(
+        (query) => GenerateCommand.buildStatement(query.query, query.parameters, context.prettify),
+    );
 
-    const up: string[] = []; const
-        down: string[] = [];
-
-    const sqlInMemory = await dataSource.driver.createSchemaBuilder().log();
-
-    if (context.prettify) {
-        sqlInMemory.upQueries.forEach((upQuery) => {
-            upQuery.query = GenerateCommand.prettify(
-                upQuery.query,
-            );
-        });
-        sqlInMemory.downQueries.forEach((downQuery) => {
-            downQuery.query = GenerateCommand.prettify(
-                downQuery.query,
-            );
-        });
-    }
-
-    sqlInMemory.upQueries.forEach((upQuery) => {
-        up.push(`await queryRunner.query(\`${upQuery.query.replace(/`/g, '\\`')}\`${queryParams(upQuery.parameters)});`);
-    });
-
-    sqlInMemory.downQueries.forEach((downQuery) => {
-        down.push(`await queryRunner.query(\`${downQuery.query.replace(/`/g, '\\`')}\`${queryParams(downQuery.parameters)});`);
-    });
+    // the down statements undo the up statements and therefore run in reverse order.
+    const down = sqlInMemory.downQueries.map(
+        (query) => GenerateCommand.buildStatement(query.query, query.parameters, context.prettify),
+    ).reverse();
 
     if (
         up.length === 0 &&
@@ -90,30 +70,19 @@ export async function generateMigration(
         return { up, down };
     }
 
-    const content = buildTemplate(context.name, timestamp, up, down.reverse());
+    const content = GenerateCommand.buildContent({
+        name,
+        timestamp,
+        language,
+        esm: context.esm || false,
+    }, up, down);
 
     if (!context.preview) {
-        let directoryPath : string;
-        if (context.directoryPath) {
-            if (!path.isAbsolute(context.directoryPath)) {
-                directoryPath = path.join(process.cwd(), context.directoryPath);
-            } else {
-                directoryPath = context.directoryPath;
-            }
-        } else {
-            directoryPath = path.join(process.cwd(), 'migrations');
-        }
+        const directoryPath = resolveFilePath(context.directoryPath || 'migrations');
 
-        try {
-            await fs.promises.access(directoryPath, fs.constants.R_OK | fs.constants.W_OK);
-        } catch {
-            await fs.promises.mkdir(directoryPath, { recursive: true });
-        }
-
-        await fs.promises.writeFile(
-            path.join(directoryPath, fileName),
+        await CommandUtils.createFile(
+            path.join(directoryPath, `${timestamp}-${name}.${language}`),
             content,
-            { encoding: 'utf-8' },
         );
     }
 
