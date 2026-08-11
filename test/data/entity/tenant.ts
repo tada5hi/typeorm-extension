@@ -2,11 +2,14 @@ import {
     Column,
     Entity,
     PrimaryColumn,
+    Unique,
 } from 'typeorm';
 
 /**
- * Fixture for an entity with a composite primary key.
+ * Fixture for an entity with a composite primary key
+ * and a unique constraint next to it.
  */
+@Unique(['name'])
 @Entity({ name: 'tenants' })
 export class Tenant {
     @PrimaryColumn({ type: 'varchar' })

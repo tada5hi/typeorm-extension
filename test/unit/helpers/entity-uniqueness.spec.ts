@@ -1,5 +1,6 @@
 import { isEntityUnique } from '../../../src';
 import { Account } from '../../data/entity/account';
+import { Tenant } from '../../data/entity/tenant';
 import { User } from '../../data/entity/user';
 import { createDataSource } from '../../data/typeorm/factory';
 
@@ -58,6 +59,46 @@ describe('entity-uniqueness', () => {
                 dataSource,
                 entityTarget: Account,
                 entity: { userName: 'admin', tenantId: 2 },
+            });
+            expect(free).toBeTruthy();
+        } finally {
+            await dataSource.destroy();
+        }
+    });
+
+    it('should detect a conflict with a row sharing part of a composite primary key', async () => {
+        const dataSource = createDataSource();
+        await dataSource.initialize();
+        await dataSource.synchronize();
+
+        try {
+            const repository = dataSource.getRepository(Tenant);
+            await repository.save(repository.create({
+                region: 'eu', 
+                code: 'a', 
+                name: 'foo',
+            }));
+            const updated = await repository.save(repository.create({
+                region: 'us', 
+                code: 'a', 
+                name: 'bar',
+            }));
+
+            // The conflicting row shares the code of the updated one, so
+            // excluding it must compare the primary key as a whole.
+            const conflicting = await isEntityUnique({
+                dataSource,
+                entityTarget: Tenant,
+                entity: { name: 'foo' },
+                entityExisting: updated,
+            });
+            expect(conflicting).toBeFalsy();
+
+            const free = await isEntityUnique({
+                dataSource,
+                entityTarget: Tenant,
+                entity: { name: 'baz' },
+                entityExisting: updated,
             });
             expect(free).toBeTruthy();
         } finally {

@@ -39,6 +39,16 @@ function transformUndefinedToNull<T>(input: undefined | T) : T {
     return input;
 }
 
+/**
+ * Build the where expression for a set of column values.
+ *
+ * The target expression matches the row which the write would produce, so its
+ * conditions are combined with AND. The source expression is the negation of
+ * one such match, used to exclude the row which is being updated from the
+ * result, so its conditions are combined with OR. Combining them with AND
+ * would only exclude a row which differs in every single column, and a
+ * composite primary key sharing one column with it would slip through.
+ */
 function applyWhereExpression(
     qb: WhereExpressionBuilder,
     alias: string,
@@ -57,16 +67,21 @@ function applyWhereExpression(
             if (type === 'target') {
                 qb.andWhere(`${propertyPath} IS NULL`);
             } else {
-                qb.andWhere(`${propertyPath} IS NOT NULL`);
+                qb.orWhere(`${propertyPath} IS NOT NULL`);
             }
 
             continue;
         }
 
         const bindingKey = `filter_${type}_${index}`;
-        const operator = type === 'target' ? '=' : '!=';
 
-        qb.andWhere(`${propertyPath} ${operator} :${bindingKey}`, { [bindingKey]: value });
+        if (type === 'target') {
+            qb.andWhere(`${propertyPath} = :${bindingKey}`, { [bindingKey]: value });
+
+            continue;
+        }
+
+        qb.orWhere(`${propertyPath} != :${bindingKey}`, { [bindingKey]: value });
     }
 }
 
