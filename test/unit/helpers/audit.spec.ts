@@ -1,4 +1,5 @@
 import { EntityMetadataError, getEntityMetadata, validateEntityJoinColumns } from '../../../src';
+import { Membership } from '../../data/entity/membership';
 import { Tenant } from '../../data/entity/tenant';
 import { createDataSource } from '../../data/typeorm/factory';
 
@@ -19,6 +20,43 @@ describe('entity-target-edge-cases', () => {
             await validateEntityJoinColumns(payload, { dataSource, entityTarget: Tenant });
 
             expect(payload.memberships).toBeUndefined();
+        } finally {
+            await dataSource.destroy();
+        }
+    });
+
+    it('should return the same object it was given', async () => {
+        const dataSource = createDataSource();
+        await dataSource.initialize();
+        await dataSource.synchronize();
+
+        try {
+            const payload : Partial<Tenant> = { region: 'eu', code: 'a' };
+            const result = await validateEntityJoinColumns(payload, {
+                dataSource,
+                entityTarget: Tenant,
+            });
+
+            // The input is enriched in place, the return value is not a copy.
+            expect(result).toBe(payload);
+        } finally {
+            await dataSource.destroy();
+        }
+    });
+
+    it('should skip a relation whose join column the input does not define', async () => {
+        const dataSource = createDataSource();
+        await dataSource.initialize();
+        await dataSource.synchronize();
+
+        try {
+            const tenantRepository = dataSource.getRepository(Tenant);
+            await tenantRepository.save(tenantRepository.create({ region: 'eu', code: 'a' }));
+
+            const membership : Partial<Membership> = {};
+            await validateEntityJoinColumns(membership, { dataSource, entityTarget: Membership });
+
+            expect(membership.tenant).toBeUndefined();
         } finally {
             await dataSource.destroy();
         }

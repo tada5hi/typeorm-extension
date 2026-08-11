@@ -6,7 +6,6 @@ import type {
     WhereExpressionBuilder,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import { pickRecord } from '../../utils';
 import { getEntityMetadata } from './metadata';
 
 type EntityUniquenessCheckOptions<T> = {
@@ -37,6 +36,40 @@ function transformUndefinedToNull<T>(input: undefined | T) : T {
     }
 
     return input;
+}
+
+/**
+ * Read the value of a column property path.
+ *
+ * The path of a column of an embedded entity is nested (profile.email), so it
+ * can not be used as a plain key. A path which is not reachable counts as
+ * absent, like a column the input does not define at all.
+ */
+function readPropertyPath(data: Record<string, any>, path: string) : unknown {
+    const parts = path.split('.');
+
+    let current : any = data;
+    for (const part of parts) {
+        if (
+            current === null ||
+            typeof current !== 'object'
+        ) {
+            return undefined;
+        }
+
+        current = current[part];
+    }
+
+    return current;
+}
+
+function pickPropertyPaths(data: Record<string, any>, paths: string[]) : Record<string, any> {
+    const output : Record<string, any> = {};
+    for (const path of paths) {
+        output[path] = readPropertyPath(data, path);
+    }
+
+    return output;
 }
 
 /**
@@ -118,23 +151,24 @@ function resolveColumnGroupValues<T extends ObjectLiteral>(
 ) : Record<string, any> {
     const output : Record<string, any> = {};
 
-    for (const key of columnGroup) {
-        if (typeof entity[key] !== 'undefined') {
-            output[key] = entity[key];
+    for (const path of columnGroup) {
+        const value = readPropertyPath(entity, path);
+        if (typeof value !== 'undefined') {
+            output[path] = value;
 
             continue;
         }
 
-        if (
-            entityExisting &&
-            typeof entityExisting[key] !== 'undefined'
-        ) {
-            output[key] = entityExisting[key];
+        const valueExisting = entityExisting ?
+            readPropertyPath(entityExisting, path) :
+            undefined;
+        if (typeof valueExisting !== 'undefined') {
+            output[path] = valueExisting;
 
             continue;
         }
 
-        output[key] = null;
+        output[path] = null;
     }
 
     return output;
@@ -156,7 +190,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
 
     const repository = dataSource.getRepository(metadata.target);
 
-    const primaryColumnNames = metadata.primaryColumns.map((c) => c.propertyName);
+    const primaryColumnPaths = metadata.primaryColumns.map((c) => c.propertyPath);
 
     const columnGroups : string[][] = [];
     if (
@@ -165,7 +199,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
     ) {
         for (let i = 0; i < metadata.ownUniques.length; i++) {
             columnGroups.push(metadata.ownUniques[i].columns.map(
-                (column) => column.propertyName,
+                (column) => column.propertyPath,
             ));
         }
     } else {
@@ -176,7 +210,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
             }
 
             columnGroups.push(index.columns.map(
-                (column) => column.propertyName,
+                (column) => column.propertyPath,
             ));
         }
     }
@@ -194,7 +228,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
 
         if (options.entityExisting) {
             queryBuilder.andWhere(new Brackets((qb) => {
-                applyExclusionExpression(qb, alias, pickRecord(options.entityExisting!, primaryColumnNames));
+                applyExclusionExpression(qb, alias, pickPropertyPaths(options.entityExisting!, primaryColumnPaths));
             }));
         }
 

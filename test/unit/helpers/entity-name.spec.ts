@@ -13,4 +13,8 @@ describe('src/helpers/entity/name.ts', () => {
 
         expect(getEntityName(schema)).toEqual('user');
     });
+
+    it('should keep a name which is already given as a string', () => {
+        expect(getEntityName('User')).toEqual('User');
+    });
 });
