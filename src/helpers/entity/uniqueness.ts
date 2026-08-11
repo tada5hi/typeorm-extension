@@ -6,6 +6,7 @@ import type {
     WhereExpressionBuilder,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
+import { isObject } from '../../utils';
 import { getEntityMetadata } from './metadata';
 
 type EntityUniquenessCheckOptions<T> = {
@@ -50,10 +51,7 @@ function readPropertyPath(data: Record<string, any>, path: string) : unknown {
 
     let current : any = data;
     for (const part of parts) {
-        if (
-            current === null ||
-            typeof current !== 'object'
-        ) {
+        if (!isObject(current)) {
             return undefined;
         }
 
