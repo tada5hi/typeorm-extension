@@ -41,28 +41,69 @@ function transformUndefinedToNull<T>(input: undefined | T) : T {
 
 function applyWhereExpression(
     qb: WhereExpressionBuilder,
+    alias: string,
     data: Record<string, any>,
     type: 'source' | 'target',
 ) {
     const keys = Object.keys(data);
-    for (const key of keys) {
+    for (const [index, key] of keys.entries()) {
         const value = transformUndefinedToNull(data[key]);
+
+        // The alias prefix lets the query builder translate the property name
+        // to the column name of the database.
+        const propertyPath = `${alias}.${key}`;
 
         if (value === null) {
             if (type === 'target') {
-                qb.andWhere(`${key} IS NULL`);
+                qb.andWhere(`${propertyPath} IS NULL`);
             } else {
-                qb.andWhere(`${key} IS NOT NULL`);
+                qb.andWhere(`${propertyPath} IS NOT NULL`);
             }
 
             continue;
         }
 
-        const bindingKey = `filter_${type}_${key}`;
+        const bindingKey = `filter_${type}_${index}`;
         const operator = type === 'target' ? '=' : '!=';
 
-        qb.andWhere(`${key} ${operator} :${bindingKey}`, { [bindingKey]: value });
+        qb.andWhere(`${propertyPath} ${operator} :${bindingKey}`, { [bindingKey]: value });
     }
+}
+
+/**
+ * Resolve the values a unique column group will hold after the write.
+ *
+ * A value provided by the input entity wins. If the input does not define the
+ * column and an existing entity is given, the persisted value is kept, because
+ * an update leaves that column untouched. Otherwise the column will be null.
+ */
+function resolveColumnGroupValues<T extends ObjectLiteral>(
+    columnGroup: string[],
+    entity: Partial<T>,
+    entityExisting?: Partial<T> | null,
+) : Record<string, any> {
+    const output : Record<string, any> = {};
+
+    for (const key of columnGroup) {
+        if (typeof entity[key] !== 'undefined') {
+            output[key] = entity[key];
+
+            continue;
+        }
+
+        if (
+            entityExisting &&
+            typeof entityExisting[key] !== 'undefined'
+        ) {
+            output[key] = entityExisting[key];
+
+            continue;
+        }
+
+        output[key] = null;
+    }
+
+    return output;
 }
 
 /**
@@ -107,14 +148,20 @@ export async function isEntityUnique<T extends ObjectLiteral>(
     }
 
     for (const columnGroup of columnGroups) {
-        const queryBuilder = repository.createQueryBuilder('entity');
+        const alias = 'entity';
+        const queryBuilder = repository.createQueryBuilder(alias);
         queryBuilder.where(new Brackets((qb) => {
-            applyWhereExpression(qb, pickRecord(options.entity, columnGroup), 'target');
+            applyWhereExpression(
+                qb,
+                alias,
+                resolveColumnGroupValues(columnGroup, options.entity, options.entityExisting),
+                'target',
+            );
         }));
 
         if (options.entityExisting) {
             queryBuilder.andWhere(new Brackets((qb) => {
-                applyWhereExpression(qb, pickRecord(options.entityExisting!, primaryColumnNames), 'source');
+                applyWhereExpression(qb, alias, pickRecord(options.entityExisting!, primaryColumnNames), 'source');
             }));
         }
 
