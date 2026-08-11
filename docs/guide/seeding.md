@@ -115,7 +115,8 @@ The definition of a factory is **optional**.
 
 The factory callback returns the entity to persist. Pick any data generator you like and import it in the
 factory file. The examples use [faker](https://fakerjs.dev/guide/), which is not a dependency of this
-package: install it yourself with `npm install @faker-js/faker --save-dev`.
+package: install it yourself with `npm install @faker-js/faker` (see [Installation](installation.md) for
+the dependency scope to pick).
 
 **`user.factory.ts`**
 ```typescript
@@ -139,8 +140,12 @@ with the generator's own API:
 ```typescript
 import { fakerDE as faker } from '@faker-js/faker';
 
-faker.seed(1234); // same data on every run
+faker.seed(1234);
 ```
+
+How far that reproducibility reaches is the generator's business, not this package's. With faker,
+relative-date helpers additionally need a fixed reference date (`faker.setDefaultRefDate(...)`), and
+seeded values may change when faker itself is upgraded.
 
 The callback receives the value set through `setMeta()` as its only argument, which lets a seeder
 parameterize the generated entity. It is `undefined` when `setMeta()` was not called.

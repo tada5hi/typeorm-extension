@@ -108,7 +108,9 @@ export default setSeederFactory(User, () => {
 });
 ```
 
-Install it yourself if you use it: `npm install @faker-js/faker --save-dev`.
+Install it yourself if you use it: `npm install @faker-js/faker`. It was pulled in as a peer dependency
+before, so it has to become a dependency of your project now. Use `--save-dev` only if seeders never run
+from a production install.
 
 TypeScript reports the change at the call site in both spellings a v3 factory can have. An
 un-annotated `(faker) => ...` makes the parameter `unknown`, and an annotated `(faker: Faker) => ...`

@@ -44,12 +44,12 @@ This is a library to
 ## Installation
 
 ```bash
-npm install typeorm-extension --save
+npm install typeorm-extension typeorm --save
 ```
 
-`typeorm` is a peer dependency and must be installed as well. Seeder factories generate their data with a
-library of your choice, so nothing else is required. The examples below use
-[faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker --save-dev`).
+`typeorm` is a peer dependency and is required in the range `^1.1.0`. Seeder factories generate their data
+with a library of your choice, so nothing else is required. The examples below use
+[faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker`).
 
 ## Documentation
 
@@ -495,7 +495,7 @@ To create entities with random data, create a factory for each desired entity.
 The definition of a factory is **optional**.
 
 The factory callback returns the entity to persist. Pick any data generator you like and import it in the
-factory file. The examples use [faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker --save-dev`).
+factory file. The examples use [faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker`).
 
 **`user.factory.ts`**
 ```typescript
