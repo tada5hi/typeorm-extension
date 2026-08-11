@@ -510,7 +510,7 @@ export default setSeederFactory(User, () => {
 ```
 
 Since the generator instance belongs to the factory file, locales and reproducible runs are configured
-the way the library documents them, for example `import { fakerDE as faker } from '@faker-js/faker'`
+through the generator's own API, for example `import { fakerDE as faker } from '@faker-js/faker'`
 or `faker.seed(1234)`.
 
 #### Seed
