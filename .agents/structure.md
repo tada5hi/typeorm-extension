@@ -35,7 +35,8 @@ typeorm-extension/
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
 │   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError
-│   ├── helpers/                # entity helpers (getEntityName, etc.)
+│   ├── helpers/                # Entity runtime helpers
+│   │   └── entity/             # name, metadata, property-names, join-column validation, uniqueness
 │   ├── runtime/                # Process-global state registry (internal, not in the public barrel)
 │   │   ├── cache.ts            # AsyncKeyedCache — keyed get-or-build with concurrent dedupe
 │   │   └── module.ts           # RuntimeRegistry + useRuntimeRegistry() — owns data sources, options, env, factories
@@ -77,7 +78,7 @@ typeorm-extension/
 | `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
 | `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError`). |
-| `helpers/`       | Entity-shape helpers (`getEntityName`, `isEntityUnique`, etc.) — used by the seeder module and consumers. |
+| `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager); the rest are public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
 | `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). |

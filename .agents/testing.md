@@ -69,7 +69,7 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 | `test/unit/database/`    | `checkDatabase`, migration helpers (against in-memory sqlite)        |
 | `test/unit/database/schema/` | `synchronizeDatabaseSchema`, drift detection, the guarded alter helpers (pure statement builders + `FakeQueryRunner`) |
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |
-| `test/unit/helper/`      | Entity inspection helpers (join columns, property names, uniqueness) |
+| `test/unit/helpers/`     | Entity helpers (name, metadata, join columns, property names, uniqueness) |
 | `test/unit/runtime/`     | `AsyncKeyedCache` semantics, `RuntimeRegistry` state + `reset()`     |
 | `test/unit/seeder/`      | Seeder execution, tracking, factory manager                          |
 | `test/unit/utils/`       | Pure helper functions                                                |

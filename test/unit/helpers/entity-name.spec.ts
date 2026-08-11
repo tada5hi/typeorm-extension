@@ -1,7 +1,7 @@
 import { EntitySchema } from 'typeorm';
 import { getEntityName } from '../../../src';
 
-describe('src/utils/entity.ts', () => {
+describe('src/helpers/entity/name.ts', () => {
     it('should resolve the name of a class', () => {
         class User {}
 
