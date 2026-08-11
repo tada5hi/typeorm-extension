@@ -69,7 +69,7 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 | `test/unit/database/`    | `checkDatabase`, migration helpers (against in-memory sqlite)        |
 | `test/unit/database/schema/` | `synchronizeDatabaseSchema`, drift detection, the guarded alter helpers (pure statement builders + `FakeQueryRunner`) |
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |
-| `test/unit/helper/`      | Entity inspection helpers (join columns, property names, uniqueness) |
+| `test/unit/helpers/`     | Entity helpers (name, metadata, join columns, property names, uniqueness) |
 | `test/unit/runtime/`     | `AsyncKeyedCache` semantics, `RuntimeRegistry` state + `reset()`     |
 | `test/unit/seeder/`      | Seeder execution, tracking, factory manager                          |
 | `test/unit/utils/`       | Pure helper functions                                                |
@@ -78,7 +78,7 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 
 `test/data/` is a small shared fixture project that looks like a real consumer of the library:
 
-- **`test/data/entity/`** — `User`, `Role` TypeORM entities with a many-to-one relation.
+- **`test/data/entity/`** — `User`, `Role` TypeORM entities with a many-to-one relation. `Account` (column names differing from property names, composite unique key) and `Tenant` / `Membership` (composite primary key referenced by a composite foreign key) exist for the entity helpers: the naming and composite-key paths are invisible on `User` / `Role`, where property and column names coincide.
 - **`test/data/factory/`** — Faker factories that produce `User` and `Role` instances.
 - **`test/data/seed/`** — Seeders that exercise `factoryManager` and persist to the DB.
 - **`test/data/typeorm/`**

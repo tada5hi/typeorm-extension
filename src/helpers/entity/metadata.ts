@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { InstanceChecker, Repository } from 'typeorm';
 import type {
     DataSource,
     EntityMetadata,
@@ -6,6 +6,37 @@ import type {
     ObjectLiteral,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
+import { EntityMetadataError } from '../../errors';
+
+/**
+ * Describe an entity target for an error message.
+ *
+ * Every representation typeorm accepts has to be covered, and none of them may
+ * be constructed to find out: the target of a failed lookup can be anything.
+ */
+function describeEntityTarget(input: unknown) : string {
+    if (typeof input === 'string') {
+        return input;
+    }
+
+    if (typeof input === 'function') {
+        return input.name;
+    }
+
+    if (InstanceChecker.isEntitySchema(input)) {
+        return input.options.name;
+    }
+
+    if (
+        typeof input === 'object' &&
+        input !== null &&
+        typeof (input as { name?: unknown }).name === 'string'
+    ) {
+        return (input as { name: string }).name;
+    }
+
+    return String(input);
+}
 
 /**
  * Receive metadata for a given repository or entity-target.
@@ -24,13 +55,11 @@ export async function getEntityMetadata<T extends ObjectLiteral>(
 
     dataSource = dataSource || await useDataSource();
 
-    const index = dataSource.entityMetadatas.findIndex(
-        (entityMetadata) => entityMetadata.target === input,
-    );
-
-    if (index === -1) {
-        throw new Error(`The entity ${input} is not registered.`);
+    // The lookup is delegated to typeorm, so every entity-target
+    // representation (class, entity schema, name, ...) is resolved alike.
+    if (!dataSource.hasMetadata(input)) {
+        throw EntityMetadataError.notRegistered(describeEntityTarget(input));
     }
 
-    return dataSource.entityMetadatas[index];
+    return dataSource.getMetadata(input);
 }

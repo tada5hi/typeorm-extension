@@ -1,7 +1,11 @@
 import type { EntitySchema, ObjectType } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
 
-export function getEntityName<O>(entity: ObjectType<O> | EntitySchema<O>) : string {
+export function getEntityName<O>(entity: ObjectType<O> | EntitySchema<O> | string) : string {
+    if (typeof entity === 'string') {
+        return entity;
+    }
+
     if (typeof entity === 'function') {
         return entity.name;
     }

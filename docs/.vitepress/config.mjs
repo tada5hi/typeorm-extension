@@ -4,7 +4,11 @@ export default defineConfig({
     title: 'typeorm-extension',
     base: '/',
     head: [
-        ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+        ['link', {
+            rel: 'icon', 
+            type: 'image/svg+xml', 
+            href: '/logo.svg', 
+        }],
     ],
     themeConfig: {
         logo: { src: '/logo.svg', alt: 'typeorm-extension' },
@@ -50,6 +54,7 @@ export default defineConfig({
                     items: [
                         { text: 'Database', link: '/guide/database-api-reference' },
                         { text: 'DataSource', link: '/guide/datasource-api-reference' },
+                        { text: 'Entity', link: '/guide/entity-api-reference' },
                         { text: 'Seeding', link: '/guide/seeding-api-reference' },
                     ],
                 },

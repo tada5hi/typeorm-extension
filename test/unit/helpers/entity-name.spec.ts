@@ -1,7 +1,7 @@
 import { EntitySchema } from 'typeorm';
 import { getEntityName } from '../../../src';
 
-describe('src/utils/entity.ts', () => {
+describe('src/helpers/entity/name.ts', () => {
     it('should resolve the name of a class', () => {
         class User {}
 
@@ -12,5 +12,9 @@ describe('src/utils/entity.ts', () => {
         const schema = new EntitySchema({ name: 'user', columns: {} });
 
         expect(getEntityName(schema)).toEqual('user');
+    });
+
+    it('should keep a name which is already given as a string', () => {
+        expect(getEntityName('User')).toEqual('User');
     });
 });

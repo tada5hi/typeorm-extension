@@ -1,9 +1,9 @@
-import { Repository } from 'typeorm';
-import type {
+import type { 
     DataSource, 
     EntityMetadata, 
     EntityTarget, 
-    ObjectLiteral,
+    ObjectLiteral, 
+    Repository, 
 } from 'typeorm';
 import { getEntityMetadata } from './metadata';
 
@@ -18,12 +18,7 @@ export async function getEntityPropertyNames<T extends ObjectLiteral>(
     input: EntityTarget<T> | Repository<T>,
     dataSource?: DataSource,
 ) : Promise<string[]> {
-    let entityMetadata : EntityMetadata;
-    if (input instanceof Repository) {
-        entityMetadata = input.metadata;
-    } else {
-        entityMetadata = await getEntityMetadata(input, dataSource);
-    }
+    const entityMetadata : EntityMetadata = await getEntityMetadata(input, dataSource);
 
     const items : string[] = [];
 
