@@ -62,7 +62,9 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
             }
         }
 
-        if (skipRelation || columns.length === 0) {
+        // A composite foreign key can only be looked up if every join column is
+        // provided. Querying by a subset of them could match an unrelated row.
+        if (skipRelation || columns.length !== relation.joinColumns.length) {
             continue;
         }
 
