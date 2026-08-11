@@ -8,8 +8,9 @@ A TypeScript library that extends [TypeORM](https://typeorm.io) with:
 - A schema-drift assertion (`getSchemaDrift` / `assertSchemaMatchesMetadata`) plus guarded, idempotent rename/alter helpers for repair migrations.
 - A seeder/factory system (similar to Laravel) backed by `@faker-js/faker`.
 - A data-source registry with auto-discovery and lazy initialization.
-- A JSON:API-style query parameter parser that applies `fields`, `filters`, `relations`, `sort`, and `page` onto a `SelectQueryBuilder`.
 - A CLI (`typeorm-extension`) wrapping the above for use in npm scripts.
+
+The former JSON:API-style query submodule (`applyQuery`, ...) was removed in v4 in favor of [`@rapiq/adapter-typeorm`](https://github.com/tada5hi/rapiq/tree/master/packages/adapter-typeorm) (see the [migration guide](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)). The README's Query section still promotes the successor with examples during the v4 cycle; it is scheduled for removal in v5.
 
 Published to npm as `typeorm-extension`. `typeorm` and `@faker-js/faker` are peer dependencies.
 
@@ -56,8 +57,8 @@ npm run docs:build         # production build
 
 ## Detailed Guides
 
-- **[Project Structure](.agents/structure.md)** — Source layout, the top-level domains (`cli`, `data-source`, `database`, `env`, `errors`, `helpers`, `query`, `runtime`, `seeder`, `utils`), and what each owns.
-- **[Architecture](.agents/architecture.md)** — Dialect core + connection-port adapters for `create/drop` (pure SQL dialects, native clients behind ports, one registry dispatch), context-builder pipeline, data-source singleton/alias registry, query-parameter pipeline on top of `rapiq`, and seeder execution model.
+- **[Project Structure](.agents/structure.md)** — Source layout, the top-level domains (`cli`, `data-source`, `database`, `env`, `errors`, `helpers`, `runtime`, `seeder`, `utils`), and what each owns.
+- **[Architecture](.agents/architecture.md)** — Dialect core + connection-port adapters for `create/drop` (pure SQL dialects, native clients behind ports, one registry dispatch), context-builder pipeline, data-source singleton/alias registry, and seeder execution model.
 - **[Testing](.agents/testing.md)** — Vitest + `unplugin-swc` (for decorator metadata), SQLite-backed integration tests in `test/unit/`, fixture entities/factories/seeds in `test/data/`, and the 80% coverage gate.
 - **[Conventions](.agents/conventions.md)** — `@tada5hi/eslint-config` v2 (ESLint v10 flat config), Conventional Commits via commitlint + husky, barrel `index.ts` per module, and the release-please + monoship release flow.
 

@@ -9,12 +9,6 @@
 This is a library to
 - `create`, `drop` & `seed` the (default-) database 🔥
 - manage one or many data-source instances 👻
-- parse & apply query parameters (extended **JSON:API** specification & fully typed) to:
-    - `filter` (related) resources according to one or more criteria,
-    - reduce (related) resource `fields`,
-    - `include` related resources,
-    - `sort` resources according to one or more criteria,
-    - limit the number of resources returned in a response by `page` limit & offset
 
 **Table of Contents**
 - [Installation](#installation)
@@ -265,7 +259,7 @@ function, check out the documentation.
 Compare the database schema against the entity metadata and get back the statements which would reconcile them.
 
 Run it right after the migrations to close the blind spot of a project which builds its schema with migrations in
-production but with `synchronize()` in tests — the two descriptions can drift apart silently, and it only surfaces
+production but with `synchronize()` in tests: the two descriptions can drift apart silently, and it only surfaces
 when the next generated migration reconciles them.
 
 ```typescript
@@ -287,7 +281,7 @@ The same check is available on the command line as `typeorm-extension db drift`,
 #### Repair Migrations
 
 Renaming a constraint is dialect-asymmetric and easy to get wrong. These helpers read the current state back from the
-database, apply the change only if it is still pending, and return whether they did something — so a repair migration
+database, apply the change only if it is still pending, and return whether they did something. That way a repair migration
 stays resumable (mysql commits DDL regardless of the surrounding transaction) and safe to run against a database which
 never had the drift.
 
@@ -320,13 +314,13 @@ export class RepairSchema1700000000000 implements MigrationInterface {
 ```
 
 `renameIndex` and `renameForeignKey` support `postgres`, `cockroachdb`, `mysql` and `mariadb` and throw a `DriverError`
-on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere — `changeColumnType` alters
+on any other driver. `changeColumnType` and `withForeignKeyChecksDisabled` work everywhere: `changeColumnType` alters
 the column in place (keeping its values) on every relational driver but sqlite, which typeorm handles safely by
 recreating the table.
 
 Each helper returns `false` when the change is already applied, which keeps a repair migration resumable. If the
 database is in **neither** the expected nor the desired state it raises a `SchemaAlterationError` instead of returning
-quietly, since a repair migration which repairs nothing would otherwise pass for a successful one — pass
+quietly, since a repair migration which repairs nothing would otherwise pass for a successful one. Pass
 `strict: false` per call to opt out.
 
 To get a better overview and understanding of these functions, check out the
@@ -556,7 +550,7 @@ export default class UserSeeder implements Seeder {
 ```
 
 Factories obtained through the `factoryManager` argument are bound to the data source of the
-current seeder run — `save()` and `saveMany()` persist there. A factory used outside a seeder
+current seeder run, so `save()` and `saveMany()` persist there. A factory used outside a seeder
 run falls back to the data source registered for the `default` alias.
 
 #### Execute
@@ -612,14 +606,24 @@ import UserFactory from './user.factory';
 ```
 
 ### Query
-The query submodule enables query parameter (fields, filter, ...) values to be build, parsed & validated.
-Therefore, the [rapiq](https://www.npmjs.com/package/rapiq) library is used under the hood.
 
-The query parameter options (allowed, default, ...) are fully typed 🔥 and depend on the (nested-) properties of the target entity passed to
-the typeorm query builder.
+The query submodule (`applyQuery`, `applyFilters`, ...) was removed in v4.
+Its successor is [@rapiq/adapter-typeorm](https://github.com/tada5hi/rapiq/tree/master/packages/adapter-typeorm), the dedicated
+TypeORM adapter of the [rapiq](https://github.com/tada5hi/rapiq) v2 monorepo. The query pipeline is now fully
+**self-contained** in rapiq: decoding the raw URL query string (`@rapiq/codec-url`), typed schema
+validation (`@rapiq/core`) and application onto the `SelectQueryBuilder` (`@rapiq/adapter-typeorm`).
+`typeorm-extension` is no longer involved. On top of the full `applyQuery` use case it adds typed
+schemas, nested `and` / `or` filter compounds, the `contains` operator family and collision-free join aliases.
 
-For explanation proposes,
-two simple entities with a relation between them are declared to demonstrate the usage of the query utils:
+The [monorepo](https://github.com/tada5hi/rapiq) hosts more than the TypeORM adapter: adapters for
+drizzle, prisma, raw SQL and in-memory collections, plus pluggable input parsers (e.g. a MongoDB-style
+filter parser and an expression parser). If rapiq is useful to you, consider giving the repo a ⭐ on GitHub.
+
+```bash
+npm install @rapiq/core @rapiq/codec-url @rapiq/adapter-typeorm --save
+```
+
+For demonstration purposes, two simple entities with a relation between them are used:
 
 ```typescript
 import {
@@ -664,88 +668,117 @@ export class Profile {
 }
 ```
 
-In this example [routup](https://www.npmjs.com/package/routup) and the
-plugin [@routup/query](https://www.npmjs.com/package/@routup/query) is used to handle HTTP requests,
-but there is also a guide available for [express](https://typeorm-extension.tada5hi.net/guide/query.html).
+Instead of passing loose options per call (as `applyQuery` did), the allowed query features are declared
+once as a typed **schema** and registered alongside a codec:
 
 ```typescript
-import { App, defineCoreHandler, serve } from 'routup';
-import { query, useRequestQuery } from '@routup/query';
+import { SchemaRegistry, defineSchema } from '@rapiq/core';
+import { createURLCodec } from '@rapiq/codec-url';
+import { Profile, User } from './entities';
 
-import {
-    applyQuery,
-    useDataSource
-} from 'typeorm-extension';
+const registry = new SchemaRegistry();
 
-const app = new App();
-app.use(query());
+registry.add(defineSchema<Profile>({
+    name: 'profile',
+    fields: { allowed: ['id', 'avatar'] },
+    filters: { allowed: ['id'] },
+}));
+
+registry.add(defineSchema<User>({
+    name: 'user',
+    fields: {
+        allowed: ['id', 'name', 'email'],
+        default: ['id', 'name'],
+    },
+    filters: { allowed: ['id', 'name', 'profile.id'] },
+    relations: { allowed: ['profile'] },
+    sort: { allowed: ['id', 'name'], default: { id: 'DESC' } },
+    pagination: { maxLimit: 20 },
+    schemaMapping: { profile: 'profile' },
+}));
+
+export const codec = createURLCodec(registry);
+```
+
+The codec owns both directions. A client builds the query string with `encode`, from a typed query
+instead of string concatenation (no registry needed on the client):
+
+```typescript
+import { defineQuery } from '@rapiq/core';
+import { createURLCodec } from '@rapiq/codec-url';
+import type { User } from './entities';
+
+const codec = createURLCodec();
+
+const query = defineQuery<User>({
+    fields: ['id', 'name'],
+    filters: { id: 1 },
+    relations: ['profile'],
+    pagination: { limit: 10, offset: 0 },
+});
+
+const response = await fetch(`/users?${codec.encode(query)}`);
+```
+
+The request handler then decodes the raw query parameters against the schema and lets the adapter apply
+the result onto the query builder. It is shown here with [express](https://www.npmjs.com/package/express),
+but the flow is framework-agnostic:
+
+```typescript
+import { ParseError } from '@rapiq/core';
+import { TypeormAdapter } from '@rapiq/adapter-typeorm';
+import { useDataSource } from 'typeorm-extension';
+import { codec } from './codec';
+import { User } from './entities';
 
 /**
  * Get many users.
  *
  * Request example
  * - url: /users?page[limit]=10&page[offset]=0&include=profile&filter[id]=1&fields[user]=id,name
- *
- * Return Example:
- * {
- *     data: [
- *         {id: 1, name: 'tada5hi', profile: {avatar: 'avatar.jpg', cover: 'cover.jpg'}}
- *      ],
- *     meta: {
- *        total: 1,
- *        limit: 20,
- *        offset: 0
- *    }
- * }
  */
-app.get('/users', defineCoreHandler(async (event) => {
+app.get('/users', async (req, res) => {
+    let query;
+    try {
+        query = codec.decode(req.query, { schema: 'user' });
+    } catch (e) {
+        // e.g. a malformed filter expression
+        if (e instanceof ParseError) {
+            return res.status(400).json({ error: e.message });
+        }
+        throw e;
+    }
+    if (!query) {
+        return res.status(400).json({ error: 'Invalid query input.' });
+    }
+
     const dataSource = await useDataSource();
-    const repository = dataSource.getRepository(User);
-    const query = repository.createQueryBuilder('user');
+    const queryBuilder = dataSource.getRepository(User).createQueryBuilder('user');
 
-    // -----------------------------------------------------
+    const { pagination } = new TypeormAdapter({ queryBuilder }).execute(query);
 
-    const { pagination } = applyQuery(query, useRequestQuery(event), {
-        defaultAlias: 'user',
-        fields: {
-            // profile fields can only be included,
-            // if the relation 'profile' is included.
-            allowed: ['id', 'name', 'profile.id', 'profile.avatar'],
-        },
-        filters: {
-            // profile.id can only be used as a filter,
-            // if the relation 'profile' is included.
-            allowed: ['id', 'name', 'profile.id'],
-        },
-        pagination: {
-            // only allow to select 20 items at maximum.
-            maxLimit: 20
-        },
-        relations: {
-            allowed: ['profile']
-        },
-        sort: {
-            // profile.id can only be used as sorting key,
-            // if the relation 'profile' is included.
-            allowed: ['id', 'name', 'profile.id']
-        },
-    });
+    const [entities, total] = await queryBuilder.getManyAndCount();
 
-    // -----------------------------------------------------
-
-    const [entities, total] = await query.getManyAndCount();
-
-    return {
+    res.json({
         data: entities,
         meta: {
             total,
             ...pagination
         }
-    };
-}));
-
-serve(app, { port: 80 });
+    });
+});
 ```
+
+A production-shaped version with strict schema-violation handling (`throwOnFailure`) is in the
+[Express + TypeORM recipe](https://rapiq.tada5hi.net/guide/recipes/express-typeorm); the client side is covered by the
+[frontend recipe](https://rapiq.tada5hi.net/guide/recipes/frontend).
+
+To move over from the removed submodule, follow the migration guide:
+[https://rapiq.tada5hi.net/guide/migration-typeorm-extension](https://rapiq.tada5hi.net/guide/migration-typeorm-extension)
+
+> **Note**: This section is kept during the v4 release cycle to route former `applyQuery` users to the
+> successor. With the next major release (v5) it will be removed from the README and docs; the
+> [rapiq documentation](https://rapiq.tada5hi.net) is the canonical reference.
 
 ## Contributing
 

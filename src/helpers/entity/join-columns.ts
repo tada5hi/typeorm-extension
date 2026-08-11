@@ -1,5 +1,9 @@
-import type { ObjectLiteral } from 'rapiq';
-import type { DataSource, EntityTarget, FindOptionsWhere } from 'typeorm';
+import type {
+    DataSource, 
+    EntityTarget, 
+    FindOptionsWhere, 
+    ObjectLiteral,
+} from 'typeorm';
 import { useDataSource } from '../../data-source';
 import { EntityRelationLookupError } from './error';
 import { getEntityMetadata } from './metadata';

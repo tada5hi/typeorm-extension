@@ -3,12 +3,6 @@
 This is a library to:
 - `create`, `drop` & `seed` the (default-) database 🔥
 - manage one or many data-source instances 👻
-- parse & apply query parameters (extended **JSON:API** specification & fully typed) to:
-    - `filter` (related) resources according to one or more criteria,
-    - reduce (related) resource `fields`,
-    - `include` related resources,
-    - `sort` resources according to one or more criteria,
-    - limit the number of resources returned in a response by `page` limit & offset
   
 ::: warning **Important NOTE**
 

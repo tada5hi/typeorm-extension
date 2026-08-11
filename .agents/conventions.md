@@ -27,6 +27,13 @@
 - Adding a new TypeORM driver: add a dialect folder `src/database/core/<name>/` (`statements.ts` + `module.ts`), an adapter in `src/database/adapters/<name>.ts`, and a row in `src/database/registry.ts`. Then add a spec under `test/unit/database/core/` (using the memory connection factory from `test/data/database/`) and a docs entry.
 - Teaching the guarded schema helpers a new dialect: add the rows to `src/database/schema/alter/dialect.ts`, branch in `src/database/schema/alter/statements.ts`, extend `test/unit/database/schema/alter/`, and widen `supportsSchemaAlter` in `test/data/typeorm/integration.ts` (the driver is likely already in `INTEGRATION_DRIVERS` and the `integration` matrix in `main.yml`).
 
+## Writing Style (prose)
+
+Applies to user-facing prose: `README.MD`, `docs/guide/*.md`, issue/PR text, commit bodies.
+
+- **Avoid the em dash ("—")** as much as possible. Rewrite with a comma, colon, period, parentheses, or split the sentence. This also applies to newly written agent-doc prose; existing `.agents/` text is grandfathered and rewritten opportunistically when a section is touched anyway.
+- **Keep descriptions precise, short and easy to follow.** Prefer plain sentences over nested clauses.
+
 ## Code Style
 
 - **Module format**: ESM-only (`"type": "module"` + `module: ESNext`). tsdown emits a single `.mjs` bundle. A small tsdown plugin (`typeormDeepImportExtension` in `tsdown.config.ts`) rewrites bare `typeorm/<deep>` imports to add `.js` for Node's strict ESM resolver.
@@ -42,7 +49,7 @@
 - **Folders**: kebab-case (`data-source/`, `cli/commands/database/`).
 - **Classes**: PascalCase (`SeederExecutor`, `SeederFactoryManager`).
 - **Interfaces**: an interface that is implemented by a class is prefixed with `I` (`IDatabaseDialect` → `class PostgresDialect implements IDatabaseDialect`). Pure data shapes — options, contexts, records like `Environment`, `TSConfig` — carry no prefix. Existing public contracts that predate this rule (e.g. `Seeder`, implemented by consumer seed classes) are grandfathered: renaming them would break public API; apply the prefix to new interfaces only.
-- **Functions**: camelCase verb-first (`createDatabase`, `findDataSource`, `useDataSource`, `applyQuery`, `buildDatabaseCreateContext`).
+- **Functions**: camelCase verb-first (`createDatabase`, `findDataSource`, `useDataSource`, `buildDatabaseCreateContext`).
 - **Hook-style accessors**: `use*` (`useDataSource`, `useEnv`, `useSeederFactoryManager`). These return cached/singleton state.
 - **Registry mutators**: `set*` / `has*` / `unset*` / `reset*` (see `src/data-source/singleton.ts`, `src/env/module.ts`).
 - **Context/options types**: `XContextInput` (loose, user-supplied) → `XContext` (resolved) → driver receives the resolved one. Example: `DatabaseCreateContextInput` → `DatabaseCreateContext`.
@@ -129,7 +136,6 @@ VitePress sources under `docs/`. The site is published to <https://typeorm-exten
 | New CLI option / command              | `docs/guide/cli.md`                         |
 | New database driver                   | `docs/guide/database.md`                    |
 | Seeder/factory contract change        | `docs/guide/seeding.md`                     |
-| `applyQuery` options / parameter shape| `docs/guide/query.md`                       |
 | Env var rename or addition            | Update both `docs/guide/` page and `README.MD` |
 
 ## Best Practices
@@ -137,6 +143,5 @@ VitePress sources under `docs/`. The site is published to <https://typeorm-exten
 - Use **ESM** and modern TypeScript. CJS support is a build output, not a code-style choice.
 - Before adding new code, study surrounding patterns — especially the context-builder pattern in `src/database/methods/*` and the singleton-registry pattern in `src/data-source/singleton.ts`.
 - Don't introduce new singletons unless the state is genuinely process-global (DataSource registry, factory manager, env cache are the existing ones — that should be roughly the full set).
-- When extending the JSON:API query layer, check `rapiq` first — most parsing behavior lives there, and the local `applyQuery*` functions should stay focused on TypeORM translation.
 - Keep the database core pure: dialects (`src/database/core/<dialect>/`) may import types, typed errors and pure helpers only — native clients and `node:fs` belong in `src/database/adapters/`. Don't import from sibling dialect folders (cockroachdb sharing the postgres *adapter* is wired in the registry, not by cross-imports).
 - Prefer typed errors from `src/errors/` over `throw new Error(...)` when a consumer might catch the error.

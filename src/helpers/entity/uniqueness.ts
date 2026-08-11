@@ -1,5 +1,3 @@
-import { FilterComparisonOperator } from 'rapiq';
-import type { FiltersParseOutputElement } from 'rapiq';
 import { Brackets } from 'typeorm';
 import type {
     DataSource,
@@ -8,7 +6,6 @@ import type {
     WhereExpressionBuilder,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import { applyFiltersTransformed, transformParsedFilters } from '../../query';
 import { pickRecord } from '../../utils';
 import { getEntityMetadata } from './metadata';
 
@@ -47,32 +44,25 @@ function applyWhereExpression(
     data: Record<string, any>,
     type: 'source' | 'target',
 ) {
-    const elements : FiltersParseOutputElement[] = [];
-
     const keys = Object.keys(data);
     for (const key of keys) {
-        elements.push({
-            key,
-            value: transformUndefinedToNull(data[key]),
-            operator: type === 'target' ?
-                FilterComparisonOperator.EQUAL :
-                FilterComparisonOperator.NOT_EQUAL,
-        });
-    }
+        const value = transformUndefinedToNull(data[key]);
 
-    const queryFilters = transformParsedFilters(elements, {
-        bindingKey(key) {
-            if (type === 'source') {
-                return `filter_source_${key}`;
+        if (value === null) {
+            if (type === 'target') {
+                qb.andWhere(`${key} IS NULL`);
+            } else {
+                qb.andWhere(`${key} IS NOT NULL`);
             }
 
-            return `filter_target_${key}`;
-        },
-    });
+            continue;
+        }
 
-    applyFiltersTransformed(qb, queryFilters);
+        const bindingKey = `filter_${type}_${key}`;
+        const operator = type === 'target' ? '=' : '!=';
 
-    return queryFilters;
+        qb.andWhere(`${key} ${operator} :${bindingKey}`, { [bindingKey]: value });
+    }
 }
 
 /**

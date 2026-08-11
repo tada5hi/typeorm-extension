@@ -39,7 +39,6 @@ export default defineConfig({
                         { text: 'Database', link: '/guide/database' },
                         { text: 'Instances', link: '/guide/instances' },
                         { text: 'Seeding', link: '/guide/seeding' },
-                        { text: 'Query', link: '/guide/query' },
                     ],
                 },
                 {
@@ -48,7 +47,6 @@ export default defineConfig({
                         { text: 'Database', link: '/guide/database-api-reference' },
                         { text: 'DataSource', link: '/guide/datasource-api-reference' },
                         { text: 'Seeding', link: '/guide/seeding-api-reference' },
-                        { text: 'Query', link: '/guide/query-api-reference' },
                     ],
                 },
                 {

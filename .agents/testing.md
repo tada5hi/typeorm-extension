@@ -11,7 +11,7 @@
 
 ```bash
 npm test                                                              # default suite
-npx vitest --config test/vitest.config.ts --run test/unit/query        # one folder
+npx vitest --config test/vitest.config.ts --run test/unit/seeder       # one folder
 npm run test:coverage                                                 # with coverage (thresholds enforced)
 npm run test:integration                                              # driver suite (see below)
 ```
@@ -27,7 +27,7 @@ Not every driver can do everything, so `test/data/typeorm/integration.ts` expose
 | Predicate                        | False for                | Because                                                                                  |
 |----------------------------------|--------------------------|------------------------------------------------------------------------------------------|
 | `supportsSchemaAlter`            | mssql, oracle, mongodb   | the rename helpers have no statements for them (they assert a `DriverError` instead)       |
-| `supportsForeignKeyChecks`       | everything but mysql/mariadb | no session level switch                                                                |
+| `supportsForeignKeyChecks`       | everything but mysql/mariadb | no session-level switch                                                                |
 | `supportsForeignKeyColumnAlter`  | everything but mysql     | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
 | `supportsSchemaMetadata`         | mongodb                  | no relational schema to compare, and the fixtures use relations                            |
 | `supportsDatabaseDrop`           | oracle                   | `OracleDialect.drop` is a documented no-op                                                 |
@@ -61,8 +61,6 @@ Write assertions in terms the *driver* agrees with, not in terms of one dialect'
 
 The default suite under `test/unit/` doesn't separate unit from integration tests: most of its suites instantiate a real `DataSource` (against `better-sqlite3 :memory:`) rather than mocking TypeORM. What lives in `test/integration/` instead is everything that needs a *real database server* — see the driver suite above. Example: `test/unit/database/index.spec.ts` actually calls `buildDataSourceOptions` and `checkDatabase` end-to-end.
 
-The handful of cases that *do* avoid the real ORM (pure query-builder transforms) use `test/data/typeorm/FakeSelectQueryBuilder.ts` — a hand-rolled minimal stand-in. Use it rather than reaching for `jest.fn()` mocks.
-
 ### Suites by domain (mirroring `src/`)
 
 | Folder                   | Tests                                                                |
@@ -72,7 +70,6 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
 | `test/unit/database/schema/` | `synchronizeDatabaseSchema`, drift detection, the guarded alter helpers (pure statement builders + `FakeQueryRunner`) |
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |
 | `test/unit/helper/`      | Entity inspection helpers (join columns, property names, uniqueness) |
-| `test/unit/query/`       | `applyQuery` end-to-end and per-parameter (fields/filters/…)         |
 | `test/unit/runtime/`     | `AsyncKeyedCache` semantics, `RuntimeRegistry` state + `reset()`     |
 | `test/unit/seeder/`      | Seeder execution, tracking, factory manager                          |
 | `test/unit/utils/`       | Pure helper functions                                                |
@@ -87,7 +84,6 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
 - **`test/data/typeorm/`**
   - `factory.ts` → `createDataSourceOptions()` + `createDataSource()`. **Always use these** instead of building a DataSource by hand in a test.
   - `data-source.ts` / `data-source-default.ts` / `data-source-async.ts` → fixtures for `findDataSource` discovery tests (different export shapes: named, default, async).
-  - `FakeSelectQueryBuilder.ts` → in-memory query-builder fake; use when asserting that `applyQuery*` makes the right calls without spinning up sqlite.
   - `FakeQueryRunner.ts` → recording stand-in for the schema-inspection/alteration surface of a `QueryRunner` (`getTable`, `query`, `changeColumn`). Its `respond(query, runner)` callback can mutate the loaded tables in reaction to a statement, which is how the mysql "backing index appears only after the constraint is dropped" flow is simulated. Pair it with `table.ts` (`createTable`, `TABLE_FOREIGN_KEYS`) for the loaded-table fixtures.
   - `integration.ts` → `useIntegrationDriver()` + `createIntegrationDataSourceOptions()` for the driver suite.
   - `ormconfig.json` → fixture for legacy config discovery paths.
@@ -99,7 +95,7 @@ The handful of cases that *do* avoid the real ORM (pure query-builder transforms
 
 ## Testing Philosophy
 
-Tests should assert *expected* behavior based on the documented API contracts (CLI options, `applyQuery` shape, seeder tracking semantics) — not merely confirm what the implementation currently does. If a test fails after a refactor, first consider whether the test caught a real regression in user-visible behavior.
+Tests should assert *expected* behavior based on the documented API contracts (CLI options, database create/drop semantics, seeder tracking semantics) — not merely confirm what the implementation currently does. If a test fails after a refactor, first consider whether the test caught a real regression in user-visible behavior.
 
 ### Prefer fakes / real in-memory DBs over `jest.fn()` mocks
 
@@ -116,18 +112,19 @@ await dataSource.destroy();
 ```
 
 ```ts
-// Good — query-builder fake for pure transformation tests
-import { FakeSelectQueryBuilder } from '../../data/typeorm/FakeSelectQueryBuilder';
+// Good — recording connection factory for database create/drop tests
+import { MemoryDatabaseConnectionFactory } from '../../data/database';
 
-const qb = new FakeSelectQueryBuilder();
-applyQueryFiltersParseOutput(qb as any, parsed, opts);
-expect(qb.calls).toEqual([...]);
+const connectionFactory = new MemoryDatabaseConnectionFactory();
+const dialect = new PostgresDialect(connectionFactory);
+await dialect.create({ params: { database: 'app' }, ifNotExist: false, initialDatabase: 'postgres' });
+expect(connectionFactory.statements()).toEqual(['CREATE DATABASE "app"']);
 ```
 
 ```ts
 // Avoid — hand-rolled jest.fn() stubs of TypeORM internals.
 // They drift from real behavior and tend to mask bugs.
-const qb = { where: jest.fn(), leftJoin: jest.fn() } as any;
+const runner = { query: jest.fn(), release: jest.fn() } as any;
 ```
 
 After mutating `process.env` in a test, call `resetEnv()` from `src/env` to clear the cached `Environment` instance, otherwise the next test sees stale values. For a full process-state teardown (data sources, options, env, factories at once), call `useRuntimeRegistry().reset()` from `src/runtime` (internal module — import it by path in tests).
@@ -149,7 +146,7 @@ Thresholds (enforced — Vitest fails the run below these):
 | lines      | 80%    |
 | statements | 80%    |
 
-`coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, and `src/errors/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/query/**`, `src/seeder/**`, `src/utils/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
+`coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, and `src/errors/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/seeder/**`, `src/utils/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
 
 The `tests` job in `main.yml` runs `npm run test:coverage` and uploads the report to Codecov via `codecov/codecov-action` on every push / PR. Coverage runs there (not in `release.yml`) so it executes under the pinned Node version: the `tada5hi/monoship` publish step in `release.yml` re-inits the runner to Node 22 via its own `setup-node`, which would leave the native `better-sqlite3` binary (built for the install-step Node) ABI-mismatched for any test step that ran after it.
 

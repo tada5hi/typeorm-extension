@@ -187,7 +187,7 @@ declare function resolveSeederConfig(
 
 Resolve the effective seeder configuration. A pure function: explicit input wins over the
 data-source options, which win over the environment values; built-in defaults apply last.
-The seeder runtime uses it internally — it is exported for consumers who want to inspect
+The seeder runtime uses it internally; it is exported for consumers who want to inspect
 the effective configuration (e.g. in a custom CLI).
 
 ## `SeederConfig`

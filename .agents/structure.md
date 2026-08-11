@@ -36,10 +36,6 @@ typeorm-extension/
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
 │   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError
 │   ├── helpers/                # entity helpers (getEntityName, etc.)
-│   ├── query/                  # JSON:API-style query parameter application (rapiq-backed)
-│   │   ├── module.ts           # applyQuery() / applyQueryParseOutput() — public entry
-│   │   ├── parameter/          # fields, filters, pagination, relations, sort
-│   │   └── utils/              # alias/key/option helpers
 │   ├── runtime/                # Process-global state registry (internal, not in the public barrel)
 │   │   ├── cache.ts            # AsyncKeyedCache — keyed get-or-build with concurrent dedupe
 │   │   └── module.ts           # RuntimeRegistry + useRuntimeRegistry() — owns data sources, options, env, factories
@@ -52,12 +48,13 @@ typeorm-extension/
 │   └── utils/                  # Pure helpers: object/promise/file-path/tsconfig
 │       └── path-resolver/      # createPathResolver — owns the JIT-vs-compiled path rewrite decision
 ├── test/
-│   ├── jest.config.js          # rootDir is repo root; testRegex /unit/.*
+│   ├── vitest.config.ts        # root is repo root; suites under test/unit/
+│   ├── vitest.setup.ts         # locter setModuleLoader bridge into vitest's module graph
 │   ├── data/                   # Shared fixtures
 │   │   ├── entity/             # User, Role TypeORM entities
 │   │   ├── factory/            # Faker factories for the fixtures
 │   │   ├── seed/               # Seeders that use the factories
-│   │   ├── typeorm/            # DataSource fixtures (sync, async, default) + FakeSelectQueryBuilder + FakeQueryRunner
+│   │   ├── typeorm/            # DataSource fixtures (sync, async, default) + FakeQueryRunner
 │   │   └── tsconfig.json
 │   └── unit/                   # Test suites mirroring src/ folder names
 ├── docs/                       # VitePress site (guide/, index.md)
@@ -80,8 +77,7 @@ typeorm-extension/
 | `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
 | `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError`). |
-| `helpers/`       | Entity-shape helpers (`getEntityName`) — used across seeder and query modules.                         |
-| `query/`         | Apply parsed JSON:API query input onto a `SelectQueryBuilder`. Delegates parsing to `rapiq`.           |
+| `helpers/`       | Entity-shape helpers (`getEntityName`, `isEntityUnique`, etc.) — used by the seeder module and consumers. |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
 | `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). |
@@ -90,9 +86,8 @@ typeorm-extension/
 
 | Dependency           | Role                                                                                          |
 |----------------------|-----------------------------------------------------------------------------------------------|
-| `typeorm` (peer)     | The ORM being extended. Requires `^1.0.0` (TypeORM 0.3 is no longer supported).                |
+| `typeorm` (peer)     | The ORM being extended. Requires `^1.1.0` (TypeORM 0.3 is no longer supported).                |
 | `@faker-js/faker`    | Optional peer — only required when using `SeederFactory`.                                     |
-| `rapiq`              | JSON:API query parser. `query/module.ts` is a thin TypeORM-flavoured adapter on top of it.    |
 | `locter`             | Glob + file loading (used to discover data-source / seed / factory files).                    |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |
@@ -119,7 +114,6 @@ ESM-only. CJS consumers on Node 22+ can still `require('typeorm-extension')` tha
 
 ```ts
 export * from './errors';
-export * from './query';
 export * from './database';
 export * from './data-source';
 export * from './env';
@@ -138,5 +132,4 @@ CLI command factories are **not** part of the public barrel — they are interna
 - **Public, programmatic API** → everything else under `src/`, re-exported from `src/index.ts`.
 - **Driver-specific SQL** → `src/database/core/<dialect>/statements.ts` (pure builders), orchestrated by `src/database/core/<dialect>/module.ts` over the connections; native clients live only in `src/database/adapters/`. Adding a new TypeORM driver means one dialect folder in `core/`, one adapter, and one row in `src/database/registry.ts`.
 - **Schema-level DDL** → `src/database/schema/alter/statements.ts` (pure per-dialect builders, driven by `resolveSchemaDialect` in `alter/dialect.ts`), orchestrated over a typeorm `QueryRunner` by one file per concern (`alter/indices.ts`, `alter/foreign-keys.ts`, `alter/columns.ts`, `alter/checks.ts`). Only `postgres`/`cockroachdb` and `mysql`/`mariadb` are known to the dialect table: the renames raise `DriverError.schemaAlterationNotSupported` for every other driver, `changeColumnType` falls back to `queryRunner.changeColumn()` instead (`findSchemaDialect` vs. `resolveSchemaDialect`). `alter/index.ts` deliberately re-exports **only** the four helpers and their input types — the statement builders, the escapers and `resolveSchemaDialect` stay internal, and their specs import them by path. Don't widen that barrel to `export *`: every symbol in it is a compatibility promise.
-- **Query application** → `src/query/parameter/<concern>/` — one folder per JSON:API concern (`fields`, `filters`, `pagination`, `relations`, `sort`).
 - **Side-effectful state** (DataSource registry, options cache, env cache, factory manager) → one `RuntimeRegistry` in `src/runtime/module.ts`; the public accessors (`setDataSource`/`useDataSource`, `useEnv`/`resetEnv`, `useSeederFactoryManager`/`resetSeederFactoryManager`, …) are thin delegates in their own domains.

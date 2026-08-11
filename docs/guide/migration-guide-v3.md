@@ -17,7 +17,7 @@ ts-node ./node_modules/typeorm-extension/dist/cli/index.js
 ts-node ./node_modules/typeorm-extension/bin/cli.cjs
 ```
 
-> Note: from **v4** onwards the package is ESM-only — invoke `bin/cli.mjs` via a TypeScript-aware loader such as `tsx`. See the [v4 migration guide](./migration-guide-v4.md).
+> Note: from **v4** onwards the package is ESM-only. Invoke `bin/cli.mjs` via a TypeScript-aware loader such as `tsx`. See the [v4 migration guide](./migration-guide-v4.md).
 
 ### General
 1. The seeding command **seed** has been renamed to **seed:run**.
