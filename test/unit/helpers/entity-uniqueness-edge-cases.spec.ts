@@ -1,5 +1,9 @@
 import {
-    Column, DataSource, Entity, Index, PrimaryGeneratedColumn,
+    Column, 
+    DataSource, 
+    Entity, 
+    Index, 
+    PrimaryGeneratedColumn,
 } from 'typeorm';
 import { isEntityUnique } from '../../../src';
 import { Account } from '../../data/entity/account';
@@ -25,9 +29,7 @@ describe('entity-uniqueness-edge-cases', () => {
 
         try {
             const repository = dataSource.getRepository(Person);
-            await repository.save(repository.create({
-                profile: { email: 'taken@example.com', nickname: null },
-            }));
+            await repository.save(repository.create({ profile: { email: 'taken@example.com', nickname: null } }));
 
             // The property path of an embedded column is nested and differs
             // from its property name.

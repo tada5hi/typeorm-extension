@@ -4,7 +4,11 @@ export default defineConfig({
     title: 'typeorm-extension',
     base: '/',
     head: [
-        ['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }],
+        ['link', {
+            rel: 'icon', 
+            type: 'image/svg+xml', 
+            href: '/logo.svg', 
+        }],
     ],
     themeConfig: {
         logo: { src: '/logo.svg', alt: 'typeorm-extension' },
