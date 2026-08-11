@@ -2,7 +2,10 @@
 layout: home
 hero:
     name: typeorm-extension
-    tagline: A library to create, drop & seed the database and apply URL query parameter(s).
+    tagline: A library to create, drop & seed the database and manage one or many data-source instances.
+    image:
+        src: /logo.svg
+        alt: typeorm-extension
     actions:
        - theme: brand
          text: Get Started
