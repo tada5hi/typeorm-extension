@@ -1,13 +1,16 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DataSource } from 'typeorm';
 import type { SeederOptions } from '../../../src';
+import { Account } from '../entity/account';
+import { Membership } from '../entity/membership';
+import { Tenant } from '../entity/tenant';
 import { Role } from '../entity/role';
 import { User } from '../entity/user';
 
 export function createDataSourceOptions() : DataSourceOptions & SeederOptions {
     return {
         type: 'better-sqlite3',
-        entities: [Role, User],
+        entities: [Role, User, Account, Tenant, Membership],
         database: ':memory:',
         factories: ['test/data/factory/**/*.{ts,.js}'],
         seeds: ['test/data/seed/**/*.{ts,js}'],

@@ -78,7 +78,7 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 
 `test/data/` is a small shared fixture project that looks like a real consumer of the library:
 
-- **`test/data/entity/`** — `User`, `Role` TypeORM entities with a many-to-one relation.
+- **`test/data/entity/`** — `User`, `Role` TypeORM entities with a many-to-one relation. `Account` (column names differing from property names, composite unique key) and `Tenant` / `Membership` (composite primary key referenced by a composite foreign key) exist for the entity helpers: the naming and composite-key paths are invisible on `User` / `Role`, where property and column names coincide.
 - **`test/data/factory/`** — Faker factories that produce `User` and `Role` instances.
 - **`test/data/seed/`** — Seeders that exercise `factoryManager` and persist to the DB.
 - **`test/data/typeorm/`**
