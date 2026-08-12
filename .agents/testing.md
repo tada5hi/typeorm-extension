@@ -67,6 +67,9 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 |--------------------------|----------------------------------------------------------------------|
 | `test/unit/data-source/` | `findDataSource`, options building, singleton registry behavior      |
 | `test/unit/database/`    | `checkDatabase`, migration helpers (against in-memory sqlite)        |
+
+`test/unit/database/migration.spec.ts` is the one suite which writes files: `generateMigration` emits into `writable/migrations` (removed again in `afterEach`), and the generated file is then imported and its `up()` / `down()` run against a fresh sqlite data source. Asserting the file content alone would not notice a template which does not parse. The package is ESM, so the CommonJS variant only loads when the same content is written a second time under a `.cjs` extension, and `module.exports = class` arrives as the class itself rather than as a module namespace.
+
 | `test/unit/database/schema/` | `synchronizeDatabaseSchema`, drift detection, the guarded alter helpers (pure statement builders + `FakeQueryRunner`) |
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |
 | `test/unit/helpers/`     | Entity helpers (name, metadata, join columns, property names, uniqueness) |

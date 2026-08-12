@@ -190,6 +190,37 @@ declare function assertSchemaMatchesMetadata(
 
 Throws a `SchemaDriftError` whose message lists the reconciling statements and whose `statements` property carries them.
 
+## `generateMigration`
+
+Generate a migration file from the difference between the database schema and the entity metadata, using the same
+comparison and the same file templates as `typeorm migration:generate`.
+
+```typescript
+declare function generateMigration(
+    context: MigrationGenerateCommandContext,
+): Promise<MigrationGenerateResult>;
+```
+
+**Example**
+```typescript
+import { generateMigration } from 'typeorm-extension';
+
+await generateMigration({
+    dataSource,
+    name: 'add-role',
+    directoryPath: 'src/migrations',
+});
+```
+
+The data source must already be initialized, and it is not destroyed afterwards. The file is written as
+`<timestamp>-<name>.<language>` inside `directoryPath` (`migrations/` relative to the working directory by default).
+When there is nothing to generate, no file is written and `content` is undefined. Pass `preview: true` to receive the
+statements without touching the file system.
+
+**References**
+- [MigrationGenerateCommandContext](#migrationgeneratecommandcontext)
+- [MigrationGenerateResult](#migrationgenerateresult)
+
 ## `renameIndex`
 
 Rename an index. Returns `false` when an index is already named `to`. When neither name exists (or the table does not exist),
@@ -493,3 +524,87 @@ export type DatabaseDropContext = DatabaseBaseContext & {
 
 **References**
 - [DatabaseBaseContext](#databasebasecontext)
+
+## MigrationGenerateCommandContext
+
+```typescript
+import { DataSource } from 'typeorm';
+
+export type MigrationGenerateCommandContext = {
+    /**
+     * Directory where the migration(s) should be stored.
+     *
+     * Default: 'migrations'
+     */
+    directoryPath?: string,
+
+    /**
+     * Name of the migration class.
+     *
+     * Default: 'Default'
+     */
+    name?: string,
+
+    /**
+     * DataSource used for reference of existing schema.
+     */
+    dataSource: DataSource,
+
+    /**
+     * Timestamp in milliseconds.
+     *
+     * Default: Date.now()
+     */
+    timestamp?: number,
+
+    /**
+     * Prettify sql statements.
+     *
+     * Default: false
+     */
+    prettify?: boolean,
+
+    /**
+     * Language of the generated migration file. It also determines the file extension.
+     *
+     * Default: 'ts'
+     */
+    language?: 'ts' | 'js',
+
+    /**
+     * Generate an ESM (export class) instead of a CommonJS (module.exports) migration.
+     * Only applies to the language js.
+     *
+     * Default: false
+     */
+    esm?: boolean,
+
+    /**
+     * Only return up- & down-statements instead of backing up the migration to the file system.
+     *
+     * Default: false
+     */
+    preview?: boolean
+};
+```
+
+## MigrationGenerateResult
+
+```typescript
+export type MigrationGenerateResult = {
+    /**
+     * Statements which bring the database schema in line with the entity metadata.
+     */
+    up: string[],
+
+    /**
+     * Statements which undo the up statements, in reverse order.
+     */
+    down: string[],
+
+    /**
+     * Content of the migration file. Undefined if there is nothing to generate.
+     */
+    content?: string
+};
+```

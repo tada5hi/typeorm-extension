@@ -233,6 +233,46 @@ The equivalent on the command line is [`typeorm-extension db drift`](./cli#schem
 `mongodb` has no schema to compare; the drift is always reported as empty for it.
 :::
 
+## Generate Migration
+
+`generateMigration` writes a migration file from the same schema comparison, without shelling out to the typeorm CLI.
+The statements, the escaping and the file templates are typeorm's own, so the result matches
+`typeorm migration:generate`.
+
+```typescript
+import { generateMigration } from 'typeorm-extension';
+
+await generateMigration({
+    dataSource,
+    name: 'add-role',
+    directoryPath: 'src/migrations',
+});
+```
+
+The data source must already be initialized, and it is left initialized. The file is written as
+`<timestamp>-<name>.<language>`, by default into `migrations/` relative to the working directory.
+
+Set `language: 'js'` to emit a JavaScript migration (JSDoc typed, `module.exports = class`) instead of a TypeScript
+one. Add `esm: true` for `export class` module syntax:
+
+```typescript
+await generateMigration({
+    dataSource,
+    name: 'add-role',
+    language: 'js',
+    esm: true,
+});
+```
+
+Pass `preview: true` to get the statements back without writing anything:
+
+```typescript
+const { up, down, content } = await generateMigration({ dataSource, preview: true });
+```
+
+When there is nothing to generate, `up` and `down` are empty, `content` is undefined and no file is written.
+Pass `prettify: true` to format the sql statements.
+
 ## Repair Migrations
 
 Fixing schema drift usually means renaming a constraint, which is dialect-asymmetric and easy to get wrong:
