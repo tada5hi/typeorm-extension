@@ -1,16 +1,12 @@
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
-import type { DataSourceOptions, MigrationInterface } from 'typeorm';
-import {
-    Column,
-    DataSource,
-    Entity,
-    PrimaryGeneratedColumn,
-} from 'typeorm';
+import type { DataSource, DataSourceOptions, MigrationInterface } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 import { generateMigration } from '../../../src';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
+import { createDataSource, createDataSourceOptions } from '../../data/typeorm/factory';
 
 @Entity({ name: 'escaped' })
 class Escaped {
@@ -21,16 +17,29 @@ class Escaped {
     text: string;
 }
 
-function createDataSource(entities: DataSourceOptions['entities']) : DataSource {
-    return new DataSource({
-        type: 'better-sqlite3',
-        entities,
-        database: ':memory:',
-        extra: { charset: 'UTF8_GENERAL_CI' },
-    });
-}
-
 const directoryPath = path.join(import.meta.dirname, '..', '..', '..', 'writable', 'migrations');
+
+/**
+ * Run a callback against an initialized data source, restricted to the given entities so the
+ * generated statements stay predictable. The data source is destroyed even if the callback throws.
+ */
+async function withDataSource<T>(
+    entities: DataSourceOptions['entities'],
+    fn: (dataSource: DataSource) => Promise<T>,
+) : Promise<T> {
+    const dataSource = createDataSource({
+        ...createDataSourceOptions(),
+        entities,
+    });
+
+    await dataSource.initialize();
+
+    try {
+        return await fn(dataSource);
+    } finally {
+        await dataSource.destroy();
+    }
+}
 
 /**
  * Load the generated migration file and run its up-/down-method against a fresh database.
@@ -49,21 +58,19 @@ async function executeMigrationFile(filePath: string) : Promise<void> {
 
     const migration = new MigrationClass();
 
-    const dataSource = createDataSource([Role]);
-    await dataSource.initialize();
+    await withDataSource([Role], async (dataSource) => {
+        const queryRunner = dataSource.createQueryRunner();
 
-    const queryRunner = dataSource.createQueryRunner();
+        try {
+            await migration.up(queryRunner);
+            expect(await queryRunner.hasTable('role')).toBeTruthy();
 
-    try {
-        await migration.up(queryRunner);
-        expect(await queryRunner.hasTable('role')).toBeTruthy();
-
-        await migration.down(queryRunner);
-        expect(await queryRunner.hasTable('role')).toBeFalsy();
-    } finally {
-        await queryRunner.release();
-        await dataSource.destroy();
-    }
+            await migration.down(queryRunner);
+            expect(await queryRunner.hasTable('role')).toBeFalsy();
+        } finally {
+            await queryRunner.release();
+        }
+    });
 }
 
 describe('src/database/migration', () => {
@@ -72,15 +79,10 @@ describe('src/database/migration', () => {
     });
 
     it('should generate migration file', async () => {
-        const dataSource = createDataSource([User, Role]);
-        await dataSource.initialize();
-
-        const output = await generateMigration({
+        const output = await withDataSource([User, Role], (dataSource) => generateMigration({
             dataSource,
             preview: true,
-        });
-
-        await dataSource.destroy();
+        }));
 
         expect(output).toBeDefined();
         expect(output.up).toBeDefined();
@@ -94,17 +96,12 @@ describe('src/database/migration', () => {
     });
 
     it('should generate typescript migration content', async () => {
-        const dataSource = createDataSource([Role]);
-        await dataSource.initialize();
-
-        const output = await generateMigration({
+        const output = await withDataSource([Role], (dataSource) => generateMigration({
             dataSource,
             name: 'add-role',
             timestamp: 1,
             preview: true,
-        });
-
-        await dataSource.destroy();
+        }));
 
         expect(output.content).toContain('import { MigrationInterface, QueryRunner } from "typeorm";');
         expect(output.content).toContain('export class AddRole1 implements MigrationInterface {');
@@ -113,18 +110,13 @@ describe('src/database/migration', () => {
     });
 
     it('should generate javascript migration content', async () => {
-        const dataSource = createDataSource([Role]);
-        await dataSource.initialize();
-
-        const output = await generateMigration({
+        const output = await withDataSource([Role], (dataSource) => generateMigration({
             dataSource,
             name: 'add-role',
             timestamp: 1,
             language: 'js',
             preview: true,
-        });
-
-        await dataSource.destroy();
+        }));
 
         expect(output.content).toContain('module.exports = class AddRole1 {');
         expect(output.content).toContain('async up(queryRunner) {');
@@ -132,36 +124,37 @@ describe('src/database/migration', () => {
     });
 
     it('should generate javascript esm migration content', async () => {
-        const dataSource = createDataSource([Role]);
-        await dataSource.initialize();
-
-        const output = await generateMigration({
+        const output = await withDataSource([Role], (dataSource) => generateMigration({
             dataSource,
             name: 'add-role',
             timestamp: 1,
             language: 'js',
             esm: true,
             preview: true,
-        });
-
-        await dataSource.destroy();
+        }));
 
         expect(output.content).toContain('export class AddRole1 {');
         expect(output.content).not.toContain('module.exports');
     });
 
-    it('should write an executable typescript migration file', async () => {
-        const dataSource = createDataSource([Role]);
-        await dataSource.initialize();
+    it('should generate migration with an explicit zero timestamp', async () => {
+        const output = await withDataSource([Role], (dataSource) => generateMigration({
+            dataSource,
+            name: 'add-role',
+            timestamp: 0,
+            preview: true,
+        }));
 
-        await generateMigration({
+        expect(output.content).toContain('export class AddRole0 implements MigrationInterface {');
+    });
+
+    it('should write an executable typescript migration file', async () => {
+        await withDataSource([Role], (dataSource) => generateMigration({
             dataSource,
             name: 'add-role',
             timestamp: 1,
             directoryPath,
-        });
-
-        await dataSource.destroy();
+        }));
 
         const filePath = path.join(directoryPath, '1-add-role.ts');
         expect(fs.existsSync(filePath)).toBeTruthy();
@@ -170,19 +163,14 @@ describe('src/database/migration', () => {
     });
 
     it('should write an executable javascript esm migration file', async () => {
-        const dataSource = createDataSource([Role]);
-        await dataSource.initialize();
-
-        await generateMigration({
+        await withDataSource([Role], (dataSource) => generateMigration({
             dataSource,
             name: 'add-role',
             timestamp: 1,
             language: 'js',
             esm: true,
             directoryPath,
-        });
-
-        await dataSource.destroy();
+        }));
 
         const filePath = path.join(directoryPath, '1-add-role.js');
         expect(fs.existsSync(filePath)).toBeTruthy();
@@ -191,18 +179,13 @@ describe('src/database/migration', () => {
     });
 
     it('should write an executable javascript commonjs migration file', async () => {
-        const dataSource = createDataSource([Role]);
-        await dataSource.initialize();
-
-        const output = await generateMigration({
+        const output = await withDataSource([Role], (dataSource) => generateMigration({
             dataSource,
             name: 'add-role',
             timestamp: 1,
             language: 'js',
             directoryPath,
-        });
-
-        await dataSource.destroy();
+        }));
 
         expect(fs.existsSync(path.join(directoryPath, '1-add-role.js'))).toBeTruthy();
 
@@ -214,15 +197,10 @@ describe('src/database/migration', () => {
     });
 
     it('should escape template literal characters', async () => {
-        const dataSource = createDataSource([Escaped]);
-        await dataSource.initialize();
-
-        const output = await generateMigration({
+        const output = await withDataSource([Escaped], (dataSource) => generateMigration({
             dataSource,
             preview: true,
-        });
-
-        await dataSource.destroy();
+        }));
 
         const [statement] = output.up;
         expect(statement).toContain('\\`\\${danger}\\`\\\\');

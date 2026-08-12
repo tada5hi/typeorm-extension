@@ -49,7 +49,7 @@ export async function generateMigration(
     context: MigrationGenerateCommandContext,
 ) : Promise<MigrationGenerateResult> {
     const name = context.name || 'Default';
-    const timestamp = context.timestamp || Date.now();
+    const timestamp = context.timestamp ?? Date.now();
     const language = context.language || 'ts';
 
     const sqlInMemory = await context.dataSource.driver.createSchemaBuilder().log();
