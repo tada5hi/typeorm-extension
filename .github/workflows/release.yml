@@ -59,7 +59,7 @@ jobs:
 
             -   name: Publish
                 if: steps.release.outputs.releases_created == 'true'
-                uses: tada5hi/monoship@v2
+                uses: tada5hi/monoship@v2.1.0
 
             -   name: Build docs package
                 if: steps.release.outputs.releases_created == 'true'
