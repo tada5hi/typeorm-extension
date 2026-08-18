@@ -20,7 +20,7 @@ export default defineConfig({
     ],
     oxc: false,
     test: {
-        globals: true,
+        globals: false,
         root: path.resolve(import.meta.dirname, '..'),
         include: ['test/unit/**/*.{test,spec}.{js,ts}'],
         setupFiles: ['test/vitest.setup.ts'],

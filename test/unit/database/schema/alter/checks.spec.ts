@@ -4,6 +4,7 @@ import {
     MYSQL_FOREIGN_KEY_CHECKS_SELECT,
     withForeignKeyChecksDisabled,
 } from '../../../../../src';
+import { describe, expect, it } from 'vitest';
 import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 
 describe('src/database/schema/alter/checks', () => {

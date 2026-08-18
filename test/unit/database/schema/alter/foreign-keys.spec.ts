@@ -6,6 +6,7 @@ import {
     SchemaAlterationError,
     renameForeignKey,
 } from '../../../../../src';
+import { describe, expect, it } from 'vitest';
 import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { TABLE_FOREIGN_KEYS, createTable } from '../../../../data/typeorm/table';
 

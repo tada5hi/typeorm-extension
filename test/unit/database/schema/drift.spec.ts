@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { SchemaDriftError, assertSchemaMatchesMetadata, getSchemaDrift } from '../../../../src';
 import { createDataSource, createDataSourceOptions } from '../../../data/typeorm/factory';
 

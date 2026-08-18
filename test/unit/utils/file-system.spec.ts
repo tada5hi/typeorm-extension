@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { isDirectory } from '../../../src';
 
 describe('src/utils/file-system.ts', () => {

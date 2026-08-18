@@ -1,4 +1,5 @@
 import { EntitySchema } from 'typeorm';
+import { describe, expect, it } from 'vitest';
 import { getEntityName } from '../../../src';
 
 describe('src/helpers/entity/name.ts', () => {

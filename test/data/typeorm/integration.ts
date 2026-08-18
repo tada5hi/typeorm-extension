@@ -1,5 +1,6 @@
 import process from 'node:process';
 import type { DataSourceOptions } from 'typeorm';
+import { suite } from 'vitest';
 
 /**
  * Drivers the integration suite can be pointed at.

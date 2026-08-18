@@ -1,3 +1,9 @@
+import {
+    afterAll,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { dataSource } from '../../data/typeorm/data-source';
 import {
     hasDataSource,

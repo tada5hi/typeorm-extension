@@ -1,5 +1,12 @@
 /* eslint-disable max-classes-per-file */
 import type { DataSource } from 'typeorm';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import type { Seeder } from '../../../src';
 import { SeederExecutor, runSeeder } from '../../../src';
 import { destroyTestFsDataSource, setupFsDataSource } from '../../data/typeorm/utils';

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { buildSeederFileName } from '../../../../src';
 
 describe('src/seeder/utils/file-name.ts', () => {

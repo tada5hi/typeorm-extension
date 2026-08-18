@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { extendObject, pickRecord } from '../../../src';
 
 describe('src/utils/object.ts', () => {

@@ -3,6 +3,7 @@ import {
     buildMySQLCreateDatabaseQuery,
     deriveMySQLCharacterSet,
 } from '../../../../src/database/core';
+import { describe, expect, it } from 'vitest';
 import { MemoryDatabaseConnectionFactory } from '../../../data/database';
 
 describe('src/database/core/mysql', () => {

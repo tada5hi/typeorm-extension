@@ -7,6 +7,13 @@ import {
     runSeeders,
     useDataSource,
 } from '../../../src';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import type { SeederEntity } from '../../../src';
 import { User } from '../../data/entity/user';
 import { createDataSourceOptions } from '../../data/typeorm/factory';

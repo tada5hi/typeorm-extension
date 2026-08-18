@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { canReplaceWindowsSeparator, safeReplaceWindowsSeparator } from '../../../src';
 
 describe('src/utils/separator.ts', () => {

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { hasTrailingSlash, withoutTrailingSlash } from '../../../src';
 
 describe('src/utils/slash.ts', () => {

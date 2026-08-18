@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { DriverError } from '../../../../../src';
 import {
     buildAddForeignKeyQuery,

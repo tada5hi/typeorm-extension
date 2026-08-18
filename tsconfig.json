@@ -18,6 +18,11 @@
         "types": ["node"]
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "test/**/*"
+    ],
+    "exclude": [
+        "test/vitest.config.ts",
+        "test/vitest.integration.config.ts"
     ]
 }

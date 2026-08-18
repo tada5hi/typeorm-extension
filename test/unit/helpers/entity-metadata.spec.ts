@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { EntityMetadataError, getEntityMetadata } from '../../../src';
 import { User } from '../../data/entity/user';
 import { createDataSource } from '../../data/typeorm/factory';

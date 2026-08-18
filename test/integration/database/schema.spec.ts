@@ -9,6 +9,13 @@ import {
     renameIndex,
     withForeignKeyChecksDisabled,
 } from '../../../src';
+import {
+    afterAll,
+    beforeAll,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { resolveSchemaDialect } from '../../../src/database/schema/alter/dialect';
 import { escapeSchemaIdentifier } from '../../../src/database/schema/alter/statements';
 import { Role } from '../../data/entity/role';
@@ -247,15 +254,15 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
                 name: 'tex_cast',
                 columns: [
                     {
-                        name: 'id', 
-                        type: 'varchar', 
-                        length: '36', 
+                        name: 'id',
+                        type: 'varchar',
+                        length: '36',
                         isPrimary: true,
                     },
                     {
-                        name: 'amount', 
-                        type: 'varchar', 
-                        length: '36', 
+                        name: 'amount',
+                        type: 'varchar',
+                        length: '36',
                     },
                 ],
             }), true);
@@ -296,9 +303,9 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
                 name: 'tex_quoted',
                 columns: [
                     {
-                        name: 'id', 
-                        type: 'varchar', 
-                        length: '36', 
+                        name: 'id',
+                        type: 'varchar',
+                        length: '36',
                         isPrimary: true,
                     },
                     {
@@ -348,9 +355,9 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
                 name: 'tex_parent',
                 columns: [
                     {
-                        name: 'id', 
-                        type: 'varchar', 
-                        length: '36', 
+                        name: 'id',
+                        type: 'varchar',
+                        length: '36',
                         isPrimary: true,
                     },
                 ],
@@ -360,15 +367,15 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
                 name: 'tex_child',
                 columns: [
                     {
-                        name: 'id', 
-                        type: 'varchar', 
-                        length: '36', 
+                        name: 'id',
+                        type: 'varchar',
+                        length: '36',
                         isPrimary: true,
                     },
                     {
-                        name: 'parent_id', 
-                        type: 'varchar', 
-                        length: '36', 
+                        name: 'parent_id',
+                        type: 'varchar',
+                        length: '36',
                     },
                 ],
                 foreignKeys: [

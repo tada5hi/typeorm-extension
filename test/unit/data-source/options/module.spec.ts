@@ -6,6 +6,7 @@ import {
     unsetDataSource,
     useDataSource,
 } from '../../../../src';
+import { describe, expect, it } from 'vitest';
 import { dataSource } from '../../../data/typeorm/data-source';
 
 describe('src/data-source/options', () => {

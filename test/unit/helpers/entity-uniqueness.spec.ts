@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { isEntityUnique } from '../../../src';
 import { Account } from '../../data/entity/account';
 import { Tenant } from '../../data/entity/tenant';

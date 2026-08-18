@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { AsyncKeyedCache } from '../../../src/runtime';
 
 describe('src/runtime/cache.ts', () => {

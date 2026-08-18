@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { hasOwnProperty, hasStringProperty } from '../../../src';
 
 describe('src/utils/has-property.ts', () => {

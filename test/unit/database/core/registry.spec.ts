@@ -1,4 +1,5 @@
 import type { DataSourceOptions } from 'typeorm';
+import { describe, expect, it } from 'vitest';
 import type { DatabaseDialectName } from '../../../../src/database/core';
 import {
     resolveDatabaseDialectName,
@@ -11,12 +12,12 @@ import {
 import { MemoryFileSystem } from '../../../data/database';
 
 const names: DatabaseDialectName[] = [
-    'postgres', 
-    'cockroachdb', 
-    'mysql', 
-    'mssql', 
-    'oracle', 
-    'mongodb', 
+    'postgres',
+    'cockroachdb',
+    'mysql',
+    'mssql',
+    'oracle',
+    'mongodb',
     'better-sqlite3',
 ];
 

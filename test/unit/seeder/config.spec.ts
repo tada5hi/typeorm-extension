@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { resolveSeederConfig } from '../../../src';
 
 const SEEDS_DEFAULT = ['src/database/seeds/**/*{.ts,.js}'];

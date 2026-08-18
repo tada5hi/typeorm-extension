@@ -1,3 +1,9 @@
+import {
+    afterEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { useEnv } from '../../../src/env';
 import { useRuntimeRegistry } from '../../../src/runtime';
 import {

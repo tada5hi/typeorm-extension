@@ -1,4 +1,5 @@
 import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
+import { describe, expect, it } from 'vitest';
 import { mergeDataSourceOptions } from '../../../../src';
 
 describe('src/data-source/options/merge', () => {

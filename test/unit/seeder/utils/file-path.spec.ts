@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { describe, expect, it } from 'vitest';
 import { resolveFilePaths, resolveFilePatterns } from '../../../../src';
 
 describe('src/seeder/utils/file-path.ts', () => {

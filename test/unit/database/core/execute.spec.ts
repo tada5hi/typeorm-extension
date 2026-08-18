@@ -1,4 +1,5 @@
 import type { DataSourceOptions } from 'typeorm';
+import { describe, expect, it } from 'vitest';
 import { DriverError } from '../../../../src/errors';
 import { createDatabase, dropDatabase } from '../../../../src/database';
 import {

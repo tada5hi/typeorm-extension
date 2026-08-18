@@ -3,6 +3,7 @@ import {
     buildDataSourceOptions,
     checkDatabase,
 } from '../../../src';
+import { describe, expect, it } from 'vitest';
 
 describe('src/database/module.ts', () => {
     const rootPath : string = path.resolve(process.cwd(), 'test/data/typeorm');

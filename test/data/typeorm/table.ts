@@ -1,4 +1,5 @@
 import { Table } from 'typeorm';
+import { it } from 'vitest';
 
 /**
  * A minimal loaded table, as a query runner would report it.

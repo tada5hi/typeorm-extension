@@ -1,4 +1,5 @@
 /* eslint-disable max-classes-per-file */
+import { describe, expect, it } from 'vitest';
 import type { Seeder } from '../../../src';
 import { SeederEntity } from '../../../src';
 
@@ -24,15 +25,18 @@ class DefaultSeeder implements Seeder {
     }
 }
 
+// the option is named seeder rather than constructor: an object type declaring a
+// constructor property collides with Object.prototype.constructor, which makes every
+// literal that leaves it out fail to typecheck.
 function createEntity(ctx: {
-    constructor?: new () => Seeder,
+    seeder?: new () => Seeder,
     timestamp?: number,
     fileName?: string
 }) : SeederEntity {
     return new SeederEntity({
         timestamp: ctx.timestamp ?? 0,
-        name: ctx.constructor ? ctx.constructor.name : 'Anonymous',
-        constructor: ctx.constructor,
+        name: ctx.seeder ? ctx.seeder.name : 'Anonymous',
+        constructor: ctx.seeder,
         fileName: ctx.fileName,
     });
 }
@@ -40,13 +44,13 @@ function createEntity(ctx: {
 describe('src/seeder/entity.ts', () => {
     describe('effectiveTracking', () => {
         it('should prefer the per-seed track property over the executor-level default', () => {
-            expect(createEntity({ constructor: TrackedSeeder }).effectiveTracking(false)).toBe(true);
-            expect(createEntity({ constructor: UntrackedSeeder }).effectiveTracking(true)).toBe(false);
+            expect(createEntity({ seeder: TrackedSeeder }).effectiveTracking(false)).toBe(true);
+            expect(createEntity({ seeder: UntrackedSeeder }).effectiveTracking(true)).toBe(false);
         });
 
         it('should fall back to the executor-level default', () => {
-            expect(createEntity({ constructor: DefaultSeeder }).effectiveTracking(true)).toBe(true);
-            expect(createEntity({ constructor: DefaultSeeder }).effectiveTracking(false)).toBe(false);
+            expect(createEntity({ seeder: DefaultSeeder }).effectiveTracking(true)).toBe(true);
+            expect(createEntity({ seeder: DefaultSeeder }).effectiveTracking(false)).toBe(false);
         });
 
         it('should fall back to the executor-level default without an instance', () => {

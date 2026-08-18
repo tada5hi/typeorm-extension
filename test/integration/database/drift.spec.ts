@@ -1,5 +1,12 @@
 import type { DataSource } from 'typeorm';
 import { DataSource as TypeORMDataSource } from 'typeorm';
+import {
+    afterAll,
+    beforeAll,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { assertSchemaMatchesMetadata, getSchemaDrift } from '../../../src';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';

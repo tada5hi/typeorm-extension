@@ -1,10 +1,11 @@
 import {
-    Column, 
-    DataSource, 
-    Entity, 
-    Index, 
+    Column,
+    DataSource,
+    Entity,
+    Index,
     PrimaryGeneratedColumn,
 } from 'typeorm';
+import { describe, expect, it } from 'vitest';
 import { isEntityUnique } from '../../../src';
 import { Account } from '../../data/entity/account';
 import { Person } from '../../data/entity/person';

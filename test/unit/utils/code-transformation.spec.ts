@@ -1,4 +1,10 @@
 import process from 'node:process';
+import {
+    afterEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { CodeTransformation, detectCodeTransformation, isCodeTransformation } from '../../../src';
 
 const TS_NODE_MARKER = Symbol.for('ts-node.register.instance');

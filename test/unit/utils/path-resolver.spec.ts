@@ -1,5 +1,11 @@
 import path from 'node:path';
 import process from 'node:process';
+import {
+    afterEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { createPathResolver } from '../../../src';
 
 const JIT_MARKER = Symbol.for('ts-node.register.instance');

@@ -88,6 +88,7 @@ Common `type`s used in this repo (see `git log`): `feat`, `fix`, `chore`, `build
 - Target: `ES2022`, Module: `ESNext`, libs: `ESNext` (Node-only).
 - ModuleResolution: **`node10`** (with `ignoreDeprecations: "6.0"`) — required because the code does type-only deep imports like `import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner'`, and typeorm's `package.json` exports field does not expose those subpaths. Stricter modes (`bundler`, `nodenext`) refuse them. tsdown handles runtime resolution independently.
 - `noEmit: true` + `allowImportingTsExtensions: true` — tsdown handles all emit; tsc is type-check-only (`npm run build:types`).
+- `include` covers `src/**/*` and `test/**/*`, so a type error in a spec fails the build. `exclude` holds the two vitest config files (see [testing.md](testing.md#typechecking)).
 - `experimentalDecorators` + `emitDecoratorMetadata` enabled — required because consumers' TypeORM entities use decorators, and seeder/factory loading evaluates those files at runtime.
 - `strictPropertyInitialization: false` — set by this project on top of `@tada5hi/tsconfig` so executor classes (`SeederExecutor`) can declare lazily-assigned protected fields.
 - **Relaxed strict options** (set explicitly to keep the legacy code passing typecheck — tightening these is intentional future work):

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { DriverError, SchemaAlterationError, renameIndex } from '../../../../../src';
 import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { createTable } from '../../../../data/typeorm/table';

@@ -18,15 +18,15 @@ export class Account {
     userName: string;
 
     @Column({
-        name: 'tenant_id', 
-        type: 'int', 
+        name: 'tenant_id',
+        type: 'int',
         nullable: true,
     })
     tenantId: number | null;
 
     @Column({
-        name: 'display_name', 
-        type: 'varchar', 
+        name: 'display_name',
+        type: 'varchar',
         nullable: true,
     })
     displayName: string | null;

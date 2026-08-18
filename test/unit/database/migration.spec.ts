@@ -3,6 +3,12 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import type { DataSource, DataSourceOptions, MigrationInterface } from 'typeorm';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+    afterEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { generateMigration } from '../../../src';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';

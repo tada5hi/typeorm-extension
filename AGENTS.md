@@ -23,7 +23,7 @@ npm install
 
 # Development
 npm run build              # build:types && build:js (typecheck then bundle)
-npm run build:types        # tsc --noEmit (typecheck only)
+npm run build:types        # tsc --noEmit (typecheck only, covers src/ and test/)
 npm run build:js           # tsdown — builds dist/ (library) and bin/ (CLI)
 npm test                   # vitest --config test/vitest.config.ts --run
 npm run test:coverage      # vitest with coverage (80% thresholds enforced)

@@ -1,4 +1,5 @@
 import { Table } from 'typeorm';
+import { describe, expect, it } from 'vitest';
 import { DriverError, SchemaAlterationError, changeColumnType } from '../../../../../src';
 import { createFakeQueryRunner } from '../../../../data/typeorm/FakeQueryRunner';
 import { createDataSource } from '../../../../data/typeorm/factory';

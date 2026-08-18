@@ -7,6 +7,7 @@ import {
     readDataSourceOptionsFromEnv,
     resetEnv,
 } from '../../../../src';
+import { describe, expect, it } from 'vitest';
 import { User } from '../../../data/entity/user';
 
 describe('src/data-source/options/env', () => {

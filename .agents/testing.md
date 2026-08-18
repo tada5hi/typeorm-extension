@@ -4,8 +4,14 @@
 
 - **Runner**: Vitest 4 with **[`unplugin-swc`](https://github.com/unplugin/unplugin-swc)** for TypeScript transformation (needed because TypeORM decorators require `emitDecoratorMetadata`, which vitest's default `oxc` transformer does not emit). The config sets `oxc: false` to keep oxc from running in parallel with swc.
 - **Test location**: `test/unit/**/*.{test,spec}.{js,ts}` (default suite) and `test/integration/**/*.{test,spec}.{js,ts}` (driver suite).
-- **Config**: `test/vitest.config.ts` — sets `root` to repo root, enables `globals: true` (so test files don't need to `import { describe, it, expect } from 'vitest'`), and registers `test/vitest.setup.ts` via `setupFiles`. The setup file calls `setModuleLoader({ load: (id) => import(id) })` from `locter` so dynamic imports inside `locter.load()` are rewritten by vitest's transformer and go through vitest's module graph instead of native Node — without this, dynamically-loaded seeder / data-source / factory files don't share entity classes with the test module, breaking TypeORM repository lookups. (`setModuleLoader` was added in `locter@3` and supersedes the older `server.deps.inline: [/locter/]` workaround.) `test/vitest.integration.config.ts` mirrors it for the driver suite (no coverage, `fileParallelism: false`, 60s timeouts).
+- **Config**: `test/vitest.config.ts` — sets `root` to repo root, sets `globals: false` (every test file imports `describe` / `it` / `expect` from `vitest` itself, so the suite typechecks without ambient test globals), and registers `test/vitest.setup.ts` via `setupFiles`. The setup file calls `setModuleLoader({ load: (id) => import(id) })` from `locter` so dynamic imports inside `locter.load()` are rewritten by vitest's transformer and go through vitest's module graph instead of native Node — without this, dynamically-loaded seeder / data-source / factory files don't share entity classes with the test module, breaking TypeORM repository lookups. (`setModuleLoader` was added in `locter@3` and supersedes the older `server.deps.inline: [/locter/]` workaround.) `test/vitest.integration.config.ts` mirrors it for the driver suite (no coverage, `fileParallelism: false`, 60s timeouts).
 - **Prerequisite**: nothing external for `npm test` — the default suite uses `better-sqlite3` databases (in-memory for unit work; file-backed under `writable/` for the seeder lifecycle tests). `npm run test:integration` needs a real server.
+
+## Typechecking
+
+`npm run build:types` (`tsc --noEmit`) covers `src/**/*` **and** `test/**/*`. Test files are therefore held to the same compiler options as the library, which is why `globals` is off and the vitest exports are imported explicitly.
+
+The two vitest config files are the one exception (`exclude` in `tsconfig.json`). `moduleResolution: node10` resolves the hoisted `vite` (5.x, pulled in by vitepress) rather than the 8.x copy vitest runs on, and `oxc: false` is a vite 8 option, so typechecking them reports an error about a valid setting. Neither file imports anything from the library, so nothing is lost by leaving them out.
 
 ## Running Tests
 
@@ -172,8 +178,9 @@ All jobs use a single Node version (`PRIMARY_NODE_VERSION = 24`); there is no ma
 ## Writing New Tests
 
 1. Place test files under `test/unit/<domain>/` with the `.spec.ts` extension. Mirror the `src/` folder name.
-2. For anything that touches a `DataSource`, use `createDataSource()` / `createDataSourceOptions()` from `test/data/typeorm/factory.ts`. Don't redeclare options inline.
-3. If the test mutates `process.env`, call `resetEnv()` from `src/env` in `afterEach`.
-4. Always `await dataSource.destroy()` (or use a `finally` block) — sqlite leaks are silent but trip the next test.
-5. If the behaviour is dialect-specific (DDL syntax, native client, how the server reports its schema), add a `test/integration/` case as well — the default suite can only prove the statement that *would* be sent, not that the server accepts it.
-6. Run `npm test` then `npm run lint` before committing.
+2. Import `describe` / `it` / `expect` and any hooks from `vitest`. There are no ambient test globals.
+3. For anything that touches a `DataSource`, use `createDataSource()` / `createDataSourceOptions()` from `test/data/typeorm/factory.ts`. Don't redeclare options inline.
+4. If the test mutates `process.env`, call `resetEnv()` from `src/env` in `afterEach`.
+5. Always `await dataSource.destroy()` (or use a `finally` block) — sqlite leaks are silent but trip the next test.
+6. If the behaviour is dialect-specific (DDL syntax, native client, how the server reports its schema), add a `test/integration/` case as well — the default suite can only prove the statement that *would* be sent, not that the server accepts it.
+7. Run `npm test`, `npm run build:types` and `npm run lint` before committing.

@@ -3,6 +3,7 @@ import {
     adjustFilePaths,
     transformFilePath,
 } from '../../../src';
+import { describe, expect, it } from 'vitest';
 
 describe('src/utils/file-path.ts', () => {
     it('should change ts to js path', () => {

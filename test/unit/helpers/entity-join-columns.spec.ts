@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { EntityRelationLookupError, validateEntityJoinColumns } from '../../../src';
 import { Membership } from '../../data/entity/membership';
 import { Tenant } from '../../data/entity/tenant';
@@ -92,7 +93,7 @@ describe('entity-relation-columns', () => {
             await validateEntityJoinColumns(membership, { dataSource, entityTarget: Membership });
 
             expect(membership.tenant).toBeDefined();
-            expect(membership.tenant.region).toEqual('eu');
+            expect(membership.tenant?.region).toEqual('eu');
         } finally {
             await dataSource.destroy();
         }

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { EntityMetadataError, getEntityMetadata, validateEntityJoinColumns } from '../../../src';
 import { Membership } from '../../data/entity/membership';
 import { Tenant } from '../../data/entity/tenant';

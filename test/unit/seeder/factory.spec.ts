@@ -5,6 +5,13 @@ import {
     useSeederFactory,
     useSeederFactoryManager,
 } from '../../../src';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import { destroyTestFsDataSource, setupFsDataSource } from '../../data/typeorm/utils';

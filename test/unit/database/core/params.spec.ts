@@ -1,4 +1,5 @@
 import type { DataSourceOptions } from 'typeorm';
+import { describe, expect, it } from 'vitest';
 import { buildConnectionParams } from '../../../../src/database/core';
 
 describe('src/database/core/params', () => {

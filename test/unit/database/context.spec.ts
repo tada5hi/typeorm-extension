@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { buildDatabaseCreateContext, buildDatabaseDropContext } from '../../../src';
 
 describe('src/database/utils/context', () => {

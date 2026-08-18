@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { MsSQLDialect } from '../../../../src/database/core';
 import { MemoryDatabaseConnectionFactory } from '../../../data/database';
 

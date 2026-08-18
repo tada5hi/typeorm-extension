@@ -1,5 +1,6 @@
 import { InstanceChecker } from 'typeorm';
 import path from 'node:path';
+import { describe, expect, it } from 'vitest';
 import { findDataSource } from '../../../src';
 
 describe('src/data-source/utils/find.ts', () => {
