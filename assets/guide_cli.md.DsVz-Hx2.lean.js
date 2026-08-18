@@ -1,0 +1,1 @@
+import{_ as t,H as d,f as o,i as a}from"./chunks/framework.BDVBA_aT.js";const u=JSON.parse('{"title":"CLI","description":"","frontmatter":{},"headers":[],"relativePath":"guide/cli.md","filePath":"guide/cli.md"}'),s={name:"guide/cli.md"};function i(c,e,n,r,l,p){return d(),o("div",null,[...e[0]||(e[0]=[a("",16)])])}const m=t(s,[["render",i]]);export{u as __pageData,m as default};
