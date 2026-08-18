@@ -1,5 +1,7 @@
+import type { DataSourceOptions } from 'typeorm';
 import {
     afterAll,
+    beforeAll,
     describe,
     expect,
     it,
@@ -22,9 +24,15 @@ const driver = useIntegrationDriver();
  * glue is the one part of the create/drop path the default suite can only fake.
  */
 describe.runIf(driver && supportsDatabaseDrop(driver))(`src/database/methods (${driver})`, () => {
-    // mongodb has no relational schema, so the fixtures do not apply to it
-    const entities = supportsSchemaMetadata(driver) ? [User, Role] : [];
-    const options = createIntegrationDataSourceOptions(entities, { database: 'typeorm_extension_integration' });
+    // vitest evaluates the body of a skipped suite, so the options have to be built
+    // in a hook. createIntegrationDataSourceOptions throws without a configured driver.
+    let options : DataSourceOptions;
+
+    beforeAll(() => {
+        // mongodb has no relational schema, so the fixtures do not apply to it
+        const entities = supportsSchemaMetadata(driver) ? [User, Role] : [];
+        options = createIntegrationDataSourceOptions(entities, { database: 'typeorm_extension_integration' });
+    });
 
     afterAll(async () => {
         await dropDatabase({

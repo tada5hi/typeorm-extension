@@ -26,7 +26,7 @@ There are no workspace-scoped commands — this is a single package.
 
 ### Driver suite (`test/integration/`)
 
-Covers what sqlite and the fakes structurally can not: dialect-asymmetric DDL, the native client adapters, and how a real server reports its own schema back. Configured through the **same env variables the library reads** (`TYPEORM_CONNECTION`, `TYPEORM_HOST`, `TYPEORM_PORT`, `TYPEORM_USERNAME`, `TYPEORM_PASSWORD`, `TYPEORM_DATABASE`); every suite is wrapped in `describe.runIf(...)`, so without `TYPEORM_CONNECTION` the run is a clean skip rather than a failure. Supported values: `postgres`, `cockroachdb`, `mysql`, `mariadb`, `mssql`, `oracle`, `mongodb`.
+Covers what sqlite and the fakes structurally can not: dialect-asymmetric DDL, the native client adapters, and how a real server reports its own schema back. Configured through the **same env variables the library reads** (`TYPEORM_CONNECTION`, `TYPEORM_HOST`, `TYPEORM_PORT`, `TYPEORM_USERNAME`, `TYPEORM_PASSWORD`, `TYPEORM_DATABASE`); every suite is wrapped in `describe.runIf(...)`, so without `TYPEORM_CONNECTION` the run is a clean skip rather than a failure. Build the options inside `beforeAll`, never in the suite body: vitest still evaluates the body of a skipped suite, so a top-level `createIntegrationDataSourceOptions()` throws before the skip can take effect. Supported values: `postgres`, `cockroachdb`, `mysql`, `mariadb`, `mssql`, `oracle`, `mongodb`.
 
 Not every driver can do everything, so `test/data/typeorm/integration.ts` exposes capability predicates instead of hard-coding driver names in the specs — extend those rather than adding `if (driver === …)` to a spec:
 
