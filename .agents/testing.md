@@ -70,6 +70,8 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 
 `test/unit/database/migration.spec.ts` is the one suite which writes files: `generateMigration` emits into `writable/migrations` (removed again in `afterEach`), and the generated file is then imported and its `up()` / `down()` run against a fresh sqlite data source. Asserting the file content alone would not notice a template which does not parse. The package is ESM, so the CommonJS variant only loads when the same content is written a second time under a `.cjs` extension, and `module.exports = class` arrives as the class itself rather than as a module namespace.
 
+One of those round trips runs against `[User, Role]` rather than a single entity, because `generateMigration` reverses the down statements and a single-table migration cannot tell the two orders apart: its `down()` is one `DROP TABLE`. The foreign key makes sqlite rebuild the table, so the down statements depend on each other and running them in the order typeorm collected them fails with `no such table: temporary_user`. Keep an entity pair in that suite; assertions on statement strings alone leave the reversal effectively untested.
+
 | `test/unit/database/schema/` | `synchronizeDatabaseSchema`, drift detection, the guarded alter helpers (pure statement builders + `FakeQueryRunner`) |
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |
 | `test/unit/helpers/`     | Entity helpers (name, metadata, join columns, property names, uniqueness) |

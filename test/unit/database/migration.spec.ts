@@ -43,8 +43,12 @@ async function withDataSource<T>(
 
 /**
  * Load the generated migration file and run its up-/down-method against a fresh database.
+ * Every table of the given entities must exist after up() and be gone again after down().
  */
-async function executeMigrationFile(filePath: string) : Promise<void> {
+async function executeMigrationFile(
+    filePath: string,
+    entities: DataSourceOptions['entities'] = [Role],
+) : Promise<void> {
     const exports = filePath.endsWith('.cjs') ?
         createRequire(import.meta.url)(filePath) :
         await import(filePath);
@@ -58,15 +62,20 @@ async function executeMigrationFile(filePath: string) : Promise<void> {
 
     const migration = new MigrationClass();
 
-    await withDataSource([Role], async (dataSource) => {
+    await withDataSource(entities, async (dataSource) => {
+        const tableNames = dataSource.entityMetadatas.map((metadata) => metadata.tableName);
         const queryRunner = dataSource.createQueryRunner();
 
         try {
             await migration.up(queryRunner);
-            expect(await queryRunner.hasTable('role')).toBeTruthy();
+            for (const tableName of tableNames) {
+                expect(await queryRunner.hasTable(tableName)).toBeTruthy();
+            }
 
             await migration.down(queryRunner);
-            expect(await queryRunner.hasTable('role')).toBeFalsy();
+            for (const tableName of tableNames) {
+                expect(await queryRunner.hasTable(tableName)).toBeFalsy();
+            }
         } finally {
             await queryRunner.release();
         }
@@ -194,6 +203,23 @@ describe('src/database/migration', () => {
         await fs.promises.writeFile(filePath, output.content as string);
 
         await executeMigrationFile(filePath);
+    });
+
+    it('should write an executable migration for dependent tables', async () => {
+        await withDataSource([User, Role], (dataSource) => generateMigration({
+            dataSource,
+            name: 'add-user',
+            timestamp: 1,
+            directoryPath,
+        }));
+
+        const filePath = path.join(directoryPath, '1-add-user.ts');
+        expect(fs.existsSync(filePath)).toBeTruthy();
+
+        // The foreign key makes sqlite rebuild the table instead of just creating it, so down()
+        // is a chain of statements which depend on each other. It only succeeds when they run in
+        // the reverse order of up(); a single-table migration cannot tell the two orders apart.
+        await executeMigrationFile(filePath, [User, Role]);
     });
 
     it('should escape template literal characters', async () => {
