@@ -18,6 +18,18 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.1.0](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0...v4.1.0) (2026-08-18)
+
+
+### Features
+
+* generate javascript migration files ([#1434](https://github.com/tada5hi/typeorm-extension/issues/1434)) ([f1805b3](https://github.com/tada5hi/typeorm-extension/commit/f1805b3b9eab8048c224b7be24e12205e71e0440))
+
+
+### Bug Fixes
+
+* accept findOptions in the database context input types ([dc37957](https://github.com/tada5hi/typeorm-extension/commit/dc37957b59ea723adf1be2cb8f7e6fb181cb535e))
+
 ## [4.0.0](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0-beta.3...v4.0.0) (2026-08-11)
 
 
