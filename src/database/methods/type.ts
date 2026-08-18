@@ -48,7 +48,8 @@ export type DatabaseCreateContext = Omit<DatabaseBaseContext, 'findOptions'> & {
     synchronize: boolean
 };
 
-export type DatabaseCreateContextInput = Partial<DatabaseCreateContext>;
+export type DatabaseCreateContextInput = Partial<DatabaseCreateContext> &
+    Pick<DatabaseBaseContext, 'findOptions'>;
 
 export type DatabaseDropContext = Omit<DatabaseBaseContext, 'findOptions'> & {
 
@@ -60,4 +61,5 @@ export type DatabaseDropContext = Omit<DatabaseBaseContext, 'findOptions'> & {
     ifExist?: boolean
 };
 
-export type DatabaseDropContextInput = Partial<DatabaseDropContext>;
+export type DatabaseDropContextInput = Partial<DatabaseDropContext> &
+    Pick<DatabaseBaseContext, 'findOptions'>;

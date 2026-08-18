@@ -504,6 +504,9 @@ export type DatabaseCreateContext = DatabaseBaseContext & {
 };
 ```
 
+`createDatabase()` accepts `DatabaseCreateContextInput`: this type with every property optional, plus `findOptions`.
+The resolved context passed on to the driver no longer carries `findOptions`, because it is consumed while the data source is discovered.
+
 **References**
 - [DatabaseBaseContext](#databasebasecontext)
 
@@ -521,6 +524,8 @@ export type DatabaseDropContext = DatabaseBaseContext & {
     ifExist?: boolean
 };
 ```
+
+`dropDatabase()` accepts `DatabaseDropContextInput`, which follows the same rule as the create variant above.
 
 **References**
 - [DatabaseBaseContext](#databasebasecontext)
