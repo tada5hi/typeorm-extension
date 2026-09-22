@@ -4,14 +4,42 @@ import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/Postgres
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
+import { OptionsError } from '../../../errors';
 import { mergeDataSourceOptions } from './merge';
+import { isDataSourceTimezone, withDataSourceTimezone } from './timezone';
 
 export function hasEnvDataSourceOptions() : boolean {
     return !!useEnv('type');
 }
 
-/* istanbul ignore next */
+/**
+ * Apply `DB_TIMEZONE`, when set, once the options are complete: applied
+ * before a merge, a deep merge would reach into the wrapped driver module.
+ */
+function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
+    const timezone = useEnv('timezone');
+    if (typeof timezone === 'undefined' || timezone === '') {
+        return options;
+    }
+
+    if (!isDataSourceTimezone(timezone)) {
+        throw OptionsError.timezoneUnsupported(timezone);
+    }
+
+    return withDataSourceTimezone(options, 'UTC');
+}
+
 export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
+    const options = readRawDataSourceOptionsFromEnv();
+    if (!options) {
+        return undefined;
+    }
+
+    return applyEnvTimezone(options);
+}
+
+/* istanbul ignore next */
+function readRawDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
     if (!hasEnvDataSourceOptions()) {
         return undefined;
     }
@@ -106,10 +134,10 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
 }
 
 export function mergeDataSourceOptionsWithEnv(options: DataSourceOptions) {
-    const env = readDataSourceOptionsFromEnv();
+    const env = readRawDataSourceOptionsFromEnv();
     if (!env) {
-        return options;
+        return applyEnvTimezone(options);
     }
 
-    return mergeDataSourceOptions(env, options);
+    return applyEnvTimezone(mergeDataSourceOptions(env, options));
 }

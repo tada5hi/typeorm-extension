@@ -52,6 +52,7 @@ npm run test:integration
 | `test/integration/database/drift.spec.ts`   | `getSchemaDrift` / `assertSchemaMatchesMetadata` against a real schema, including a deliberately diverged column |
 | `test/integration/database/schema.spec.ts`  | `renameIndex` / `renameForeignKey` / `changeColumnType` round-trips incl. idempotence and "drift appears → repair → drift gone"; that a column keeps its values and its foreign key across an alteration; nesting-safe `withForeignKeyChecksDisabled` |
 | `test/integration/database/methods.spec.ts` | `createDatabase` / `dropDatabase` / `checkDatabase` — the only coverage `src/database/adapters/**` gets, since it is excluded from the coverage gate |
+| `test/integration/data-source/timezone.spec.ts` | `withDataSourceTimezone` on postgres / mysql / mariadb: the database default zone and the process zone are set far from UTC (the server needs the privilege to change its default zone: `ALTER DATABASE` / `SET GLOBAL`); a control data source proves the shift, the pinned one reads the true instant. MariaDB accepts offsets up to `+13:59`, hence `+13:00` there |
 
 The suites bring the schema to a known state by dropping the two fixture tables and running `synchronize(false)` — **not** `synchronize(true)`, which drops the whole schema and which oracle refuses from within a pluggable database (`ORA-65040`).
 

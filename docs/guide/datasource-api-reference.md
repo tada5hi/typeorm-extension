@@ -263,6 +263,66 @@ declare async function buildDataSourceOptions(
 **References**
 - [DataSourceOptionsBuildContext](#datasourceoptionsbuildcontext)
 
+## `withDataSourceTimezone`
+
+```typescript
+declare function withDataSourceTimezone<T extends DataSourceOptions>(
+    options: T,
+    timezone: 'UTC',
+) : T
+```
+
+Pin a data source to UTC on **both** sides of a zone-less date column
+(`timestamp without time zone`, `datetime`): the database session that stamps
+it (`now()`, `CURRENT_TIMESTAMP`) and the driver that reads it back.
+
+Left alone, the database stamps such a column in its own session timezone and
+the driver reads it in the timezone of the Node process. The two agree only
+while both clocks do. A database running in local time, or an application host
+that is not UTC, then shifts every `@CreateDateColumn` / `@UpdateDateColumn`
+by the offset.
+
+| Driver              | What is applied                                                                                   |
+|:--------------------|:--------------------------------------------------------------------------------------------------|
+| `postgres`          | `-c TimeZone=UTC` as a startup option (`extra.options`), and a pool type parser (`extra.types`) reading `timestamp without time zone` as UTC. `infinity` and BC dates keep working. |
+| `mysql`, `mariadb`  | `timezone: 'Z'` for mysql2, and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
+| any other driver    | nothing                                                                                           |
+
+Settings that are already present win, which also makes the call idempotent:
+a mysql `timezone`, a postgres `TimeZone` in `extra.options`, or postgres
+`extra.types`. A mysql replication setup has no per-connection hook and is
+returned unchanged. A given `driver` is wrapped (mysql) or used for the
+remaining postgres types instead of the one typeorm loads.
+
+Only UTC is supported: a zone-less value can be read as UTC with a marker,
+while any other zone needs the offset in force at that instant.
+
+::: warning
+Only new rows are affected. A database that ran in another zone keeps the
+wall-clock values it stamped before, and those now read as UTC. Convert them
+once if they matter.
+:::
+
+The same can be requested through the environment, for options read from it
+and for options merged with it (`buildDataSourceOptions`):
+
+```bash
+DB_TIMEZONE=UTC  # or TYPEORM_TIMEZONE
+```
+
+Any other value throws an `OptionsError`.
+
+**Parameters**
+
+| Name       | Type                | Description                       |
+|:-----------|:--------------------|:----------------------------------|
+| `options`  | `DataSourceOptions` | The options to pin.               |
+| `timezone` | `'UTC'`             | The timezone to pin both sides to. |
+
+**Returns**
+
+`DataSourceOptions` (a new object; the input is not modified)
+
 ## `DataSourceFindOptions`
 
 ```typescript

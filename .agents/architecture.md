@@ -57,6 +57,17 @@ The peer-dep range is `typeorm ^1.1.0`. TypeORM 0.3 is **not** supported on `typ
 
 `SeederExecutor` (`src/seeder/executor.ts`) follows the same shape as TypeORM's `MigrationExecutor`: a `seeds` table with `id`, `timestamp`, `name`, populated only when tracking is enabled (per-seed `track = true` or executor-level `seedTracking`, resolved from input ← data-source options). MongoDB uses a collection instead. Untracked seeds re-run on every invocation. The per-seed decision lives in `SeederEntity.effectiveTracking(fallback)`; execution order in the static `SeederEntity.compare` comparator. The table name comes from `seedTableName` (input ← data-source options ← `'seeds'`).
 
+### 5. Timezone pinning covers both the session and the reader
+
+`withDataSourceTimezone(options, 'UTC')` (`src/data-source/options/utils/timezone.ts`) exists because a zone-less date column is stamped by the database in its SESSION zone (`now()`, `CURRENT_TIMESTAMP`) and read back by the driver in the Node PROCESS zone. Pinning only the reader is the tempting half and is wrong: on a database running in local time it shifts every value by the offset (found downstream in authup, where a session's `createdAt` feeds OIDC `auth_time` and a future value silently satisfies `max_age`). So both halves are set:
+
+- postgres: `extra.options` gains `-c TimeZone=UTC` and `extra.types` a parser reading OID 1114 through pg's own timestamptz parser (1184) after inserting a `Z` behind the time part, so `infinity` and BC dates keep their existing handling.
+- mysql / mariadb: `timezone: 'Z'` for mysql2, and `driver` becomes a copy of mysql2 whose `createPool` registers a `connection` listener running `SET time_zone = '+00:00'`. mysql2 emits `connection` synchronously before it hands a new connection to the caller and a connection runs its queries in order, which is what makes the `SET` the first statement. A failing `SET` destroys the connection. A pool cluster (`replication`) exposes no such hook and is returned unchanged.
+
+The driver module comes from `options.driver` or typeorm's own `PlatformTools.load`, so the parser and the pool always belong to the same copy typeorm uses. Existing settings win (mysql `timezone`, a `TimeZone` in postgres `extra.options`, pg `extra.types`), which is also what makes the function idempotent. Only UTC is supported: reading any other zone needs the offset in force at each instant.
+
+`DB_TIMEZONE` / `TYPEORM_TIMEZONE` request it from the environment. It is applied once, AFTER `mergeDataSourceOptionsWithEnv` has merged: the smob merge is deep, so applying it to the env half first would merge into the wrapped driver module. `readDataSourceOptionsFromEnv` applies it to its own result, and the merge reads the raw env options for that reason. The integration suite (`test/integration/data-source/timezone.spec.ts`) sets the database default zone far from UTC and the process zone far from both, with a control data source proving the shift; it fails with either half removed.
+
 ### 6. Schema operations are a separate domain from create/drop
 
 `src/database/` splits along the "is there a schema to talk to?" line:
