@@ -106,11 +106,11 @@ export function supportsDatabaseExistenceCheck(driver?: IntegrationDriver) : boo
 }
 
 /**
- * Whether withDataSourceTimezone pins the driver: both the session which
- * stamps a zone-less column and the reader.
+ * Whether withDataSourceTimezone pins the driver: the session which stamps
+ * a zone-less column, and the driver which writes and reads it.
  */
 export function supportsDataSourceTimezone(driver?: IntegrationDriver) : boolean {
-    return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb';
+    return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb' || driver === 'oracle';
 }
 
 /**

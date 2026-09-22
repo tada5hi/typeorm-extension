@@ -272,45 +272,51 @@ declare function withDataSourceTimezone<T extends DataSourceOptions>(
 ) : T
 ```
 
-Pin a data source to UTC on **both** sides of a zone-less date column
-(`timestamp without time zone`, `datetime`): the database session that stamps
-it (`now()`, `CURRENT_TIMESTAMP`) and the driver that reads it back.
+Pin a data source to UTC on **every** side of a zone-less date column
+(`timestamp without time zone`, `datetime`, `TIMESTAMP`): the database session
+that stamps it (`now()`, `CURRENT_TIMESTAMP`), and the driver that writes a
+`Date` parameter into it and reads it back.
 
-Left alone, the database stamps such a column in its own session timezone and
-the driver reads it in the timezone of the Node process. The two agree only
-while both clocks do. A database running in local time, or an application host
-that is not UTC, then shifts every `@CreateDateColumn` / `@UpdateDateColumn`
-by the offset.
+Left alone, the database stamps such a column in its own session timezone,
+while the driver reads and writes it in the timezone of the Node process. They
+agree only while both clocks do. A database running in local time, or an
+application host that is not UTC, then shifts every `@CreateDateColumn` /
+`@UpdateDateColumn` by the offset, and a value the application writes can land
+in a different zone than one the database stamps.
 
 | Driver              | What is applied                                                                                   |
 |:--------------------|:--------------------------------------------------------------------------------------------------|
-| `postgres`          | `-c TimeZone=UTC` as a startup option (`extra.options`), and a pool type parser (`extra.types`) reading `timestamp without time zone` as UTC. `infinity` and BC dates keep working. |
-| `mysql`, `mariadb`  | `timezone: 'Z'` for mysql2, and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
+| `postgres`          | `-c TimeZone=UTC` as a startup option (`extra.options`); a pool type parser (`extra.types`) reading `timestamp without time zone` as UTC, with `infinity` and BC dates intact; a pool client (`extra.Client`, built on `pg-native` when typeorm uses it) sending `Date` parameters as UTC. |
+| `mysql`, `mariadb`  | `timezone: 'Z'` for mysql2 (reading and parameters), and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
+| `oracle`            | a pool `sessionCallback` running `ALTER SESSION SET TIME_ZONE = '+00:00'`; connections reading a zone-less `TIMESTAMP` as UTC and binding `Date` parameters as `TIMESTAMP WITH TIME ZONE`. |
 | `cockroachdb`       | nothing: typeorm maps date columns to `timestamptz`, which carries its zone.                         |
-| `better-sqlite3`    | nothing: `datetime('now')` stamps UTC and typeorm reads the column back as UTC.                     |
+| `better-sqlite3`    | nothing: `datetime('now')` stamps UTC and typeorm reads and writes the column as UTC.               |
 | `mongodb`           | nothing: BSON dates are UTC.                                                                        |
 | `mssql`             | nothing, see below.                                                                                 |
-| `oracle`            | nothing, see below.                                                                                 |
 
-Settings that are already present win, which also makes the call idempotent:
-a mysql `timezone`, a postgres `TimeZone` in `extra.options`, or postgres
-`extra.types`. A mysql replication setup has no per-connection hook and is
-returned unchanged. A given `driver` is wrapped (mysql) or used for the
-remaining postgres types instead of the one typeorm loads.
+It is **all or nothing** per driver: half a pin shifts values instead of fixing
+them. So anything already set on either side returns the options unchanged: a
+mysql `timezone`; a postgres `TimeZone` in `extra.options`, `extra.types` or
+`extra.Client`; an oracle `extra.sessionCallback`. That is also what makes the
+call idempotent. A mysql replication setup has no per-connection hook and is
+returned unchanged too. A given `driver` is wrapped instead of the one typeorm
+loads.
 
 Only UTC is supported: a zone-less value can be read as UTC with a marker,
 while any other zone needs the offset in force at that instant.
 
-Two drivers cannot be pinned through the options alone:
+Two limits remain:
 
-- **mssql**: typeorm stamps with `getdate()`, the local time of the server's
-  operating system, and SQL Server has no session timezone to set. The driver
-  reads `datetime2` as UTC (`useUTC`, on by default), so values are right only
-  on a server running in UTC. Otherwise declare the default yourself, e.g.
+- **mssql** cannot be pinned through the options: typeorm stamps with
+  `getdate()`, the local time of the server's operating system, and SQL Server
+  has no session timezone to set. The driver reads `datetime2` as UTC
+  (`useUTC`, on by default), so values are right only on a server running in
+  UTC. Otherwise declare the default yourself, e.g.
   `@CreateDateColumn({ default: () => 'SYSUTCDATETIME()' })`.
-- **oracle**: typeorm stamps a zone-less `TIMESTAMP` with `CURRENT_TIMESTAMP`,
-  which follows the session timezone, and pinning it needs a session callback
-  on the pool. It is not covered yet.
+- **oracle** hands a zone-less `TIMESTAMP` over as a local `Date`, with no
+  option to change that, so the pin re-reads its fields as UTC. That is exact
+  in a process running in UTC. In a zone with daylight saving, a value whose
+  fields fall into the local spring-forward hour arrives an hour late.
 
 ::: warning
 Only new rows are affected. A database that ran in another zone keeps the
@@ -337,8 +343,8 @@ Any other value throws an `OptionsError`.
 **Returns**
 
 `DataSourceOptions`: a new object when anything was applied, otherwise the
-input itself (another driver, a mysql replication setup, a mysql `timezone`
-already set). The input is never modified.
+input itself (a driver needing nothing, a mysql replication setup, a setting
+already present). The input is never modified.
 
 ## `DataSourceFindOptions`
 

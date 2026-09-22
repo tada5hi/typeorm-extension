@@ -11,8 +11,8 @@ import { withDataSourceTimezone } from '../../../../src';
 import { Stamp } from '../../../data/entity/stamp';
 
 /**
- * better-sqlite3 needs no pinning: `datetime('now')` stamps UTC and typeorm
- * reads the column back as UTC. This holds that claim (made by the
+ * better-sqlite3 needs no pinning: `datetime('now')` stamps UTC, and typeorm
+ * writes and reads the column as UTC. This holds that claim (made by the
  * withDataSourceTimezone docs) against a process far from UTC.
  */
 describe('src/data-source/options/timezone (better-sqlite3)', () => {
@@ -47,11 +47,17 @@ describe('src/data-source/options/timezone (better-sqlite3)', () => {
         try {
             const repository = dataSource.getRepository(Stamp);
             const before = Date.now();
-            const saved = await repository.save(repository.create({}));
+            const written = new Date(before);
+            const saved = await repository.save(repository.create({ writtenAt: written }));
             const read = await repository.findOneByOrFail({ id: saved.id });
 
-            // sqlite stores seconds, so allow for the truncation
+            // stamped by the database, which stores seconds only
             expect(Math.abs(read.createdAt.getTime() - before)).toBeLessThan(2_000);
+
+            // written by the application, stored as a UTC wall clock
+            expect(read.writtenAt.getTime()).toEqual(written.getTime());
+            const [row] = await dataSource.query('SELECT "writtenAt" AS w FROM "stamp" WHERE "id" = ?', [saved.id]);
+            expect(Date.parse(`${String(row.w).replace(' ', 'T')}Z`)).toEqual(written.getTime());
         } finally {
             await dataSource.destroy();
         }

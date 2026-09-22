@@ -1,7 +1,13 @@
-import { CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+    Column,
+    CreateDateColumn,
+    Entity,
+    PrimaryGeneratedColumn,
+} from 'typeorm';
 
 /**
- * A row whose only data is the time the database stamped it with.
+ * One value the database stamps (`createdAt`) and one the application
+ * writes (`writtenAt`), both in the driver's zone-less date type.
  */
 @Entity()
 export class Stamp {
@@ -10,4 +16,7 @@ export class Stamp {
 
     @CreateDateColumn()
     createdAt: Date;
+
+    @Column({ nullable: true })
+    writtenAt: Date;
 }
