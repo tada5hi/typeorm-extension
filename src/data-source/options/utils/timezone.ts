@@ -20,6 +20,13 @@ const POSTGRES_TIMESTAMP_OID = 1114;
  */
 const POSTGRES_TIMESTAMP_TZ_OID = 1184;
 
+/**
+ * A `TimeZone` assignment among the postgres startup options, in either
+ * spelling the server accepts (`-c TimeZone=...`, `--TimeZone=...`). The
+ * name is matched whole: `log_timezone` sets something else entirely.
+ */
+const POSTGRES_TIMEZONE_OPTION = /(?:^|\s)(?:-c\s*|--)timezone=/i;
+
 const MYSQL_SESSION_TIMEZONE_SQL = 'SET time_zone = \'+00:00\'';
 
 type TypeParser = (value: string) => unknown;
@@ -140,7 +147,7 @@ export function withDataSourceTimezone<T extends DataSourceOptions>(
         const extra : Record<string, any> = { ...(options.extra ?? {}) };
 
         const startup = typeof extra.options === 'string' ? extra.options : '';
-        if (!/timezone/i.test(startup)) {
+        if (!POSTGRES_TIMEZONE_OPTION.test(startup)) {
             extra.options = `${startup} -c TimeZone=UTC`.trim();
         }
 

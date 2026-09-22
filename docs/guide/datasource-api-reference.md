@@ -286,7 +286,11 @@ by the offset.
 |:--------------------|:--------------------------------------------------------------------------------------------------|
 | `postgres`          | `-c TimeZone=UTC` as a startup option (`extra.options`), and a pool type parser (`extra.types`) reading `timestamp without time zone` as UTC. `infinity` and BC dates keep working. |
 | `mysql`, `mariadb`  | `timezone: 'Z'` for mysql2, and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
-| any other driver    | nothing                                                                                           |
+| `cockroachdb`       | nothing: typeorm maps date columns to `timestamptz`, which carries its zone.                         |
+| `better-sqlite3`    | nothing: `datetime('now')` stamps UTC and typeorm reads the column back as UTC.                     |
+| `mongodb`           | nothing: BSON dates are UTC.                                                                        |
+| `mssql`             | nothing, see below.                                                                                 |
+| `oracle`            | nothing, see below.                                                                                 |
 
 Settings that are already present win, which also makes the call idempotent:
 a mysql `timezone`, a postgres `TimeZone` in `extra.options`, or postgres
@@ -296,6 +300,17 @@ remaining postgres types instead of the one typeorm loads.
 
 Only UTC is supported: a zone-less value can be read as UTC with a marker,
 while any other zone needs the offset in force at that instant.
+
+Two drivers cannot be pinned through the options alone:
+
+- **mssql**: typeorm stamps with `getdate()`, the local time of the server's
+  operating system, and SQL Server has no session timezone to set. The driver
+  reads `datetime2` as UTC (`useUTC`, on by default), so values are right only
+  on a server running in UTC. Otherwise declare the default yourself, e.g.
+  `@CreateDateColumn({ default: () => 'SYSUTCDATETIME()' })`.
+- **oracle**: typeorm stamps a zone-less `TIMESTAMP` with `CURRENT_TIMESTAMP`,
+  which follows the session timezone, and pinning it needs a session callback
+  on the pool. It is not covered yet.
 
 ::: warning
 Only new rows are affected. A database that ran in another zone keeps the
@@ -321,7 +336,9 @@ Any other value throws an `OptionsError`.
 
 **Returns**
 
-`DataSourceOptions` (a new object; the input is not modified)
+`DataSourceOptions`: a new object when anything was applied, otherwise the
+input itself (another driver, a mysql replication setup, a mysql `timezone`
+already set). The input is never modified.
 
 ## `DataSourceFindOptions`
 

@@ -2,6 +2,7 @@ import type { DataSourceOptions } from 'typeorm';
 import { PlatformTools } from 'typeorm/platform/PlatformTools';
 import {
     afterEach,
+    beforeEach,
     describe,
     expect,
     it,
@@ -21,11 +22,38 @@ type Extra = { extra: Record<string, any> };
 
 const pg = PlatformTools.load('pg');
 
+/**
+ * Every variable this suite reads, in both spellings: a leftover alias in the
+ * shell running the tests would otherwise answer for the one a test cleared.
+ */
+const ENV_KEYS = [
+    EnvironmentVariableName.TIMEZONE,
+    EnvironmentVariableName.TIMEZONE_ALT,
+    EnvironmentVariableName.URL,
+    EnvironmentVariableName.URL_ALT,
+    EnvironmentVariableName.TYPE,
+    EnvironmentVariableName.TYPE_ALT,
+];
+
 describe('src/data-source/options/timezone', () => {
+    const saved : Record<string, string | undefined> = {};
+
+    beforeEach(() => {
+        for (const key of ENV_KEYS) {
+            saved[key] = process.env[key];
+            delete process.env[key];
+        }
+        resetEnv();
+    });
+
     afterEach(() => {
-        delete process.env[EnvironmentVariableName.TIMEZONE];
-        delete process.env[EnvironmentVariableName.URL];
-        delete process.env[EnvironmentVariableName.TYPE];
+        for (const key of ENV_KEYS) {
+            if (typeof saved[key] === 'undefined') {
+                delete process.env[key];
+            } else {
+                process.env[key] = saved[key];
+            }
+        }
         resetEnv();
     });
 
@@ -158,6 +186,22 @@ describe('src/data-source/options/timezone', () => {
 
             expect(options.extra.types).toBe(types);
             expect(options.extra.options).toEqual('-c timezone=Europe/Berlin');
+        });
+
+        it('should match only a TimeZone assignment among the startup options', () => {
+            const pinned = (startup: string) => (withDataSourceTimezone({
+                type: 'postgres',
+                extra: { options: startup },
+            }, 'UTC') as DataSourceOptions & Extra).extra.options;
+
+            // other settings which merely mention a timezone
+            expect(pinned('-c log_timezone=Europe/Berlin')).toEqual('-c log_timezone=Europe/Berlin -c TimeZone=UTC');
+            expect(pinned('-c search_path=timezone')).toEqual('-c search_path=timezone -c TimeZone=UTC');
+
+            // the setting itself, in both spellings, is left alone
+            expect(pinned('-c TimeZone=Europe/Berlin')).toEqual('-c TimeZone=Europe/Berlin');
+            expect(pinned('-ctimezone=UTC')).toEqual('-ctimezone=UTC');
+            expect(pinned('--timezone=UTC')).toEqual('--timezone=UTC');
         });
 
         it('should be idempotent', () => {

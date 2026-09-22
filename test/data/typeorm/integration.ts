@@ -106,6 +106,14 @@ export function supportsDatabaseExistenceCheck(driver?: IntegrationDriver) : boo
 }
 
 /**
+ * Whether withDataSourceTimezone pins the driver: both the session which
+ * stamps a zone-less column and the reader.
+ */
+export function supportsDataSourceTimezone(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb';
+}
+
+/**
  * An empty variable is a value, not an absence — the drivers which run without
  * authentication are configured with an explicitly empty user/password.
  */

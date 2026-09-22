@@ -12,6 +12,7 @@ import { withDataSourceTimezone } from '../../../src';
 import { Stamp } from '../../data/entity/stamp';
 import {
     createIntegrationDataSourceOptions,
+    supportsDataSourceTimezone,
     useIntegrationDriver,
 } from '../../data/typeorm/integration';
 
@@ -26,12 +27,15 @@ const driver = useIntegrationDriver();
  * without the pin, proves the shift is real so the main check cannot pass
  * vacuously.
  */
-describe.runIf(driver === 'postgres' || driver === 'mysql' || driver === 'mariadb')(
+describe.runIf(supportsDataSourceTimezone(driver))(
     `src/data-source/options/timezone (${driver})`,
     () => {
         const previousTZ = process.env.TZ;
         let admin : DataSource;
         let previousZone : string | undefined;
+
+        const quoteIdentifier = (name: string) => `"${name.replace(/"/g, '""')}"`;
+        const quoteLiteral = (value: string) => `'${value.replace(/'/g, "''")}'`;
 
         async function stamp(options: DataSourceOptions) : Promise<number> {
             const dataSource = new DataSource(options);
@@ -62,7 +66,15 @@ describe.runIf(driver === 'postgres' || driver === 'mysql' || driver === 'mariad
             await admin.synchronize(false);
 
             if (driver === 'postgres') {
-                await admin.query(`ALTER DATABASE "${options.database}" SET timezone TO 'Pacific/Kiritimati'`);
+                // a database-level default this suite finds is put back afterwards
+                const rows : { setting: string }[] = await admin.query(
+                    'SELECT unnest(setconfig) AS setting FROM pg_db_role_setting ' +
+                    'WHERE setrole = 0 AND setdatabase = (SELECT oid FROM pg_database WHERE datname = current_database())',
+                );
+                const found = rows.find((row) => /^timezone=/i.test(row.setting));
+                previousZone = found ? found.setting.slice(found.setting.indexOf('=') + 1) : undefined;
+
+                await admin.query(`ALTER DATABASE ${quoteIdentifier(String(options.database))} SET timezone TO 'Pacific/Kiritimati'`);
             } else {
                 const [row] = await admin.query('SELECT @@GLOBAL.time_zone AS zone');
                 previousZone = row.zone;
@@ -85,9 +97,12 @@ describe.runIf(driver === 'postgres' || driver === 'mysql' || driver === 'mariad
 
             const { options } = admin;
             if (driver === 'postgres') {
-                await admin.query(`ALTER DATABASE "${options.database}" RESET timezone`);
+                const database = quoteIdentifier(String(options.database));
+                await admin.query(typeof previousZone === 'undefined' ?
+                    `ALTER DATABASE ${database} RESET timezone` :
+                    `ALTER DATABASE ${database} SET timezone TO ${quoteLiteral(previousZone)}`);
             } else {
-                await admin.query(`SET GLOBAL time_zone = '${previousZone ?? 'SYSTEM'}'`);
+                await admin.query(`SET GLOBAL time_zone = ${quoteLiteral(previousZone ?? 'SYSTEM')}`);
             }
 
             const queryRunner = admin.createQueryRunner();
