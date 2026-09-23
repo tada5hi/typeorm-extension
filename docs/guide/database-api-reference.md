@@ -389,7 +389,7 @@ own locks.
 **Throws**
 
 - `DriverError` for any driver other than `postgres`, `mysql` and `mariadb` (cockroachdb accepts the advisory lock
-  functions, but they do not lock anything), unless `silent` is set: then `fn` runs without a lock.
+  functions, but they do not lock anything), unless `strict` is `false`: then `fn` runs without a lock.
 - `DatabaseLockError` if the lock can not be acquired within `timeout`, if the query runner is in a transaction
   (the lock would outlive a rollback), or if `fn` returned with a transaction left open on it.
 
@@ -402,12 +402,12 @@ export type DatabaseLockOptions = {
      */
     timeout?: number,
     /**
-     * Run the callback without a lock on a driver which has none (e.g. sqlite
-     * in tests), instead of throwing a DriverError.
+     * Throw a DriverError on a driver which has no lock. Set to false to run
+     * the callback without a lock there instead (e.g. sqlite in tests).
      *
-     * default: false
+     * default: true
      */
-    silent?: boolean,
+    strict?: boolean,
 };
 ```
 

@@ -5,10 +5,10 @@ export type DatabaseLockOptions = {
      */
     timeout?: number,
     /**
-     * Run the callback without a lock on a driver which has none (e.g. sqlite
-     * in tests), instead of throwing a DriverError.
+     * Throw a DriverError on a driver which has no lock. Set to false to run
+     * the callback without a lock there instead (e.g. sqlite in tests).
      *
-     * default: false
+     * default: true
      */
-    silent?: boolean,
+    strict?: boolean,
 };
