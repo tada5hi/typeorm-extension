@@ -60,7 +60,7 @@ export function isDatabaseLockAcquired(rows: unknown) : boolean {
  *
  * Supported for postgres, mysql and mariadb.
  *
- * @throws DriverError on any other driver.
+ * @throws DriverError on any other driver, unless `silent` is set.
  * @throws DatabaseLockError if the lock can not be acquired within `timeout`,
  * the query runner is in a transaction, or the callback left one open.
  */
@@ -73,6 +73,10 @@ export async function withDatabaseLock<T>(
     const { type } = queryRunner.dataSource.options;
     const statement = statements.get(type);
     if (!statement) {
+        if (options.silent) {
+            return fn();
+        }
+
         throw DriverError.lockNotSupported(type);
     }
 

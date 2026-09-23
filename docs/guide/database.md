@@ -400,7 +400,8 @@ If the callback leaves a transaction open on it, the transaction is rolled back 
 which returned normally then throws a `DatabaseLockError`: committing after the release would defeat the lock.
 
 Only `postgres`, `mysql` and `mariadb` are supported. Every other driver throws a `DriverError`: cockroachdb accepts the
-postgres advisory lock functions, but they do not lock anything.
+postgres advisory lock functions, but they do not lock anything. Pass `{ silent: true }` to run the callback without a
+lock there instead, e.g. for a test suite on sqlite. Only do that where a second process can not exist.
 
 ### Driver support
 
@@ -410,7 +411,7 @@ postgres advisory lock functions, but they do not lock anything.
 | `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` (throws a `DriverError` otherwise) |
 | `changeColumnType`             | all (altered in place on every relational driver but sqlite)                    |
 | `withForeignKeyChecksDisabled` | all (a no-op wrapper outside `mysql` / `mariadb`)                               |
-| `withDatabaseLock`             | `postgres`, `mysql`, `mariadb` (throws a `DriverError` otherwise)               |
+| `withDatabaseLock`             | `postgres`, `mysql`, `mariadb` (otherwise throws, or runs unlocked if `silent`) |
 
 ::: warning NOTE
 `changeColumnType` builds its own statement rather than delegating to `queryRunner.changeColumn()`, because typeorm

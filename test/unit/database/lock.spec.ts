@@ -171,4 +171,13 @@ describe('src/database/lock', () => {
             expect(queryRunner.queries).toHaveLength(0);
         }
     });
+
+    it('should run the callback without a lock on an unsupported driver if silent', async () => {
+        const queryRunner = createFakeQueryRunner({ type: 'better-sqlite3' });
+
+        const output = await withDatabaseLock(queryRunner, 'migrations', async () => 'done', { silent: true });
+
+        expect(output).toEqual('done');
+        expect(queryRunner.queries).toHaveLength(0);
+    });
 });
