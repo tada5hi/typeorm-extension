@@ -19,6 +19,7 @@ typeorm-extension/
 │   ├── data-source/            # DataSource discovery, options, and singleton registry
 │   │   ├── find/               # findDataSource() — locate data-source file on disk
 │   │   ├── options/            # buildDataSourceOptions, env-merge, file load
+│   │   │   └── timezone/       # pinTimezone: module.ts dispatch, one file per driver
 │   │   ├── singleton.ts        # set/has/use/unsetDataSource(alias)
 │   │   └── type.ts
 │   ├── database/               # Database create/drop/check, per-dialect

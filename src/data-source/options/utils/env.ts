@@ -4,14 +4,49 @@ import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/Postgres
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
+import { OptionsError } from '../../../errors';
 import { mergeDataSourceOptions } from './merge';
+import { pinTimezone } from '../timezone';
+import { hasInstalledTimezone, isDataSourceTimezone } from '../timezone/utils';
 
 export function hasEnvDataSourceOptions() : boolean {
     return !!useEnv('type');
 }
 
-/* istanbul ignore next */
+/**
+ * Apply `DB_PIN_TIMEZONE`, when set, once the options are complete: applied
+ * before a merge, a deep merge would reach into the wrapped driver module.
+ * Options pinned in code are re-checked after the merge as well, so an
+ * environment value undoing part of the pin (a `DB_DRIVER_EXTRA`
+ * timezone, say)
+ * fails instead of leaving it half applied.
+ */
+function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
+    const timezone = useEnv('pinTimezone');
+    if (typeof timezone === 'undefined' || timezone === '') {
+        return hasInstalledTimezone(options) ?
+            pinTimezone(options, 'UTC') :
+            options;
+    }
+
+    if (!isDataSourceTimezone(timezone)) {
+        throw OptionsError.timezoneUnsupported(timezone);
+    }
+
+    return pinTimezone(options, 'UTC');
+}
+
 export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
+    const options = readRawDataSourceOptionsFromEnv();
+    if (!options) {
+        return undefined;
+    }
+
+    return applyEnvTimezone(options);
+}
+
+/* istanbul ignore next */
+function readRawDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
     if (!hasEnvDataSourceOptions()) {
         return undefined;
     }
@@ -106,10 +141,10 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
 }
 
 export function mergeDataSourceOptionsWithEnv(options: DataSourceOptions) {
-    const env = readDataSourceOptionsFromEnv();
+    const env = readRawDataSourceOptionsFromEnv();
     if (!env) {
-        return options;
+        return applyEnvTimezone(options);
     }
 
-    return mergeDataSourceOptions(env, options);
+    return applyEnvTimezone(mergeDataSourceOptions(env, options));
 }
