@@ -157,24 +157,30 @@ describe.runIf(supportsDataSourceTimezone(driver))(
                 return;
             }
 
+            // each step runs whatever the one before it did: a server left
+            // at a foreign default zone would skew every later suite on it
             const { options } = admin;
-            if (driver === 'postgres') {
-                const database = quoteIdentifier(String(options.database));
-                await admin.query(typeof previousZone === 'undefined' ?
-                    `ALTER DATABASE ${database} RESET timezone` :
-                    `ALTER DATABASE ${database} SET timezone TO ${quoteLiteral(previousZone)}`);
-            } else if (driver === 'mysql' || driver === 'mariadb') {
-                await admin.query(`SET GLOBAL time_zone = ${quoteLiteral(previousZone ?? 'SYSTEM')}`);
-            }
-
-            const queryRunner = admin.createQueryRunner();
             try {
-                await queryRunner.dropTable('stamp', true, true, true);
+                if (driver === 'postgres') {
+                    const database = quoteIdentifier(String(options.database));
+                    await admin.query(typeof previousZone === 'undefined' ?
+                        `ALTER DATABASE ${database} RESET timezone` :
+                        `ALTER DATABASE ${database} SET timezone TO ${quoteLiteral(previousZone)}`);
+                } else if (driver === 'mysql' || driver === 'mariadb') {
+                    await admin.query(`SET GLOBAL time_zone = ${quoteLiteral(previousZone ?? 'SYSTEM')}`);
+                }
             } finally {
-                await queryRunner.release();
+                try {
+                    const queryRunner = admin.createQueryRunner();
+                    try {
+                        await queryRunner.dropTable('stamp', true, true, true);
+                    } finally {
+                        await queryRunner.release();
+                    }
+                } finally {
+                    await admin.destroy();
+                }
             }
-
-            await admin.destroy();
         });
 
         it('should store a non-UTC wall clock without the pin (environment check)', async () => {
