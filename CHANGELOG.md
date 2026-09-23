@@ -18,6 +18,19 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.2.0](https://github.com/tada5hi/typeorm-extension/compare/v4.1.0...v4.2.0) (2026-09-23)
+
+
+### Features
+
+* add withDatabaseLock, a cross-dialect advisory lock ([#1450](https://github.com/tada5hi/typeorm-extension/issues/1450)) ([c4a7ffa](https://github.com/tada5hi/typeorm-extension/commit/c4a7ffa80b400f696c4fb923d46be7a7905393be))
+* **data-source:** pin the database session and the driver to UTC ([#1449](https://github.com/tada5hi/typeorm-extension/issues/1449)) ([4f31971](https://github.com/tada5hi/typeorm-extension/commit/4f31971a8089eea744615f2233de13d26051804e))
+
+
+### Bug Fixes
+
+* **deps:** bump the minorandpatch group across 1 directory with 16 updates ([#1445](https://github.com/tada5hi/typeorm-extension/issues/1445)) ([b470b2e](https://github.com/tada5hi/typeorm-extension/commit/b470b2ed6b885435887273f1ef0038f532c47b81))
+
 ## [4.1.0](https://github.com/tada5hi/typeorm-extension/compare/v4.0.0...v4.1.0) (2026-08-18)
 
 
