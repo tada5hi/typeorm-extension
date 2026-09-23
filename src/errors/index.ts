@@ -1,4 +1,5 @@
 export * from './base';
+export * from './database-lock';
 export * from './driver';
 export * from './entity-metadata';
 export * from './entity-relation-lookup';

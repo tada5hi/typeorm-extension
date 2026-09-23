@@ -88,6 +88,15 @@ There is exactly one hole those two cannot close together: on mysql a run interr
 
 The dialect statements themselves live in `src/database/schema/alter/statements.ts` as pure builders. `src/database/schema/alter/dialect.ts` resolves the dialect twice over: `findSchemaDialect` maps `cockroachdb → postgres` and `mariadb → mysql` and returns `undefined` for the rest, `resolveSchemaDialect` raises `DriverError.schemaAlterationNotSupported` instead. The renames use the throwing form, `changeColumnType` the optional one — an unknown driver falls back to `queryRunner.changeColumn()`, so it keeps working on every driver. Note what each dialect's statement has to carry: postgres names the new type and nothing else (`ALTER COLUMN … TYPE`, plus a `SET`/`DROP NOT NULL` of its own, and the caller's optional `using` expression for a conversion with no assignment cast between the two types — refused with a `DriverError` on a dialect which has no counterpart, since dropping it would let the server coerce the values on its own terms), while mysql's `MODIFY COLUMN` **replaces the definition in full** — so `buildColumnDefinition` restates every attribute (default, comment, charset, collation, `UNSIGNED`, `AUTO_INCREMENT`, `ON UPDATE`, enum values) from the `TableColumn` read back from the database. Anything left out of that description is dropped by the server, which makes invariant 2 load-bearing here too — and it only reaches as far as typeorm's own loader does: a **generated** column can only be restated with its expression, which typeorm reads from `typeorm_metadata`, so the mysql builder raises `DriverError.columnGenerationExpressionUnknown` when that comes back empty rather than flattening the column into a regular one; `ZEROFILL` is not modelled by `TableColumn` at all and is therefore lost (as it is with typeorm's own statements). `withForeignKeyChecksDisabled` reads `@@SESSION.foreign_key_checks` first and only restores it if it was on (nesting safe); on a non-mysql driver it just runs the callback so a migration stays portable.
 
+### 7. Database lock over a QueryRunner
+
+`withDatabaseLock(queryRunner, name, fn, { timeout })` (`src/database/lock/module.ts`) serializes `fn` across processes with a named advisory lock, e.g. running the migrations on several replicas (with `migrationsRun` off, since `initialize()` would run them before the lock is taken). The callback's own queries use another pooled connection, so the pool needs at least two. The lock is **session scoped**, so it is taken on the caller's `QueryRunner`, which stays on one connection until it is released. The unlock runs after `fn`, and on a throw it is attempted without hiding `fn`'s error. A runner with an open transaction is refused (`DatabaseLockError.transactionActive`): the lock outlives a rollback, and postgres refuses the unlock inside an aborted transaction, so the connection would go back to the pool still holding it. For the same reason a transaction `fn` leaves open is rolled back before the unlock; on the success path that raises `DatabaseLockError.transactionLeftOpen`, since committing after the unlock would defeat the lock. Statements come from a small per-driver map:
+
+- postgres: `pg_try_advisory_lock(hashtextextended($1, 0))`, the name hashed to a bigint key. Advisory locks are already scoped to the database.
+- mysql/mariadb: `GET_LOCK(SHA2(CONCAT(COALESCE(DATABASE(), ''), ':', ?), 256), 0)`. A named lock is global to the server, so the name is namespaced with the database and hashed to stay within the 64 character limit (SHA2, since mysql 9.7 has no `SHA1`). `COALESCE` because mariadb answers `GET_LOCK(NULL)` with `NULL` rather than an error when no database is selected.
+
+Both are try-locks, polled every 100ms until `timeout` (unset waits forever, `0` tries once), then `DatabaseLockError.timeout`. The result goes through `isDatabaseLockAcquired`: pg answers a boolean, mysql the string `'1'` / `'0'`, mariadb the number `1` / `0` (either may be `NULL`), so a truthiness check would read `'0'` as acquired. Every other driver raises `DriverError.lockNotSupported`: cockroachdb accepts the postgres advisory functions but they do not lock anything, and sqlite, mssql, oracle and mongodb have no equivalent wired. Refusing is safer than a lock that silently does nothing, so running `fn` unlocked there is opt-in (`strict: false`, meant for sqlite test suites; the same flag name as `SchemaStrictInput`).
+
 ## Design Patterns
 
 ### Context-builder pattern (database methods)
@@ -219,6 +228,7 @@ Output:
 - `OptionsError` is thrown when the context builder cannot resolve a DataSource / options.
 - `SchemaDriftError` is thrown by `assertSchemaMatchesMetadata()` and carries the reconciling `statements` (its message lists them, so an unhandled throw in CI is already the report).
 - `SchemaAlterationError` is thrown by the guarded alter helpers when the database is in neither the expected nor the desired state and `strict` is on (the default).
+- `DatabaseLockError` is thrown by `withDatabaseLock()` when the lock can not be acquired within `timeout` (`timeout`), the query runner already has an open transaction (`transactionActive`) or `fn` left one open (`transactionLeftOpen`); `DriverError.lockNotSupported()` on a driver without a real advisory lock.
 - Anywhere else, library code lets the underlying error (TypeORM, the native driver, a factory callback, file-system) propagate. **Do not wrap errors just to add a message** — wrap only when you need a typed error the caller can catch.
 
 ## File Structure (architecture → paths)
@@ -241,6 +251,7 @@ Schema drift assertion   → src/database/schema/drift/module.ts
 Migration generation     → src/database/utils/migration.ts (reuses typeorm's MigrationGenerateCommand statics)
 Guarded schema alters    → src/database/schema/alter/{indices,foreign-keys,columns,checks}.ts
 Pure schema DDL builders → src/database/schema/alter/statements.ts (+ dialect.ts — find/resolveSchemaDialect)
+Database lock            → src/database/lock/module.ts (withDatabaseLock)
 Runtime state registry   → src/runtime/module.ts (+ cache.ts — AsyncKeyedCache)
 DataSource registry      → src/data-source/singleton.ts (delegates to src/runtime)
 DataSource discovery     → src/data-source/find/module.ts

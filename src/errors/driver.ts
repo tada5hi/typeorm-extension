@@ -17,6 +17,10 @@ export class DriverError extends TypeormExtensionError {
         return new DriverError(`Schema alterations are not supported for the driver ${driverName}.`);
     }
 
+    static lockNotSupported(driverName: string) {
+        return new DriverError(`Database locks are not supported for the driver ${driverName}.`);
+    }
+
     static columnConversionExpressionNotSupported(driverName: string) {
         return new DriverError(
             `A conversion expression (\`using\`) can not be expressed for the driver ${driverName}, ` +

@@ -32,9 +32,10 @@ typeorm-extension/
 │   │   │   ├── drift.ts        # getSchemaDrift / assertSchemaMatchesMetadata
 │   │   │   ├── alter/          # guarded renameIndex / renameForeignKey / changeColumnType / withForeignKeyChecksDisabled
 │   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
+│   │   ├── lock/               # withDatabaseLock: named advisory lock over a QueryRunner (postgres, mysql, mariadb)
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
-│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError + EntityMetadataError + EntityRelationLookupError (one class per file)
+│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError + DatabaseLockError + EntityMetadataError + EntityRelationLookupError (one class per file)
 │   ├── helpers/                # Entity runtime helpers
 │   │   └── entity/             # name, metadata, property-names, join-column validation, uniqueness
 │   ├── runtime/                # Process-global state registry (internal, not in the public barrel)
@@ -76,8 +77,9 @@ typeorm-extension/
 | `data-source/`   | Locate, build, and cache `DataSource` instances by alias. Backbone for every other feature.            |
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
 | `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
+| `database/lock/` | `withDatabaseLock`: a named, session-scoped advisory lock over a `QueryRunner` (e.g. to serialize migrations across replicas). |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
-| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError` / `EntityMetadataError` / `EntityRelationLookupError`). One class per file; every error a consumer may catch lives here, not next to its thrower. |
+| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError` / `DatabaseLockError` / `EntityMetadataError` / `EntityRelationLookupError`). One class per file; every error a consumer may catch lives here, not next to its thrower. |
 | `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager) and is the only stable one; the rest stay `@experimental` public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
