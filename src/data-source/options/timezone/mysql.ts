@@ -53,11 +53,23 @@ function readSetting<K extends string>(options: Record<string, any>, key: K) : u
  * A `timezone` naming UTC and `dateStrings: ['DATE']` are accepted as they
  * are. Another `timezone`, other `dateStrings`, a custom `typeCast` or a
  * replication setup (a pool cluster has no per-connection hook) is a
- * conflict.
+ * conflict, and so is a pin altered after it was applied.
  */
 export function applyMysqlTimezone(options: MysqlDataSourceOptions) : MysqlDataSourceOptions {
     if (isInstalled(options.driver)) {
-        return options;
+        const timezone = readSetting(options, 'timezone');
+        const dateStrings = readSetting(options, 'dateStrings');
+        if (
+            timezone === 'Z' &&
+            Array.isArray(dateStrings) &&
+            dateStrings.length === 1 &&
+            dateStrings[0] === 'DATE' &&
+            typeof readSetting(options, 'typeCast') === 'undefined'
+        ) {
+            return options;
+        }
+
+        throw OptionsError.timezoneConflict('the mysql pin was altered after it was applied.');
     }
 
     if (typeof options.replication !== 'undefined') {

@@ -100,7 +100,8 @@ function proxyMethods<T extends object>(target: T, methods: Record<string, Metho
 
 /**
  * Wrap a `node-oracledb` module so the connections it hands out (pooled or
- * standalone) read a zone-less `TIMESTAMP` as UTC, return `TIMESTAMP`
+ * standalone, the latter with the session pinned too) read a zone-less
+ * `TIMESTAMP` as UTC, return `TIMESTAMP`
  * out-binds as UTC and send Date parameters as UTC wall clock. The module
  * exposes the read conversion only process-wide (`oracledb.fetchTypeHandler`)
  * or per `execute()` call, so the handler is added to every call a wrapped
@@ -166,6 +167,39 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
         return toBindValue(value);
     };
 
+    /**
+     * A row of `executeMany` holds plain values whose types, if any, come from
+     * `bindDefs`: only a Date without one, or typed TIMESTAMP, is shifted.
+     */
+    const toRow = (row: unknown, definitions: unknown) : unknown => {
+        const shift = (value: unknown, definition: unknown) => {
+            const type = definition && typeof definition === 'object' ?
+                (definition as Record<string, any>).type :
+                undefined;
+
+            return isZonelessType(type) ? toBindValue(value) : value;
+        };
+
+        if (Array.isArray(row)) {
+            return row.map((value, index) => shift(value, Array.isArray(definitions) ? definitions[index] : undefined));
+        }
+
+        if (row && typeof row === 'object') {
+            const output : Record<string, unknown> = {};
+            const keys = Object.keys(row);
+            for (const key of keys) {
+                const definition = definitions && typeof definitions === 'object' && !Array.isArray(definitions) ?
+                    (definitions as Record<string, unknown>)[key] :
+                    undefined;
+                output[key] = shift((row as Record<string, unknown>)[key], definition);
+            }
+
+            return output;
+        }
+
+        return row;
+    };
+
     const toBinds = (binds: unknown) : unknown => {
         if (Array.isArray(binds)) {
             return binds.map((value) => toBind(value));
@@ -184,13 +218,25 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
         return binds;
     };
 
-    const isTimestampOut = (definition: unknown) : boolean => !!definition &&
-        typeof definition === 'object' &&
-        (definition as Record<string, any>).type === driver.DB_TYPE_TIMESTAMP &&
-        (
-            (definition as Record<string, any>).dir === driver.BIND_OUT ||
-            (definition as Record<string, any>).dir === driver.BIND_INOUT
-        );
+    // An INOUT bind without a type takes its type from its value: a Date
+    // travels as TIMESTAMP, and returns as one.
+    const isTimestampOut = (definition: unknown) : boolean => {
+        if (!definition || typeof definition !== 'object' || isDate(definition)) {
+            return false;
+        }
+
+        const {
+            type, 
+            dir, 
+            val, 
+        } = definition as Record<string, any>;
+        if (dir !== driver.BIND_OUT && dir !== driver.BIND_INOUT) {
+            return false;
+        }
+
+        return type === driver.DB_TYPE_TIMESTAMP ||
+            (typeof type === 'undefined' && dir === driver.BIND_INOUT && isDate(val));
+    };
 
     const readOut = (value: unknown) : unknown => {
         if (isDate(value)) {
@@ -280,10 +326,10 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
             return settle(original(sql, toBinds(input), withHandler(optionsOrCallback)), input, undefined, convertResult);
         },
         executeMany: (original) => (sql: unknown, binds: unknown, options?: unknown, callback?: unknown) => {
-            const rows = Array.isArray(binds) ? binds.map((row) => toBinds(row)) : binds;
             const optionsOrCallback = typeof options === 'function' ? undefined : options as Record<string, any> | undefined;
             const done = typeof options === 'function' ? options : callback;
             const definitions = optionsOrCallback?.bindDefs;
+            const rows = Array.isArray(binds) ? binds.map((row) => toRow(row, definitions)) : binds;
 
             if (typeof done === 'function') {
                 return original(sql, rows, optionsOrCallback ?? {}, (err: unknown, result: any) => {
@@ -329,10 +375,42 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
         return output ? wrap(output) : output;
     };
 
+    // A standalone connection gets no pool sessionCallback, so it is pinned
+    // before it is handed out.
+    const pinConnection = (connection: Record<string, any>) : Promise<Record<string, any>> => Promise
+        .resolve(connection.execute(ORACLE_SESSION_TIMEZONE_SQL))
+        .then(
+            () => wrapConnection(connection),
+            // a connection left in another zone is closed rather than handed out
+            (error) => Promise.resolve(connection.close())
+                .catch(() => undefined)
+                .then(() => Promise.reject(error)),
+        );
+
     return markInstalled(proxyMethods(driver, {
         createPool: wrapFactory(wrapPool),
-        getPool: wrapFactory(wrapPool),
-        getConnection: wrapFactory(wrapConnection),
+        getPool: (original) => (...args: any[]) => {
+            const pool = original(...args);
+            return pool ? wrapPool(pool) : pool;
+        },
+        getConnection: (original) => (...args: any[]) => {
+            const callback = args[args.length - 1];
+            if (typeof callback === 'function') {
+                return original(...args.slice(0, -1), (err: unknown, connection?: Record<string, any>) => {
+                    if (err || !connection) {
+                        callback(err, connection);
+                        return;
+                    }
+
+                    pinConnection(connection).then(
+                        (value) => callback(null, value),
+                        (error) => callback(error),
+                    );
+                });
+            }
+
+            return original(...args).then((connection: Record<string, any>) => pinConnection(connection));
+        },
     }));
 }
 
@@ -345,7 +423,11 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
  */
 export function applyOracleTimezone(options: OracleDataSourceOptions) : OracleDataSourceOptions {
     if (isInstalled(options.driver)) {
-        return options;
+        if (isInstalled(options.extra?.sessionCallback)) {
+            return options;
+        }
+
+        throw OptionsError.timezoneConflict('the oracle pin was altered after it was applied.');
     }
 
     const existing : unknown = options.extra?.sessionCallback;
@@ -353,7 +435,7 @@ export function applyOracleTimezone(options: OracleDataSourceOptions) : OracleDa
         throw OptionsError.timezoneConflict('the oracle sessionCallback names a PL/SQL procedure, which can not run after the session pin.');
     }
 
-    const sessionCallback : OracleSessionCallback = (connection, requestedTag, callback) => {
+    const sessionCallback : OracleSessionCallback = markInstalled((connection, requestedTag, callback) => {
         connection.execute(ORACLE_SESSION_TIMEZONE_SQL, (err: unknown) => {
             if (err || typeof existing !== 'function') {
                 callback(err ?? undefined);
@@ -362,7 +444,7 @@ export function applyOracleTimezone(options: OracleDataSourceOptions) : OracleDa
 
             (existing as OracleSessionCallback)(connection, requestedTag, callback);
         });
-    };
+    });
 
     const driver = options.driver ?? PlatformTools.load('oracledb');
 

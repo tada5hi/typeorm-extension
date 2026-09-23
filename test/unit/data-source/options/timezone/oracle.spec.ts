@@ -265,7 +265,63 @@ describe('src/data-source/options/timezone/oracle', () => {
             const pooled = await wrapped.getPool().getConnection();
             await pooled.execute('SELECT', []);
 
-            expect(executed.map((entry) => typeof entry.options.fetchTypeHandler)).toEqual(['function', 'function']);
+            expect(executed.map((entry) => entry.sql)).toEqual(['ALTER SESSION SET TIME_ZONE = \'+00:00\'', 'SELECT', 'SELECT']);
+            expect(executed.slice(1).map((entry) => typeof entry.options.fetchTypeHandler)).toEqual(['function', 'function']);
+        });
+
+        it('should pin a standalone connection in the callback form, and close one it could not pin', async () => {
+            const { driver, executed } = createFakeOracle();
+            const connection = await new Promise<any>((resolve) => {
+                const getConnection = (callback: any) => driver.getConnection().then((value) => callback(null, value));
+                const wrapped : any = createOracleUTCDriver({ ...driver, getConnection });
+                wrapped.getConnection((_err: unknown, value: unknown) => resolve(value));
+            });
+            expect(executed[0].sql).toEqual('ALTER SESSION SET TIME_ZONE = \'+00:00\'');
+            await connection.execute('SELECT', []);
+            expect(typeof executed[1].options.fetchTypeHandler).toEqual('function');
+
+            let closed = false;
+            const failing = {
+                execute: () => Promise.reject(new Error('denied')),
+                close: () => { closed = true; },
+            };
+            const wrapped : any = createOracleUTCDriver({ ...driver, getConnection: () => Promise.resolve(failing) });
+            await expect(wrapped.getConnection()).rejects.toThrow('denied');
+            expect(closed).toBe(true);
+        });
+
+        it('should honour the bindDefs types of executeMany', async () => {
+            const { driver, many } = createFakeOracle();
+            const connection = await connect(createOracleUTCDriver(driver));
+            const date = new Date('2026-09-22T11:05:00.000Z');
+            const wall = writeUTCAsLocalDate(date);
+
+            await connection.executeMany('INSERT', [[date, date, date, date]], {
+                bindDefs: [
+                    { type: 'ts' },
+                    { type: 'date' },
+                    { type: 'tstz' },
+                    {},
+                ],
+            });
+            await connection.executeMany('INSERT', [{ a: date, b: date }], { bindDefs: { a: { type: 'date' }, b: { type: 'ts' } } });
+
+            expect(many[0].binds).toEqual([[wall, date, date, wall]]);
+            expect(many[1].binds).toEqual([{ a: date, b: wall }]);
+        });
+
+        it('should read an untyped INOUT Date bind back as UTC', async () => {
+            const local = new Date(2026, 8, 22, 11, 0);
+            const { driver } = createFakeOracle({ at: local, n: 1 });
+            const connection = await connect(createOracleUTCDriver(driver));
+            const date = new Date('2026-09-22T11:05:00.000Z');
+
+            const result = await connection.execute('BEGIN', {
+                at: { dir: 'inout', val: date },
+                n: { dir: 'inout', val: 1 },
+            });
+
+            expect(result.outBinds).toEqual({ at: new Date('2026-09-22T11:00:00.000Z'), n: 1 });
         });
 
         it('should pass classes through untouched and keep method identity', async () => {
@@ -343,11 +399,13 @@ describe('src/data-source/options/timezone/oracle', () => {
                 .toThrow(OptionsError);
         });
 
-        it('should be idempotent', () => {
+        it('should be idempotent, and refuse a pin altered after it was applied', () => {
             const { driver } = createFakeOracle();
-            const once = applyOracleTimezone({ type: 'oracle', driver });
+            const once = applyOracleTimezone({ type: 'oracle', driver }) as any;
 
             expect(applyOracleTimezone(once)).toBe(once);
+            expect(() => applyOracleTimezone({ ...once, extra: { sessionCallback: () => undefined } }))
+                .toThrow(OptionsError);
         });
     });
 });

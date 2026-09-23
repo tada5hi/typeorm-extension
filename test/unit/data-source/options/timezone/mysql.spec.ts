@@ -105,9 +105,13 @@ describe('src/data-source/options/timezone/mysql', () => {
             }
         });
 
-        it('should be idempotent', () => {
+        it('should be idempotent, and refuse a pin altered after it was applied', () => {
             const once = applyMysqlTimezone({ type: 'mysql', driver });
             expect(applyMysqlTimezone(once)).toBe(once);
+
+            expect(() => applyMysqlTimezone({ ...once, timezone: 'local' })).toThrow(OptionsError);
+            expect(() => applyMysqlTimezone({ ...once, extra: { dateStrings: true } })).toThrow(OptionsError);
+            expect(() => applyMysqlTimezone({ ...once, extra: { typeCast: () => undefined } })).toThrow(OptionsError);
         });
     });
 });

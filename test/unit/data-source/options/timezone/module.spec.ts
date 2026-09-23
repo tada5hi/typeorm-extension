@@ -32,6 +32,8 @@ const ENV_KEYS = [
     EnvironmentVariableName.URL_ALT,
     EnvironmentVariableName.TYPE,
     EnvironmentVariableName.TYPE_ALT,
+    EnvironmentVariableName.DRIVER_EXTRA,
+    EnvironmentVariableName.DRIVER_EXTRA_ALT,
 ];
 
 describe('src/data-source/options/timezone', () => {
@@ -130,6 +132,17 @@ describe('src/data-source/options/timezone', () => {
             process.env[EnvironmentVariableName.PIN_TIMEZONE] = 'UTC';
 
             expect(mergeDataSourceOptionsWithEnv({ type: 'mysql' })).toMatchObject({ timezone: 'Z' });
+        });
+
+        it('should re-check a pin applied in code after merging with the env', () => {
+            const pinned = withDataSourceTimezone({ type: 'mysql' }, 'UTC');
+            process.env[EnvironmentVariableName.TYPE] = 'mysql';
+
+            expect(mergeDataSourceOptionsWithEnv(pinned)).toMatchObject({ timezone: 'Z' });
+
+            process.env[EnvironmentVariableName.DRIVER_EXTRA] = JSON.stringify({ timezone: '+02:00' });
+            resetEnv();
+            expect(() => mergeDataSourceOptionsWithEnv(pinned)).toThrow(OptionsError);
         });
 
         it('should leave options alone without it', () => {

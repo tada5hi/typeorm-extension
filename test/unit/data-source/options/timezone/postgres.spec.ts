@@ -12,6 +12,8 @@ import {
     applyPostgresTimezone,
     createPostgresUTCClient,
     createPostgresUTCTypes,
+    extractPostgresUrlOptions,
+    parsePostgresArray,
     reserializePostgresLocalDateAsUTC,
     serializePostgresDateAsUTC,
 } from '../../../../../src/data-source/options/timezone/postgres';
@@ -108,6 +110,38 @@ describe('src/data-source/options/timezone/postgres', () => {
         });
     });
 
+    describe('parsePostgresArray', () => {
+        const identity = (value: string) => value;
+
+        it('should read quoted, NULL and nested elements', () => {
+            expect(parsePostgresArray('{a,"b,c","d\\"e",NULL,"NULL"}', identity)).toEqual(['a', 'b,c', 'd"e', null, 'NULL']);
+            expect(parsePostgresArray('{{a,b},{c,d}}', identity)).toEqual([['a', 'b'], ['c', 'd']]);
+            expect(parsePostgresArray('{}', identity)).toEqual([]);
+        });
+
+        it('should skip a dimension decoration', () => {
+            expect(parsePostgresArray('[0:1]={a,b}', identity)).toEqual(['a', 'b']);
+        });
+    });
+
+    describe('extractPostgresUrlOptions', () => {
+        it('should take the options out and keep every other byte', () => {
+            expect(extractPostgresUrlOptions('postgres://h/db?a=%2F&options=-c+x%3D1&b=2#f')).toEqual({
+                url: 'postgres://h/db?a=%2F&b=2#f',
+                options: '-c x=1',
+            });
+            expect(extractPostgresUrlOptions('postgres://h/db?options=-c%20x%3D1')).toEqual({ url: 'postgres://h/db', options: '-c x=1' });
+            expect(extractPostgresUrlOptions('postgres://h/db?a=1')).toEqual({ url: 'postgres://h/db?a=1' });
+        });
+
+        it('should take the last of repeated options, as pg does', () => {
+            expect(extractPostgresUrlOptions('postgres://h/db?options=-c+x%3D1&options=-c+x%3D2')).toEqual({
+                url: 'postgres://h/db',
+                options: '-c x=2',
+            });
+        });
+    });
+
     describe('reserializePostgresLocalDateAsUTC', () => {
         it('should re-serialize pg\'s local form of a Date as UTC', () => {
             expect(reserializePostgresLocalDateAsUTC('2026-09-22T09:05:49.850-10:00')).toEqual('2026-09-22T19:05:49.850+00:00');
@@ -189,28 +223,84 @@ describe('src/data-source/options/timezone/postgres', () => {
             expect(apply({}).extra.options).toEqual('-c search_path=app -c TimeZone=UTC');
         });
 
-        it('should pin the options of a connection url, which pg lets win', () => {
+        it('should move the options of a connection url into extra.options, which then carries the pin', () => {
             const options = apply({
                 url: 'postgres://u:p@host:5432/db?sslmode=require&options=-c%20search_path%3Dapp',
+                extra: { options: '-c statement_timeout=5000' },
+            });
+
+            expect(options.url).toEqual('postgres://u:p@host:5432/db?sslmode=require');
+            expect(options.extra.options).toEqual('-c search_path=app -c TimeZone=UTC');
+            expect(apply({ url: 'postgres://u:p@host/db' }).url).toEqual('postgres://u:p@host/db');
+        });
+
+        it('should ignore PGOPTIONS once the url carries options, as pg does', () => {
+            process.env.PGOPTIONS = '-c search_path=env';
+
+            expect(apply({ url: 'postgres://h/db?options=-c+search_path%3Durl' }).extra.options)
+                .toEqual('-c search_path=url -c TimeZone=UTC');
+        });
+
+        it('should let extra.connectionString replace the url', () => {
+            const options = apply({
+                url: 'postgres://h/db?options=-c+search_path%3Durl',
+                extra: { connectionString: 'postgres://other/db?options=-c+search_path%3Dextra#frag' },
+            });
+
+            expect(options.extra.connectionString).toEqual('postgres://other/db#frag');
+            expect(options.extra.options).toEqual('-c search_path=extra -c TimeZone=UTC');
+        });
+
+        it('should refuse a replication node url carrying options', () => {
+            expect(() => apply({
                 replication: {
                     master: { url: 'postgres://u:p@master/db?options=-c+search_path%3Dapp' },
                     slaves: [{ host: 'slave' }],
                 },
-            });
+            })).toThrow(OptionsError);
 
-            const read = (url: string) => new URLSearchParams(url.slice(url.indexOf('?') + 1));
-            expect(read(options.url).get('options')).toEqual('-c search_path=app -c TimeZone=UTC');
-            expect(read(options.url).get('sslmode')).toEqual('require');
-            expect(read(options.replication.master.url).get('options')).toEqual('-c search_path=app -c TimeZone=UTC');
-            expect(options.replication.slaves[0]).toEqual({ host: 'slave' });
-            expect(apply({ url: 'postgres://u:p@host/db' }).url).toEqual('postgres://u:p@host/db');
+            const options = apply({
+                replication: {
+                    master: { url: 'postgres://u:p@master/db?sslmode=require' },
+                    slaves: [{ host: 'slave' }],
+                },
+            });
+            expect(options.replication.master.url).toEqual('postgres://u:p@master/db?sslmode=require');
+            expect(options.extra.options).toEqual('-c TimeZone=UTC');
+        });
+
+        it('should refuse a pin altered after it was applied, and keep an intact one', () => {
+            const once = apply({});
+            expect(applyPostgresTimezone(once)).toBe(once);
+
+            expect(() => applyPostgresTimezone({ ...once, extra: { ...once.extra, options: '-c TimeZone=Europe/Berlin' } }))
+                .toThrow(OptionsError);
+            expect(() => applyPostgresTimezone({ ...once, extra: { ...once.extra, Client: pg.Client } }))
+                .toThrow(OptionsError);
+            expect(() => applyPostgresTimezone({ ...once, url: 'postgres://h/db?options=-c+search_path%3Dx' }))
+                .toThrow(OptionsError);
+        });
+
+        it('should read the last TimeZone assignment, as postgres does', () => {
+            expect(() => apply({ extra: { options: '-c TimeZone=UTC -c TimeZone=Europe/Berlin' } })).toThrow(OptionsError);
+            expect(apply({ extra: { options: '-c TimeZone=Europe/Berlin -c TimeZone=UTC' } }).extra.options)
+                .toEqual('-c TimeZone=Europe/Berlin -c TimeZone=UTC');
         });
 
         it('should match only a TimeZone assignment, and accept one naming UTC', () => {
             expect(apply({ extra: { options: '-c log_timezone=Europe/Berlin' } }).extra.options)
                 .toEqual('-c log_timezone=Europe/Berlin -c TimeZone=UTC');
 
-            for (const startup of ['-c TimeZone=UTC', '-ctimezone=Etc/UTC', '--timezone=utc', '-c TimeZone=GMT']) {
+            for (const startup of [
+                '-c TimeZone=UTC',
+                '-ctimezone=Etc/UTC',
+                '--timezone=utc',
+                '-c TimeZone=GMT',
+                '-c TimeZone=UCT',
+                '-c TimeZone=Etc/GMT+0',
+                '-c TimeZone=Greenwich',
+                '-c TimeZone=\'UTC\'',
+            ]) {
                 expect(apply({ extra: { options: startup } }).extra.options).toEqual(startup);
             }
         });
@@ -232,6 +322,14 @@ describe('src/data-source/options/timezone/postgres', () => {
             expect(options.extra.types.getTypeParser(23, 'text')).toBe(parser);
             expect(options.extra.types.getTypeParser(1114, 'text')).not.toBe(pg.types.getTypeParser(1114));
             expect(new options.extra.Client()).toBeInstanceOf(Client);
+        });
+
+        it('should accept a timestamptz parser override, which the pin does not touch', () => {
+            const parser = (value: string) => value;
+            const types = { getTypeParser: (oid: number, format?: string) => (oid === 1184 ? parser : pg.types.getTypeParser(oid, format)) };
+
+            const options = apply({ extra: { types } });
+            expect(options.extra.types.getTypeParser(1184, 'text')).toBe(parser);
         });
 
         it('should refuse timestamp parsers overridden in extra.types or process-wide', () => {

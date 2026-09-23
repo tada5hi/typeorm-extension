@@ -11,25 +11,18 @@ const POSTGRES_TIMESTAMP_OID = 1114;
 const POSTGRES_TIMESTAMP_ARRAY_OID = 1115;
 
 /**
- * `timestamp with time zone` and its array, whose parsers honour an
- * explicit zone marker and handle `infinity` and BC dates.
- */
-const POSTGRES_TIMESTAMP_TZ_OID = 1184;
-const POSTGRES_TIMESTAMP_TZ_ARRAY_OID = 1185;
-
-/**
  * A `TimeZone` assignment among the postgres startup options, in either
  * spelling the server accepts (`-c TimeZone=...`, `--TimeZone=...`). The
  * name is matched whole: `log_timezone` sets something else entirely.
  */
-const POSTGRES_TIMEZONE_OPTION = /(?:^|\s)(?:-c\s*|--)timezone=(\S+)/i;
+const POSTGRES_TIMEZONE_OPTION = /(?:^|\s)(?:-c\s*|--)timezone=(\S+)/gi;
 
-const POSTGRES_UTC_ZONE = /^(?:utc|etc\/utc|universal|etc\/universal|zulu|z|gmt|etc\/gmt|[+-]?0{1,2}(?::?00)?)$/i;
+const POSTGRES_UTC_ZONE = /^(?:utc|uct|etc\/utc|etc\/uct|universal|etc\/universal|zulu|etc\/zulu|z|gmt|gmt0|etc\/gmt|etc\/gmt0|etc\/gmt[+-]0|greenwich|etc\/greenwich|[+-]?0{1,2}(?::?00)?)$/i;
 
 /**
- * A zone-less timestamp inside the text form of a timestamp array.
+ * The text form of a `timestamp without time zone` (ISO DateStyle).
  */
-const POSTGRES_ARRAY_TIMESTAMP = /(\d{4,}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?)/g;
+const POSTGRES_TIMESTAMP = /^(\d{4,})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})(\.\d+)?( BC)?$/;
 
 /**
  * The exact form pg's `prepareValue` gives a Date (the process offset
@@ -106,42 +99,161 @@ function toPostgresUTCParameter(value: unknown) : unknown {
     return value;
 }
 
-function toPostgresUTCPreparedParameter(value: unknown) : unknown {
-    if (Array.isArray(value)) {
-        return value.map((element) => toPostgresUTCPreparedParameter(element));
+/**
+ * A submittable (pg Query, pg-cursor, pg-query-stream) may already hold its
+ * values in pg's prepared form: pg-cursor applies pg's `prepareValue` in its
+ * constructor, before the client sees it.
+ */
+function toPostgresUTCSubmittedParameter(value: unknown) : unknown {
+    if (isDate(value)) {
+        return serializePostgresDateAsUTC(value);
     }
 
     return reserializePostgresLocalDateAsUTC(value);
 }
 
 /**
+ * Parse the text form of a `timestamp without time zone` as UTC: the same
+ * fields, BC years and `infinity` pg's own parser handles, read in UTC rather
+ * than in the zone of the process. Another text form (a non-ISO DateStyle)
+ * gives `null`, as it does there.
+ */
+export function parsePostgresTimestampAsUTC(value: string) : Date | number | null {
+    if (value === 'infinity') {
+        return Infinity;
+    }
+
+    if (value === '-infinity') {
+        return -Infinity;
+    }
+
+    const match = POSTGRES_TIMESTAMP.exec(value);
+    if (!match) {
+        return null;
+    }
+
+    const [, year, month, day, hour, minute, second, fraction, bc] = match;
+
+    let fullYear = Number(year);
+    if (bc) {
+        fullYear = 1 - fullYear;
+    }
+
+    const date = new Date(0);
+    date.setUTCFullYear(fullYear, Number(month) - 1, Number(day));
+    date.setUTCHours(
+        Number(hour),
+        Number(minute),
+        Number(second),
+        fraction ? Math.floor(Number(fraction) * 1000) : 0,
+    );
+
+    return date;
+}
+
+/**
+ * Parse the text form of a postgres array, handing each element to the given
+ * parser. Covers what pg emits for a `timestamp[]`: quoted and unquoted
+ * elements, `NULL` and nested arrays.
+ */
+export function parsePostgresArray<T>(value: string, parse: (element: string) => T) : unknown[] {
+    let position = 0;
+
+    const parseLevel = () : unknown[] => {
+        const output : unknown[] = [];
+        position++; // `{`
+
+        while (position < value.length) {
+            const char = value[position];
+
+            if (char === '}') {
+                position++;
+                return output;
+            }
+
+            if (char === ',') {
+                position++;
+            } else if (char === '{') {
+                output.push(parseLevel());
+            } else if (char === '"') {
+                let element = '';
+                position++;
+                while (position < value.length && value[position] !== '"') {
+                    if (value[position] === '\\') {
+                        position++;
+                    }
+                    element += value[position];
+                    position++;
+                }
+                position++; // closing quote
+                output.push(parse(element));
+            } else {
+                let element = '';
+                while (position < value.length && value[position] !== ',' && value[position] !== '}') {
+                    element += value[position];
+                    position++;
+                }
+                output.push(element === 'NULL' ? null : parse(element));
+            }
+        }
+
+        return output;
+    };
+
+    // an optional dimension decoration (`[0:1]={...}`) precedes the array
+    const brace = value.indexOf('{');
+    if (brace === -1) {
+        return [];
+    }
+
+    position = brace;
+    return parseLevel();
+}
+
+const parsePostgresTimestampArrayAsUTC : TypeParser = (value) => parsePostgresArray(value, parsePostgresTimestampAsUTC);
+
+/**
  * Build postgres type parsers which read `timestamp without time zone` (and
  * its array) as UTC and delegate every other type to the given registry.
  */
-export function createPostgresUTCTypes(types: PostgresTypes, fallback: PostgresTypes = types) : PostgresTypes {
-    const parseZoned = fallback.getTypeParser(POSTGRES_TIMESTAMP_TZ_OID);
-    const parseZonedArray = fallback.getTypeParser(POSTGRES_TIMESTAMP_TZ_ARRAY_OID);
-
-    // The text form is `YYYY-MM-DD HH:MM:SS[.ffffff][ BC]`: the marker goes
-    // right after the time part, and `infinity` (no space) passes unchanged.
-    const parseTimestamp : TypeParser = (value) => parseZoned(value.replace(/^(\S+ \S+)/, '$1Z'));
-    const parseTimestampArray : TypeParser = (value) => parseZonedArray(value.replace(POSTGRES_ARRAY_TIMESTAMP, '$1Z'));
-
+export function createPostgresUTCTypes(types: PostgresTypes) : PostgresTypes {
     return markInstalled({
         getTypeParser(oid: number, format?: 'text' | 'binary') {
             if (format !== 'binary') {
                 if (oid === POSTGRES_TIMESTAMP_OID) {
-                    return parseTimestamp;
+                    return parsePostgresTimestampAsUTC as TypeParser;
                 }
 
                 if (oid === POSTGRES_TIMESTAMP_ARRAY_OID) {
-                    return parseTimestampArray;
+                    return parsePostgresTimestampArrayAsUTC;
                 }
             }
 
             return types.getTypeParser(oid, format);
         },
     });
+}
+
+/**
+ * Whether a registry still parses zone-less timestamps the way pg does by
+ * default (a local Date), judged by behaviour: a custom parser registered for
+ * them (strings, another date library) is a choice the pin would override.
+ */
+function isDefaultTimestampParsing(types: PostgresTypes) : boolean {
+    const expected = new Date(2000, 0, 2, 3, 4, 5).getTime();
+
+    try {
+        const single = types.getTypeParser(POSTGRES_TIMESTAMP_OID)('2000-01-02 03:04:05');
+        const many = types.getTypeParser(POSTGRES_TIMESTAMP_ARRAY_OID)('{"2000-01-02 03:04:05"}') as unknown;
+
+        return single instanceof Date &&
+            single.getTime() === expected &&
+            Array.isArray(many) &&
+            many[0] instanceof Date &&
+            many[0].getTime() === expected;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -152,7 +264,9 @@ export function createPostgresUTCTypes(types: PostgresTypes, fallback: PostgresT
  * to one pool.
  *
  * A stream (pg-query-stream / pg-cursor) prepares its values before the
- * client sees them, so those arrive in pg's local form and are re-serialized.
+ * client sees them, so those arrive in pg's local form and are re-serialized;
+ * a Date inside an array value of a stream arrives as an array literal and is
+ * not.
  */
 export function createPostgresUTCClient<T extends new (...args: any[]) => any>(Base: T) : T {
     const Client = class extends Base {
@@ -163,11 +277,12 @@ export function createPostgresUTCClient<T extends new (...args: any[]) => any>(B
 
             if (config && typeof config === 'object') {
                 if (config.cursor && Array.isArray(config.cursor.values)) {
-                    config.cursor.values = config.cursor.values.map((value: unknown) => toPostgresUTCPreparedParameter(value));
+                    // pg-query-stream: the values sit on its cursor
+                    config.cursor.values = config.cursor.values.map((value: unknown) => toPostgresUTCSubmittedParameter(value));
                 } else if (Array.isArray(config.values)) {
                     if (typeof config.submit === 'function') {
                         // a submittable keeps its identity; its values are its own
-                        config.values = config.values.map((value: unknown) => toPostgresUTCParameter(value));
+                        config.values = config.values.map((value: unknown) => toPostgresUTCSubmittedParameter(value));
                     } else {
                         return super.query({
                             ...config,
@@ -184,18 +299,30 @@ export function createPostgresUTCClient<T extends new (...args: any[]) => any>(B
     return markInstalled(Client);
 }
 
+/**
+ * The TimeZone a set of startup options assigns. Postgres applies them in
+ * order, so the last assignment is the one in effect.
+ */
 function readTimezoneOption(options: string | undefined) : string | undefined {
     if (typeof options !== 'string') {
         return undefined;
     }
 
-    const match = POSTGRES_TIMEZONE_OPTION.exec(options);
-    return match ? match[1] : undefined;
+    let zone : string | undefined;
+    for (const match of options.matchAll(POSTGRES_TIMEZONE_OPTION)) {
+        [, zone] = match;
+    }
+
+    return typeof zone === 'string' ? zone.replace(/^'(.*)'$/, '$1') : undefined;
+}
+
+function isUTCZone(zone: string) : boolean {
+    return POSTGRES_UTC_ZONE.test(zone);
 }
 
 /**
  * Add `-c TimeZone=UTC` to a set of startup options, or accept a TimeZone
- * already there when it names UTC. Any other zone is a conflict.
+ * already in effect there when it names UTC. Any other zone is a conflict.
  */
 function pinTimezoneOption(options: string, source: string) : string {
     const zone = readTimezoneOption(options);
@@ -203,7 +330,7 @@ function pinTimezoneOption(options: string, source: string) : string {
         return `${options} -c TimeZone=UTC`.trim();
     }
 
-    if (POSTGRES_UTC_ZONE.test(zone)) {
+    if (isUTCZone(zone)) {
         return options;
     }
 
@@ -211,28 +338,35 @@ function pinTimezoneOption(options: string, source: string) : string {
 }
 
 /**
- * pg lets the `options` parameter of a connection string override
- * `extra.options`, so a url carrying one gets the pin there instead.
+ * Take the `options` parameter out of a connection string, leaving every
+ * other byte of it as it was (re-encoding it can break a string pg would
+ * have accepted). Postgres uses the last occurrence, and so does this.
  */
-function pinUrl(url: string | undefined) : string | undefined {
-    if (typeof url !== 'string') {
-        return url;
-    }
-
+export function extractPostgresUrlOptions(url: string) : { url: string, options?: string } {
     const index = url.indexOf('?');
     if (index === -1) {
-        return url;
+        return { url };
     }
 
-    const params = new URLSearchParams(url.slice(index + 1));
-    const current = params.get('options');
-    if (current === null) {
-        return url;
+    const hash = url.indexOf('#', index);
+    const query = url.slice(index + 1, hash === -1 ? undefined : hash);
+    const rest = hash === -1 ? '' : url.slice(hash);
+
+    let options : string | undefined;
+    const kept : string[] = [];
+    for (const segment of query.split('&')) {
+        const params = new URLSearchParams(segment);
+        if (params.has('options')) {
+            options = params.get('options') ?? '';
+        } else if (segment.length > 0) {
+            kept.push(segment);
+        }
     }
 
-    params.set('options', pinTimezoneOption(current, 'The connection url'));
-
-    return `${url.slice(0, index)}?${params.toString()}`;
+    return {
+        url: url.slice(0, index) + (kept.length > 0 ? `?${kept.join('&')}` : '') + rest,
+        options,
+    };
 }
 
 function isPostgresNativeInUse(nativeDriver: unknown, driver: Record<string, any>) : boolean {
@@ -254,62 +388,85 @@ function isPostgresNativeInUse(nativeDriver: unknown, driver: Record<string, any
  * reading `timestamp without time zone` (and its array) as UTC, and a client
  * sending Date parameters as UTC.
  *
- * The TimeZone goes where pg reads it: the connection url's `options` when it
- * has one (pg lets those win), otherwise `extra.options`, which keeps an
- * existing `PGOPTIONS` since pg would stop reading it. A user's `extra.types`
- * and `extra.Client` are built upon. A foreign TimeZone, or timestamp parsers
- * overridden process-wide or in `extra.types`, is a conflict.
+ * pg takes the startup options from the connection string first, then
+ * `extra.options`, then `PGOPTIONS`; the options in effect are moved into
+ * `extra.options` (out of the connection string, byte for byte otherwise)
+ * and the pin is added there. A user's `extra.types` (for other types) and
+ * `extra.Client` are built upon. A foreign TimeZone in effect, timestamp
+ * parsing customised process-wide or in `extra.types`, or a replication node
+ * url carrying options (shared `extra` can not hold per-node options) is a
+ * conflict, and so is a pin altered after it was applied.
  */
 export function applyPostgresTimezone(options: PostgresDataSourceOptions) : PostgresDataSourceOptions {
     const extra : Record<string, any> = { ...(options.extra ?? {}) };
 
-    if (isInstalled(extra.types)) {
-        return options;
+    if (isInstalled(extra.types) || isInstalled(extra.Client)) {
+        const zone = readTimezoneOption(extra.options);
+        const nodes = options.replication ? [options.replication.master, ...options.replication.slaves] : [];
+        const urls = [options.url, extra.connectionString, ...nodes.map((node) => node.url)]
+            .filter((url) => typeof url === 'string') as string[];
+        if (
+            isInstalled(extra.types) &&
+            isInstalled(extra.Client) &&
+            typeof zone === 'string' &&
+            isUTCZone(zone) &&
+            urls.every((url) => typeof extractPostgresUrlOptions(url).options === 'undefined')
+        ) {
+            return options;
+        }
+
+        throw OptionsError.timezoneConflict('the postgres pin was altered after it was applied.');
     }
 
     const driver = options.driver ?? PlatformTools.load('pg');
 
-    const global : PostgresTypes = driver.types;
-    if (
-        global.getTypeParser(POSTGRES_TIMESTAMP_OID) !== global.getTypeParser(POSTGRES_TIMESTAMP_TZ_OID) ||
-        global.getTypeParser(POSTGRES_TIMESTAMP_ARRAY_OID) !== global.getTypeParser(POSTGRES_TIMESTAMP_TZ_ARRAY_OID)
-    ) {
-        throw OptionsError.timezoneConflict('the pg timestamp type parsers are overridden process-wide.');
+    if (!isDefaultTimestampParsing(driver.types)) {
+        throw OptionsError.timezoneConflict('timestamp parsing is customised process-wide (pg.types.setTypeParser).');
     }
 
     const own : PostgresTypes | undefined = extra.types;
-    if (
-        own &&
-        (
-            own.getTypeParser(POSTGRES_TIMESTAMP_OID) !== own.getTypeParser(POSTGRES_TIMESTAMP_TZ_OID) ||
-            own.getTypeParser(POSTGRES_TIMESTAMP_ARRAY_OID) !== own.getTypeParser(POSTGRES_TIMESTAMP_TZ_ARRAY_OID)
-        )
-    ) {
-        throw OptionsError.timezoneConflict('extra.types overrides the timestamp type parsers.');
+    if (own && !isDefaultTimestampParsing(own)) {
+        throw OptionsError.timezoneConflict('extra.types customises timestamp parsing.');
     }
 
     const output : Record<string, any> = { ...options };
 
-    // session: pg reads extra.options for every connection, unless the
-    // connection url carries `options` of its own, which then win for it
-    const base = typeof extra.options === 'string' ? extra.options : (process.env.PGOPTIONS ?? '');
-    extra.options = pinTimezoneOption(base, typeof extra.options === 'string' ? 'extra.options' : 'PGOPTIONS');
-
-    output.url = pinUrl(options.url);
-    if (options.replication) {
-        const pinNode = <N extends { url?: string }>(node: N) : N => (typeof node.url === 'string' ?
-            { ...node, url: pinUrl(node.url) } :
-            node);
-
-        output.replication = {
-            ...options.replication,
-            master: pinNode(options.replication.master),
-            slaves: options.replication.slaves.map((slave) => pinNode(slave)),
-        };
+    // session
+    let fromUrl : string | undefined;
+    if (typeof options.url === 'string') {
+        const extracted = extractPostgresUrlOptions(options.url);
+        output.url = extracted.url;
+        fromUrl = extracted.options;
     }
 
+    if (typeof extra.connectionString === 'string') {
+        // typeorm merges extra last: this string replaces the url entirely
+        const extracted = extractPostgresUrlOptions(extra.connectionString);
+        extra.connectionString = extracted.url;
+        fromUrl = extracted.options;
+    }
+
+    if (options.replication) {
+        const nodes = [options.replication.master, ...options.replication.slaves];
+        if (nodes.some((node) => typeof node.url === 'string' && typeof extractPostgresUrlOptions(node.url).options !== 'undefined')) {
+            throw OptionsError.timezoneConflict('a replication node url carries startup options, which can not be combined with the pin.');
+        }
+    }
+
+    let source = 'PGOPTIONS';
+    let base = process.env.PGOPTIONS ?? '';
+    if (typeof fromUrl === 'string') {
+        source = 'the connection url';
+        base = fromUrl;
+    } else if (typeof extra.options === 'string') {
+        source = 'extra.options';
+        base = extra.options;
+    }
+
+    extra.options = pinTimezoneOption(base, source);
+
     // reader
-    extra.types = createPostgresUTCTypes(own ?? global, global);
+    extra.types = createPostgresUTCTypes(own ?? driver.types);
 
     // writer
     const Base = extra.Client ?? (

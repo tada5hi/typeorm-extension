@@ -26,3 +26,21 @@ export function isInstalled(value: unknown) : boolean {
         value !== null &&
         installed.has(value);
 }
+
+/**
+ * Whether the options carry a pin applied earlier, in any of the places a
+ * dialect installs one.
+ */
+export function hasInstalledTimezone(options: { driver?: unknown, extra?: unknown }) : boolean {
+    if (isInstalled(options.driver)) {
+        return true;
+    }
+
+    const extra = options.extra && typeof options.extra === 'object' ?
+        options.extra as Record<string, unknown> :
+        {};
+
+    return isInstalled(extra.types) ||
+        isInstalled(extra.Client) ||
+        isInstalled(extra.sessionCallback);
+}

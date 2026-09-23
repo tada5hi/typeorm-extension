@@ -294,9 +294,9 @@ export const dataSource = new DataSource(withDataSourceTimezone({
 
 | Driver              | What is applied                                                                                   |
 |:--------------------|:--------------------------------------------------------------------------------------------------|
-| `postgres`          | `-c TimeZone=UTC` for the session (in the connection url's `options` when it carries some, since pg lets those win, otherwise in `extra.options`, keeping `PGOPTIONS`); parsers reading `timestamp without time zone` and `timestamp[]` as UTC; a pool client sending `Date` parameters as UTC, streams included. |
+| `postgres`          | `-c TimeZone=UTC` for the session, added to the startup options pg would use (the connection url's `options`, else `extra.options`, else `PGOPTIONS`), which are moved into `extra.options`; parsers reading `timestamp without time zone` and `timestamp[]` as UTC; a pool client sending `Date` parameters as UTC, streams included. |
 | `mysql`, `mariadb`  | `timezone: 'Z'` (reading and parameters), `dateStrings: ['DATE']` (a calendar date stays the string it was), and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
-| `oracle`            | a pool `sessionCallback` running `ALTER SESSION SET TIME_ZONE = '+00:00'`; connections reading a zone-less `TIMESTAMP` (result columns and `RETURNING` out-binds) as UTC, and binding `Date` parameters as their UTC wall clock with the plain `TIMESTAMP` type, which keeps indexes usable. |
+| `oracle`            | a pool `sessionCallback` running `ALTER SESSION SET TIME_ZONE = '+00:00'` (a standalone `getConnection` runs it before handing the connection out); connections reading a zone-less `TIMESTAMP` (result columns and `RETURNING` out-binds) as UTC, and binding `Date` parameters (untyped or `TIMESTAMP`, `executeMany` following its `bindDefs`) as their UTC wall clock with the plain `TIMESTAMP` type, which keeps indexes usable. |
 | `cockroachdb`       | nothing: typeorm maps date columns to `timestamptz`, which carries its zone.                         |
 | `better-sqlite3`    | nothing: `datetime('now')` stamps UTC and typeorm reads and writes the column as UTC.               |
 | `mongodb`           | nothing: BSON dates are UTC.                                                                        |
@@ -306,18 +306,26 @@ Settings you already made are **kept, built upon, or refused**, never silently
 half-applied, since half a pin shifts values instead of fixing them:
 
 - kept when they agree: a mysql `timezone` naming UTC (`Z`, `+00:00`), mysql
-  `dateStrings: ['DATE']`, a postgres `TimeZone` naming UTC;
-- built upon: pg `extra.types` (timestamps are read by the pin, everything else
-  by yours), pg `extra.Client` (subclassed), an oracle `sessionCallback`
+  `dateStrings: ['DATE']`, a postgres `TimeZone` naming UTC under any of its
+  names (`UTC`, `Etc/UTC`, `GMT`, `Zulu`, ...; the last assignment counts, as
+  in postgres);
+- built upon: pg `extra.types` (timestamps are read by the pin, everything else,
+  `timestamptz` included, by yours), pg `extra.Client` (subclassed), an oracle `sessionCallback`
   function (runs after the pin);
 - refused with an `OptionsError`: another mysql `timezone`, other mysql
   `dateStrings`, a mysql `typeCast`, a mysql replication setup (a pool cluster
   has no per-connection hook), a postgres `TimeZone` naming another zone
   (in `extra.options`, the url or `PGOPTIONS`), timestamp parsers overridden in
-  pg `extra.types` or process-wide with `pg.types.setTypeParser`, and an oracle
-  `sessionCallback` naming a PL/SQL procedure.
+  pg `extra.types` or process-wide with `pg.types.setTypeParser`, a postgres
+  replication node url carrying `options` (the shared `extra.options` can not
+  hold per-node ones), and an oracle `sessionCallback` naming a PL/SQL
+  procedure.
 
-Applying it twice returns the pinned options unchanged. A given `driver` is
+Applying it twice returns the pinned options unchanged, and throws when a
+setting of the pin was changed in between. Options pinned in code and merged
+with the environment are re-checked the same way, so a `DB_DRIVER_EXTRA`
+undoing part of the pin fails instead of half-applying it. Pin a copy, never
+clone pinned options: a clone loses the markers the check relies on. A given `driver` is
 wrapped instead of the one typeorm loads; the driver module is loaded when the
 options are pinned, not when the data source connects.
 
@@ -338,9 +346,20 @@ Limits:
   zone with daylight saving, a value whose UTC fields fall into the local
   spring-forward hour is read and written an hour late. A `DATE` (typeorm's
   `date` columns are calendar dates) keeps its local fields on both sides.
-- **postgres streams**: pg-query-stream prepares its parameters before the
-  client sees them; single `Date` values are recovered and sent as UTC, a
-  `Date` inside an array parameter of a stream is not.
+- **postgres streams**: pg-query-stream and pg-cursor prepare their parameters
+  before the client sees them; single `Date` values are recovered from the
+  local form pg gives them and sent as UTC, a `Date` inside an array parameter
+  is not. A string parameter spelled exactly in that local form
+  (`2026-09-22T09:05:49.850-10:00`) is rewritten as well.
+- **calendar dates**: a `Date` compared with or written into a `date` column
+  is now its UTC calendar date. Pass `'YYYY-MM-DD'` strings for dates, which is
+  what typeorm hands back for such a column.
+- **mysql** returns a `DATE` read with a raw query as a string.
+- **oracle**: a `date` column filled by a database default and read back
+  through `RETURNING` arrives a day early west of UTC, since the driver
+  hydrates it as local midnight. `SYSDATE` and `SYSTIMESTAMP` follow the
+  database host's zone, not the session's; use `SYS_EXTRACT_UTC(SYSTIMESTAMP)`
+  or `CURRENT_TIMESTAMP`.
 
 ::: warning
 Only values written from then on are affected. A database that ran in another

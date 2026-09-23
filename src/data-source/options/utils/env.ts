@@ -7,7 +7,7 @@ import { useEnv } from '../../../env';
 import { OptionsError } from '../../../errors';
 import { mergeDataSourceOptions } from './merge';
 import { withDataSourceTimezone } from '../timezone';
-import { isDataSourceTimezone } from '../timezone/utils';
+import { hasInstalledTimezone, isDataSourceTimezone } from '../timezone/utils';
 
 export function hasEnvDataSourceOptions() : boolean {
     return !!useEnv('type');
@@ -16,11 +16,17 @@ export function hasEnvDataSourceOptions() : boolean {
 /**
  * Apply `DB_PIN_TIMEZONE`, when set, once the options are complete: applied
  * before a merge, a deep merge would reach into the wrapped driver module.
+ * Options pinned in code are re-checked after the merge as well, so an
+ * environment value undoing part of the pin (a `DB_DRIVER_EXTRA`
+ * timezone, say)
+ * fails instead of leaving it half applied.
  */
 function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
     const timezone = useEnv('pinTimezone');
     if (typeof timezone === 'undefined' || timezone === '') {
-        return options;
+        return hasInstalledTimezone(options) ?
+            withDataSourceTimezone(options, 'UTC') :
+            options;
     }
 
     if (!isDataSourceTimezone(timezone)) {
