@@ -355,6 +355,19 @@ database is in **neither** the expected nor the desired state it raises a `Schem
 quietly, since a repair migration which repairs nothing would otherwise pass for a successful one. Pass
 `strict: false` per call to opt out.
 
+`withDatabaseLock(queryRunner, name, fn, { timeout })` runs `fn` while holding a named advisory lock (`postgres`,
+`mysql`, `mariadb`), for example so only one replica runs the migrations (with `migrationsRun` off, since
+`initialize()` would run them before the lock is taken):
+
+```typescript
+const queryRunner = dataSource.createQueryRunner();
+try {
+    await withDatabaseLock(queryRunner, 'migrations', () => dataSource.runMigrations());
+} finally {
+    await queryRunner.release();
+}
+```
+
 To get a better overview and understanding of these functions, check out the
 [documentation](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html).
 

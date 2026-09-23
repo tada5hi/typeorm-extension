@@ -80,6 +80,14 @@ export function supportsConversionExpression(driver?: IntegrationDriver) : boole
 }
 
 /**
+ * Whether withDatabaseLock can take a lock on the driver.
+ * cockroachdb accepts the postgres advisory lock functions, but they lock nothing.
+ */
+export function supportsDatabaseLock(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb';
+}
+
+/**
  * Whether the driver has a relational schema to compare against
  * the entity metadata at all.
  */

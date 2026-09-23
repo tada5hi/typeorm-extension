@@ -271,7 +271,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
                 const rows : Record<string, any>[] = await new Promise((resolve, reject) => {
                     const collected : Record<string, any>[] = [];
-                    stream.on('data', (row: Record<string, any>) => collected.push(row));
+                    stream.on('data', (row: Record<string, any>) => { collected.push(row); });
                     stream.on('end', () => resolve(collected));
                     stream.on('error', reject);
                 });

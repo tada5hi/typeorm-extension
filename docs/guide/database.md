@@ -372,6 +372,37 @@ await withForeignKeyChecksDisabled(queryRunner, async () => {
 It restores the previous state rather than blindly enabling the checks, so nesting is safe, and it is a transparent
 no-op wrapper on every driver without a session-level switch, so a migration using it stays portable.
 
+### Database Lock
+
+`withDatabaseLock` runs a callback while holding a named advisory lock, so only one process at a time runs it. A
+typical case is running the migrations on startup across several replicas. Leave `migrationsRun` off, since
+`initialize()` would run them before the lock is taken, and run them inside the lock instead:
+
+```typescript
+import { withDatabaseLock } from 'typeorm-extension';
+
+const queryRunner = dataSource.createQueryRunner();
+try {
+    await withDatabaseLock(queryRunner, 'migrations', () => dataSource.runMigrations());
+} finally {
+    await queryRunner.release();
+}
+```
+
+The lock belongs to the query runner's connection, so keep the same query runner for the whole call. The callback's
+own queries (like `runMigrations()`) use another connection, so the pool needs at least two. The lock is released
+afterwards, also when the callback throws. By default the call waits until the lock is free; pass `{ timeout }` (in
+milliseconds, `0` tries once) to throw a `DatabaseLockError` instead. The lock is scoped to the database, so other
+databases on the same server use their own.
+
+A lock outlives a rollback, so it is refused with a `DatabaseLockError` on a query runner which is in a transaction.
+If the callback leaves a transaction open on it, the transaction is rolled back before the release, and a callback
+which returned normally then throws a `DatabaseLockError`: committing after the release would defeat the lock.
+
+Only `postgres`, `mysql` and `mariadb` are supported. Every other driver throws a `DriverError`: cockroachdb accepts the
+postgres advisory lock functions, but they do not lock anything. Pass `{ strict: false }` to run the callback without a
+lock there instead, e.g. for a test suite on sqlite. Only do that where a second process can not exist.
+
 ### Driver support
 
 | Helper                         | Drivers                                                                         |
@@ -380,6 +411,7 @@ no-op wrapper on every driver without a session-level switch, so a migration usi
 | `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` (throws a `DriverError` otherwise) |
 | `changeColumnType`             | all (altered in place on every relational driver but sqlite)                    |
 | `withForeignKeyChecksDisabled` | all (a no-op wrapper outside `mysql` / `mariadb`)                               |
+| `withDatabaseLock`             | `postgres`, `mysql`, `mariadb` (otherwise throws, or runs unlocked if not `strict`) |
 
 ::: warning NOTE
 `changeColumnType` builds its own statement rather than delegating to `queryRunner.changeColumn()`, because typeorm

@@ -28,6 +28,10 @@ export type FakeChangeColumnCall = {
 export class FakeQueryRunner {
     queries : string[] = [];
 
+    parameters : (unknown[] | undefined)[] = [];
+
+    isTransactionActive = false;
+
     changedColumns : FakeChangeColumnCall[] = [];
 
     dataSource : Record<string, any>;
@@ -78,10 +82,20 @@ export class FakeQueryRunner {
         return this.tables[name];
     }
 
-    async query(query: string) : Promise<unknown> {
+    async query(query: string, parameters?: unknown[]) : Promise<unknown> {
         this.queries.push(query);
+        this.parameters.push(parameters);
 
         return this.respond(query, this);
+    }
+
+    transactionDepth = 0;
+
+    async rollbackTransaction() {
+        // like typeorm: a nested transaction is a savepoint
+        this.transactionDepth = Math.max(this.transactionDepth - 1, 0);
+        this.queries.push(this.transactionDepth > 0 ? 'ROLLBACK TO SAVEPOINT' : 'ROLLBACK');
+        this.isTransactionActive = this.transactionDepth > 0;
     }
 
     async changeColumn(table: Table | string, from: TableColumn | string, to: TableColumn) {

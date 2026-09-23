@@ -364,6 +364,53 @@ declare function withForeignKeyChecksDisabled<T>(
 It reads `@@SESSION.foreign_key_checks` first and only restores it if it was enabled, so nesting is safe. On a driver
 without a session-level switch it is a transparent no-op wrapper, which keeps a migration using it portable.
 
+## `withDatabaseLock`
+
+Run a callback while holding a named advisory lock, so only one session at a time (across processes) runs it.
+
+```typescript
+declare function withDatabaseLock<T>(
+    queryRunner: QueryRunner,
+    name: string,
+    fn: () => Promise<T>,
+    options?: DatabaseLockOptions,
+): Promise<T>;
+```
+
+The lock is session scoped: the query runner must stay on one connection for the whole call, which a typeorm
+`QueryRunner` does until it is released. It is released afterwards, also when `fn` throws. A
+transaction `fn` leaves open on the query runner is rolled back first. Nested calls with the same
+name on the same query runner do not block.
+
+The lock is taken with `pg_try_advisory_lock` (postgres) or `GET_LOCK` (mysql, mariadb) and retried every 100ms until
+`timeout` has passed. On mysql and mariadb the name is namespaced with the current database, so each database has its
+own locks.
+
+**Throws**
+
+- `DriverError` for any driver other than `postgres`, `mysql` and `mariadb` (cockroachdb accepts the advisory lock
+  functions, but they do not lock anything), unless `strict` is `false`: then `fn` runs without a lock.
+- `DatabaseLockError` if the lock can not be acquired within `timeout`, if the query runner is in a transaction
+  (the lock would outlive a rollback), or if `fn` returned with a transaction left open on it.
+
+## DatabaseLockOptions
+```typescript
+export type DatabaseLockOptions = {
+    /**
+     * How long to wait for the lock, in milliseconds.
+     * 0 tries once, unset waits until the lock is free.
+     */
+    timeout?: number,
+    /**
+     * Throw a DriverError on a driver which has no lock. Set to false to run
+     * the callback without a lock there instead (e.g. sqlite in tests).
+     *
+     * default: true
+     */
+    strict?: boolean,
+};
+```
+
 ## SchemaDrift
 ```typescript
 export type SchemaDriftStatement = {
