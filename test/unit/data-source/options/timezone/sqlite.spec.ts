@@ -7,8 +7,8 @@ import {
     expect,
     it,
 } from 'vitest';
-import { withDataSourceTimezone } from '../../../../src';
-import { Stamp } from '../../../data/entity/stamp';
+import { withDataSourceTimezone } from '../../../../../src';
+import { Stamp } from '../../../../data/entity/stamp';
 
 /**
  * better-sqlite3 needs no pinning: `datetime('now')` stamps UTC, and typeorm

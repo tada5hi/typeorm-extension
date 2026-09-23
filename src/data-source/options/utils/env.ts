@@ -6,7 +6,7 @@ import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
 import { OptionsError } from '../../../errors';
 import { mergeDataSourceOptions } from './merge';
-import { isDataSourceTimezone, withDataSourceTimezone } from './timezone';
+import { isDataSourceTimezone, withDataSourceTimezone } from '../timezone';
 
 export function hasEnvDataSourceOptions() : boolean {
     return !!useEnv('type');
