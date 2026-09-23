@@ -263,10 +263,10 @@ declare async function buildDataSourceOptions(
 **References**
 - [DataSourceOptionsBuildContext](#datasourceoptionsbuildcontext)
 
-## `withDataSourceTimezone`
+## `pinTimezone`
 
 ```typescript
-declare function withDataSourceTimezone<T extends DataSourceOptions>(
+declare function pinTimezone<T extends DataSourceOptions>(
     options: T,
     timezone: 'UTC',
 ) : T
@@ -286,7 +286,7 @@ in a different zone than one the database stamps.
 
 ```typescript
 // data-source.ts
-export const dataSource = new DataSource(withDataSourceTimezone({
+export const dataSource = new DataSource(pinTimezone({
     type: 'postgres',
     // ...
 }, 'UTC'));
@@ -377,7 +377,7 @@ DB_PIN_TIMEZONE=UTC  # or TYPEORM_PIN_TIMEZONE
 Any other value throws an `OptionsError`. The variable only reaches options
 typeorm-extension builds: a data-source file which constructs its `DataSource`
 itself runs unpinned in the application while the CLI would pin it, so the two
-would write in different zones. Call `withDataSourceTimezone` in that file
+would write in different zones. Call `pinTimezone` in that file
 instead.
 
 **Parameters**

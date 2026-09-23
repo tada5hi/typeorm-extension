@@ -25,7 +25,7 @@ import { isDataSourceTimezone } from './utils';
  * Only values written from then on are affected: rows a database stamped in
  * another zone before keep that wall clock.
  */
-export function withDataSourceTimezone<T extends DataSourceOptions>(
+export function pinTimezone<T extends DataSourceOptions>(
     options: T,
     timezone: DataSourceTimezone,
 ) : T {

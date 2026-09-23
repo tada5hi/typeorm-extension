@@ -6,7 +6,7 @@ import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
 import { OptionsError } from '../../../errors';
 import { mergeDataSourceOptions } from './merge';
-import { withDataSourceTimezone } from '../timezone';
+import { pinTimezone } from '../timezone';
 import { hasInstalledTimezone, isDataSourceTimezone } from '../timezone/utils';
 
 export function hasEnvDataSourceOptions() : boolean {
@@ -25,7 +25,7 @@ function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
     const timezone = useEnv('pinTimezone');
     if (typeof timezone === 'undefined' || timezone === '') {
         return hasInstalledTimezone(options) ?
-            withDataSourceTimezone(options, 'UTC') :
+            pinTimezone(options, 'UTC') :
             options;
     }
 
@@ -33,7 +33,7 @@ function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
         throw OptionsError.timezoneUnsupported(timezone);
     }
 
-    return withDataSourceTimezone(options, 'UTC');
+    return pinTimezone(options, 'UTC');
 }
 
 export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {

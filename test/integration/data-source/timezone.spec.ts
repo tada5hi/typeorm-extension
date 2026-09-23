@@ -8,7 +8,7 @@ import {
     expect,
     it,
 } from 'vitest';
-import { withDataSourceTimezone } from '../../../src';
+import { pinTimezone } from '../../../src';
 import { Stamp } from '../../data/entity/stamp';
 import {
     createIntegrationDataSourceOptions,
@@ -192,7 +192,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
         });
 
         it('should store UTC and read the true instant with the pin', async () => {
-            const measurement = await measure(withDataSourceTimezone(
+            const measurement = await measure(pinTimezone(
                 createIntegrationDataSourceOptions([Stamp]),
                 'UTC',
             ));
@@ -207,7 +207,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
         });
 
         async function pinned() : Promise<DataSource> {
-            const dataSource = new DataSource(withDataSourceTimezone(
+            const dataSource = new DataSource(pinTimezone(
                 createIntegrationDataSourceOptions([Stamp]),
                 'UTC',
             ));
@@ -288,7 +288,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
             const url = `postgres://${encodeURIComponent(options.username)}:${encodeURIComponent(options.password)}@${options.host}:${options.port}/${options.database}` +
                 '?options=-c%20search_path%3Dpublic';
 
-            const fromUrl = new DataSource(withDataSourceTimezone({
+            const fromUrl = new DataSource(pinTimezone({
                 type: 'postgres', 
                 url, 
                 entities: [Stamp], 

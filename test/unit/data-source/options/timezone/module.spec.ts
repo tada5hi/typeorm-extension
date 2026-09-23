@@ -11,9 +11,9 @@ import {
     EnvironmentVariableName,
     OptionsError,
     mergeDataSourceOptionsWithEnv,
+    pinTimezone,
     readDataSourceOptionsFromEnv,
     resetEnv,
-    withDataSourceTimezone,
 } from '../../../../../src';
 
 type Extra = { extra: Record<string, any> };
@@ -58,21 +58,21 @@ describe('src/data-source/options/timezone', () => {
         resetEnv();
     });
 
-    describe('withDataSourceTimezone', () => {
+    describe('pinTimezone', () => {
         const oracle = {
             DB_TYPE_TIMESTAMP: 'ts',
             createPool: () => undefined,
         };
 
         it('should pin postgres, mysql, mariadb and oracle', () => {
-            const postgres = withDataSourceTimezone({ type: 'postgres', driver: pg }, 'UTC') as DataSourceOptions & Extra;
+            const postgres = pinTimezone({ type: 'postgres', driver: pg }, 'UTC') as DataSourceOptions & Extra;
             expect(postgres.extra.options).toEqual('-c TimeZone=UTC');
 
             for (const type of ['mysql', 'mariadb'] as const) {
-                expect(withDataSourceTimezone({ type }, 'UTC')).toMatchObject({ timezone: 'Z', dateStrings: ['DATE'] });
+                expect(pinTimezone({ type }, 'UTC')).toMatchObject({ timezone: 'Z', dateStrings: ['DATE'] });
             }
 
-            const pinned = withDataSourceTimezone({ type: 'oracle', driver: oracle }, 'UTC') as DataSourceOptions & Extra;
+            const pinned = pinTimezone({ type: 'oracle', driver: oracle }, 'UTC') as DataSourceOptions & Extra;
             expect(typeof pinned.extra.sessionCallback).toEqual('function');
         });
 
@@ -84,7 +84,7 @@ describe('src/data-source/options/timezone', () => {
             ];
 
             for (const input of cases) {
-                expect(withDataSourceTimezone(input, 'UTC')).toBe(input);
+                expect(pinTimezone(input, 'UTC')).toBe(input);
             }
         });
 
@@ -96,13 +96,13 @@ describe('src/data-source/options/timezone', () => {
             ];
 
             for (const input of cases) {
-                const once = withDataSourceTimezone(input, 'UTC');
-                expect(withDataSourceTimezone(once, 'UTC')).toBe(once);
+                const once = pinTimezone(input, 'UTC');
+                expect(pinTimezone(once, 'UTC')).toBe(once);
             }
         });
 
         it('should refuse a timezone other than UTC', () => {
-            expect(() => withDataSourceTimezone({ type: 'postgres' }, 'Europe/Berlin' as 'UTC'))
+            expect(() => pinTimezone({ type: 'postgres' }, 'Europe/Berlin' as 'UTC'))
                 .toThrow(OptionsError);
         });
     });
@@ -135,7 +135,7 @@ describe('src/data-source/options/timezone', () => {
         });
 
         it('should re-check a pin applied in code after merging with the env', () => {
-            const pinned = withDataSourceTimezone({ type: 'mysql' }, 'UTC');
+            const pinned = pinTimezone({ type: 'mysql' }, 'UTC');
             process.env[EnvironmentVariableName.TYPE] = 'mysql';
 
             expect(mergeDataSourceOptionsWithEnv(pinned)).toMatchObject({ timezone: 'Z' });

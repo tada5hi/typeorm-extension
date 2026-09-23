@@ -39,7 +39,7 @@ export interface Environment {
     cache?: DataSourceCacheOption,
     /**
      * Pin the database session and the driver to this timezone
-     * (only `UTC` is supported), see `withDataSourceTimezone`.
+     * (only `UTC` is supported), see `pinTimezone`.
      */
     pinTimezone?: string,
     uuidExtension?: string

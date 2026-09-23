@@ -7,13 +7,13 @@ import {
     expect,
     it,
 } from 'vitest';
-import { withDataSourceTimezone } from '../../../../../src';
+import { pinTimezone } from '../../../../../src';
 import { Stamp } from '../../../../data/entity/stamp';
 
 /**
  * better-sqlite3 needs no pinning: `datetime('now')` stamps UTC, and typeorm
  * writes and reads the column as UTC. This holds that claim (made by the
- * withDataSourceTimezone docs) against a process far from UTC.
+ * pinTimezone docs) against a process far from UTC.
  */
 describe('src/data-source/options/timezone (better-sqlite3)', () => {
     const previousTZ = process.env.TZ;
@@ -39,7 +39,7 @@ describe('src/data-source/options/timezone (better-sqlite3)', () => {
             entities: [Stamp], 
             synchronize: true, 
         };
-        expect(withDataSourceTimezone(options, 'UTC')).toBe(options);
+        expect(pinTimezone(options, 'UTC')).toBe(options);
 
         const dataSource = new DataSource(options);
         await dataSource.initialize();
