@@ -91,8 +91,5 @@ export function matchesColumnType(
         return false;
     }
 
-    return !(
-        typeof input.nullable === 'boolean' &&
-        input.nullable !== column.isNullable
-    );
+    return typeof input.nullable !== 'boolean' || input.nullable === column.isNullable;
 }

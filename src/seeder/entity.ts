@@ -51,7 +51,8 @@ export class SeederEntity {
         this.name = ctx.name;
 
         if (ctx.constructor) {
-            this.instance = new ctx.constructor();
+            const SeederClass = ctx.constructor;
+            this.instance = new SeederClass();
         }
 
         this.fileName = ctx.fileName;

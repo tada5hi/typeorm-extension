@@ -72,16 +72,20 @@ export function createLogger(level: LogLevel = LogLevel.Info): Logger {
             }
         },
         section: (title) => {
-            if (enabled(LogLevel.Info)) {
-                write('');
-                write(tint(`${BOLD}${BLUE}`, title));
+            if (!enabled(LogLevel.Info)) {
+                return;
             }
+
+            write('');
+            write(tint(`${BOLD}${BLUE}`, title));
         },
         kv: (key, value, padTo = 0) => {
-            if (enabled(LogLevel.Info)) {
-                const pad = ' '.repeat(Math.max(0, padTo - key.length));
-                write(`  ${tint(DIM, key)}${pad}  ${value}`);
+            if (!enabled(LogLevel.Info)) {
+                return;
             }
+
+            const pad = ' '.repeat(Math.max(0, padTo - key.length));
+            write(`  ${tint(DIM, key)}${pad}  ${value}`);
         },
         blank: () => {
             if (enabled(LogLevel.Info)) {

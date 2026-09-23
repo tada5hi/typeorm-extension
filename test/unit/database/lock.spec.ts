@@ -143,7 +143,7 @@ describe('src/database/lock', () => {
             respond: () => [{ acquired: '0' }],
         });
 
-        await expect(withDatabaseLock(queryRunner, 'migrations', async () => 'done', { timeout: Number.NaN }))
+        await expect(withDatabaseLock(queryRunner, 'migrations', async () => 'done', { timeout: NaN }))
             .rejects.toThrow(DatabaseLockError);
         expect(queryRunner.queries).toHaveLength(1);
     });

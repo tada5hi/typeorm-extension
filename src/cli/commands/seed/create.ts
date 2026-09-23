@@ -58,7 +58,7 @@ export function defineCLISeedCreateCommand() {
 
                 const parsedTimestamp = typeof args.timestamp === 'string' ?
                     Number.parseInt(args.timestamp, 10) :
-                    Number.NaN;
+                    NaN;
                 const timestamp = Number.isNaN(parsedTimestamp) ?
                     Date.now() :
                     parsedTimestamp;

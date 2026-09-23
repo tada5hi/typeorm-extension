@@ -202,7 +202,8 @@ describe.runIf(supportsDatabaseLock(driver))(`src/database/lock (${driver})`, ()
                 expect(await isFree('scoped', second)).toBe(true);
             });
         } finally {
-            await Promise.all(runners.splice(0).map((runner) => runner.release()));
+            await Promise.all(runners.map((runner) => runner.release()));
+            runners.length = 0;
             await second.destroy();
             await dataSource.query(`DROP DATABASE IF EXISTS \`${SECOND_DATABASE}\``);
         }
