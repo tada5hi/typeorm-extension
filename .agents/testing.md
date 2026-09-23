@@ -38,6 +38,7 @@ Not every driver can do everything, so `test/data/typeorm/integration.ts` expose
 | `supportsSchemaMetadata`         | mongodb                  | no relational schema to compare, and the fixtures use relations                            |
 | `supportsDatabaseDrop`           | oracle                   | `OracleDialect.drop` is a documented no-op                                                 |
 | `supportsDatabaseExistenceCheck` | cockroachdb, mongodb     | `checkDatabase` derives `exists` from a failing `initialize()`, which cockroachdb does not do for a missing database |
+| `supportsDatabaseLock`           | everything but postgres/mysql/mariadb | `withDatabaseLock` refuses them with a `DriverError` (cockroachdb's advisory locks are no-ops) |
 
 ```bash
 docker run -d --name tex-pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=test -p 55432:5432 postgres:18-alpine
@@ -52,6 +53,7 @@ npm run test:integration
 | `test/integration/database/drift.spec.ts`   | `getSchemaDrift` / `assertSchemaMatchesMetadata` against a real schema, including a deliberately diverged column |
 | `test/integration/database/schema.spec.ts`  | `renameIndex` / `renameForeignKey` / `changeColumnType` round-trips incl. idempotence and "drift appears → repair → drift gone"; that a column keeps its values and its foreign key across an alteration; nesting-safe `withForeignKeyChecksDisabled` |
 | `test/integration/database/methods.spec.ts` | `createDatabase` / `dropDatabase` / `checkDatabase` — the only coverage `src/database/adapters/**` gets, since it is excluded from the coverage gate |
+| `test/integration/database/lock.spec.ts`    | `withDatabaseLock` against a real server: a second session is refused while the lock is held and gets it once released, waiting with a timeout, release after a throwing callback, reentrant nested calls, per-database scope on mysql/mariadb, and the `DriverError` of an unsupported driver |
 
 The suites bring the schema to a known state by dropping the two fixture tables and running `synchronize(false)` — **not** `synchronize(true)`, which drops the whole schema and which oracle refuses from within a pluggable database (`ORA-65040`).
 

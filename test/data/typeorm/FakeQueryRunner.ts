@@ -28,6 +28,10 @@ export type FakeChangeColumnCall = {
 export class FakeQueryRunner {
     queries : string[] = [];
 
+    parameters : (unknown[] | undefined)[] = [];
+
+    isTransactionActive = false;
+
     changedColumns : FakeChangeColumnCall[] = [];
 
     dataSource : Record<string, any>;
@@ -78,10 +82,16 @@ export class FakeQueryRunner {
         return this.tables[name];
     }
 
-    async query(query: string) : Promise<unknown> {
+    async query(query: string, parameters?: unknown[]) : Promise<unknown> {
         this.queries.push(query);
+        this.parameters.push(parameters);
 
         return this.respond(query, this);
+    }
+
+    async rollbackTransaction() {
+        this.queries.push('ROLLBACK');
+        this.isTransactionActive = false;
     }
 
     async changeColumn(table: Table | string, from: TableColumn | string, to: TableColumn) {
