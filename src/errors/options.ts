@@ -17,6 +17,10 @@ export class OptionsError extends TypeormExtensionError {
         return new OptionsError(`The database timezone ${String(timezone)} is not supported, only UTC is.`);
     }
 
+    static timezoneConflict(detail: string) {
+        return new OptionsError(`The database timezone can not be pinned: ${detail}`);
+    }
+
     static databaseNotDefined() {
         return new OptionsError('The database name to connect to is not defined.');
     }

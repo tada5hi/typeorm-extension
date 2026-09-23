@@ -41,6 +41,6 @@ export interface Environment {
      * Pin the database session and the driver to this timezone
      * (only `UTC` is supported), see `withDataSourceTimezone`.
      */
-    timezone?: string,
+    pinTimezone?: string,
     uuidExtension?: string
 }

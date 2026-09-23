@@ -136,9 +136,9 @@ export function useEnv(key?: string) : any {
             read(EnvironmentVariableName.UUID_EXTENSION),
             read(EnvironmentVariableName.UUID_EXTENSION_ALT),
         ]),
-        timezone: oneOf([
-            read(EnvironmentVariableName.TIMEZONE),
-            read(EnvironmentVariableName.TIMEZONE_ALT),
+        pinTimezone: oneOf([
+            read(EnvironmentVariableName.PIN_TIMEZONE),
+            read(EnvironmentVariableName.PIN_TIMEZONE_ALT),
         ]),
 
     };

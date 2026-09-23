@@ -284,67 +284,95 @@ application host that is not UTC, then shifts every `@CreateDateColumn` /
 `@UpdateDateColumn` by the offset, and a value the application writes can land
 in a different zone than one the database stamps.
 
+```typescript
+// data-source.ts
+export const dataSource = new DataSource(withDataSourceTimezone({
+    type: 'postgres',
+    // ...
+}, 'UTC'));
+```
+
 | Driver              | What is applied                                                                                   |
 |:--------------------|:--------------------------------------------------------------------------------------------------|
-| `postgres`          | `-c TimeZone=UTC` as a startup option (`extra.options`); a pool type parser (`extra.types`) reading `timestamp without time zone` as UTC, with `infinity` and BC dates intact; a pool client (`extra.Client`, built on `pg-native` when typeorm uses it) sending `Date` parameters as UTC. |
-| `mysql`, `mariadb`  | `timezone: 'Z'` for mysql2 (reading and parameters), and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
-| `oracle`            | a pool `sessionCallback` running `ALTER SESSION SET TIME_ZONE = '+00:00'`; connections reading a zone-less `TIMESTAMP` as UTC and binding `Date` parameters as `TIMESTAMP WITH TIME ZONE`. |
+| `postgres`          | `-c TimeZone=UTC` for the session (in the connection url's `options` when it carries some, since pg lets those win, otherwise in `extra.options`, keeping `PGOPTIONS`); parsers reading `timestamp without time zone` and `timestamp[]` as UTC; a pool client sending `Date` parameters as UTC, streams included. |
+| `mysql`, `mariadb`  | `timezone: 'Z'` (reading and parameters), `dateStrings: ['DATE']` (a calendar date stays the string it was), and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
+| `oracle`            | a pool `sessionCallback` running `ALTER SESSION SET TIME_ZONE = '+00:00'`; connections reading a zone-less `TIMESTAMP` (result columns and `RETURNING` out-binds) as UTC, and binding `Date` parameters as their UTC wall clock with the plain `TIMESTAMP` type, which keeps indexes usable. |
 | `cockroachdb`       | nothing: typeorm maps date columns to `timestamptz`, which carries its zone.                         |
 | `better-sqlite3`    | nothing: `datetime('now')` stamps UTC and typeorm reads and writes the column as UTC.               |
 | `mongodb`           | nothing: BSON dates are UTC.                                                                        |
 | `mssql`             | nothing, see below.                                                                                 |
 
-It is **all or nothing** per driver: half a pin shifts values instead of fixing
-them. So anything already set on either side returns the options unchanged: a
-mysql `timezone`; a postgres `TimeZone` in `extra.options`, `extra.types` or
-`extra.Client`; an oracle `extra.sessionCallback`. That is also what makes the
-call idempotent. A mysql replication setup has no per-connection hook and is
-returned unchanged too. A given `driver` is wrapped instead of the one typeorm
-loads.
+Settings you already made are **kept, built upon, or refused**, never silently
+half-applied, since half a pin shifts values instead of fixing them:
+
+- kept when they agree: a mysql `timezone` naming UTC (`Z`, `+00:00`), mysql
+  `dateStrings: ['DATE']`, a postgres `TimeZone` naming UTC;
+- built upon: pg `extra.types` (timestamps are read by the pin, everything else
+  by yours), pg `extra.Client` (subclassed), an oracle `sessionCallback`
+  function (runs after the pin);
+- refused with an `OptionsError`: another mysql `timezone`, other mysql
+  `dateStrings`, a mysql `typeCast`, a mysql replication setup (a pool cluster
+  has no per-connection hook), a postgres `TimeZone` naming another zone
+  (in `extra.options`, the url or `PGOPTIONS`), timestamp parsers overridden in
+  pg `extra.types` or process-wide with `pg.types.setTypeParser`, and an oracle
+  `sessionCallback` naming a PL/SQL procedure.
+
+Applying it twice returns the pinned options unchanged. A given `driver` is
+wrapped instead of the one typeorm loads; the driver module is loaded when the
+options are pinned, not when the data source connects.
 
 Only UTC is supported: a zone-less value can be read as UTC with a marker,
 while any other zone needs the offset in force at that instant.
 
-Two limits remain:
+Limits:
 
-- **mssql** cannot be pinned through the options: typeorm stamps with
+- **mssql** can not be pinned through the options: typeorm stamps with
   `getdate()`, the local time of the server's operating system, and SQL Server
   has no session timezone to set. The driver reads `datetime2` as UTC
   (`useUTC`, on by default), so values are right only on a server running in
   UTC. Otherwise declare the default yourself, e.g.
   `@CreateDateColumn({ default: () => 'SYSUTCDATETIME()' })`.
-- **oracle** hands a zone-less `TIMESTAMP` over as a local `Date`, with no
-  option to change that, so the pin re-reads its fields as UTC. That is exact
-  in a process running in UTC. In a zone with daylight saving, a value whose
-  fields fall into the local spring-forward hour arrives an hour late.
+- **oracle** hands a zone-less `TIMESTAMP` over as a local `Date` and binds one
+  from its local fields, with no option to change either, so the pin converts
+  between local and UTC fields. That is exact in a process running in UTC. In a
+  zone with daylight saving, a value whose UTC fields fall into the local
+  spring-forward hour is read and written an hour late. A `DATE` (typeorm's
+  `date` columns are calendar dates) keeps its local fields on both sides.
+- **postgres streams**: pg-query-stream prepares its parameters before the
+  client sees them; single `Date` values are recovered and sent as UTC, a
+  `Date` inside an array parameter of a stream is not.
 
 ::: warning
-Only new rows are affected. A database that ran in another zone keeps the
-wall-clock values it stamped before, and those now read as UTC. Convert them
-once if they matter.
+Only values written from then on are affected. A database that ran in another
+zone keeps the wall-clock values it stamped before, and those now read as UTC.
+Convert them once if they matter.
 :::
 
 The same can be requested through the environment, for options read from it
-and for options merged with it (`buildDataSourceOptions`):
+and for options merged with it (`buildDataSourceOptions`, the CLI):
 
 ```bash
-DB_TIMEZONE=UTC  # or TYPEORM_TIMEZONE
+DB_PIN_TIMEZONE=UTC  # or TYPEORM_PIN_TIMEZONE
 ```
 
-Any other value throws an `OptionsError`.
+Any other value throws an `OptionsError`. The variable only reaches options
+typeorm-extension builds: a data-source file which constructs its `DataSource`
+itself runs unpinned in the application while the CLI would pin it, so the two
+would write in different zones. Call `withDataSourceTimezone` in that file
+instead.
 
 **Parameters**
 
-| Name       | Type                | Description                       |
-|:-----------|:--------------------|:----------------------------------|
-| `options`  | `DataSourceOptions` | The options to pin.               |
-| `timezone` | `'UTC'`             | The timezone to pin both sides to. |
+| Name       | Type                | Description                        |
+|:-----------|:--------------------|:-----------------------------------|
+| `options`  | `DataSourceOptions` | The options to pin.                |
+| `timezone` | `'UTC'`             | The timezone to pin every side to. |
 
 **Returns**
 
 `DataSourceOptions`: a new object when anything was applied, otherwise the
-input itself (a driver needing nothing, a mysql replication setup, a setting
-already present). The input is never modified.
+input itself (a driver needing nothing, options already pinned). The input is
+never modified.
 
 ## `DataSourceFindOptions`
 

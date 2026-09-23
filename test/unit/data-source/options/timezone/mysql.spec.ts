@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createMysqlUTCDriver } from '../../../../../src';
+import { OptionsError } from '../../../../../src';
+import { applyMysqlTimezone, createMysqlUTCDriver } from '../../../../../src/data-source/options/timezone/mysql';
 
 describe('src/data-source/options/timezone/mysql', () => {
     describe('createMysqlUTCDriver', () => {
@@ -47,6 +48,66 @@ describe('src/data-source/options/timezone/mysql', () => {
             });
 
             expect(destroyed).toBe(true);
+        });
+    });
+
+    describe('applyMysqlTimezone', () => {
+        const driver = { createPool: () => ({ on: () => undefined }) };
+
+        it.each(['mysql', 'mariadb'] as const)('should pin %s and keep DATE values as strings', (type) => {
+            const options = applyMysqlTimezone({
+                type, 
+                driver, 
+                extra: { connectionLimit: 3 }, 
+            }) as any;
+
+            expect(options).toMatchObject({
+                timezone: 'Z', 
+                dateStrings: ['DATE'], 
+                extra: { connectionLimit: 3 }, 
+            });
+            expect(options.driver).not.toBe(driver);
+        });
+
+        it('should accept settings which already agree', () => {
+            for (const settings of [
+                { timezone: 'Z' },
+                { timezone: '+00:00' },
+                { extra: { timezone: '-00:00' } },
+                { dateStrings: ['DATE'] },
+                { dateStrings: false },
+            ]) {
+                const options = applyMysqlTimezone({
+                    type: 'mysql', 
+                    driver, 
+                    ...settings, 
+                }) as any;
+                expect(options).toMatchObject({ timezone: 'Z', dateStrings: ['DATE'] });
+                expect(options.extra.timezone).toBeUndefined();
+            }
+        });
+
+        it('should refuse settings which contradict the pin', () => {
+            for (const settings of [
+                { timezone: '+02:00' },
+                { timezone: 'local' },
+                { extra: { timezone: 'local' } },
+                { dateStrings: true },
+                { dateStrings: ['DATETIME'] },
+                { extra: { typeCast: () => undefined } },
+                { replication: { master: {}, slaves: [] } },
+            ]) {
+                expect(() => applyMysqlTimezone({
+                    type: 'mysql', 
+                    driver, 
+                    ...settings, 
+                } as any)).toThrow(OptionsError);
+            }
+        });
+
+        it('should be idempotent', () => {
+            const once = applyMysqlTimezone({ type: 'mysql', driver });
+            expect(applyMysqlTimezone(once)).toBe(once);
         });
     });
 });

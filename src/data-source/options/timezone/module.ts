@@ -15,11 +15,12 @@ import { isDataSourceTimezone } from './utils';
  * which agree only while both clocks do.
  *
  * Each driver lives in its own file (`postgres.ts`, `mysql.ts`, `oracle.ts`);
- * every other driver needs nothing and is returned unchanged. It is all or
- * nothing per driver: a setting the caller already made on either side
- * returns the options unchanged, since half a pin shifts values rather than
- * fixing them, and that is also what makes the call idempotent. A given
- * `driver` is wrapped instead of the one typeorm would load.
+ * every other driver needs nothing and is returned unchanged. A setting the
+ * caller already made is kept when it agrees with the pin (a UTC `timezone`,
+ * a UTC `TimeZone`) or can be built upon (a pg `Client`, pg `types` leaving
+ * timestamps alone, an oracle `sessionCallback` function), and throws an
+ * `OptionsError` when it contradicts it: half a pin shifts values instead of
+ * fixing them. Applying it twice returns the pinned options unchanged.
  *
  * Only values written from then on are affected: rows a database stamped in
  * another zone before keep that wall clock.

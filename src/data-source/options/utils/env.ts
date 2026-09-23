@@ -6,18 +6,19 @@ import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
 import { useEnv } from '../../../env';
 import { OptionsError } from '../../../errors';
 import { mergeDataSourceOptions } from './merge';
-import { isDataSourceTimezone, withDataSourceTimezone } from '../timezone';
+import { withDataSourceTimezone } from '../timezone';
+import { isDataSourceTimezone } from '../timezone/utils';
 
 export function hasEnvDataSourceOptions() : boolean {
     return !!useEnv('type');
 }
 
 /**
- * Apply `DB_TIMEZONE`, when set, once the options are complete: applied
+ * Apply `DB_PIN_TIMEZONE`, when set, once the options are complete: applied
  * before a merge, a deep merge would reach into the wrapped driver module.
  */
 function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
-    const timezone = useEnv('timezone');
+    const timezone = useEnv('pinTimezone');
     if (typeof timezone === 'undefined' || timezone === '') {
         return options;
     }

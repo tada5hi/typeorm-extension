@@ -205,5 +205,165 @@ describe.runIf(supportsDataSourceTimezone(driver))(
             expect(measurement.writtenAtStored).toEqual(measurement.written);
             expect(measurement.writtenAt).toEqual(measurement.written);
         });
+
+        async function pinned() : Promise<DataSource> {
+            const dataSource = new DataSource(withDataSourceTimezone(
+                createIntegrationDataSourceOptions([Stamp]),
+                'UTC',
+            ));
+            await dataSource.initialize();
+
+            return dataSource;
+        }
+
+        it('should hand the saved entity its stamped values as UTC', async () => {
+            const dataSource = await pinned();
+            try {
+                const repository = dataSource.getRepository(Stamp);
+                const before = Date.now();
+                const saved = await repository.save(repository.create({ writtenAt: new Date(before) }));
+
+                // oracle returns these through RETURNING ... INTO out-binds
+                expect(Math.abs(saved.createdAt.getTime() - before)).toBeLessThan(MINUTE);
+            } finally {
+                await dataSource.destroy();
+            }
+        });
+
+        it('should keep a calendar date as it was written', async () => {
+            const dataSource = await pinned();
+            try {
+                const repository = dataSource.getRepository(Stamp);
+                const saved = await repository.save(repository.create({ day: '2024-01-02' }));
+                const read = await repository.findOneByOrFail({ id: saved.id });
+
+                expect(read.day).toEqual('2024-01-02');
+            } finally {
+                await dataSource.destroy();
+            }
+        });
+
+        it.runIf(driver === 'postgres')('should read a timestamp array as UTC', async () => {
+            const dataSource = await pinned();
+            try {
+                const before = Date.now();
+                const [row] = await dataSource.query('SELECT ARRAY[LOCALTIMESTAMP, LOCALTIMESTAMP] AS "values"');
+
+                expect(row.values).toHaveLength(2);
+                expect(Math.abs(row.values[0].getTime() - before)).toBeLessThan(MINUTE);
+            } finally {
+                await dataSource.destroy();
+            }
+        });
+
+        it.runIf(driver === 'postgres')('should send the Date parameters of a stream as UTC', async () => {
+            const dataSource = await pinned();
+            try {
+                const repository = dataSource.getRepository(Stamp);
+                const written = new Date();
+                written.setUTCMilliseconds(0);
+                const saved = await repository.save(repository.create({ writtenAt: written }));
+
+                const stream = await repository.createQueryBuilder('stamp')
+                    .where('stamp.id = :id', { id: saved.id })
+                    .andWhere('stamp.writtenAt = :written', { written })
+                    .stream();
+
+                const rows : Record<string, any>[] = await new Promise((resolve, reject) => {
+                    const collected : Record<string, any>[] = [];
+                    stream.on('data', (row: Record<string, any>) => collected.push(row));
+                    stream.on('end', () => resolve(collected));
+                    stream.on('error', reject);
+                });
+
+                expect(rows).toHaveLength(1);
+                expect(new Date(rows[0].stamp_writtenAt).getTime()).toEqual(written.getTime());
+            } finally {
+                await dataSource.destroy();
+            }
+        });
+
+        it.runIf(driver === 'postgres')('should pin a url carrying options, and keep PGOPTIONS', async () => {
+            const options = createIntegrationDataSourceOptions([Stamp]) as Record<string, any>;
+            const url = `postgres://${encodeURIComponent(options.username)}:${encodeURIComponent(options.password)}@${options.host}:${options.port}/${options.database}` +
+                '?options=-c%20search_path%3Dpublic';
+
+            const fromUrl = new DataSource(withDataSourceTimezone({
+                type: 'postgres', 
+                url, 
+                entities: [Stamp], 
+            }, 'UTC'));
+            await fromUrl.initialize();
+            try {
+                const [zone] = await fromUrl.query('SHOW timezone');
+                const [path] = await fromUrl.query('SHOW search_path');
+                expect(zone.TimeZone).toEqual('UTC');
+                expect(path.search_path).toEqual('public');
+            } finally {
+                await fromUrl.destroy();
+            }
+
+            const previous = process.env.PGOPTIONS;
+            process.env.PGOPTIONS = '-c statement_timeout=12345';
+            try {
+                const fromEnv = await pinned();
+                try {
+                    const [zone] = await fromEnv.query('SHOW timezone');
+                    const [timeout] = await fromEnv.query('SHOW statement_timeout');
+                    expect(zone.TimeZone).toEqual('UTC');
+                    expect(timeout.statement_timeout).toEqual('12345ms');
+                } finally {
+                    await fromEnv.destroy();
+                }
+            } finally {
+                if (typeof previous === 'undefined') {
+                    delete process.env.PGOPTIONS;
+                } else {
+                    process.env.PGOPTIONS = previous;
+                }
+            }
+        });
+
+        it.runIf(driver === 'oracle')('should bind executeMany rows as UTC', async () => {
+            const dataSource = await pinned();
+            try {
+                const written = new Date();
+                written.setUTCMilliseconds(0);
+
+                const connection = await (dataSource.driver as any).master.getConnection();
+                try {
+                    await connection.executeMany(
+                        'INSERT INTO "stamp" ("writtenAt") VALUES (:1)',
+                        [[written], [written]],
+                        { autoCommit: true },
+                    );
+                } finally {
+                    await connection.close();
+                }
+
+                const rows = await dataSource.getRepository(Stamp).findBy({ writtenAt: written });
+                expect(rows.length).toBeGreaterThanOrEqual(2);
+                expect(await readWallClock(dataSource, 'writtenAt', rows[0].id)).toEqual(written.getTime());
+            } finally {
+                await dataSource.destroy();
+            }
+        });
+
+        it.runIf(driver === 'oracle')('should compare a Date parameter without converting the column', async () => {
+            const dataSource = await pinned();
+            try {
+                await dataSource.query('SELECT /* timezone-plan */ "id" FROM "stamp" WHERE "writtenAt" > :1', [new Date(0)]);
+                const plan : { l: string }[] = await dataSource.query(
+                    'SELECT plan_table_output AS "l" FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(' +
+                    '(SELECT sql_id FROM v$sql WHERE sql_text LIKE \'SELECT /* timezone-plan */%\' AND ROWNUM = 1), NULL, \'BASIC +PREDICATE\'))',
+                );
+                const predicates = plan.map((row) => row.l).filter((line) => /access\(|filter\(/.test(line)).join('\n');
+
+                expect(predicates).toContain('"writtenAt"');
+                expect(predicates).not.toMatch(/INTERNAL_FUNCTION|SYS_EXTRACT_UTC/);
+            } finally {
+                await dataSource.destroy();
+            }
+        });
     },
 );

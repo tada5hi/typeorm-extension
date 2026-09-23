@@ -1,15 +1,17 @@
 import type { OracleDataSourceOptions } from 'typeorm/driver/oracle/OracleDataSourceOptions';
 import { PlatformTools } from 'typeorm/platform/PlatformTools';
+import { OptionsError } from '../../../errors';
 import type { MethodReplacer } from './type';
-import { isDate } from './utils';
+import { isDate, isInstalled, markInstalled } from './utils';
 
 const ORACLE_SESSION_TIMEZONE_SQL = 'ALTER SESSION SET TIME_ZONE = \'+00:00\'';
+
+type OracleCallback = (err?: unknown, ...rest: any[]) => void;
+type OracleSessionCallback = (connection: any, requestedTag: string, callback: OracleCallback) => void;
 
 /**
  * Re-read the local fields of a Date as UTC. node-oracledb builds a zone-less
  * `TIMESTAMP` as a local Date from its fields, and offers no switch for it.
- * Exact for a process in UTC; in a zone with daylight saving, a value whose
- * fields fall into the local spring-forward gap arrives an hour late.
  */
 export function readLocalDateAsUTC(date: Date) : Date {
     const output = new Date(Date.UTC(
@@ -32,13 +34,41 @@ export function readLocalDateAsUTC(date: Date) : Date {
 }
 
 /**
- * Proxy an object, replacing the named methods. The replaced methods and
- * every other method are bound to the object itself, so its internals never
- * re-enter the proxy. A member carrying a `prototype` which is not replaced
- * (an exported class, or a plain function) passes through untouched, which
- * keeps `instanceof` and statics working.
+ * The reverse: a local Date whose fields are the UTC fields of the given one.
+ * node-oracledb binds a Date as a zone-less `TIMESTAMP` from its local
+ * fields, so this sends the UTC wall clock with the column's own type, which
+ * keeps an index on the column usable (a `TIMESTAMP WITH TIME ZONE` bind
+ * would convert the column side of every comparison).
+ */
+export function writeUTCAsLocalDate(date: Date) : Date {
+    const output = new Date(
+        date.getUTCFullYear(),
+        date.getUTCMonth(),
+        date.getUTCDate(),
+        date.getUTCHours(),
+        date.getUTCMinutes(),
+        date.getUTCSeconds(),
+        date.getUTCMilliseconds(),
+    );
+
+    const year = date.getUTCFullYear();
+    if (year >= 0 && year < 100) {
+        output.setFullYear(year);
+    }
+
+    return output;
+}
+
+/**
+ * Proxy an object, replacing the named methods. Every function is bound to
+ * the object itself, so its internals never re-enter the proxy, and cached,
+ * so reading it twice gives the same function. A member carrying a
+ * `prototype` which is not replaced (an exported class) passes through
+ * untouched, which keeps `instanceof` and statics working.
  */
 function proxyMethods<T extends object>(target: T, methods: Record<string, MethodReplacer>) : T {
+    const cache = new Map<PropertyKey, { source: unknown, value: unknown }>();
+
     return new Proxy(target, {
         get(object, property) {
             const value = Reflect.get(object, property, object);
@@ -46,27 +76,40 @@ function proxyMethods<T extends object>(target: T, methods: Record<string, Metho
                 return value;
             }
 
+            const cached = cache.get(property);
+            if (cached && cached.source === value) {
+                return cached.value;
+            }
+
             const replace = typeof property === 'string' ? methods[property] : undefined;
+            let output : unknown;
             if (replace) {
-                return replace(value.bind(object));
+                output = replace(value.bind(object));
+            } else if (Object.prototype.hasOwnProperty.call(value, 'prototype')) {
+                output = value;
+            } else {
+                output = value.bind(object);
             }
 
-            if (Object.prototype.hasOwnProperty.call(value, 'prototype')) {
-                return value;
-            }
+            cache.set(property, { source: value, value: output });
 
-            return value.bind(object);
+            return output;
         },
     });
 }
 
 /**
- * Wrap a `node-oracledb` module so the connections of its pools read a
- * zone-less `TIMESTAMP` as UTC and send Date parameters as instants. The
- * module exposes the conversion only process-wide (`oracledb.fetchTypeHandler`)
- * or per `execute()` call, so the handler is added to every call a pooled
+ * Wrap a `node-oracledb` module so the connections it hands out (pooled or
+ * standalone) read a zone-less `TIMESTAMP` as UTC, return `TIMESTAMP`
+ * out-binds as UTC and send Date parameters as UTC wall clock. The module
+ * exposes the read conversion only process-wide (`oracledb.fetchTypeHandler`)
+ * or per `execute()` call, so the handler is added to every call a wrapped
  * connection makes. A handler the caller passes, or the process-wide one,
  * still decides first.
+ *
+ * In a process zone with daylight saving, a UTC wall clock falling into the
+ * local spring-forward hour has no local Date to travel as: such a value is
+ * read, and written, an hour late. A process running in UTC is exact.
  */
 export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) : T {
     const handleTimestamp = (metadata: { dbType?: unknown }) => {
@@ -89,25 +132,38 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
         };
     };
 
-    // A Date bound as it is travels as its LOCAL fields; bound as a
-    // TIMESTAMP WITH TIME ZONE it travels as the instant, which the server
-    // converts into the (UTC) session zone for a zone-less column.
-    const toBind = (value: unknown) : unknown => {
+    const toBindValue = (value: unknown) : unknown => {
         if (isDate(value)) {
-            return { val: value, type: driver.DB_TYPE_TIMESTAMP_TZ };
+            return writeUTCAsLocalDate(value);
         }
 
+        if (Array.isArray(value)) {
+            return value.map((element) => (isDate(element) ? writeUTCAsLocalDate(element) : element));
+        }
+
+        return value;
+    };
+
+    // A DATE is read back from its local fields (typeorm's `date` columns are
+    // calendar dates), so a bind typed as one keeps its local fields too.
+    const isZonelessType = (type: unknown) => typeof type === 'undefined' ||
+        type === driver.DB_TYPE_TIMESTAMP;
+
+    const toBind = (value: unknown) : unknown => {
         if (
             value &&
             typeof value === 'object' &&
             !Array.isArray(value) &&
-            isDate((value as Record<string, any>).val) &&
-            typeof (value as Record<string, any>).type === 'undefined'
+            !isDate(value) &&
+            'val' in value
         ) {
-            return { ...value, type: driver.DB_TYPE_TIMESTAMP_TZ };
+            const definition = value as Record<string, any>;
+            return isZonelessType(definition.type) ?
+                { ...definition, val: toBindValue(definition.val) } :
+                definition;
         }
 
-        return value;
+        return toBindValue(value);
     };
 
     const toBinds = (binds: unknown) : unknown => {
@@ -128,22 +184,115 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
         return binds;
     };
 
+    const isTimestampOut = (definition: unknown) : boolean => !!definition &&
+        typeof definition === 'object' &&
+        (definition as Record<string, any>).type === driver.DB_TYPE_TIMESTAMP &&
+        (
+            (definition as Record<string, any>).dir === driver.BIND_OUT ||
+            (definition as Record<string, any>).dir === driver.BIND_INOUT
+        );
+
+    const readOut = (value: unknown) : unknown => {
+        if (isDate(value)) {
+            return readLocalDateAsUTC(value);
+        }
+
+        if (Array.isArray(value)) {
+            return value.map((element) => (isDate(element) ? readLocalDateAsUTC(element) : element));
+        }
+
+        return value;
+    };
+
+    const convertOutBinds = (outBinds: unknown, definitions: unknown) : unknown => {
+        if (!outBinds || typeof outBinds !== 'object' || !definitions || typeof definitions !== 'object') {
+            return outBinds;
+        }
+
+        if (Array.isArray(definitions)) {
+            // positional: out-binds are listed in the order of the out definitions
+            if (!Array.isArray(outBinds)) {
+                return outBinds;
+            }
+
+            const outs = definitions.filter((definition) => !!definition &&
+                typeof definition === 'object' &&
+                !isDate(definition) &&
+                ((definition as Record<string, any>).dir === driver.BIND_OUT ||
+                    (definition as Record<string, any>).dir === driver.BIND_INOUT));
+
+            return outBinds.map((value, index) => (isTimestampOut(outs[index]) ? readOut(value) : value));
+        }
+
+        const output : Record<string, unknown> = { ...(outBinds as Record<string, unknown>) };
+        const keys = Object.keys(output);
+        for (const key of keys) {
+            if (isTimestampOut((definitions as Record<string, unknown>)[key])) {
+                output[key] = readOut(output[key]);
+            }
+        }
+
+        return output;
+    };
+
+    const convertResult = (result: any, definitions: unknown) => {
+        if (result && typeof result === 'object' && typeof result.outBinds !== 'undefined') {
+            result.outBinds = convertOutBinds(result.outBinds, definitions);
+        }
+
+        return result;
+    };
+
+    const convertManyResult = (result: any, definitions: unknown) => {
+        if (result && typeof result === 'object' && Array.isArray(result.outBinds)) {
+            result.outBinds = result.outBinds.map((row: unknown) => convertOutBinds(row, definitions));
+        }
+
+        return result;
+    };
+
+    const settle = (outcome: any, definitions: unknown, callback: unknown, convert: (result: any, definitions: unknown) => any) => {
+        if (typeof callback === 'function') {
+            return outcome;
+        }
+
+        return outcome && typeof outcome.then === 'function' ?
+            outcome.then((result: any) => convert(result, definitions)) :
+            outcome;
+    };
+
     const wrapConnection = (connection: Record<string, any>) => proxyMethods(connection, {
-        execute: (original) => (sql: unknown, binds?: unknown, options?: unknown, ...rest: unknown[]) => {
+        execute: (original) => (sql: unknown, binds?: unknown, options?: unknown, callback?: unknown) => {
             if (typeof binds === 'function') {
                 return original(sql, {}, withHandler(), binds);
             }
-            if (typeof options === 'function') {
-                return original(sql, toBinds(binds), withHandler(), options);
+
+            const input = binds ?? {};
+            const optionsOrCallback = typeof options === 'function' ? undefined : options as Record<string, any> | undefined;
+            const done = typeof options === 'function' ? options : callback;
+
+            if (typeof done === 'function') {
+                return original(sql, toBinds(input), withHandler(optionsOrCallback), (err: unknown, result: any) => {
+                    done(err, err ? result : convertResult(result, input));
+                });
             }
 
-            return original(sql, toBinds(binds ?? {}), withHandler(options as Record<string, any> | undefined), ...rest);
+            return settle(original(sql, toBinds(input), withHandler(optionsOrCallback)), input, undefined, convertResult);
         },
-        executeMany: (original) => (sql: unknown, binds: unknown, ...rest: unknown[]) => original(
-            sql,
-            Array.isArray(binds) ? binds.map((row) => toBinds(row)) : binds,
-            ...rest,
-        ),
+        executeMany: (original) => (sql: unknown, binds: unknown, options?: unknown, callback?: unknown) => {
+            const rows = Array.isArray(binds) ? binds.map((row) => toBinds(row)) : binds;
+            const optionsOrCallback = typeof options === 'function' ? undefined : options as Record<string, any> | undefined;
+            const done = typeof options === 'function' ? options : callback;
+            const definitions = optionsOrCallback?.bindDefs;
+
+            if (typeof done === 'function') {
+                return original(sql, rows, optionsOrCallback ?? {}, (err: unknown, result: any) => {
+                    done(err, err ? result : convertManyResult(result, definitions));
+                });
+            }
+
+            return settle(original(sql, rows, optionsOrCallback ?? {}), definitions, undefined, convertManyResult);
+        },
         queryStream: (original) => (sql: unknown, binds?: unknown, options?: Record<string, any>) => original(
             sql,
             toBinds(binds ?? {}),
@@ -164,30 +313,56 @@ export function createOracleUTCDriver<T extends Record<string, any>>(driver: T) 
         },
     });
 
-    return proxyMethods(driver, {
-        createPool: (original) => (...args: any[]) => {
-            const callback = args[args.length - 1];
-            if (typeof callback === 'function') {
-                return original(...args.slice(0, -1), (err: unknown, pool?: Record<string, any>) => {
-                    callback(err, pool ? wrapPool(pool) : pool);
-                });
-            }
+    const wrapFactory = (wrap: (value: Record<string, any>) => Record<string, any>) : MethodReplacer => (original) => (...args: any[]) => {
+        const callback = args[args.length - 1];
+        if (typeof callback === 'function') {
+            return original(...args.slice(0, -1), (err: unknown, value?: Record<string, any>) => {
+                callback(err, value ? wrap(value) : value);
+            });
+        }
 
-            return original(...args).then((pool: Record<string, any>) => wrapPool(pool));
-        },
-    });
+        const output = original(...args);
+        if (output && typeof output.then === 'function') {
+            return output.then((value: Record<string, any>) => wrap(value));
+        }
+
+        return output ? wrap(output) : output;
+    };
+
+    return markInstalled(proxyMethods(driver, {
+        createPool: wrapFactory(wrapPool),
+        getPool: wrapFactory(wrapPool),
+        getConnection: wrapFactory(wrapConnection),
+    }));
 }
 
 /**
  * Pin an oracle data source: a pool `sessionCallback` running
- * `ALTER SESSION SET TIME_ZONE`, and a driver whose pooled connections read a
- * zone-less `TIMESTAMP` as UTC and bind Date parameters as instants. An
- * `extra.sessionCallback` already set returns the options unchanged.
+ * `ALTER SESSION SET TIME_ZONE`, and a driver whose connections read a
+ * zone-less `TIMESTAMP` as UTC and send Date parameters as UTC wall clock.
+ * A `sessionCallback` function the caller set runs after the pin; one naming
+ * a PL/SQL procedure can not be combined and is a conflict.
  */
 export function applyOracleTimezone(options: OracleDataSourceOptions) : OracleDataSourceOptions {
-    if (typeof options.extra?.sessionCallback !== 'undefined') {
+    if (isInstalled(options.driver)) {
         return options;
     }
+
+    const existing : unknown = options.extra?.sessionCallback;
+    if (typeof existing !== 'undefined' && typeof existing !== 'function') {
+        throw OptionsError.timezoneConflict('the oracle sessionCallback names a PL/SQL procedure, which can not run after the session pin.');
+    }
+
+    const sessionCallback : OracleSessionCallback = (connection, requestedTag, callback) => {
+        connection.execute(ORACLE_SESSION_TIMEZONE_SQL, (err: unknown) => {
+            if (err || typeof existing !== 'function') {
+                callback(err ?? undefined);
+                return;
+            }
+
+            (existing as OracleSessionCallback)(connection, requestedTag, callback);
+        });
+    };
 
     const driver = options.driver ?? PlatformTools.load('oracledb');
 
@@ -196,9 +371,7 @@ export function applyOracleTimezone(options: OracleDataSourceOptions) : OracleDa
         driver: createOracleUTCDriver(driver),
         extra: {
             ...(options.extra ?? {}),
-            sessionCallback: (connection: any, _requestedTag: string, callback: (err?: unknown) => void) => {
-                connection.execute(ORACLE_SESSION_TIMEZONE_SQL, (err: unknown) => callback(err ?? undefined));
-            },
+            sessionCallback,
         },
     };
 }

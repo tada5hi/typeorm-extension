@@ -1,99 +1,139 @@
- 
 import { describe, expect, it } from 'vitest';
-import { createOracleUTCDriver, readLocalDateAsUTC } from '../../../../../src';
+import { OptionsError } from '../../../../../src';
+import {
+    applyOracleTimezone,
+    createOracleUTCDriver,
+    readLocalDateAsUTC,
+    writeUTCAsLocalDate,
+} from '../../../../../src/data-source/options/timezone/oracle';
+
+class Marker {}
+
+const TYPES = {
+    DB_TYPE_DATE: 'date',
+    DB_TYPE_TIMESTAMP: 'ts',
+    DB_TYPE_TIMESTAMP_TZ: 'tstz',
+    BIND_IN: 'in',
+    BIND_OUT: 'out',
+    BIND_INOUT: 'inout',
+};
+
+type Call = {
+    sql: unknown, 
+    binds: unknown, 
+    options: any 
+};
+
+/**
+ * A stand-in for node-oracledb covering the call shapes typeorm and direct
+ * users make: promise and callback forms, pooled and standalone connections.
+ * `outBinds` is what each execute answers with.
+ */
+function createFakeOracle(outBinds?: unknown) {
+    const executed : Call[] = [];
+    const many : Call[] = [];
+
+    const connection = {
+        execute(sql: unknown, binds: unknown, options: any, callback?: (err: unknown, result: unknown) => void) {
+            executed.push({
+                sql, 
+                binds, 
+                options, 
+            });
+            const result = { rows: [], outBinds };
+            if (callback) {
+                callback(null, result);
+                return undefined;
+            }
+
+            return Promise.resolve(result);
+        },
+        executeMany(sql: unknown, binds: unknown, options: any) {
+            many.push({
+                sql, 
+                binds, 
+                options, 
+            });
+            return Promise.resolve({ outBinds });
+        },
+        close: () => 'closed',
+    };
+
+    const pool = {
+        getConnection(callback?: (err: unknown, connection: unknown) => void) {
+            if (callback) {
+                callback(null, connection);
+                return undefined;
+            }
+
+            return Promise.resolve(connection);
+        },
+    };
+
+    const driver = {
+        ...TYPES,
+        Marker,
+        createPool(_options: unknown, callback?: (err: unknown, pool: unknown) => void) {
+            if (callback) {
+                callback(null, pool);
+                return undefined;
+            }
+
+            return Promise.resolve(pool);
+        },
+        getPool: () => pool,
+        getConnection: () => Promise.resolve(connection),
+    };
+
+    return {
+        driver, 
+        executed, 
+        many, 
+    };
+}
+
+async function connect(driver: any) {
+    const pool = await new Promise<any>((resolve) => {
+        driver.createPool({}, (_err: unknown, value: unknown) => resolve(value));
+    });
+
+    return new Promise<any>((resolve) => {
+        pool.getConnection((_err: unknown, value: unknown) => resolve(value));
+    });
+}
 
 describe('src/data-source/options/timezone/oracle', () => {
-    describe('readLocalDateAsUTC', () => {
-        it('should take the local fields as UTC', () => {
-            expect(readLocalDateAsUTC(new Date(2026, 8, 22, 11, 5, 49, 850))).toEqual(new Date('2026-09-22T11:05:49.850Z'));
+    describe('readLocalDateAsUTC / writeUTCAsLocalDate', () => {
+        it('should take the local fields as UTC and back', () => {
+            const local = new Date(2026, 8, 22, 11, 5, 49, 850);
+            const utc = new Date('2026-09-22T11:05:49.850Z');
+
+            expect(readLocalDateAsUTC(local)).toEqual(utc);
+            expect(writeUTCAsLocalDate(utc)).toEqual(local);
         });
 
         it('should keep the years 0 to 99', () => {
             const local = new Date(2026, 0, 1);
             local.setFullYear(5);
-
             expect(readLocalDateAsUTC(local).getUTCFullYear()).toEqual(5);
+
+            const utc = new Date('2026-01-01T00:00:00.000Z');
+            utc.setUTCFullYear(5);
+            expect(writeUTCAsLocalDate(utc).getFullYear()).toEqual(5);
         });
     });
 
     describe('createOracleUTCDriver', () => {
-        class Marker {}
-
-        function createFakeOracle() {
-            const executed : {
-                sql: unknown, 
-                binds: unknown, 
-                options: any 
-            }[] = [];
-            const many : unknown[] = [];
-
-            const connection = {
-                execute(sql: unknown, binds: unknown, options: any, callback?: unknown) {
-                    executed.push({
-                        sql, 
-                        binds, 
-                        options, 
-                    });
-                    return callback ?? 'executed';
-                },
-                executeMany(_sql: unknown, binds: unknown) {
-                    many.push(binds);
-                    return 'many';
-                },
-                close: () => 'closed',
-            };
-
-            const pool = {
-                getConnection(callback?: (err: unknown, connection: unknown) => void) {
-                    if (callback) {
-                        callback(null, connection);
-                        return undefined;
-                    }
-
-                    return Promise.resolve(connection);
-                },
-            };
-
-            const driver = {
-                DB_TYPE_TIMESTAMP: 'ts',
-                DB_TYPE_TIMESTAMP_TZ: 'tstz',
-                Marker,
-                createPool(_options: unknown, callback?: (err: unknown, pool: unknown) => void) {
-                    if (callback) {
-                        callback(null, pool);
-                        return undefined;
-                    }
-
-                    return Promise.resolve(pool);
-                },
-            };
-
-            return {
-                driver, 
-                executed, 
-                many, 
-            };
-        }
-
-        async function connect(driver: any) {
-            const pool = await new Promise<any>((resolve) => {
-                driver.createPool({}, (_err: unknown, value: unknown) => resolve(value));
-            });
-
-            return new Promise<any>((resolve) => {
-                pool.getConnection((_err: unknown, value: unknown) => resolve(value));
-            });
-        }
-
         it('should read a zone-less TIMESTAMP as UTC and nothing else', async () => {
             const { driver, executed } = createFakeOracle();
             const connection = await connect(createOracleUTCDriver(driver));
 
-            connection.execute('SELECT', [], { outFormat: 4002 });
+            await connection.execute('SELECT', [], { outFormat: 4002 });
             const { options } = executed[0];
 
             expect(options.outFormat).toEqual(4002);
-            expect(options.fetchTypeHandler({ dbType: 'other' })).toBeUndefined();
+            expect(options.fetchTypeHandler({ dbType: 'date' })).toBeUndefined();
+            expect(options.fetchTypeHandler({ dbType: 'tstz' })).toBeUndefined();
 
             const { converter } = options.fetchTypeHandler({ dbType: 'ts' });
             expect(converter(new Date(2026, 8, 22, 11, 0))).toEqual(new Date('2026-09-22T11:00:00.000Z'));
@@ -105,38 +145,96 @@ describe('src/data-source/options/timezone/oracle', () => {
             const own = { type: 'string' };
             const connection = await connect(createOracleUTCDriver({ ...driver, fetchTypeHandler: () => own }));
 
-            connection.execute('SELECT', []);
+            await connection.execute('SELECT', []);
             expect(executed[0].options.fetchTypeHandler({ dbType: 'ts' })).toBe(own);
 
             const call = { type: 'number' };
-            connection.execute('SELECT', [], { fetchTypeHandler: () => call });
+            await connection.execute('SELECT', [], { fetchTypeHandler: () => call });
             expect(executed[1].options.fetchTypeHandler({ dbType: 'ts' })).toBe(call);
         });
 
-        it('should bind Date parameters as instants', async () => {
-            const {
-                driver, 
-                executed, 
-                many, 
-            } = createFakeOracle();
+        it('should bind Date parameters as their UTC wall clock, keeping the plain type', async () => {
+            const { driver, executed } = createFakeOracle();
             const connection = await connect(createOracleUTCDriver(driver));
-            const date = new Date();
+            const date = new Date('2026-09-22T11:05:00.000Z');
+            const wall = writeUTCAsLocalDate(date);
 
-            connection.execute('INSERT', [date, 1]);
-            connection.execute('INSERT', {
-                at: date, 
-                typed: { val: date, type: 'date' }, 
-                bare: { val: date }, 
+            await connection.execute('INSERT', [date, 1]);
+            await connection.execute('INSERT', {
+                at: date,
+                typed: { val: date, type: 'ts' },
+                day: { val: date, type: 'date' },
+                zoned: { val: date, type: 'tstz' },
+                many: { val: [date, 2] },
+                out: { dir: 'out', type: 'ts' },
             });
-            connection.executeMany('INSERT', [[date], { at: date }]);
 
-            expect(executed[0].binds).toEqual([{ val: date, type: 'tstz' }, 1]);
+            expect(executed[0].binds).toEqual([wall, 1]);
             expect(executed[1].binds).toEqual({
-                at: { val: date, type: 'tstz' },
-                typed: { val: date, type: 'date' },
-                bare: { val: date, type: 'tstz' },
+                at: wall,
+                typed: { val: wall, type: 'ts' },
+                day: { val: date, type: 'date' },
+                zoned: { val: date, type: 'tstz' },
+                many: { val: [wall, 2] },
+                out: { dir: 'out', type: 'ts' },
             });
-            expect(many[0]).toEqual([[{ val: date, type: 'tstz' }], { at: { val: date, type: 'tstz' } }]);
+        });
+
+        it('should read TIMESTAMP out-binds as UTC, by name and by position', async () => {
+            const local = new Date(2026, 8, 22, 11, 0);
+            const utc = new Date('2026-09-22T11:00:00.000Z');
+
+            const named = createFakeOracle({
+                at: [local], 
+                id: [1], 
+                stamp: [local], 
+            });
+            let connection = await connect(createOracleUTCDriver(named.driver));
+            const result = await connection.execute('INSERT', {
+                at: { dir: 'out', type: 'ts' },
+                id: { dir: 'out', type: 'number' },
+                stamp: { dir: 'out', type: 'tstz' },
+            });
+
+            expect(result.outBinds).toEqual({
+                at: [utc], 
+                id: [1], 
+                stamp: [local], 
+            });
+
+            const positional = createFakeOracle([local, 1]);
+            connection = await connect(createOracleUTCDriver(positional.driver));
+            const second = await connection.execute('INSERT', [1, { dir: 'out', type: 'ts' }, {
+                dir: 'inout', 
+                type: 'number', 
+                val: 1, 
+            }]);
+
+            expect(second.outBinds).toEqual([utc, 1]);
+        });
+
+        it('should convert out-binds in the callback form too', async () => {
+            const local = new Date(2026, 8, 22, 11, 0);
+            const { driver } = createFakeOracle({ at: local });
+            const connection = await connect(createOracleUTCDriver(driver));
+
+            const result = await new Promise<any>((resolve) => {
+                connection.execute('INSERT', { at: { dir: 'out', type: 'ts' } }, {}, (_err: unknown, value: unknown) => resolve(value));
+            });
+
+            expect(result.outBinds.at).toEqual(new Date('2026-09-22T11:00:00.000Z'));
+        });
+
+        it('should bind executeMany rows as plain values and read its out-binds', async () => {
+            const local = new Date(2026, 8, 22, 11, 0);
+            const { driver, many } = createFakeOracle([{ at: local }]);
+            const connection = await connect(createOracleUTCDriver(driver));
+            const date = new Date('2026-09-22T11:05:00.000Z');
+
+            const result = await connection.executeMany('INSERT', [[date, 1], { at: date }], { bindDefs: { at: { dir: 'out', type: 'ts' } } });
+
+            expect(many[0].binds).toEqual([[writeUTCAsLocalDate(date), 1], { at: writeUTCAsLocalDate(date) }]);
+            expect(result.outBinds).toEqual([{ at: new Date('2026-09-22T11:00:00.000Z') }]);
         });
 
         it('should support the callback and the promise forms', async () => {
@@ -145,20 +243,111 @@ describe('src/data-source/options/timezone/oracle', () => {
 
             const pool = await wrapped.createPool({});
             const connection = await pool.getConnection();
-            const callback = () => undefined;
 
-            expect(connection.execute('SELECT', callback)).toBe(callback);
-            expect(connection.execute('SELECT', [], callback)).toBe(callback);
+            await new Promise((resolve) => {
+                connection.execute('SELECT', resolve);
+            });
+            await new Promise((resolve) => {
+                connection.execute('SELECT', [], resolve);
+            });
+
             expect(executed.map((entry) => typeof entry.options.fetchTypeHandler)).toEqual(['function', 'function']);
             expect(connection.close()).toEqual('closed');
         });
 
-        it('should pass classes through untouched', () => {
+        it('should wrap standalone connections and named pools', async () => {
+            const { driver, executed } = createFakeOracle();
+            const wrapped : any = createOracleUTCDriver(driver);
+
+            const standalone = await wrapped.getConnection();
+            await standalone.execute('SELECT', []);
+
+            const pooled = await wrapped.getPool().getConnection();
+            await pooled.execute('SELECT', []);
+
+            expect(executed.map((entry) => typeof entry.options.fetchTypeHandler)).toEqual(['function', 'function']);
+        });
+
+        it('should pass classes through untouched and keep method identity', async () => {
             const { driver } = createFakeOracle();
             const wrapped : any = createOracleUTCDriver(driver);
 
             expect(wrapped.Marker).toBe(Marker);
             expect(new Marker()).toBeInstanceOf(wrapped.Marker);
+            expect(wrapped.DB_TYPE_TIMESTAMP).toEqual('ts');
+            expect(wrapped.createPool).toBe(wrapped.createPool);
+
+            const connection = await connect(wrapped);
+            expect(connection.execute).toBe(connection.execute);
+        });
+    });
+
+    describe('applyOracleTimezone', () => {
+        function runSessionCallback(callback: any) {
+            const executed : string[] = [];
+            let result : unknown = 'pending';
+
+            callback({
+                execute: (sql: string, done: (err: unknown) => void) => {
+                    executed.push(sql);
+                    done(null);
+                },
+            }, 'tag', (err?: unknown) => { result = err; });
+
+            return { executed, result };
+        }
+
+        it('should pin the session and wrap the driver', () => {
+            const { driver } = createFakeOracle();
+            const options = applyOracleTimezone({
+                type: 'oracle', 
+                driver, 
+                extra: { poolMax: 2 }, 
+            }) as any;
+
+            expect(options.extra.poolMax).toEqual(2);
+            expect(options.driver).not.toBe(driver);
+
+            const { executed, result } = runSessionCallback(options.extra.sessionCallback);
+            expect(executed).toEqual(['ALTER SESSION SET TIME_ZONE = \'+00:00\'']);
+            expect(result).toBeUndefined();
+        });
+
+        it('should run a caller sessionCallback after the pin', () => {
+            const { driver } = createFakeOracle();
+            const seen : string[] = [];
+            const options = applyOracleTimezone({
+                type: 'oracle',
+                driver,
+                extra: {
+                    sessionCallback: (_connection: unknown, tag: string, done: () => void) => {
+                        seen.push(tag);
+                        done();
+                    },
+                },
+            }) as any;
+
+            const { executed } = runSessionCallback(options.extra.sessionCallback);
+            expect(executed).toEqual(['ALTER SESSION SET TIME_ZONE = \'+00:00\'']);
+            expect(seen).toEqual(['tag']);
+        });
+
+        it('should refuse a sessionCallback naming a PL/SQL procedure', () => {
+            const { driver } = createFakeOracle();
+
+            expect(() => applyOracleTimezone({
+                type: 'oracle', 
+                driver, 
+                extra: { sessionCallback: 'pkg.init' }, 
+            }))
+                .toThrow(OptionsError);
+        });
+
+        it('should be idempotent', () => {
+            const { driver } = createFakeOracle();
+            const once = applyOracleTimezone({ type: 'oracle', driver });
+
+            expect(applyOracleTimezone(once)).toBe(once);
         });
     });
 });
