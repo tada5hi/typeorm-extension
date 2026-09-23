@@ -116,6 +116,16 @@ describe.runIf(supportsDatabaseLock(driver))(`src/database/lock (${driver})`, ()
         expect(a.isTransactionActive).toBe(false);
         expect(await isFree('transaction')).toBe(true);
 
+        // a nested transaction is a savepoint: the outer one has to go as well.
+        await expect(withDatabaseLock(a, 'transaction', async () => {
+            await a.startTransaction();
+            await a.startTransaction();
+            await a.query('SELECT * FROM typeorm_extension_missing_table');
+        })).rejects.toThrow();
+
+        expect(a.isTransactionActive).toBe(false);
+        expect(await isFree('transaction')).toBe(true);
+
         await expect(withDatabaseLock(a, 'transaction', async () => {
             await a.startTransaction();
         })).rejects.toBeInstanceOf(DatabaseLockError);

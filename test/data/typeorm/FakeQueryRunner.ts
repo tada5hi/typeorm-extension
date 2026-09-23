@@ -89,9 +89,13 @@ export class FakeQueryRunner {
         return this.respond(query, this);
     }
 
+    transactionDepth = 0;
+
     async rollbackTransaction() {
-        this.queries.push('ROLLBACK');
-        this.isTransactionActive = false;
+        // like typeorm: a nested transaction is a savepoint
+        this.transactionDepth = Math.max(this.transactionDepth - 1, 0);
+        this.queries.push(this.transactionDepth > 0 ? 'ROLLBACK TO SAVEPOINT' : 'ROLLBACK');
+        this.isTransactionActive = this.transactionDepth > 0;
     }
 
     async changeColumn(table: Table | string, from: TableColumn | string, to: TableColumn) {

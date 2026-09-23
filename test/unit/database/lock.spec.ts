@@ -117,6 +117,26 @@ describe('src/database/lock', () => {
         ]);
     });
 
+    it('should roll back nested transactions the callback leaves behind', async () => {
+        const queryRunner = createFakeQueryRunner({
+            type: 'postgres',
+            respond: () => [{ acquired: true }],
+        });
+
+        await expect(withDatabaseLock(queryRunner, 'migrations', async () => {
+            queryRunner.isTransactionActive = true;
+            queryRunner.transactionDepth = 2;
+            throw new Error('boom');
+        })).rejects.toThrow('boom');
+
+        expect(queryRunner.isTransactionActive).toBe(false);
+        expect(queryRunner.queries.slice(1)).toEqual([
+            'ROLLBACK TO SAVEPOINT',
+            'ROLLBACK',
+            'SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS "released"',
+        ]);
+    });
+
     it('should give up on a NaN timeout instead of polling forever', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'mysql',

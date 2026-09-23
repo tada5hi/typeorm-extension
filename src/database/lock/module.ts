@@ -126,13 +126,22 @@ export async function withDatabaseLock<T>(
 /**
  * A transaction the callback left open (or postgres aborted) would make
  * postgres refuse the release, and the lock would go back to the pool held.
+ *
+ * Nested transactions are savepoints in typeorm: one rollback only unwinds
+ * the innermost, so repeat until the outer one is gone (or a rollback fails).
  */
 async function rollbackTransaction(queryRunner: QueryRunner) : Promise<boolean> {
     if (!queryRunner.isTransactionActive) {
         return false;
     }
 
-    await queryRunner.rollbackTransaction().catch(() => undefined);
+    try {
+        while (queryRunner.isTransactionActive) {
+            await queryRunner.rollbackTransaction();
+        }
+    } catch {
+        // the release below is the one left to fail, or the connection is gone
+    }
 
     return true;
 }
