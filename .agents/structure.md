@@ -33,6 +33,7 @@ typeorm-extension/
 │   │   │   ├── drift.ts        # getSchemaDrift / assertSchemaMatchesMetadata
 │   │   │   ├── alter/          # guarded renameIndex / renameForeignKey / changeColumnType / withForeignKeyChecksDisabled
 │   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
+│   │   ├── error/              # isDatabaseUniqueViolationError / isDatabaseForeignKeyViolationError / isDatabaseLockConflictError
 │   │   ├── lock/               # withDatabaseLock: named advisory lock over a QueryRunner (postgres, mysql, mariadb)
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
@@ -78,6 +79,7 @@ typeorm-extension/
 | `data-source/`   | Locate, build, and cache `DataSource` instances by alias. Backbone for every other feature.            |
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
 | `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
+| `database/error/` | Classify a failed write (unique violation, foreign key violation, lock conflict) from the vendor code, wherever the driver reports it. Pure, no driver imports. |
 | `database/lock/` | `withDatabaseLock`: a named, session-scoped advisory lock over a `QueryRunner` (e.g. to serialize migrations across replicas). |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
 | `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError` / `DatabaseLockError` / `EntityMetadataError` / `EntityRelationLookupError`). One class per file; every error a consumer may catch lives here, not next to its thrower. |

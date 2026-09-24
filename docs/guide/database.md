@@ -442,3 +442,37 @@ On mysql that is the backing index of a foreign key, which only becomes visible 
 Renaming a unique constraint is **not** covered by these helpers: `renameForeignKey` only handles foreign keys, so
 issue the `ALTER TABLE … RENAME CONSTRAINT` yourself via `queryRunner.query()`.
 :::
+
+## Driver Errors
+
+A failed write surfaces as the driver's own error, with a vendor code in a different place per driver. Three helpers
+classify it, whichever driver raised it:
+
+```typescript
+import { QueryFailedError } from 'typeorm';
+import { isDatabaseUniqueViolationError } from 'typeorm-extension';
+
+try {
+    await dataSource.getRepository(User).insert({ name: 'admin' });
+} catch (e) {
+    if (isDatabaseUniqueViolationError(e)) {
+        throw new ConflictError('The name is already taken.');
+    }
+
+    throw e;
+}
+```
+
+- `isDatabaseUniqueViolationError`: a duplicate key, a primary key included.
+- `isDatabaseForeignKeyViolationError`: a reference to a missing row, or the delete of a row which is still referenced.
+- `isDatabaseLockConflictError`: the database gave up on the transaction because of lock contention (a deadlock, a
+  serialization failure, a lock wait timeout).
+
+A lock conflict is usually answered by running the whole transaction again. That is only sound when the transaction
+derives its writes from reads made inside it, and a lock wait timeout rolls back just the statement on mysql, mariadb
+and mssql, so roll the transaction back before retrying (typeorm's `transaction()` does). On cockroachdb typeorm's query
+runner already replays a transaction on a serialization failure, up to `maxTransactionRetries` times (default 5), so
+the error only reaches your code once those retries are used up.
+
+The codes each helper recognizes per driver are listed in the
+[API reference](./database-api-reference#isdatabaseuniqueviolationerror).

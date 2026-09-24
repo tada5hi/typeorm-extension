@@ -7,6 +7,7 @@ A TypeScript library that extends [TypeORM](https://typeorm.io) with:
 - `create` / `drop` databases across all supported drivers (Postgres, MySQL/MariaDB, MongoDB, MSSQL, Oracle, better-sqlite3, CockroachDB). Note: TypeORM 1.0 removed the legacy `sqlite` driver — use `better-sqlite3`.
 - A schema-drift assertion (`getSchemaDrift` / `assertSchemaMatchesMetadata`) plus guarded, idempotent rename/alter helpers for repair migrations.
 - A named advisory lock (`withDatabaseLock`) to serialize work such as migrations across processes (postgres, mysql, mariadb).
+- Driver error classifiers (`isDatabaseUniqueViolationError`, `isDatabaseForeignKeyViolationError`, `isDatabaseLockConflictError`) that read the vendor code wherever the driver puts it.
 - A seeder/factory system (similar to Laravel). The factory callback brings its own data generator; the library ships none.
 - Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`) for downstream CRUD layers.
 - A data-source registry with auto-discovery and lazy initialization.

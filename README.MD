@@ -368,6 +368,24 @@ try {
 }
 ```
 
+`isDatabaseUniqueViolationError(error)`, `isDatabaseForeignKeyViolationError(error)` and `isDatabaseLockConflictError(error)`
+classify a failed write whichever driver raised it, e.g. to answer a duplicate key with a conflict rather than a
+server error:
+
+```typescript
+import { isDatabaseUniqueViolationError } from 'typeorm-extension';
+
+try {
+    await dataSource.getRepository(User).insert({ name: 'admin' });
+} catch (e) {
+    if (isDatabaseUniqueViolationError(e)) {
+        throw new ConflictError('The name is already taken.');
+    }
+
+    throw e;
+}
+```
+
 To get a better overview and understanding of these functions, check out the
 [documentation](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html).
 
