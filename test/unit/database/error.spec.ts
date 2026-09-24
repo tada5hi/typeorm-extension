@@ -106,6 +106,19 @@ describe('src/database/error', () => {
         expect(classify({ driverError: shape })).toEqual(expected);
     });
 
+    it('should read the message of the driver error before the wrapper', () => {
+        const error = {
+            message: 'Query failed',
+            driverError: {
+                code: 'EREQUEST',
+                number: 547,
+                message: 'The INSERT statement conflicted with the FOREIGN KEY constraint "FK_x".',
+            },
+        };
+
+        expect(classify(error)).toEqual(FOREIGN_KEY);
+    });
+
     it('should classify nothing else', () => {
         expect(classify(undefined)).toEqual(NONE);
         expect(classify(null)).toEqual(NONE);

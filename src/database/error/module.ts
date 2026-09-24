@@ -24,16 +24,19 @@ type DatabaseErrorSignature = {
     message?: string,
 };
 
+/**
+ * The driver error decides, the wrapper is the fallback: every wrapper has a
+ * message of its own, which would hide the driver's (mssql 547 needs it).
+ */
 function readProperty(input: Record<string, any>, key: string) : unknown {
-    if (typeof input[key] !== 'undefined') {
-        return input[key];
-    }
-
-    if (isObject(input.driverError)) {
+    if (
+        isObject(input.driverError) &&
+        typeof input.driverError[key] !== 'undefined'
+    ) {
         return input.driverError[key];
     }
 
-    return undefined;
+    return input[key];
 }
 
 function readSignature(input: unknown) : DatabaseErrorSignature | undefined {

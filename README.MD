@@ -373,6 +373,8 @@ classify a failed write whichever driver raised it, e.g. to answer a duplicate k
 server error:
 
 ```typescript
+import { isDatabaseUniqueViolationError } from 'typeorm-extension';
+
 try {
     await dataSource.getRepository(User).insert({ name: 'admin' });
 } catch (e) {
