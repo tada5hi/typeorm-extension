@@ -393,6 +393,49 @@ own locks.
 - `DatabaseLockError` if the lock can not be acquired within `timeout`, if the query runner is in a transaction
   (the lock would outlive a rollback), or if `fn` returned with a transaction left open on it.
 
+## `isDatabaseUniqueViolationError`
+
+```typescript
+declare function isDatabaseUniqueViolationError(error: unknown): boolean;
+```
+
+True when the error is a unique constraint (duplicate key) violation, a primary key included. Two writers inserting the
+same key at once end like this, and the loser usually wants to answer a conflict.
+
+## `isDatabaseForeignKeyViolationError`
+
+```typescript
+declare function isDatabaseForeignKeyViolationError(error: unknown): boolean;
+```
+
+True when the error is a foreign key violation, in either direction: a row references a missing one, or a row which is
+still referenced is deleted. On mssql, where error 547 covers CHECK constraints as well, the message decides.
+
+## `isDatabaseLockConflictError`
+
+```typescript
+declare function isDatabaseLockConflictError(error: unknown): boolean;
+```
+
+True when the database gave up on the transaction because of lock contention: a deadlock, a serialization failure or a
+lock wait timeout. Re-running the whole transaction is the usual answer, and it is only sound when the transaction
+derives its writes from reads made inside it.
+
+Not to be confused with `DatabaseLockError`, which `withDatabaseLock` throws when its advisory lock can not be
+acquired: this guard classifies an error the driver raised.
+
+All three take `unknown`, so they can be called in a `catch` block as they are, and accept the `QueryFailedError`
+typeorm throws as well as the raw driver error. The codes they recognize:
+
+| Driver                  | Unique violation                                      | Foreign key violation                                             | Lock conflict                              |
+|-------------------------|-------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------|
+| postgres, cockroachdb   | `23505`                                               | `23503`                                                           | `40P01`, `40001`                           |
+| mysql, mariadb          | `ER_DUP_ENTRY`                                        | `ER_NO_REFERENCED_ROW(_2)`, `ER_ROW_IS_REFERENCED(_2)`            | `ER_LOCK_DEADLOCK`, `ER_LOCK_WAIT_TIMEOUT` |
+| better-sqlite3          | `SQLITE_CONSTRAINT_UNIQUE`, `SQLITE_CONSTRAINT_PRIMARYKEY` | `SQLITE_CONSTRAINT_FOREIGNKEY`                               | not covered                                |
+| mssql (`number`)        | `2627`, `2601`                                        | `547` naming a FOREIGN KEY or REFERENCE constraint                | `1205`, `1222`                             |
+| oracle                  | `ORA-00001`                                           | `ORA-02291`, `ORA-02292`                                          | `ORA-00060`, `ORA-08177`                   |
+| mongodb                 | `11000`, `11001`                                      | not applicable                                                    | not covered                                |
+
 ## DatabaseLockOptions
 ```typescript
 export type DatabaseLockOptions = {

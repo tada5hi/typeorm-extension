@@ -113,6 +113,10 @@ The dialect statements themselves live in `src/database/schema/alter/statements.
 
 Both are try-locks, polled every 100ms until `timeout` (unset waits forever, `0` tries once), then `DatabaseLockError.timeout`. The result goes through `isDatabaseLockAcquired`: pg answers a boolean, mysql the string `'1'` / `'0'`, mariadb the number `1` / `0` (either may be `NULL`), so a truthiness check would read `'0'` as acquired. Every other driver raises `DriverError.lockNotSupported`: cockroachdb accepts the postgres advisory functions but they do not lock anything, and sqlite, mssql, oracle and mongodb have no equivalent wired. Refusing is safer than a lock that silently does nothing, so running `fn` unlocked there is opt-in (`strict: false`, meant for sqlite test suites; the same flag name as `SchemaStrictInput`).
 
+### 8. Driver errors are classified by vendor code
+
+`isDatabaseUniqueViolationError`, `isDatabaseForeignKeyViolationError` and `isDatabaseLockConflictError` (`src/database/error/module.ts`) answer one question each about a failed write, for every supported driver. `QueryFailedError` copies the driver error's properties onto itself and keeps the original as `driverError`, so `readSignature` reads four fields from either place: `code` (a SQLSTATE on postgres/cockroachdb, `ER_*` on mysql/mariadb, `SQLITE_*` on better-sqlite3, `ORA-xxxxx` on oracle, a number on mongodb), `number` (mssql, whose `code` is the useless `EREQUEST`), `errorNum` (oracle's numeric code) and `message`. The per-kind code sets are one table (`CODES`). Two cases need more than a code: better-sqlite3 reports a duplicate primary key as `SQLITE_CONSTRAINT_PRIMARYKEY`, apart from `SQLITE_CONSTRAINT_UNIQUE`, and mssql raises 547 for a CHECK constraint as well as a foreign key, so the message decides (`FOREIGN KEY constraint` for a missing referenced row, `REFERENCE constraint` for the delete of a referenced one). Lock conflicts are not covered on better-sqlite3 (`SQLITE_BUSY` does not abort a transaction) or mongodb. Every code is pinned against a real server by `test/integration/database/error.spec.ts`, except the cockroachdb deadlock (see testing.md).
+
 ## Design Patterns
 
 ### Context-builder pattern (database methods)
@@ -268,6 +272,7 @@ Migration generation     → src/database/utils/migration.ts (reuses typeorm's M
 Guarded schema alters    → src/database/schema/alter/{indices,foreign-keys,columns,checks}.ts
 Pure schema DDL builders → src/database/schema/alter/statements.ts (+ dialect.ts — find/resolveSchemaDialect)
 Database lock            → src/database/lock/module.ts (withDatabaseLock)
+Driver error classifiers → src/database/error/module.ts
 Runtime state registry   → src/runtime/module.ts (+ cache.ts — AsyncKeyedCache)
 DataSource registry      → src/data-source/singleton.ts (delegates to src/runtime)
 DataSource discovery     → src/data-source/find/module.ts
