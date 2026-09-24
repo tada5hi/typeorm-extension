@@ -47,7 +47,13 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
 
     beforeAll(async () => {
         dataSource = new TypeORMDataSource(
-            createIntegrationDataSourceOptions([ConstraintParent, ConstraintChild]),
+            createIntegrationDataSourceOptions(
+                [ConstraintParent, ConstraintChild],
+                // typeorm's cockroachdb query runner replays a transaction on
+                // 40001 by itself: the victim wins after its restart and the
+                // other session waits on it, so the error never surfaces.
+                driver === 'cockroachdb' ? { maxTransactionRetries: 0 } : {},
+            ),
         );
         await dataSource.initialize();
 
@@ -130,10 +136,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
         });
     });
 
-    // cockroachdb is left out: the victim did not surface within the timeout
-    // against v24.3.8, maxTransactionRetries: 0 included. Its code (40001)
-    // is the postgres SQLSTATE the unit spec covers.
-    it.skipIf(driver === 'cockroachdb')('should classify the victim of a deadlock', async () => {
+    it('should classify the victim of a deadlock', async () => {
         const runners : QueryRunner[] = [dataSource.createQueryRunner(), dataSource.createQueryRunner()];
 
         try {

@@ -471,7 +471,8 @@ try {
 A lock conflict is usually answered by running the whole transaction again. That is only sound when the transaction
 derives its writes from reads made inside it, and a lock wait timeout rolls back just the statement on mysql, mariadb
 and mssql, so roll the transaction back before retrying (typeorm's `transaction()` does). On cockroachdb typeorm's query
-runner already replays a transaction on a serialization failure, up to `maxTransactionRetries` times.
+runner already replays a transaction on a serialization failure, up to `maxTransactionRetries` times (default 5), so
+the error only reaches your code once those retries are used up.
 
 The codes each helper recognizes per driver are listed in the
 [API reference](./database-api-reference#isdatabaseuniqueviolationerror).
