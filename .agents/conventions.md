@@ -6,7 +6,7 @@
 |-----------------------------------------------|------------------------------------------------------------------------|
 | TypeScript 6                                  | Source language (`tsconfig.json` extends `@tada5hi/tsconfig`)          |
 | [tsdown](https://tsdown.dev) (rolldown + oxc) | Bundling — emits `dist/index.mjs` + `dist/index.d.mts` + `bin/cli.mjs` |
-| Vitest 4 + `unplugin-swc`                     | Test runner; swc transform for decorator metadata                      |
+| Vitest 5 + `unplugin-swc`                     | Test runner; swc transform for decorator metadata                      |
 | ESLint 10 + `@tada5hi/eslint-config` v2       | Linting (flat config in `eslint.config.mjs`)                           |
 | `@tada5hi/commitlint-config`                  | Conventional Commits enforcement                                       |
 | Husky 9                                       | `commit-msg` hook runs commitlint                                      |
