@@ -38,6 +38,42 @@ describe('src/data-source/options/timezone/mysql', () => {
             expect(queries).toEqual(['SET time_zone = \'+00:00\'']);
         });
 
+        it('should pin a connection again after a reset', () => {
+            const { pool, listeners } = createPool();
+            createMysqlUTCDriver({ createPool: (..._args: any[]) => pool }).createPool({});
+
+            const queries : string[] = [];
+            let fail = false;
+            const connection : any = {
+                query: (sql: string, callback: (err: unknown) => void) => {
+                    queries.push(sql);
+                    callback(fail ? new Error('denied') : null);
+                },
+                destroy: () => { throw new Error('must not destroy'); },
+                reset: (callback: (err: unknown) => void) => {
+                    queries.push('RESET');
+                    callback(null);
+                },
+            };
+            listeners[0](connection);
+
+            const errors : unknown[] = [];
+            connection.reset((err: unknown) => { errors.push(err); });
+            fail = true;
+            connection.reset((err: unknown) => { errors.push(err); });
+
+            expect(queries).toEqual([
+                'SET time_zone = \'+00:00\'',
+                'RESET',
+                'SET time_zone = \'+00:00\'',
+                'RESET',
+                'SET time_zone = \'+00:00\'',
+            ]);
+            expect(errors[0]).toBeNull();
+            // the pool destroys a connection whose reset reports an error
+            expect(errors[1]).toBeInstanceOf(Error);
+        });
+
         it('should destroy a connection whose SET fails', () => {
             const { pool, listeners } = createPool();
             createMysqlUTCDriver({ createPool: (..._args: any[]) => pool }).createPool({});
@@ -105,6 +141,21 @@ describe('src/data-source/options/timezone/mysql', () => {
 
             expect(first.queries).toEqual(['SET time_zone = \'+00:00\'']);
             expect(second.queries).toEqual(['SET time_zone = \'+00:00\'']);
+        });
+
+        it('should pin a session again after a reset', async () => {
+            const connection : any = createConnection();
+            connection.reset = (callback: (err: unknown) => void) => callback(null);
+            const cluster = createCluster(() => ({ connection }));
+
+            await getConnection(cluster, 'MASTER');
+            await new Promise((resolve) => { connection.reset(resolve); });
+            await getConnection(cluster, 'MASTER');
+
+            expect(connection.queries).toEqual([
+                'SET time_zone = \'+00:00\'',
+                'SET time_zone = \'+00:00\'',
+            ]);
         });
 
         it('should destroy a session whose SET fails and hand out the error', async () => {

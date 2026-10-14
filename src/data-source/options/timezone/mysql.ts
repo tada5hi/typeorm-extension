@@ -17,13 +17,38 @@ const MYSQL_SESSION_TIMEZONE_SQL = 'SET time_zone = \'+00:00\'';
 const MYSQL_UTC_TIMEZONE = /^(?:z|[+-]00:00)$/i;
 
 /**
+ * Keep a pinned connection pinned across a reset. A pool configured with
+ * `resetOnRelease` resets every released session (COM_RESET_CONNECTION),
+ * which puts `time_zone` back to the server default, and hands the same
+ * connection out again. The `SET` therefore runs again before the pool
+ * takes the connection back; should it fail, the pool receives the error
+ * and destroys the connection, as it does for a failed reset.
+ */
+function repinMysqlConnectionOnReset(connection: MysqlConnection) : void {
+    if (typeof connection.reset !== 'function') {
+        return;
+    }
+
+    const reset = connection.reset.bind(connection);
+    connection.reset = (callback) => reset((err) => {
+        if (err) {
+            callback(err);
+            return;
+        }
+
+        connection.query(MYSQL_SESSION_TIMEZONE_SQL, callback);
+    });
+}
+
+/**
  * Pin the sessions a pool cluster hands out. Its pools are built internally
  * (`PoolCluster.add`), so there is no `connection` event to listen to;
  * instead every connection is pinned on its way out, before the caller's
  * callback runs. Every way to a connection (`getConnection`, and the
  * `query` / `execute` of `of(pattern)`) passes through the namespace `of`
  * returns. A pooled session is handed out as the same object until it is
- * replaced, so the `SET` runs once per session. A connection whose `SET`
+ * replaced, so the `SET` runs once per session (and again after a reset,
+ * see {@link repinMysqlConnectionOnReset}). A connection whose `SET`
  * fails is destroyed and the error handed to the caller.
  */
 function pinMysqlPoolCluster<T extends MysqlPoolCluster>(cluster: T) : T {
@@ -52,6 +77,7 @@ function pinMysqlPoolCluster<T extends MysqlPoolCluster>(cluster: T) : T {
                 }
 
                 pinned.add(connection);
+                repinMysqlConnectionOnReset(connection);
                 callback(null, connection);
             });
         });
@@ -76,6 +102,7 @@ export function createMysqlUTCDriver<T extends MysqlModule>(driver: T) : T {
         createPool(...args: any[]) {
             const pool = driver.createPool(...args);
             pool.on('connection', (connection) => {
+                repinMysqlConnectionOnReset(connection);
                 connection.query(MYSQL_SESSION_TIMEZONE_SQL, (err) => {
                     if (err) {
                         connection.destroy();

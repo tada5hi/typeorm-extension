@@ -17,6 +17,7 @@ export type PostgresTypes = {
 export type MysqlConnection = {
     query: (sql: string, callback: (err: unknown) => void) => unknown,
     destroy: () => void,
+    reset?: (callback: (err: unknown) => void) => unknown,
 };
 export type MysqlPool = {
     on: (event: string, listener: (connection: MysqlConnection) => void) => unknown,
