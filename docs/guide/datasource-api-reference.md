@@ -295,7 +295,7 @@ export const dataSource = new DataSource(pinTimezone({
 | Driver              | What is applied                                                                                   |
 |:--------------------|:--------------------------------------------------------------------------------------------------|
 | `postgres`          | `-c TimeZone=UTC` for the session, added to the startup options pg would use (the connection url's `options`, else `extra.options`, else `PGOPTIONS`), which are moved into `extra.options`; parsers reading `timestamp without time zone` and `timestamp[]` as UTC; a pool client sending `Date` parameters as UTC, streams included. |
-| `mysql`, `mariadb`  | `timezone: 'Z'` (reading and parameters), `dateStrings: ['DATE']` (a calendar date stays the string it was), and pools running `SET time_zone = '+00:00'` on every new connection before it is used. |
+| `mysql`, `mariadb`  | `timezone: 'Z'` (reading and parameters), `dateStrings: ['DATE']` (a calendar date stays the string it was), and pools running `SET time_zone = '+00:00'` on every new connection before it is used. A `replication` setup is pinned on every node: the pool cluster runs the `SET` on each session before handing it out. With `extra.resetOnRelease`, the `SET` runs again after every reset, since the reset puts the session zone back to the server default. |
 | `oracle`            | a pool `sessionCallback` running `ALTER SESSION SET TIME_ZONE = '+00:00'` (a standalone `getConnection` runs it before handing the connection out); connections reading a zone-less `TIMESTAMP` (result columns and `RETURNING` out-binds) as UTC, and binding `Date` parameters (untyped or `TIMESTAMP`, `executeMany` following its `bindDefs`) as their UTC wall clock with the plain `TIMESTAMP` type, which keeps indexes usable. |
 | `cockroachdb`       | nothing: typeorm maps date columns to `timestamptz`, which carries its zone.                         |
 | `better-sqlite3`    | nothing: `datetime('now')` stamps UTC and typeorm reads and writes the column as UTC.               |
@@ -313,8 +313,7 @@ half-applied, since half a pin shifts values instead of fixing them:
   `timestamptz` included, by yours), pg `extra.Client` (subclassed), an oracle `sessionCallback`
   function (runs after the pin);
 - refused with an `OptionsError`: another mysql `timezone`, other mysql
-  `dateStrings`, a mysql `typeCast`, a mysql replication setup (a pool cluster
-  has no per-connection hook), a postgres `TimeZone` naming another zone
+  `dateStrings`, a mysql `typeCast`, a postgres `TimeZone` naming another zone
   (in `extra.options`, the url or `PGOPTIONS`), timestamp parsers overridden in
   pg `extra.types` or process-wide with `pg.types.setTypeParser`, a postgres
   replication node url carrying `options` (the shared `extra.options` can not

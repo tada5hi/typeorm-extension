@@ -17,12 +17,21 @@ export type PostgresTypes = {
 export type MysqlConnection = {
     query: (sql: string, callback: (err: unknown) => void) => unknown,
     destroy: () => void,
+    reset?: (callback: (err: unknown) => void) => unknown,
 };
 export type MysqlPool = {
     on: (event: string, listener: (connection: MysqlConnection) => void) => unknown,
 };
+export type MysqlPoolConnectionCallback = (err: unknown, connection?: MysqlConnection) => void;
+export type MysqlPoolNamespace = {
+    getConnection: (callback: MysqlPoolConnectionCallback) => unknown,
+};
+export type MysqlPoolCluster = {
+    of: (...args: any[]) => MysqlPoolNamespace,
+};
 export type MysqlModule = {
     createPool: (...args: any[]) => MysqlPool,
+    createPoolCluster?: (...args: any[]) => MysqlPoolCluster,
     [key: string]: any,
 };
 

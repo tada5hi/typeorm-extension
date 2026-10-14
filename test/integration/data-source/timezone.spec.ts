@@ -243,6 +243,95 @@ describe.runIf(supportsDataSourceTimezone(driver))(
             }
         });
 
+        it.runIf(driver === 'mysql' || driver === 'mariadb')('should pin every node of a replication setup', async () => {
+            const {
+                host,
+                port,
+                username,
+                password,
+                database,
+                ...options
+            } = createIntegrationDataSourceOptions([Stamp]) as Record<string, any>;
+            const node = {
+                host,
+                port,
+                username,
+                password,
+                database,
+            };
+
+            const replicated = pinTimezone({
+                ...options,
+                replication: { master: node, slaves: [node] },
+            } as DataSourceOptions, 'UTC');
+
+            // writes and the stored wall clock go through the master,
+            // the find reads back through the slave
+            const measurement = await measure(replicated);
+            expect(Math.abs(measurement.createdAtStored - measurement.before)).toBeLessThan(MINUTE);
+            expect(Math.abs(measurement.createdAt - measurement.before)).toBeLessThan(MINUTE);
+            expect(measurement.writtenAtStored).toEqual(measurement.written);
+            expect(measurement.writtenAt).toEqual(measurement.written);
+
+            const dataSource = new DataSource(replicated);
+            await dataSource.initialize();
+            try {
+                for (const mode of ['master', 'slave'] as const) {
+                    const queryRunner = dataSource.createQueryRunner(mode);
+                    try {
+                        const [row] = await queryRunner.query('SELECT @@SESSION.time_zone AS zone');
+                        expect(row.zone).toEqual('+00:00');
+                    } finally {
+                        await queryRunner.release();
+                    }
+                }
+            } finally {
+                await dataSource.destroy();
+            }
+        });
+
+        it.runIf(driver === 'mysql' || driver === 'mariadb')('should keep a session pinned across resetOnRelease', async () => {
+            const {
+                host,
+                port,
+                username,
+                password,
+                database,
+                ...options
+            } = createIntegrationDataSourceOptions([Stamp]) as Record<string, any>;
+            const node = {
+                host,
+                port,
+                username,
+                password,
+                database,
+            };
+
+            // one connection per pool, so every checkout reuses the reset session
+            for (const shape of [node, { replication: { master: node, slaves: [node] } }]) {
+                const dataSource = new DataSource(pinTimezone({
+                    ...options,
+                    ...shape,
+                    poolSize: 1,
+                    extra: { resetOnRelease: true },
+                } as DataSourceOptions, 'UTC'));
+                await dataSource.initialize();
+                try {
+                    for (let i = 0; i < 3; i++) {
+                        const queryRunner = dataSource.createQueryRunner(i % 2 === 0 ? 'master' : 'slave');
+                        try {
+                            const [row] = await queryRunner.query('SELECT @@SESSION.time_zone AS zone');
+                            expect(row.zone).toEqual('+00:00');
+                        } finally {
+                            await queryRunner.release();
+                        }
+                    }
+                } finally {
+                    await dataSource.destroy();
+                }
+            }
+        });
+
         it.runIf(driver === 'postgres')('should read a timestamp array as UTC', async () => {
             const dataSource = await pinned();
             try {
