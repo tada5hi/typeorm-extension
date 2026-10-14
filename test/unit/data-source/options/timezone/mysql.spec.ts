@@ -1,3 +1,4 @@
+import mysql2 from 'mysql2';
 import { describe, expect, it } from 'vitest';
 import { OptionsError } from '../../../../../src';
 import { applyMysqlTimezone, createMysqlUTCDriver } from '../../../../../src/data-source/options/timezone/mysql';
@@ -51,6 +52,87 @@ describe('src/data-source/options/timezone/mysql', () => {
         });
     });
 
+    describe('createMysqlUTCDriver (pool cluster)', () => {
+        type Callback = (err: unknown, connection?: any) => void;
+
+        function createConnection(fail = false) {
+            const connection = {
+                queries: [] as string[],
+                destroyed: false,
+                query: (sql: string, callback: (err: unknown) => void) => {
+                    connection.queries.push(sql);
+                    callback(fail ? new Error('denied') : null);
+                },
+                destroy: () => { connection.destroyed = true; },
+            };
+
+            return connection;
+        }
+
+        /**
+         * A real mysql2 cluster, so the routing of getConnection / of()
+         * is mysql2's own; only the node pools are replaced, since they
+         * would connect to a server.
+         */
+        function createCluster(next: () => { err?: unknown, connection?: any }) {
+            const cluster = createMysqlUTCDriver(mysql2 as any).createPoolCluster!() as any;
+            for (const id of ['MASTER', 'SLAVE0']) {
+                cluster.add(id, {});
+                cluster._nodes[id].pool.getConnection = (cb: Callback) => {
+                    const { err, connection } = next();
+                    cb(err ?? null, connection);
+                };
+            }
+
+            return cluster;
+        }
+
+        function getConnection(target: { getConnection: (...args: any[]) => unknown }, ...args: any[]) {
+            return new Promise<{ err: unknown, connection: any }>((resolve) => {
+                target.getConnection(...args, (err: unknown, connection: any) => resolve({ err, connection }));
+            });
+        }
+
+        it('should pin a session once, before handing it out', async () => {
+            const first = createConnection();
+            const second = createConnection();
+            const queue = [first, first, second];
+            const cluster = createCluster(() => ({ connection: queue.shift() }));
+
+            expect((await getConnection(cluster, 'MASTER')).connection).toBe(first);
+            expect((await getConnection(cluster, 'SLAVE*')).connection).toBe(first);
+            expect((await getConnection(cluster.of('SLAVE*'))).connection).toBe(second);
+
+            expect(first.queries).toEqual(['SET time_zone = \'+00:00\'']);
+            expect(second.queries).toEqual(['SET time_zone = \'+00:00\'']);
+        });
+
+        it('should destroy a session whose SET fails and hand out the error', async () => {
+            const connection = createConnection(true);
+            const cluster = createCluster(() => ({ connection }));
+
+            const result = await getConnection(cluster, 'MASTER');
+
+            expect(result.err).toBeInstanceOf(Error);
+            expect(result.connection).toBeUndefined();
+            expect(connection.destroyed).toBe(true);
+        });
+
+        it('should pass a pool error through untouched', async () => {
+            const error = Object.assign(new Error('refused'), { code: 'ECONNREFUSED' });
+            const cluster = createCluster(() => ({ err: error }));
+            cluster._canRetry = false;
+
+            expect((await getConnection(cluster, 'MASTER')).err).toBe(error);
+        });
+
+        it('should leave a driver without pool clusters without one', () => {
+            const driver : Record<string, unknown> = createMysqlUTCDriver({ createPool: () => ({ on: () => undefined }) });
+
+            expect(driver.createPoolCluster).toBeUndefined();
+        });
+    });
+
     describe('applyMysqlTimezone', () => {
         const driver = { createPool: () => ({ on: () => undefined }) };
 
@@ -95,7 +177,7 @@ describe('src/data-source/options/timezone/mysql', () => {
                 { dateStrings: true },
                 { dateStrings: ['DATETIME'] },
                 { extra: { typeCast: () => undefined } },
-                { replication: { master: {}, slaves: [] } },
+                { replication: { master: {}, slaves: [] }, timezone: 'local' },
             ]) {
                 expect(() => applyMysqlTimezone({
                     type: 'mysql', 
@@ -103,6 +185,18 @@ describe('src/data-source/options/timezone/mysql', () => {
                     ...settings, 
                 } as any)).toThrow(OptionsError);
             }
+        });
+
+        it('should pin a replication setup', () => {
+            const options = applyMysqlTimezone({
+                type: 'mysql',
+                driver: mysql2,
+                replication: { master: {}, slaves: [{}] },
+            }) as any;
+
+            expect(options).toMatchObject({ timezone: 'Z', dateStrings: ['DATE'] });
+            expect(options.driver.createPoolCluster).not.toBe(mysql2.createPoolCluster);
+            expect(applyMysqlTimezone(options)).toBe(options);
         });
 
         it('should be idempotent, and refuse a pin altered after it was applied', () => {
