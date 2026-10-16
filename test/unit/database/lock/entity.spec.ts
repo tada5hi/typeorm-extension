@@ -113,6 +113,8 @@ describe('src/database/lock/entity', () => {
 
         await expect(withLockedEntity(dataSource, User, { role: { id: 1 } }, fn, { strict: false }))
             .rejects.toBeInstanceOf(OptionsError);
+        await expect(withLockedEntity(dataSource, User, { role: [{ id: 1 }, { id: 2 }] }, fn, { strict: false }))
+            .rejects.toBeInstanceOf(OptionsError);
         expect(fn).not.toHaveBeenCalled();
 
         await expect(withLockedEntity(dataSource, User, { role: IsNull() }, fn, { strict: false }))

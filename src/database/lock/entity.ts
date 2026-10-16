@@ -7,6 +7,7 @@ import type {
 } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
 import { DriverError, OptionsError } from '../../errors';
+import { isObject } from '../../utils';
 import type { EntityLockOptions } from './type';
 
 /**
@@ -60,8 +61,7 @@ export async function withLockedEntity<T extends ObjectLiteral, R>(
         const value = where[key];
 
         return !!metadata.findRelationWithPropertyPath(key) &&
-            typeof value === 'object' &&
-            value !== null &&
+            (isObject(value) || Array.isArray(value)) &&
             !InstanceChecker.isFindOperator(value);
     });
     if (relation) {
