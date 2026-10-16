@@ -18,6 +18,13 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.4.0](https://github.com/tada5hi/typeorm-extension/compare/v4.3.0...v4.4.0) (2026-10-16)
+
+
+### Features
+
+* add withLockedEntity for row-level locked read-modify-write ([#1471](https://github.com/tada5hi/typeorm-extension/issues/1471)) ([d18deba](https://github.com/tada5hi/typeorm-extension/commit/d18deba51b70b4a88ddc35cf11704a7bd3923862))
+
 ## [4.3.0](https://github.com/tada5hi/typeorm-extension/compare/v4.2.0...v4.3.0) (2026-10-14)
 
 
