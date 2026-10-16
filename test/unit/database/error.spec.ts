@@ -53,11 +53,13 @@ describe('src/database/error', () => {
         ['postgres', { code: '23503' }, FOREIGN_KEY],
         ['postgres', { code: '40P01' }, LOCK],
         ['postgres', { code: '40001' }, LOCK],
+        ['postgres', { code: '55P03' }, LOCK],
         ['mysql', { code: 'ER_DUP_ENTRY', errno: 1062 }, UNIQUE],
         ['mysql', { code: 'ER_NO_REFERENCED_ROW_2', errno: 1452 }, FOREIGN_KEY],
         ['mysql', { code: 'ER_ROW_IS_REFERENCED_2', errno: 1451 }, FOREIGN_KEY],
         ['mysql', { code: 'ER_LOCK_DEADLOCK', errno: 1213 }, LOCK],
         ['mysql', { code: 'ER_LOCK_WAIT_TIMEOUT', errno: 1205 }, LOCK],
+        ['mysql', { code: 'ER_LOCK_NOWAIT', errno: 3572 }, LOCK],
         ['better-sqlite3', { code: 'SQLITE_CONSTRAINT_UNIQUE' }, UNIQUE],
         ['better-sqlite3', { code: 'SQLITE_CONSTRAINT_PRIMARYKEY' }, UNIQUE],
         ['better-sqlite3', { code: 'SQLITE_CONSTRAINT_FOREIGNKEY' }, FOREIGN_KEY],
@@ -99,6 +101,7 @@ describe('src/database/error', () => {
         ['oracle', { code: 'ORA-02292', errorNum: 2292 }, FOREIGN_KEY],
         ['oracle', { code: 'ORA-00060', errorNum: 60 }, LOCK],
         ['oracle', { code: 'ORA-08177', errorNum: 8177 }, LOCK],
+        ['oracle', { code: 'ORA-00054', errorNum: 54 }, LOCK],
         ['mongodb', { code: 11000 }, UNIQUE],
     ])('should classify %s %j', (_driver, shape, expected) => {
         expect(classify(shape)).toEqual(expected);

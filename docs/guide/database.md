@@ -403,6 +403,63 @@ Only `postgres`, `mysql` and `mariadb` are supported. Every other driver throws 
 postgres advisory lock functions, but they do not lock anything. Pass `{ strict: false }` to run the callback without a
 lock there instead, e.g. for a test suite on sqlite. Only do that where a second process can not exist.
 
+### Locked Entity
+
+`withLockedEntity` is a read-modify-write on one row: it reads the row with a write lock (`FOR UPDATE`, an `UPDLOCK`
+hint on mssql) inside a transaction and hands it to the callback. A second caller for the same row waits until the
+first transaction ends, and then reads the row as the first one left it. A typical case is a status transition which
+only one of several concurrent requests may make:
+
+```typescript
+import { withLockedEntity } from 'typeorm-extension';
+
+const published = await withLockedEntity(dataSource, Post, { id }, async (post, manager) => {
+    if (post.status !== 'draft') {
+        return false;
+    }
+
+    post.status = 'published';
+    await manager.save(post);
+
+    return true;
+});
+```
+
+The helper does not save anything: the callback checks and writes through the manager it is handed, so entity
+subscribers fire as usual. It resolves what the callback returns, or `null` without calling it when no row matches.
+A throw rolls the transaction back. Passing an `EntityManager` which is already in a transaction reuses that
+transaction, which is how calls nest: inside the callback, `withLockedEntity(manager, Child, ...)` locks a second row
+within the same transaction.
+
+Pass `{ onLocked: 'nowait' }` to fail at once instead of waiting for a locked row. The error is the driver's own, and
+`isDatabaseLockConflictError` recognizes it. typeorm ignores that option on mssql, so it throws a `DriverError` there.
+
+Only the row itself is locked: relations of the entity, eager ones included, are loaded in separate queries without
+a lock. For the same reason `where` must not look the row up through a relation with a nested object
+(`{ owner: { id } }`), which would join and lock the related row too; that throws an `OptionsError`. Use a find
+operator on the relation instead (`{ owner: Equal(id) }`), which compares the join column.
+
+A few rules keep the lock meaningful:
+
+- Change the entity you were handed. Saving a copy read before the call writes stale values over the locked row.
+- When nesting, lock rows in the same order everywhere. A deadlock is detected by the server, and the error is
+  recognized by `isDatabaseLockConflictError`, so the whole call can be retried.
+- Do slow work (sending a message, an HTTP call) after the call returns, not inside the callback: the row stays locked
+  until the transaction ends.
+- The options of a nested call apply only to the row it locks, but its failure is the transaction's: on postgres and
+  cockroachdb a failed statement (a `nowait` miss included) aborts the whole transaction, so catching the error inside
+  the callback does not let it carry on there.
+- The second caller reading the row as the first left it assumes the default `READ COMMITTED`. In a transaction with a
+  stricter isolation level postgres raises a serialization failure instead, which `isDatabaseLockConflictError`
+  recognizes as well.
+- Inside the callback, pass the manager you were handed, not the data source. A call on the data source opens a
+  second transaction on another connection, and waits forever for a row the first one holds.
+
+Supported are `postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle` and `mssql`. Every other driver throws a
+`DriverError` before a transaction is opened. Pass `{ strict: false }` to run the callback without a lock there
+instead, e.g. for a test suite on sqlite (still within a transaction). On mongodb typeorm has no transactions, so a
+throw does not roll anything back there.
+
 ### Driver support
 
 | Helper                         | Drivers                                                                         |
@@ -412,6 +469,7 @@ lock there instead, e.g. for a test suite on sqlite. Only do that where a second
 | `changeColumnType`             | all (altered in place on every relational driver but sqlite)                    |
 | `withForeignKeyChecksDisabled` | all (a no-op wrapper outside `mysql` / `mariadb`)                               |
 | `withDatabaseLock`             | `postgres`, `mysql`, `mariadb` (otherwise throws, or runs unlocked if not `strict`) |
+| `withLockedEntity`             | `postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle`, `mssql` (otherwise throws, or runs unlocked if not `strict`) |
 
 ::: warning NOTE
 `changeColumnType` builds its own statement rather than delegating to `queryRunner.changeColumn()`, because typeorm

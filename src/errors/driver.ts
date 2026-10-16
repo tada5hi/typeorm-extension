@@ -21,6 +21,10 @@ export class DriverError extends TypeormExtensionError {
         return new DriverError(`Database locks are not supported for the driver ${driverName}.`);
     }
 
+    static lockNowaitNotSupported(driverName: string) {
+        return new DriverError(`The lock option onLocked: 'nowait' is not supported for the driver ${driverName}.`);
+    }
+
     static columnConversionExpressionNotSupported(driverName: string) {
         return new DriverError(
             `A conversion expression (\`using\`) can not be expressed for the driver ${driverName}, ` +

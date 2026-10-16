@@ -368,6 +368,23 @@ try {
 }
 ```
 
+`withLockedEntity(source, Entity, where, fn)` reads one row with a write lock inside a transaction and hands it to
+`fn`, so concurrent callers for the same row take turns (`postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle`,
+`mssql`). It resolves what `fn` returns, or `null` when no row matches:
+
+```typescript
+const published = await withLockedEntity(dataSource, Post, { id }, async (post, manager) => {
+    if (post.status !== 'draft') {
+        return false;
+    }
+
+    post.status = 'published';
+    await manager.save(post);
+
+    return true;
+});
+```
+
 `isDatabaseUniqueViolationError(error)`, `isDatabaseForeignKeyViolationError(error)` and `isDatabaseLockConflictError(error)`
 classify a failed write whichever driver raised it, e.g. to answer a duplicate key with a conflict rather than a
 server error:

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { DatabaseLockError, DriverError, withDatabaseLock } from '../../../src';
-import { isDatabaseLockAcquired } from '../../../src/database/lock/module';
-import { createFakeQueryRunner } from '../../data/typeorm/FakeQueryRunner';
+import { DatabaseLockError, DriverError, withDatabaseLock } from '../../../../src';
+import { isDatabaseLockAcquired } from '../../../../src/database/lock/module';
+import { createFakeQueryRunner } from '../../../data/typeorm/FakeQueryRunner';
 
 describe('src/database/lock', () => {
     it('should read the acquired flag of every driver', () => {
