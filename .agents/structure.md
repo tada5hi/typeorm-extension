@@ -34,7 +34,7 @@ typeorm-extension/
 │   │   │   ├── alter/          # guarded renameIndex / renameForeignKey / changeColumnType / withForeignKeyChecksDisabled
 │   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
 │   │   ├── error/              # isDatabaseUniqueViolationError / isDatabaseForeignKeyViolationError / isDatabaseLockConflictError
-│   │   ├── lock/               # withDatabaseLock: named advisory lock over a QueryRunner (postgres, mysql, mariadb)
+│   │   ├── lock/               # withDatabaseLock: named advisory lock over a QueryRunner (postgres, mysql, mariadb); entity.ts: withLockedEntity row lock
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
 │   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError + DatabaseLockError + EntityMetadataError + EntityRelationLookupError (one class per file)
@@ -80,7 +80,7 @@ typeorm-extension/
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
 | `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
 | `database/error/` | Classify a failed write (unique violation, foreign key violation, lock conflict) from the vendor code, wherever the driver reports it. Pure, no driver imports. |
-| `database/lock/` | `withDatabaseLock`: a named, session-scoped advisory lock over a `QueryRunner` (e.g. to serialize migrations across replicas). |
+| `database/lock/` | `withDatabaseLock`: a named, session-scoped advisory lock over a `QueryRunner` (e.g. to serialize migrations across replicas). `withLockedEntity` (`entity.ts`): one row read with a write lock inside a transaction, handed to a callback. |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
 | `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError` / `DatabaseLockError` / `EntityMetadataError` / `EntityRelationLookupError`). One class per file; every error a consumer may catch lives here, not next to its thrower. |
 | `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager) and is the only stable one; the rest stay `@experimental` public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |

@@ -393,6 +393,40 @@ own locks.
 - `DatabaseLockError` if the lock can not be acquired within `timeout`, if the query runner is in a transaction
   (the lock would outlive a rollback), or if `fn` returned with a transaction left open on it.
 
+## `withLockedEntity`
+
+Read one row with a write lock inside a transaction and hand it to a callback, so concurrent callers for the same row
+take turns.
+
+```typescript
+declare function withLockedEntity<T extends ObjectLiteral, R>(
+    source: DataSource | EntityManager,
+    target: EntityTarget<T>,
+    where: FindOptionsWhere<T>,
+    fn: (entity: T, manager: EntityManager) => R | Promise<R>,
+    options?: EntityLockOptions,
+): Promise<Awaited<R> | null>;
+```
+
+The row is read with `findOne` and `lock: { mode: 'pessimistic_write' }`. Relations (eager ones included) are
+loaded in separate queries (`relationLoadStrategy: 'query'`) and are not locked. `fn` receives the locked entity and the
+transaction's manager and writes through it; the helper saves nothing. It resolves what `fn` returns, or `null`
+without calling `fn` when no row matches. A throw rolls the transaction back. An `EntityManager` which is already in a
+transaction is reused (no savepoint), so a call inside `fn` locks a second row within the same transaction.
+
+With `onLocked: 'nowait'` a locked row fails the call at once with the driver's error, which
+`isDatabaseLockConflictError` recognizes.
+
+**Throws**
+
+- `DriverError` for any driver other than `postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle` and `mssql`, before
+  a transaction is opened, unless `strict` is `false`: then `fn` runs without a lock (on mongodb without a transaction
+  either).
+- `DriverError` for `onLocked` on mssql, which typeorm would ignore.
+- `OptionsError` when `where` looks the row up through a relation (a nested object such as `{ owner: { id } }`): the
+  join would lock the related rows as well. A find operator on the relation (`{ owner: Equal(id) }`, `IsNull()`)
+  compares the join column and is accepted.
+
 ## `isDatabaseUniqueViolationError`
 
 ```typescript
@@ -419,7 +453,7 @@ declare function isDatabaseLockConflictError(error: unknown): boolean;
 
 True when the database gave up on the transaction because of lock contention: a deadlock, a serialization failure or a
 lock wait timeout. Re-running the whole transaction is the usual answer, and it is only sound when the transaction
-derives its writes from reads made inside it.
+derives its writes from reads made inside it. A `NOWAIT` lock request which finds the row locked is recognized too.
 
 Not to be confused with `DatabaseLockError`, which `withDatabaseLock` throws when its advisory lock can not be
 acquired: this guard classifies an error the driver raised.
@@ -429,11 +463,11 @@ typeorm throws as well as the raw driver error. The codes they recognize:
 
 | Driver                  | Unique violation                                      | Foreign key violation                                             | Lock conflict                              |
 |-------------------------|-------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------|
-| postgres, cockroachdb   | `23505`                                               | `23503`                                                           | `40P01`, `40001`                           |
-| mysql, mariadb          | `ER_DUP_ENTRY`                                        | `ER_NO_REFERENCED_ROW(_2)`, `ER_ROW_IS_REFERENCED(_2)`            | `ER_LOCK_DEADLOCK`, `ER_LOCK_WAIT_TIMEOUT` |
+| postgres, cockroachdb   | `23505`                                               | `23503`                                                           | `40P01`, `40001`, `55P03`                  |
+| mysql, mariadb          | `ER_DUP_ENTRY`                                        | `ER_NO_REFERENCED_ROW(_2)`, `ER_ROW_IS_REFERENCED(_2)`            | `ER_LOCK_DEADLOCK`, `ER_LOCK_WAIT_TIMEOUT`, `ER_LOCK_NOWAIT` |
 | better-sqlite3          | `SQLITE_CONSTRAINT_UNIQUE`, `SQLITE_CONSTRAINT_PRIMARYKEY` | `SQLITE_CONSTRAINT_FOREIGNKEY`                               | not covered                                |
 | mssql (`number`)        | `2627`, `2601`                                        | `547` naming a FOREIGN KEY or REFERENCE constraint                | `1205`, `1222`                             |
-| oracle                  | `ORA-00001`                                           | `ORA-02291`, `ORA-02292`                                          | `ORA-00060`, `ORA-08177`                   |
+| oracle                  | `ORA-00001`                                           | `ORA-02291`, `ORA-02292`                                          | `ORA-00060`, `ORA-08177`, `ORA-00054`      |
 | mongodb                 | `11000`, `11001`                                      | not applicable                                                    | not covered                                |
 
 ## DatabaseLockOptions
@@ -447,6 +481,27 @@ export type DatabaseLockOptions = {
     /**
      * Throw a DriverError on a driver which has no lock. Set to false to run
      * the callback without a lock there instead (e.g. sqlite in tests).
+     *
+     * default: true
+     */
+    strict?: boolean,
+};
+```
+
+## EntityLockOptions
+```typescript
+export type EntityLockOptions = {
+    /**
+     * 'nowait' fails at once with the driver's error (see
+     * isDatabaseLockConflictError) instead of waiting for a locked row.
+     * Not supported on mssql.
+     *
+     * default: wait until the row is free
+     */
+    onLocked?: 'nowait',
+    /**
+     * Throw a DriverError on a driver which has no row lock. Set to false to
+     * run the callback without a lock there instead (e.g. sqlite in tests).
      *
      * default: true
      */

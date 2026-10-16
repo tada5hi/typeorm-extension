@@ -21,6 +21,13 @@ export class OptionsError extends TypeormExtensionError {
         return new OptionsError(`The database timezone can not be pinned: ${detail}`);
     }
 
+    static lockWhereRelation(property: string) {
+        return new OptionsError(
+            `The locked row can not be looked up through the relation ${property}, the join would lock its rows too. ` +
+            'Use a find operator on it (e.g. Equal(id)) or the row\'s own columns.',
+        );
+    }
+
     static databaseNotDefined() {
         return new OptionsError('The database name to connect to is not defined.');
     }

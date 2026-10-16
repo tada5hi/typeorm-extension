@@ -88,6 +88,14 @@ export function supportsDatabaseLock(driver?: IntegrationDriver) : boolean {
 }
 
 /**
+ * Whether withLockedEntity can lock a row on the driver
+ * (typeorm emits FOR UPDATE, or an UPDLOCK hint on mssql).
+ */
+export function supportsRowLock(driver?: IntegrationDriver) : boolean {
+    return !!driver && driver !== 'mongodb';
+}
+
+/**
  * Whether the driver has a relational schema to compare against
  * the entity metadata at all.
  */

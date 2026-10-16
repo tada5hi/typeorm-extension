@@ -99,16 +99,19 @@ const CODES : Record<DatabaseErrorKind, DatabaseErrorCodes> = {
         code: [
             '40P01', // postgres: deadlock_detected
             '40001', // postgres, cockroachdb: serialization_failure
+            '55P03', // postgres, cockroachdb: lock_not_available (NOWAIT)
             'ER_LOCK_DEADLOCK', // mysql, mariadb
-            'ER_LOCK_WAIT_TIMEOUT', // mysql, mariadb
+            'ER_LOCK_WAIT_TIMEOUT', // mysql, mariadb (also mariadb's NOWAIT)
+            'ER_LOCK_NOWAIT', // mysql: NOWAIT
             'ORA-00060', // oracle: deadlock detected
             'ORA-08177', // oracle: can't serialize access
+            'ORA-00054', // oracle: resource busy (NOWAIT)
         ],
         number: [
             1205, // mssql: chosen as deadlock victim
             1222, // mssql: lock request time out period exceeded
         ],
-        errorNum: [60, 8177],
+        errorNum: [60, 8177, 54],
     },
 };
 
@@ -165,7 +168,9 @@ export function isDatabaseForeignKeyViolationError(error: unknown) : boolean {
 
 /**
  * True when the database gave up on the transaction because of lock
- * contention: a deadlock, a serialization failure or a lock wait timeout.
+ * contention: a deadlock, a serialization failure, a lock wait timeout or a
+ * NOWAIT read of a locked row (which aborts the transaction on postgres and
+ * cockroachdb, and only the statement elsewhere).
  *
  * Re-running the whole transaction is the usual answer, and it is only sound
  * when the transaction derives its writes from reads made inside it. A lock
