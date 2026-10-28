@@ -91,7 +91,8 @@ jobs:
     integration:
         name: Test (${{ matrix.driver }})
         needs: [build]
-        runs-on: ubuntu-latest
+        # MongoDB 8.0 cannot start on the newer kernels used by ubuntu-latest (SERVER-121912).
+        runs-on: ${{ matrix.driver == 'mongodb' && 'ubuntu-22.04' || 'ubuntu-latest' }}
 
         strategy:
             fail-fast: false
