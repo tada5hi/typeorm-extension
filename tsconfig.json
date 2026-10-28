@@ -4,7 +4,10 @@
         "lib": ["ESNext"],
         "target": "ES2022",
         "module": "ESNext",
-        "moduleResolution": "node10",
+        "moduleResolution": "bundler",
+        "paths": {
+            "typeorm/*": ["./node_modules/typeorm/*"]
+        },
         "ignoreDeprecations": "6.0",
         "noEmit": true,
         "allowImportingTsExtensions": true,
