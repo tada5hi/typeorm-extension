@@ -91,7 +91,9 @@ jobs:
     integration:
         name: Test (${{ matrix.driver }})
         needs: [build]
-        runs-on: ubuntu-latest
+        # MongoDB 8 refuses kernels >=6.19 (SERVER-121912); this runner uses 6.8.
+        # Remove the MongoDB-only pin when the image supports the latest runner kernel.
+        runs-on: ${{ matrix.driver == 'mongodb' && 'ubuntu-22.04' || 'ubuntu-latest' }}
 
         strategy:
             fail-fast: false
