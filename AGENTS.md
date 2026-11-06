@@ -36,7 +36,8 @@ npm run lint:fix
 npm run docs:dev           # vitepress dev server for docs/
 ```
 
-- **Node.js**: `>=22.0.0` (relies on `require(esm)` so CJS consumers still work despite ESM-only output)
+- **Node.js (package runtime)**: `>=22.0.0` (relies on `require(esm)` so CJS consumers still work despite ESM-only output)
+- **Node.js (development tooling)**: `^24.11.0 || >=26.0.0`; `.nvmrc` selects Node 24.
 - **Package manager**: npm
 - **Package type**: ESM-only (`"type": "module"` in package.json)
 - **Build orchestration**: [tsdown](https://tsdown.dev) (rolldown + oxc) — single tool emits `.mjs` bundle + `.d.mts` declarations

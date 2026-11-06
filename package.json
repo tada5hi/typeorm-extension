@@ -78,6 +78,12 @@
     "peerDependencies": {
         "typeorm": "^1.1.2"
     },
+    "devEngines": {
+        "runtime": {
+            "name": "node",
+            "version": "^24.11.0 || >=26.0.0"
+        }
+    },
     "devDependencies": {
         "@faker-js/faker": "^10.6.0",
         "@swc/core": "^1.16.20",
