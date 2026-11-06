@@ -64,7 +64,7 @@ npm run docs:build         # production build
 - **[Project Structure](.agents/structure.md)** — Source layout, the top-level domains (`cli`, `data-source`, `database`, `env`, `errors`, `helpers`, `runtime`, `seeder`, `utils`), and what each owns.
 - **[Architecture](.agents/architecture.md)** — Dialect core + connection-port adapters for `create/drop` (pure SQL dialects, native clients behind ports, one registry dispatch), context-builder pipeline, data-source singleton/alias registry, and seeder execution model.
 - **[Testing](.agents/testing.md)** — Vitest + `unplugin-swc` (for decorator metadata), SQLite-backed integration tests in `test/unit/`, fixture entities/factories/seeds in `test/data/`, and the 80% coverage gate.
-- **[Conventions](.agents/conventions.md)** — `@tada5hi/eslint-config` v2 (ESLint v10 flat config), Conventional Commits via commitlint + husky, barrel `index.ts` per module, and the release-please + monoship release flow.
+- **[Conventions](.agents/conventions.md)** — `@tada5hi/eslint-config` v3 (ESLint v10 flat config), Conventional Commits via commitlint + husky, barrel `index.ts` per module, and the release-please + monoship release flow.
 
 ## Documentation Sync Rule
 

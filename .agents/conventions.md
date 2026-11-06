@@ -7,7 +7,7 @@
 | TypeScript 6                                  | Source language (`tsconfig.json` extends `@tada5hi/tsconfig`)          |
 | [tsdown](https://tsdown.dev) (rolldown + oxc) | Bundling — emits `dist/index.mjs` + `dist/index.d.mts` + `bin/cli.mjs` |
 | Vitest 5 + `unplugin-swc`                     | Test runner; swc transform for decorator metadata                      |
-| ESLint 10 + `@tada5hi/eslint-config` v2       | Linting (flat config in `eslint.config.mjs`)                           |
+| ESLint 10 + `@tada5hi/eslint-config` v3       | Linting (flat config in `eslint.config.mjs`)                           |
 | `@tada5hi/commitlint-config`                  | Conventional Commits enforcement                                       |
 | Husky 9                                       | `commit-msg` hook runs commitlint                                      |
 | release-please + [`tada5hi/monoship`](https://github.com/tada5hi/monoship) | Automated release PRs + npm publish on merge |
@@ -38,7 +38,7 @@ Applies to user-facing prose: `README.MD`, `docs/guide/*.md`, issue/PR text, com
 
 - **Module format**: ESM-only (`"type": "module"` + `module: ESNext`). tsdown emits a single `.mjs` bundle. A small tsdown plugin (`typeormDeepImportExtension` in `tsdown.config.ts`) rewrites bare `typeorm/<deep>` imports to add `.js` for Node's strict ESM resolver.
 - **Indentation**: 4 spaces, LF line endings, UTF-8, final newline, trim trailing whitespace (`.editorconfig`).
-- **Linting**: `@tada5hi/eslint-config` v2 (flat config, ESLint 10). Project-local overrides in `eslint.config.mjs`:
+- **Linting**: `@tada5hi/eslint-config` v3 (flat config, ESLint 10). Project-local overrides in `eslint.config.mjs`:
   - `class-methods-use-this: off`
   - `no-shadow`, `no-use-before-define`, `@typescript-eslint/no-unused-vars`, `@typescript-eslint/no-use-before-define`: off.
   - Ignores `dist/**`, `bin/**`, declaration files, vitepress build output.
@@ -58,7 +58,7 @@ Applies to user-facing prose: `README.MD`, `docs/guide/*.md`, issue/PR text, com
 ## File Organization
 
 - Each domain folder under `src/` has an `index.ts` **barrel** that re-exports everything public from sibling files.
-- Type definitions live in `type.ts` (singular) next to the implementation; not `types.ts`. Both names exist in the tree historically — when adding new files, prefer `type.ts` to match the majority.
+- Type definitions live in `types.ts` (singular) next to the implementation; not `types.ts`. Both names exist in the tree historically — when adding new files, prefer `types.ts` to match the majority.
 - Public-API entry: `src/index.ts` re-exports the per-domain barrels. **Anything not re-exported from `src/index.ts` is internal**, even if the file isn't prefixed.
 - CLI entry: `src/cli/index.ts` is **not** in the public barrel — it is the bin script.
 - Tests mirror `src/` folder names under `test/unit/`.

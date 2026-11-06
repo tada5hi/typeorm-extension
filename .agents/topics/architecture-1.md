@@ -71,7 +71,7 @@ Settings the caller made are kept when they agree (mysql `timezone` `Z` / `+00:0
 
 `test/integration/data-source/timezone.spec.ts` checks the stored wall clock and every path above on postgres, mysql, mariadb and oracle; removing any single fix fails it on the driver it belongs to. Untouched on purpose: typeorm maps cockroachdb date columns to `timestamptz` (checked live), better-sqlite3 stamps and reads UTC (held by `test/unit/data-source/options/timezone/sqlite.spec.ts`), mongodb stores UTC, and mssql stamps `getdate()` with no session zone to set, so only a column default such as `SYSUTCDATETIME()` fixes it.
 
-The folder is split like the create/drop layer: `module.ts` validates the zone and dispatches on `options.type` to one `apply<Driver>Timezone()` per driver file, `type.ts` holds `DataSourceTimezone` and the internal driver shapes, `utils.ts` the shared guards and the install registry. A new driver is one file plus one `case`.
+The folder is split like the create/drop layer: `module.ts` validates the zone and dispatches on `options.type` to one `apply<Driver>Timezone()` per driver file, `types.ts` holds `DataSourceTimezone` and the internal driver shapes, `utils.ts` the shared guards and the install registry. A new driver is one file plus one `case`.
 
 ### 6. Schema operations are a separate domain from create/drop
 

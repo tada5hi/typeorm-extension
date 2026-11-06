@@ -143,7 +143,7 @@ Composition root         → src/database/methods/execute.ts
 Dialect registry         → src/database/registry.ts
 Per-dialect SQL          → src/database/core/<dialect>/statements.ts
 Dialect orchestration    → src/database/core/<dialect>/module.ts
-Connector interfaces (types) → src/database/core/type.ts
+Connector interfaces (types) → src/database/core/types.ts
 Native client adapters   → src/database/adapters/<driver>.ts
 Deprecated delegates     → src/database/driver/<driver>.ts (removed next major)
 Context builders         → src/database/utils/context.ts
