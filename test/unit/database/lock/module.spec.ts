@@ -25,6 +25,7 @@ describe('src/database/lock', () => {
 
         const output = await withDatabaseLock(queryRunner, 'migrations', async () => {
             expect(queryRunner.queries).toHaveLength(1);
+
             return 'done';
         });
 
@@ -82,6 +83,7 @@ describe('src/database/lock', () => {
 
     it('should refuse a query runner in a transaction', async () => {
         const queryRunner = createFakeQueryRunner({ type: 'postgres' });
+
         queryRunner.isTransactionActive = true;
 
         await expect(withDatabaseLock(queryRunner, 'migrations', async () => 'done'))
@@ -97,6 +99,7 @@ describe('src/database/lock', () => {
 
         await expect(withDatabaseLock(queryRunner, 'migrations', async () => {
             queryRunner.isTransactionActive = true;
+
             throw new Error('boom');
         })).rejects.toThrow('boom');
 
@@ -108,6 +111,7 @@ describe('src/database/lock', () => {
         queryRunner.queries = [];
         await expect(withDatabaseLock(queryRunner, 'migrations', async () => {
             queryRunner.isTransactionActive = true;
+
             return 'done';
         })).rejects.toThrow(DatabaseLockError);
 
@@ -126,6 +130,7 @@ describe('src/database/lock', () => {
         await expect(withDatabaseLock(queryRunner, 'migrations', async () => {
             queryRunner.isTransactionActive = true;
             queryRunner.transactionDepth = 2;
+
             throw new Error('boom');
         })).rejects.toThrow('boom');
 
@@ -155,6 +160,7 @@ describe('src/database/lock', () => {
             respond: (query) => {
                 if (query.includes('GET_LOCK')) {
                     attempts++;
+
                     return [{ acquired: attempts < 3 ? '0' : '1' }];
                 }
 
@@ -174,6 +180,7 @@ describe('src/database/lock', () => {
         });
 
         let called = false;
+
         await expect(withDatabaseLock(queryRunner, 'migrations', async () => {
             called = true;
         }, { timeout: 0 })).rejects.toThrow(DatabaseLockError);

@@ -13,7 +13,7 @@ import {
 import path from 'node:path';
 import type { DataSource } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
-import type { DataSourceFindOptions } from './type';
+import type { DataSourceFindOptions } from './types';
 
 export async function findDataSource(
     context: DataSourceFindOptions = {},
@@ -42,6 +42,7 @@ export async function findDataSource(
 
     let { directory } = context;
     let directoryIsPattern = false;
+
     if (context.directory) {
         if (path.isAbsolute(context.directory)) {
             directory = context.directory;
@@ -54,6 +55,7 @@ export async function findDataSource(
     }
 
     const lookupPaths = [];
+
     for (const file of files) {
         if (
             directory &&
@@ -102,6 +104,7 @@ export async function findDataSource(
             }
 
             const keys = Object.keys(moduleRecord);
+
             for (const key of keys) {
                 let value = moduleRecord[key];
 

@@ -1,7 +1,7 @@
 import type { DataSource, DataSourceOptions } from 'typeorm';
 import { SchemaDriftError } from '../../../errors';
 import { useInitializedDataSource } from '../utils';
-import type { SchemaDrift, SchemaDriftOptions, SchemaDriftStatement } from './type';
+import type { SchemaDrift, SchemaDriftOptions, SchemaDriftStatement } from './types';
 
 function toStatement(query: { query: string, parameters?: any[] }) : SchemaDriftStatement {
     if (query.parameters && query.parameters.length > 0) {

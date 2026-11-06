@@ -1,4 +1,4 @@
-import type { Seeder, SeederConstructor } from './type';
+import type { Seeder, SeederConstructor } from './types';
 
 export class SeederEntity {
     /**
@@ -52,6 +52,7 @@ export class SeederEntity {
 
         if (ctx.constructor) {
             const SeederClass = ctx.constructor;
+
             this.instance = new SeederClass();
         }
 

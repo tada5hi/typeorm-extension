@@ -1,4 +1,4 @@
-import type { ConnectionParams } from '../type';
+import type { ConnectionParams } from '../types';
 
 export function buildMongoDBConnectionUri(params: ConnectionParams, database?: string): string {
     let uri = 'mongodb://';

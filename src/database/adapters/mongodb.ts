@@ -76,6 +76,7 @@ export class MongoDBConnectionFactory implements IDatabaseConnectionFactory {
                 }
 
                 const current = client;
+
                 client = undefined;
                 await current.close();
             },

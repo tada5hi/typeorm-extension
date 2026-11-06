@@ -35,9 +35,11 @@ describe('src/database/registry', () => {
             expect(entry).toBeDefined();
 
             const params = entry.buildParams(optionsFor(name));
+
             expect(params.database).toEqual('app');
 
             const dialect = entry.buildDialect(optionsFor(name), params, {});
+
             expect(typeof dialect.create).toEqual('function');
             expect(typeof dialect.drop).toEqual('function');
         }
@@ -53,6 +55,7 @@ describe('src/database/registry', () => {
 
     it('should run the sqlite dialect through the composition root', async () => {
         const fs = new MemoryFileSystem();
+
         fs.writableDirectories.add('/data');
 
         await executeDatabaseCreate('better-sqlite3', {

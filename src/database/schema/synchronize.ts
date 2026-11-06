@@ -8,6 +8,7 @@ export async function synchronizeDatabaseSchema(
     const { options } = dataSource;
 
     let migrationsCount = 0;
+
     if (options.migrations) {
         migrationsCount = Array.isArray(options.migrations) ?
             options.migrations.length :

@@ -51,6 +51,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
         // start from a known state without dropping the whole schema —
         // oracle refuses that from within a pluggable database
         const queryRunner = dataSource.createQueryRunner();
+
         try {
             await queryRunner.dropTable('user', true, true, true);
             await queryRunner.dropTable('role', true, true, true);
@@ -111,6 +112,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
             })).toBeTruthy();
 
             const restoredTable = await queryRunner.getTable('user');
+
             expect(restoredTable!.indices.length).toEqual(indicesBefore);
             expect((await getSchemaDrift(dataSource)).exists).toBeFalsy();
         } finally {
@@ -123,6 +125,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
 
         try {
             const table = await queryRunner.getTable('user');
+
             await queryRunner.createIndex(table!, new TableIndex({
                 name: 'IDX_integration_from',
                 columnNames: ['email'],
@@ -209,6 +212,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
             expect(await changeColumnType(queryRunner, input)).toBeTruthy();
 
             const table = await queryRunner.getTable('user');
+
             expect(table!.findColumnByName('email')!.length).toEqual('64');
 
             // the column is altered in place — mysql's changeColumn would have
@@ -286,6 +290,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
                 })).toBeTruthy();
 
                 const [row] = await queryRunner.query('SELECT amount FROM tex_cast');
+
                 expect(`${row.amount}`).toEqual('42');
             } finally {
                 await queryRunner.dropTable('tex_cast', true);
@@ -409,11 +414,13 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/alter (${dri
                     'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = \'tex_child\' ' +
                     'AND COLUMN_NAME = \'parent_id\'',
                 );
+
                 expect(`${column.size}`).toEqual('255');
 
                 // dropping the column would have been refused outright
                 // (ER_FK_COLUMN_CANNOT_DROP), even with the checks disabled
                 const table = await queryRunner.getTable('tex_child');
+
                 expect(table!.foreignKeys.length).toEqual(1);
 
                 expect(await queryRunner.query('SELECT `parent_id` FROM `tex_child`'))

@@ -27,12 +27,15 @@ describe('src/data-source/options/timezone/mysql', () => {
             expect(listeners).toHaveLength(1);
 
             const queries : string[] = [];
+
             listeners[0]({
                 query: (sql: string, callback: (err: unknown) => void) => {
                     queries.push(sql);
                     callback(null);
                 },
-                destroy: () => { throw new Error('must not destroy'); },
+                destroy: () => {
+                    throw new Error('must not destroy');
+                },
             });
 
             expect(queries).toEqual(['SET time_zone = \'+00:00\'']);
@@ -40,6 +43,7 @@ describe('src/data-source/options/timezone/mysql', () => {
 
         it('should pin a connection again after a reset', () => {
             const { pool, listeners } = createPool();
+
             createMysqlUTCDriver({ createPool: (..._args: any[]) => pool }).createPool({});
 
             const queries : string[] = [];
@@ -49,18 +53,26 @@ describe('src/data-source/options/timezone/mysql', () => {
                     queries.push(sql);
                     callback(fail ? new Error('denied') : null);
                 },
-                destroy: () => { throw new Error('must not destroy'); },
+                destroy: () => {
+                    throw new Error('must not destroy');
+                },
                 reset: (callback: (err: unknown) => void) => {
                     queries.push('RESET');
                     callback(null);
                 },
             };
+
             listeners[0](connection);
 
             const errors : unknown[] = [];
-            connection.reset((err: unknown) => { errors.push(err); });
+
+            connection.reset((err: unknown) => {
+                errors.push(err);
+            });
             fail = true;
-            connection.reset((err: unknown) => { errors.push(err); });
+            connection.reset((err: unknown) => {
+                errors.push(err);
+            });
 
             expect(queries).toEqual([
                 'SET time_zone = \'+00:00\'',
@@ -76,12 +88,16 @@ describe('src/data-source/options/timezone/mysql', () => {
 
         it('should destroy a connection whose SET fails', () => {
             const { pool, listeners } = createPool();
+
             createMysqlUTCDriver({ createPool: (..._args: any[]) => pool }).createPool({});
 
             let destroyed = false;
+
             listeners[0]({
                 query: (_sql: string, callback: (err: unknown) => void) => callback(new Error('denied')),
-                destroy: () => { destroyed = true; },
+                destroy: () => {
+                    destroyed = true;
+                },
             });
 
             expect(destroyed).toBe(true);
@@ -99,7 +115,9 @@ describe('src/data-source/options/timezone/mysql', () => {
                     connection.queries.push(sql);
                     callback(fail ? new Error('denied') : null);
                 },
-                destroy: () => { connection.destroyed = true; },
+                destroy: () => {
+                    connection.destroyed = true;
+                },
             };
 
             return connection;
@@ -112,10 +130,12 @@ describe('src/data-source/options/timezone/mysql', () => {
          */
         function createCluster(next: () => { err?: unknown, connection?: any }) {
             const cluster = createMysqlUTCDriver(mysql2 as any).createPoolCluster!() as any;
+
             for (const id of ['MASTER', 'SLAVE0']) {
                 cluster.add(id, {});
                 cluster._nodes[id].pool.getConnection = (cb: Callback) => {
                     const { err, connection } = next();
+
                     cb(err ?? null, connection);
                 };
             }
@@ -145,11 +165,15 @@ describe('src/data-source/options/timezone/mysql', () => {
 
         it('should pin a session again after a reset', async () => {
             const connection : any = createConnection();
+
             connection.reset = (callback: (err: unknown) => void) => callback(null);
+
             const cluster = createCluster(() => ({ connection }));
 
             await getConnection(cluster, 'MASTER');
-            await new Promise((resolve) => { connection.reset(resolve); });
+            await new Promise((resolve) => {
+                connection.reset(resolve);
+            });
             await getConnection(cluster, 'MASTER');
 
             expect(connection.queries).toEqual([
@@ -172,6 +196,7 @@ describe('src/data-source/options/timezone/mysql', () => {
         it('should pass a pool error through untouched', async () => {
             const error = Object.assign(new Error('refused'), { code: 'ECONNREFUSED' });
             const cluster = createCluster(() => ({ err: error }));
+
             cluster._canRetry = false;
 
             expect((await getConnection(cluster, 'MASTER')).err).toBe(error);
@@ -189,15 +214,15 @@ describe('src/data-source/options/timezone/mysql', () => {
 
         it.each(['mysql', 'mariadb'] as const)('should pin %s and keep DATE values as strings', (type) => {
             const options = applyMysqlTimezone({
-                type, 
-                driver, 
-                extra: { connectionLimit: 3 }, 
+                type,
+                driver,
+                extra: { connectionLimit: 3 },
             }) as any;
 
             expect(options).toMatchObject({
-                timezone: 'Z', 
-                dateStrings: ['DATE'], 
-                extra: { connectionLimit: 3 }, 
+                timezone: 'Z',
+                dateStrings: ['DATE'],
+                extra: { connectionLimit: 3 },
             });
             expect(options.driver).not.toBe(driver);
         });
@@ -211,10 +236,11 @@ describe('src/data-source/options/timezone/mysql', () => {
                 { dateStrings: false },
             ]) {
                 const options = applyMysqlTimezone({
-                    type: 'mysql', 
-                    driver, 
-                    ...settings, 
+                    type: 'mysql',
+                    driver,
+                    ...settings,
                 }) as any;
+
                 expect(options).toMatchObject({ timezone: 'Z', dateStrings: ['DATE'] });
                 expect(options.extra.timezone).toBeUndefined();
             }
@@ -231,9 +257,9 @@ describe('src/data-source/options/timezone/mysql', () => {
                 { replication: { master: {}, slaves: [] }, timezone: 'local' },
             ]) {
                 expect(() => applyMysqlTimezone({
-                    type: 'mysql', 
-                    driver, 
-                    ...settings, 
+                    type: 'mysql',
+                    driver,
+                    ...settings,
                 } as any)).toThrow(OptionsError);
             }
         });
@@ -252,6 +278,7 @@ describe('src/data-source/options/timezone/mysql', () => {
 
         it('should be idempotent, and refuse a pin altered after it was applied', () => {
             const once = applyMysqlTimezone({ type: 'mysql', driver });
+
             expect(applyMysqlTimezone(once)).toBe(once);
 
             expect(() => applyMysqlTimezone({ ...once, timezone: 'local' })).toThrow(OptionsError);

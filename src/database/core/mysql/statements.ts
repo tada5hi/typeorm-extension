@@ -1,4 +1,4 @@
-import type { ConnectionParams } from '../type';
+import type { ConnectionParams } from '../types';
 
 export const MYSQL_FOREIGN_KEY_CHECKS_OFF = 'SET FOREIGN_KEY_CHECKS=0;';
 

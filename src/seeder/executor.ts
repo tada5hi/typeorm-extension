@@ -1,8 +1,8 @@
 import { MssqlParameter, Table } from 'typeorm';
 import type {
-    DataSource, 
-    DataSourceOptions, 
-    ObjectLiteral, 
+    DataSource,
+    DataSourceOptions,
+    ObjectLiteral,
     QueryRunner,
 } from 'typeorm';
 import type { MongoQueryRunner } from 'typeorm/driver/mongodb/MongoQueryRunner';
@@ -17,7 +17,7 @@ import type {
     SeederExecutorOptions,
     SeederOptions,
     SeederPrepareElement,
-} from './type';
+} from './types';
 import { prepareSeederSeeds } from './utils';
 
 export class SeederExecutor {
@@ -60,6 +60,7 @@ export class SeederExecutor {
             }
 
             const pending = this.filterPending(all, existing, config);
+
             if (pending.length === 0) {
                 return [];
             }
@@ -122,14 +123,8 @@ export class SeederExecutor {
     }
 
     protected isMatch(seed: SeederEntity, config: SeederConfig) : boolean {
-        if (!config.seedName) {
-            return true;
-        }
-
-        if (
-            seed.name === config.seedName ||
-            seed.fileName === config.seedName
-        ) {
+        if (!config.seedName || seed.name === config.seedName ||
+            seed.fileName === config.seedName) {
             return true;
         }
 
@@ -158,6 +153,7 @@ export class SeederExecutor {
 
         for (const element of pending) {
             const seeder = element.instance;
+
             if (!seeder) {
                 continue;
             }
@@ -254,6 +250,7 @@ export class SeederExecutor {
                 ),
             ),
         );
+
         if (duplicates.length > 0) {
             throw Error(`Duplicate seeds: ${duplicates.join(', ')}`);
         }
@@ -267,7 +264,9 @@ export class SeederExecutor {
         if (this.dataSource.driver.options.type === 'mongodb') {
             return;
         }
+
         const tableExist = await queryRunner.hasTable(this.buildTableName(tableName));
+
         if (!tableExist) {
             await queryRunner.createTable(
                 new Table({
@@ -315,6 +314,7 @@ export class SeederExecutor {
         tableName: string,
     ): Promise<void> {
         const values: ObjectLiteral = {};
+
         if (this.dataSource.driver.options.type === 'mssql') {
             values.timestamp = new MssqlParameter(
                 seederEntity.timestamp,
@@ -334,12 +334,14 @@ export class SeederExecutor {
 
         if (this.dataSource.driver.options.type === 'mongodb') {
             const mongoRunner = queryRunner as MongoQueryRunner;
+
             await mongoRunner.databaseConnection
                 .db(this.dataSource.driver.database)
                 .collection(tableName)
                 .insertOne(values);
         } else {
             const qb = queryRunner.manager.createQueryBuilder();
+
             await qb
                 .insert()
                 .into(this.buildTableName(tableName))
@@ -370,6 +372,7 @@ export class SeederExecutor {
 
     protected classNameToTimestamp(className: string) {
         const match = className.match(/^(.*)([0-9]{13,})$/);
+
         if (match) {
             return Number.parseInt(match[2], 10);
         }

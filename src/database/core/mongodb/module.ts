@@ -3,7 +3,7 @@ import type {
     DatabaseDropOperation,
     IDatabaseConnectionFactory,
     IDatabaseDialect,
-} from '../type';
+} from '../types';
 import { buildMongoDBDropDatabaseCommand } from './statements';
 
 export class MongoDBDialect implements IDatabaseDialect {
@@ -16,6 +16,7 @@ export class MongoDBDialect implements IDatabaseDialect {
      */
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.params.database);
+
         await connection.open();
         await connection.close();
 
@@ -24,6 +25,7 @@ export class MongoDBDialect implements IDatabaseDialect {
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.params.database);
+
         await connection.open();
 
         try {

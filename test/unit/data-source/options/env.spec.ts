@@ -19,9 +19,12 @@ describe('src/data-source/options/env', () => {
         expect(hasEnvDataSourceOptions()).toEqual(true);
 
         const env = readDataSourceOptionsFromEnv();
+
         expect(env).toBeDefined();
+
         if (env) {
             expect(env.type).toEqual('mysql');
+
             if (env.type === 'mysql') {
                 expect(env.url).toEqual('mysql://admin:start123@localhost:3306');
             } else {
@@ -77,6 +80,7 @@ describe('src/data-source/options/env', () => {
 
     it('should not read from env', () => {
         const options = readDataSourceOptionsFromEnv();
+
         expect(options).toBeUndefined();
     });
 });

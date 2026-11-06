@@ -3,7 +3,7 @@ import { OptionsError } from '../../../errors';
 import { applyMysqlTimezone } from './mysql';
 import { applyOracleTimezone } from './oracle';
 import { applyPostgresTimezone } from './postgres';
-import type { DataSourceTimezone } from './type';
+import type { DataSourceTimezone } from './types';
 import { isDataSourceTimezone } from './utils';
 
 /**

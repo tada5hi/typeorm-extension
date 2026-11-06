@@ -31,6 +31,7 @@ describe('src/runtime/cache.ts', () => {
 
     it('should pass the existing value to the build callback', async () => {
         const cache = new AsyncKeyedCache<string>();
+
         cache.set('foo', 'bar');
 
         const value = await cache.resolve('foo', async (existing) => existing || 'baz');
@@ -47,6 +48,7 @@ describe('src/runtime/cache.ts', () => {
             await new Promise((resolve) => {
                 setTimeout(resolve, 0);
             });
+
             return calls;
         };
 
@@ -81,6 +83,7 @@ describe('src/runtime/cache.ts', () => {
         let calls = 0;
         const build = async () => {
             calls++;
+
             if (calls === 1) {
                 throw new Error('boom');
             }
@@ -92,6 +95,7 @@ describe('src/runtime/cache.ts', () => {
         expect(cache.has('foo')).toBeFalsy();
 
         const value = await cache.resolve('foo', build);
+
         expect(value).toEqual('bar');
         expect(calls).toEqual(2);
     });
@@ -102,11 +106,13 @@ describe('src/runtime/cache.ts', () => {
         cache.set('foo', 'bar');
 
         const value = await cache.resolve('foo', async (existing) => existing as string);
+
         expect(value).toEqual('bar');
 
         cache.set('foo', 'baz');
 
         const next = await cache.resolve('foo', async (existing) => existing as string);
+
         expect(next).toEqual('baz');
     });
 

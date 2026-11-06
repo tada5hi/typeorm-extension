@@ -9,11 +9,13 @@ import { createDataSourceOptions } from './factory';
 
 export async function setupFsDataSource(name: string) : Promise<DataSource> {
     const options = createDataSourceOptions();
+
     Object.assign(options, { database: `writable/${name}.sqlite` });
 
     await createDatabase({ options });
 
     const dataSource = new DataSource(options);
+
     await dataSource.initialize();
 
     setDataSource(dataSource);

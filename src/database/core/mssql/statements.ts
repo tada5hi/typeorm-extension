@@ -1,4 +1,4 @@
-import type { ConnectionParams } from '../type';
+import type { ConnectionParams } from '../types';
 
 /**
  * @link https://github.com/typeorm/typeorm/blob/master/src/driver/sqlserver/SqlServerQueryRunner.ts#L416

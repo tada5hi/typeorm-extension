@@ -31,6 +31,7 @@ describe.runIf(driver && supportsDatabaseDrop(driver))(`src/database/methods (${
     beforeAll(() => {
         // mongodb has no relational schema, so the fixtures do not apply to it
         const entities = supportsSchemaMetadata(driver) ? [User, Role] : [];
+
         options = createIntegrationDataSourceOptions(entities, { database: 'typeorm_extension_integration' });
     });
 

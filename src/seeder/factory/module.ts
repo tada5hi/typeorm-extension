@@ -1,7 +1,7 @@
 import { hasOwnProperty, isPromise  } from '../../utils';
 import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import type { SeederFactoryContext } from './type';
+import type { SeederFactoryContext } from './types';
 
 export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     public readonly context: SeederFactoryContext<O, Meta>;
@@ -27,6 +27,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     public async make(params?: Partial<O>, save?: boolean) {
         const factoryFn = this.context.factoryFn(this.meta);
         let entity : O;
+
         if (isPromise(factoryFn)) {
             entity = await this.resolve(await factoryFn, save);
         } else {
@@ -35,6 +36,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
         if (params) {
             const keys : (keyof O)[] = Object.keys(params);
+
             for (const key of keys) {
                 entity[key] = (params as O)[key];
             }
@@ -63,8 +65,10 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         options?: SaveOptions,
     ) : Promise<O[]> {
         const promises : Promise<O>[] = [];
+
         for (let i = 0; i < amount; i++) {
             const item = this.save(params, options);
+
             promises.push(item);
         }
 
@@ -75,6 +79,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
     private async resolve(entity: O, save?: boolean) : Promise<O> {
         const keys = Object.keys(entity);
+
         for (const key of keys as (keyof O)[]) {
             const value : O[keyof O] = entity[key];
 
@@ -89,6 +94,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
                 value instanceof SeederFactory
             ) {
                 const factory = value as SeederFactory<any>;
+
                 if (this.context.dataSource && !factory.context.dataSource) {
                     factory.context.dataSource = this.context.dataSource;
                 }

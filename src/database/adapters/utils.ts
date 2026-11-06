@@ -17,6 +17,7 @@ export async function promisifyCallbackQuery(connection: any, query: string): Pr
         connection.query(query, (queryErr: any, queryResult: any) => {
             if (queryErr) {
                 reject(queryErr);
+
                 return;
             }
 

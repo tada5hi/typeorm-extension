@@ -1,4 +1,4 @@
-import type { ConnectionParams } from '../type';
+import type { ConnectionParams } from '../types';
 
 /**
  * Assemble the TNS connect descriptor when none is configured.

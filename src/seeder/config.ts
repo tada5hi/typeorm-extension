@@ -1,5 +1,5 @@
 import type { Environment } from '../env';
-import type { SeederConfig, SeederOptions } from './type';
+import type { SeederConfig, SeederOptions } from './types';
 
 const SEEDS_DEFAULT = ['src/database/seeds/**/*{.ts,.js}'];
 const FACTORIES_DEFAULT = ['src/database/factories/**/*{.ts,.js}'];

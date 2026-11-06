@@ -44,6 +44,7 @@ describe('src/data-source/options/timezone', () => {
             saved[key] = process.env[key];
             delete process.env[key];
         }
+
         resetEnv();
     });
 
@@ -55,6 +56,7 @@ describe('src/data-source/options/timezone', () => {
                 process.env[key] = saved[key];
             }
         }
+
         resetEnv();
     });
 
@@ -66,6 +68,7 @@ describe('src/data-source/options/timezone', () => {
 
         it('should pin postgres, mysql, mariadb and oracle', () => {
             const postgres = pinTimezone({ type: 'postgres', driver: pg }, 'UTC') as DataSourceOptions & Extra;
+
             expect(postgres.extra.options).toEqual('-c TimeZone=UTC');
 
             for (const type of ['mysql', 'mariadb'] as const) {
@@ -73,6 +76,7 @@ describe('src/data-source/options/timezone', () => {
             }
 
             const pinned = pinTimezone({ type: 'oracle', driver: oracle }, 'UTC') as DataSourceOptions & Extra;
+
             expect(typeof pinned.extra.sessionCallback).toEqual('function');
         });
 
@@ -97,6 +101,7 @@ describe('src/data-source/options/timezone', () => {
 
             for (const input of cases) {
                 const once = pinTimezone(input, 'UTC');
+
                 expect(pinTimezone(once, 'UTC')).toBe(once);
             }
         });
@@ -136,6 +141,7 @@ describe('src/data-source/options/timezone', () => {
 
         it('should re-check a pin applied in code after merging with the env', () => {
             const pinned = pinTimezone({ type: 'mysql' }, 'UTC');
+
             process.env[EnvironmentVariableName.TYPE] = 'mysql';
 
             expect(mergeDataSourceOptionsWithEnv(pinned)).toMatchObject({ timezone: 'Z' });
@@ -147,6 +153,7 @@ describe('src/data-source/options/timezone', () => {
 
         it('should leave options alone without it', () => {
             const input : DataSourceOptions = { type: 'mysql' };
+
             expect(mergeDataSourceOptionsWithEnv(input)).toBe(input);
         });
 

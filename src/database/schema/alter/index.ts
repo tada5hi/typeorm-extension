@@ -13,4 +13,4 @@ export type {
     SchemaRenameForeignKeyInput,
     SchemaRenameIndexInput,
     SchemaStrictInput,
-} from './type';
+} from './types';

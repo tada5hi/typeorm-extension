@@ -1,7 +1,7 @@
 import type { DataSource } from 'typeorm';
 import type { SeederEntity } from './entity';
 import { SeederExecutor } from './executor';
-import type { SeederConstructor, SeederOptions } from './type';
+import type { SeederConstructor, SeederOptions } from './types';
 
 export async function runSeeder(
     dataSource: DataSource,
@@ -25,5 +25,6 @@ export async function runSeeders(
     options?: SeederOptions,
 ) : Promise<SeederEntity[]> {
     const executor = new SeederExecutor(dataSource);
+
     return executor.execute(options);
 }

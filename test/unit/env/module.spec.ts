@@ -7,6 +7,7 @@ describe('src/env/**', () => {
         resetEnv();
 
         const env = useEnv();
+
         expect(env).toBeDefined();
         expect(env).toEqual(useEnv());
 
@@ -17,6 +18,7 @@ describe('src/env/**', () => {
         resetEnv();
 
         const ob : Record<string, any> = { foo: 'bar' };
+
         process.env = {
             ...process.env,
             [EnvironmentVariableName.TYPE]: 'better-sqlite3',
@@ -24,7 +26,9 @@ describe('src/env/**', () => {
         };
 
         const options = readDataSourceOptionsFromEnv();
+
         expect(options).toBeDefined();
+
         if (options) {
             expect(options.extra).toBeDefined();
             expect(options.extra).toEqual(ob);
@@ -45,7 +49,9 @@ describe('src/env/**', () => {
         };
 
         const options = readDataSourceOptionsFromEnv();
+
         expect(options).toBeDefined();
+
         if (options) {
             expect(options.type).toEqual('mysql');
         }

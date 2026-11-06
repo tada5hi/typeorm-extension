@@ -1,6 +1,6 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DriverError } from '../../../errors';
-import type { SchemaColumnDialect, SchemaDialect } from './type';
+import type { SchemaColumnDialect, SchemaDialect } from './types';
 
 /**
  * mariadb is served by the mysql statements, cockroachdb by the postgres ones.
@@ -48,6 +48,7 @@ export function findSchemaDialect(type: DataSourceOptions['type']) : SchemaDiale
  */
 export function resolveSchemaDialect(type: DataSourceOptions['type']) : SchemaDialect {
     const dialect = findSchemaDialect(type);
+
     if (dialect) {
         return dialect;
     }

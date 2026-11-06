@@ -500,6 +500,7 @@ describe('src/database/schema/alter/columns', () => {
 
     it('should change the column type of a real data source', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
 
         try {
@@ -531,6 +532,7 @@ describe('src/database/schema/alter/columns', () => {
 
                 // the values must survive the alteration
                 const rows = await queryRunner.query('SELECT "email" FROM "user"');
+
                 expect(rows).toEqual([{ email: 'foo@bar.baz' }]);
 
                 // running it again is a no-op

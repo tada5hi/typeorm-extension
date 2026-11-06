@@ -34,6 +34,7 @@ describe('src/seeder/config.ts', () => {
                 { seeds: ['ds/seeds/*.ts'] },
                 { seeds: ['env/seeds/*.ts'], factories: [] },
             );
+
             expect(config.seeds).toEqual(['ds/seeds/*.ts']);
 
             config = resolveSeederConfig(
@@ -101,6 +102,7 @@ describe('src/seeder/config.ts', () => {
     describe('seedName', () => {
         it('should only be taken from input', () => {
             let config = resolveSeederConfig({}, { seedName: 'FromDataSourceOptions' });
+
             expect(config.seedName).toBeUndefined();
 
             config = resolveSeederConfig(

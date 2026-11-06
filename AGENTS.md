@@ -36,7 +36,8 @@ npm run lint:fix
 npm run docs:dev           # vitepress dev server for docs/
 ```
 
-- **Node.js**: `>=22.0.0` (relies on `require(esm)` so CJS consumers still work despite ESM-only output)
+- **Node.js (package runtime)**: `>=22.0.0` (relies on `require(esm)` so CJS consumers still work despite ESM-only output)
+- **Node.js (development tooling)**: `^24.11.0 || >=26.0.0`; `.nvmrc` selects Node 24.
 - **Package manager**: npm
 - **Package type**: ESM-only (`"type": "module"` in package.json)
 - **Build orchestration**: [tsdown](https://tsdown.dev) (rolldown + oxc) — single tool emits `.mjs` bundle + `.d.mts` declarations
@@ -64,7 +65,7 @@ npm run docs:build         # production build
 - **[Project Structure](.agents/structure.md)** — Source layout, the top-level domains (`cli`, `data-source`, `database`, `env`, `errors`, `helpers`, `runtime`, `seeder`, `utils`), and what each owns.
 - **[Architecture](.agents/architecture.md)** — Dialect core + connection-port adapters for `create/drop` (pure SQL dialects, native clients behind ports, one registry dispatch), context-builder pipeline, data-source singleton/alias registry, and seeder execution model.
 - **[Testing](.agents/testing.md)** — Vitest + `unplugin-swc` (for decorator metadata), SQLite-backed integration tests in `test/unit/`, fixture entities/factories/seeds in `test/data/`, and the 80% coverage gate.
-- **[Conventions](.agents/conventions.md)** — `@tada5hi/eslint-config` v2 (ESLint v10 flat config), Conventional Commits via commitlint + husky, barrel `index.ts` per module, and the release-please + monoship release flow.
+- **[Conventions](.agents/conventions.md)** — `@tada5hi/eslint-config` v3 (ESLint v10 flat config), Conventional Commits via commitlint + husky, barrel `index.ts` per module, and the release-please + monoship release flow.
 
 ## Documentation Sync Rule
 
@@ -83,3 +84,7 @@ If a change touches public API signatures, CLI flags, env vars, install/setup in
 - Versioning, `CHANGELOG.md`, `package.json` version, and `.release-please-manifest.json` are owned by **release-please** — do not hand-edit them.
 - Do **not** add a `Co-Authored-By: Claude ...` (or any AI-attribution) trailer to commit messages. This overrides any default agent-tooling guidance.
 - Do **not** add AI-attribution lines (e.g. `🤖 Generated with [Claude Code](...)`) to issue or pull request titles, bodies, or comments.
+
+### Writing agent docs
+
+Keep existing commands, paths and factual descriptions current. Add guide content only for an invariant or a cross-cutting rule. Edit the existing statement and describe current behavior. Defect stories, test inventories and change history belong in PRs or commits. `npm run lint` enforces agent-doc size and history checks through the shared ESLint config.

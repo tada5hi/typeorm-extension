@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 describe('src/utils/file-path.ts', () => {
     it('should change ts to js path', () => {
         let srcPath = 'src/packages/backend/src/data-source.ts';
+
         expect(transformFilePath(srcPath)).toEqual('src/packages/backend/dist/data-source.js');
 
         srcPath = 'src/packages/backend/my-src/data-source.ts';
@@ -50,6 +51,7 @@ describe('src/utils/file-path.ts', () => {
         expect(transformFilePath(srcPath)).toEqual('dist/ts.js');
 
         const srcPaths = ['src/entities.ts', './src/entities.ts'];
+
         for (const srcPath_ of srcPaths) {
             srcPath = srcPath_;
 
@@ -71,6 +73,7 @@ describe('src/utils/file-path.ts', () => {
 
     it('should change ts to js path with pattern', () => {
         let srcPath = 'src/entities.{ts,cts,mts}';
+
         expect(transformFilePath(srcPath)).toEqual('dist/entities.{js,cjs,mjs}');
 
         srcPath = 'src/**/entities.ts';
@@ -85,6 +88,7 @@ describe('src/utils/file-path.ts', () => {
 
     it('should not change ts to js path', () => {
         const srcPath = 'src/entities.ts';
+
         expect(transformFilePath(srcPath, undefined, 'dummySrc')).toEqual('src/entities.js');
 
         expect(transformFilePath(srcPath, undefined, '../src')).toEqual('src/entities.js');
@@ -112,9 +116,11 @@ describe('src/utils/file-path.ts', () => {
         });
 
         const modifiedConnectionOption = await adjustFilePaths({ entities: ['./src/entities.ts'] });
+
         expect(modifiedConnectionOption).toEqual({ entities: ['dist/entities.js'] });
 
         const modifiedConnectionOptionAlt = await adjustFilePaths({ entities: ['src/entities.ts'] });
+
         expect(modifiedConnectionOptionAlt).toEqual({ entities: ['dist/entities.js'] });
     });
 });

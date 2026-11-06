@@ -1,4 +1,4 @@
-import type { SchemaDriftStatement } from '../database/schema/drift/type';
+import type { SchemaDriftStatement } from '../database/schema/drift/types';
 import { TypeormExtensionError } from './base';
 
 function buildMessage(statements: SchemaDriftStatement[]): string {

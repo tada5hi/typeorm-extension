@@ -4,6 +4,7 @@ import { Role } from '../entity/role';
 
 export default setSeederFactory(Role, async () => {
     const role = new Role();
+
     role.name = faker.person.firstName('female');
 
     return role;

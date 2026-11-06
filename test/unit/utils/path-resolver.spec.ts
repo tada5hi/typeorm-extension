@@ -177,6 +177,7 @@ describe('src/utils/path-resolver', () => {
             const resolver = createPathResolver({ root: 'test/data' });
 
             const tsconfig = await resolver.tsconfig();
+
             expect(tsconfig.compilerOptions?.outDir).toEqual('output');
 
             expect(await resolver.transform('src/entities.ts')).toEqual('output/entities.js');

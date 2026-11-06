@@ -1,6 +1,6 @@
 import { readAsModule } from 'locter';
 import path from 'node:path';
-import type { SeederConstructor, SeederPrepareElement } from '../type';
+import type { SeederConstructor, SeederPrepareElement } from '../types';
 import { resolveFilePaths, resolveFilePatterns } from './file-path';
 
 export async function prepareSeederSeeds(
@@ -30,8 +30,10 @@ export async function prepareSeederSeeds(
             let clazzConstructor : SeederConstructor | undefined;
 
             const exportKeys = Object.keys(moduleExports);
+
             for (const exportKey of exportKeys) {
                 const moduleExport = moduleExports[exportKey];
+
                 if (
                     typeof moduleExport === 'function' &&
                     moduleExport.prototype
@@ -45,6 +47,7 @@ export async function prepareSeederSeeds(
                 const match = fileName.match(/^([0-9]{13,})-(.*)$/);
 
                 let timestamp : number | undefined;
+
                 if (match) {
                     timestamp = Number.parseInt(match[1], 10);
                 }

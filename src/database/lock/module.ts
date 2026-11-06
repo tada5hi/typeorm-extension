@@ -1,6 +1,6 @@
 import type { QueryRunner } from 'typeorm';
 import { DatabaseLockError, DriverError } from '../../errors';
-import type { DatabaseLockOptions } from './type';
+import type { DatabaseLockOptions } from './types';
 
 type DatabaseLockStatements = {
     acquire: string,
@@ -72,6 +72,7 @@ export async function withDatabaseLock<T>(
 ) : Promise<T> {
     const { type } = queryRunner.dataSource.options;
     const statement = statements.get(type);
+
     if (!statement) {
         if (options.strict === false) {
             return fn();
@@ -91,6 +92,7 @@ export async function withDatabaseLock<T>(
 
     while (!isDatabaseLockAcquired(await queryRunner.query(statement.acquire, [name]))) {
         const remaining = deadline - Date.now();
+
         // negated, so a NaN timeout gives up instead of polling forever.
         if (!(remaining > 0)) {
             throw DatabaseLockError.timeout(name, timeout);
@@ -102,6 +104,7 @@ export async function withDatabaseLock<T>(
     }
 
     let output : T;
+
     try {
         output = await fn();
     } catch (e) {
@@ -109,11 +112,13 @@ export async function withDatabaseLock<T>(
         // Only a lost connection is left to fail the release here, and that
         // frees the lock anyway: it must not hide the callback's error.
         await queryRunner.query(statement.release, [name]).catch(() => undefined);
+
         throw e;
     }
 
     // Committing it after the lock is gone would defeat the lock.
     const transactionLeftOpen = await rollbackTransaction(queryRunner);
+
     await queryRunner.query(statement.release, [name]);
 
     if (transactionLeftOpen) {

@@ -3,7 +3,7 @@ import { resolveDatabaseDialectName } from '../../registry';
 import { executeDatabaseCreate } from '../execute';
 import type {
     DatabaseCreateContextInput,
-} from '../type';
+} from '../types';
 
 /**
  * Create database for specified driver in ConnectionOptions.

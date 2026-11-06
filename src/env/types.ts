@@ -2,6 +2,8 @@ import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { DataSourceCacheOption } from '../data-source';
 import type { EnvironmentName } from './constants';
 
+// Public interface name supports downstream declaration merging.
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export interface Environment {
     env: `${EnvironmentName}`,
 

@@ -2,12 +2,7 @@ import process from 'node:process';
 import type { Logger } from './logger';
 import { CLIUserError } from './logger';
 
-export const ExitCode = {
-    Success: 0,
-    UserError: 1,
-    InternalError: 2,
-} as const;
-export type ExitCode = typeof ExitCode[keyof typeof ExitCode];
+import { ExitCode } from './types';
 
 export async function runWithExitCode(
     logger: Logger,
@@ -21,11 +16,14 @@ export async function runWithExitCode(
             logger.error(err.message);
             process.exit(ExitCode.UserError);
         }
+
         if (err instanceof Error) {
             logger.error(err.stack ?? err.message);
         } else {
             logger.error(String(err));
         }
+
         process.exit(ExitCode.InternalError);
     }
 }
+export { ExitCode };

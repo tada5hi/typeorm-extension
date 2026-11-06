@@ -6,5 +6,5 @@ export * from './oracle';
 export * from './params';
 export * from './postgres';
 export * from './sqlite';
-export * from './type';
+export * from './types';
 export * from './utils';

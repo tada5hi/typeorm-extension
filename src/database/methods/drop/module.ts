@@ -3,7 +3,7 @@ import { resolveDatabaseDialectName } from '../../registry';
 import { executeDatabaseDrop } from '../execute';
 import type {
     DatabaseDropContextInput,
-} from '../type';
+} from '../types';
 
 /**
  * Drop database for specified driver in ConnectionOptions.

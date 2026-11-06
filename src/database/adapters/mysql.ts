@@ -82,12 +82,14 @@ export class MySQLConnectionFactory implements IDatabaseConnectionFactory {
                 }
 
                 const current = connection;
+
                 connection = undefined;
 
                 await new Promise<void>((resolve, reject) => {
                     current.end((error?: Error) => {
                         if (error) {
                             reject(error);
+
                             return;
                         }
 

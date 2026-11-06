@@ -9,6 +9,7 @@ describe('src/data-source/utils/find.ts', () => {
 
         expect(dataSource).toBeDefined();
         expect(InstanceChecker.isDataSource(dataSource));
+
         if (dataSource) {
             expect(dataSource.options.extra).toBeDefined();
         }
@@ -44,6 +45,7 @@ describe('src/data-source/utils/find.ts', () => {
 
         expect(dataSource).toBeDefined();
         expect(InstanceChecker.isDataSource(dataSource));
+
         if (dataSource) {
             expect(dataSource.options.extra).toBeUndefined();
         }

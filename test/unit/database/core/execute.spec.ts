@@ -56,6 +56,7 @@ describe('src/database/methods/execute', () => {
         const connection = {
             execute: async (statement: string) => {
                 executed.push(statement);
+
                 return { ok: true };
             },
             close: async () => {
@@ -82,6 +83,7 @@ describe('src/database/methods/execute', () => {
             connection: {
                 execute: async (statement: string) => {
                     executed.push(statement);
+
                     return { ok: true };
                 },
             },

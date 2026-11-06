@@ -23,6 +23,7 @@ export function hasEnvDataSourceOptions() : boolean {
  */
 function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
     const timezone = useEnv('pinTimezone');
+
     if (typeof timezone === 'undefined' || timezone === '') {
         return hasInstalledTimezone(options) ?
             pinTimezone(options, 'UTC') :
@@ -38,6 +39,7 @@ function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
 
 export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
     const options = readRawDataSourceOptionsFromEnv();
+
     if (!options) {
         return undefined;
     }
@@ -142,6 +144,7 @@ function readRawDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
 
 export function mergeDataSourceOptionsWithEnv(options: DataSourceOptions) {
     const env = readRawDataSourceOptionsFromEnv();
+
     if (!env) {
         return applyEnvTimezone(options);
     }

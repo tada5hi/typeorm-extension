@@ -35,6 +35,7 @@ describe('src/data-source/options/timezone/postgres', () => {
             expect(parse('-infinity')).toEqual(-Infinity);
 
             const bc = parse('0005-01-01 00:00:00 BC') as Date;
+
             expect(bc.getUTCFullYear()).toEqual(-4);
             expect(bc.getUTCHours()).toEqual(0);
         });
@@ -54,6 +55,7 @@ describe('src/data-source/options/timezone/postgres', () => {
 
         it('should mark years before 1 as BC', () => {
             const date = new Date('2026-01-01T00:00:00.000Z');
+
             date.setUTCFullYear(-4);
 
             expect(serializePostgresDateAsUTC(date)).toEqual('0005-01-01T00:00:00.000+00:00 BC');
@@ -66,6 +68,7 @@ describe('src/data-source/options/timezone/postgres', () => {
 
             query(...args: unknown[]) {
                 this.calls.push(args);
+
                 return 'result';
             }
         }
@@ -162,6 +165,7 @@ describe('src/data-source/options/timezone/postgres', () => {
 
             query(...args: unknown[]) {
                 this.calls.push(args);
+
                 return 'result';
             }
         }
@@ -203,9 +207,9 @@ describe('src/data-source/options/timezone/postgres', () => {
         });
 
         const apply = (options: Record<string, any>) => applyPostgresTimezone({
-            type: 'postgres', 
-            driver: pg, 
-            ...options, 
+            type: 'postgres',
+            driver: pg,
+            ...options,
         }) as any;
 
         it('should pin session, reader and writer', () => {
@@ -265,12 +269,14 @@ describe('src/data-source/options/timezone/postgres', () => {
                     slaves: [{ host: 'slave' }],
                 },
             });
+
             expect(options.replication.master.url).toEqual('postgres://u:p@master/db?sslmode=require');
             expect(options.extra.options).toEqual('-c TimeZone=UTC');
         });
 
         it('should refuse a pin altered after it was applied, and keep an intact one', () => {
             const once = apply({});
+
             expect(applyPostgresTimezone(once)).toBe(once);
 
             expect(() => applyPostgresTimezone({ ...once, extra: { ...once.extra, options: '-c TimeZone=Europe/Berlin' } }))
@@ -319,6 +325,7 @@ describe('src/data-source/options/timezone/postgres', () => {
             class Client {}
 
             const options = apply({ extra: { types, Client } });
+
             expect(options.extra.types.getTypeParser(23, 'text')).toBe(parser);
             expect(options.extra.types.getTypeParser(1114, 'text')).not.toBe(pg.types.getTypeParser(1114));
             expect(new options.extra.Client()).toBeInstanceOf(Client);
@@ -329,14 +336,17 @@ describe('src/data-source/options/timezone/postgres', () => {
             const types = { getTypeParser: (oid: number, format?: string) => (oid === 1184 ? parser : pg.types.getTypeParser(oid, format)) };
 
             const options = apply({ extra: { types } });
+
             expect(options.extra.types.getTypeParser(1184, 'text')).toBe(parser);
         });
 
         it('should refuse timestamp parsers overridden in extra.types or process-wide', () => {
             const types = { getTypeParser: (oid: number) => (oid === 1114 ? (value: string) => value : pg.types.getTypeParser(oid)) };
+
             expect(() => apply({ extra: { types } })).toThrow(OptionsError);
 
             const driver = { ...pg, types };
+
             expect(() => applyPostgresTimezone({ type: 'postgres', driver })).toThrow(OptionsError);
         });
 
@@ -344,19 +354,21 @@ describe('src/data-source/options/timezone/postgres', () => {
             class Client {}
             class NativeClient {}
             const driver = {
-                types: pg.types, 
-                Client, 
-                native: { Client: NativeClient }, 
+                types: pg.types,
+                Client,
+                native: { Client: NativeClient },
             };
 
             const native = applyPostgresTimezone({
-                type: 'postgres', 
-                driver, 
-                nativeDriver: {}, 
+                type: 'postgres',
+                driver,
+                nativeDriver: {},
             }) as any;
+
             expect(new native.extra.Client()).toBeInstanceOf(NativeClient);
 
             const plain = applyPostgresTimezone({ type: 'postgres', driver: { ...driver, native: undefined } }) as any;
+
             expect(new plain.extra.Client()).toBeInstanceOf(Client);
         });
     });

@@ -54,6 +54,7 @@ export function defineCLISeedRunCommand() {
         },
         async run({ args }) {
             const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+
             await runWithExitCode(logger, async () => {
                 logger.info('Running seeders');
 
@@ -66,6 +67,7 @@ export function defineCLISeedRunCommand() {
                 });
 
                 let { name } = args;
+
                 if (name) {
                     name = await pathResolver.transform(name);
                 }
@@ -73,7 +75,9 @@ export function defineCLISeedRunCommand() {
                 const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
+
                 const dsPad = 'directory'.length;
+
                 logger.kv('directory', source.directory, dsPad);
                 logger.kv('name', source.name, dsPad);
 

@@ -4,7 +4,7 @@ import { resolveFilePath, transformFilePath } from '../file-path';
 import type { TSConfig } from '../tsconfig';
 import { readTSConfig } from '../tsconfig';
 import { PathResolverMode } from './constants';
-import type { IPathResolver, PathResolverOptions } from './type';
+import type { IPathResolver, PathResolverOptions } from './types';
 
 export class PathResolver implements IPathResolver {
     protected root?: string;
@@ -54,6 +54,7 @@ export class PathResolver implements IPathResolver {
 
             if (typeof value === 'string') {
                 input[key] = await this.transform(value) as T[keyof T];
+
                 continue;
             }
 

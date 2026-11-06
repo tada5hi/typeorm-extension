@@ -1,13 +1,7 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DataSource, InstanceChecker } from 'typeorm';
 
-export type OwnedDataSource = {
-    dataSource: DataSource,
-    /**
-     * Whether the data source was built (and therefore must be destroyed) here.
-     */
-    owned: boolean
-};
+import type { OwnedDataSource } from './types';
 
 async function buildOwnedDataSource(
     options: DataSourceOptions,
@@ -81,3 +75,4 @@ export async function useInitializedDataSource(
 
     return buildOwnedDataSource(input, override);
 }
+export type { OwnedDataSource };

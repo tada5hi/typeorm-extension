@@ -1,4 +1,4 @@
-import type { DataSourceTimezone } from './type';
+import type { DataSourceTimezone } from './types';
 
 export function isDataSourceTimezone(input: unknown) : input is DataSourceTimezone {
     return typeof input === 'string' && input.toUpperCase() === 'UTC';
@@ -18,6 +18,7 @@ const installed = new WeakSet<object>();
 
 export function markInstalled<T extends object>(value: T) : T {
     installed.add(value);
+
     return value;
 }
 

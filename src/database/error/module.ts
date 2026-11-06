@@ -148,6 +148,7 @@ export function isDatabaseUniqueViolationError(error: unknown) : boolean {
  */
 export function isDatabaseForeignKeyViolationError(error: unknown) : boolean {
     const signature = readSignature(error);
+
     if (!signature) {
         return false;
     }

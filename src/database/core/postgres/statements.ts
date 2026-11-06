@@ -1,4 +1,4 @@
-import type { ConnectionParams } from '../type';
+import type { ConnectionParams } from '../types';
 
 export function buildPostgresDatabaseExistsQuery(database: string): string {
     return `SELECT * FROM pg_database WHERE lower(datname) = lower('${database}');`;

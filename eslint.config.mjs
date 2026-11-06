@@ -21,4 +21,6 @@ export default [
             '**/*.d.mts',
         ],
     },
+    // Preserve the published Node 20/22 runtime floor.
+    { rules: { 'unicorn/prefer-error-is-error': 'off' } },
 ];

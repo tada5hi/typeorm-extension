@@ -82,6 +82,7 @@ export class MsSQLConnectionFactory implements IDatabaseConnectionFactory {
                 }
 
                 const current = pool;
+
                 pool = undefined;
                 await current.close();
             },

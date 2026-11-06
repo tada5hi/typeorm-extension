@@ -1,7 +1,7 @@
 import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
 import { PlatformTools } from 'typeorm/platform/PlatformTools';
 import { OptionsError } from '../../../errors';
-import type { PostgresTypes, TypeParser } from './type';
+import type { PostgresTypes, TypeParser } from './types';
 import { isDate, isInstalled, markInstalled } from './utils';
 
 /**
@@ -39,6 +39,7 @@ const POSTGRES_LOCAL_DATE = /^(\d{4,})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.
 export function serializePostgresDateAsUTC(date: Date) : string {
     let year = date.getUTCFullYear();
     const isBCYear = year < 1;
+
     if (isBCYear) {
         year = Math.abs(year) + 1;
     }
@@ -66,6 +67,7 @@ export function reserializePostgresLocalDateAsUTC(value: unknown) : unknown {
     }
 
     const match = POSTGRES_LOCAL_DATE.exec(value);
+
     if (!match) {
         return value;
     }
@@ -73,15 +75,18 @@ export function reserializePostgresLocalDateAsUTC(value: unknown) : unknown {
     const [, year, month, day, hour, minute, second, millisecond, sign, offsetHours, offsetMinutes, bc] = match;
 
     let fullYear = Number(year);
+
     if (bc) {
         fullYear = 1 - fullYear;
     }
 
     const date = new Date(0);
+
     date.setUTCFullYear(fullYear, Number(month) - 1, Number(day));
     date.setUTCHours(Number(hour), Number(minute), Number(second), Number(millisecond));
 
     const offset = (Number(offsetHours) * 60 + Number(offsetMinutes)) * (sign === '-' ? -1 : 1);
+
     date.setTime(date.getTime() - offset * 60_000);
 
     return serializePostgresDateAsUTC(date);
@@ -128,6 +133,7 @@ export function parsePostgresTimestampAsUTC(value: string) : Date | number | nul
     }
 
     const match = POSTGRES_TIMESTAMP.exec(value);
+
     if (!match) {
         return null;
     }
@@ -135,11 +141,13 @@ export function parsePostgresTimestampAsUTC(value: string) : Date | number | nul
     const [, year, month, day, hour, minute, second, fraction, bc] = match;
 
     let fullYear = Number(year);
+
     if (bc) {
         fullYear = 1 - fullYear;
     }
 
     const date = new Date(0);
+
     date.setUTCFullYear(fullYear, Number(month) - 1, Number(day));
     date.setUTCHours(
         Number(hour),
@@ -161,6 +169,7 @@ export function parsePostgresArray<T>(value: string, parse: (element: string) =>
 
     const parseLevel = () : unknown[] => {
         const output : unknown[] = [];
+
         position++; // `{`
 
         while (position < value.length) {
@@ -168,6 +177,7 @@ export function parsePostgresArray<T>(value: string, parse: (element: string) =>
 
             if (char === '}') {
                 position++;
+
                 return output;
             }
 
@@ -177,22 +187,28 @@ export function parsePostgresArray<T>(value: string, parse: (element: string) =>
                 output.push(parseLevel());
             } else if (char === '"') {
                 let element = '';
+
                 position++;
+
                 while (position < value.length && value[position] !== '"') {
                     if (value[position] === '\\') {
                         position++;
                     }
+
                     element += value[position];
                     position++;
                 }
+
                 position++; // closing quote
                 output.push(parse(element));
             } else {
                 let element = '';
+
                 while (position < value.length && value[position] !== ',' && value[position] !== '}') {
                     element += value[position];
                     position++;
                 }
+
                 output.push(element === 'NULL' ? null : parse(element));
             }
         }
@@ -202,11 +218,13 @@ export function parsePostgresArray<T>(value: string, parse: (element: string) =>
 
     // an optional dimension decoration (`[0:1]={...}`) precedes the array
     const brace = value.indexOf('{');
+
     if (brace === -1) {
         return [];
     }
 
     position = brace;
+
     return parseLevel();
 }
 
@@ -309,6 +327,7 @@ function readTimezoneOption(options: string | undefined) : string | undefined {
     }
 
     let zone : string | undefined;
+
     for (const match of options.matchAll(POSTGRES_TIMEZONE_OPTION)) {
         [, zone] = match;
     }
@@ -326,6 +345,7 @@ function isUTCZone(zone: string) : boolean {
  */
 function pinTimezoneOption(options: string, source: string) : string {
     const zone = readTimezoneOption(options);
+
     if (typeof zone === 'undefined') {
         return `${options} -c TimeZone=UTC`.trim();
     }
@@ -344,6 +364,7 @@ function pinTimezoneOption(options: string, source: string) : string {
  */
 export function extractPostgresUrlOptions(url: string) : { url: string, options?: string } {
     const index = url.indexOf('?');
+
     if (index === -1) {
         return { url };
     }
@@ -354,8 +375,10 @@ export function extractPostgresUrlOptions(url: string) : { url: string, options?
 
     let options : string | undefined;
     const kept : string[] = [];
+
     for (const segment of query.split('&')) {
         const params = new URLSearchParams(segment);
+
         if (params.has('options')) {
             options = params.get('options') ?? '';
         } else if (segment.length > 0) {
@@ -373,6 +396,7 @@ function isPostgresNativeInUse(nativeDriver: unknown, driver: Record<string, any
     // mirrors typeorm's loadDependencies, including its swallowed errors
     try {
         let native = nativeDriver;
+
         if (native === null || typeof native === 'undefined') {
             native = PlatformTools.load('pg-native');
         }
@@ -405,13 +429,14 @@ export function applyPostgresTimezone(options: PostgresDataSourceOptions) : Post
         const nodes = options.replication ? [options.replication.master, ...options.replication.slaves] : [];
         const urls = [options.url, extra.connectionString, ...nodes.map((node) => node.url)]
             .filter((url) => typeof url === 'string') as string[];
-        if (
-            isInstalled(extra.types) &&
+
+        const matchesTimezoneOptions = isInstalled(extra.types) &&
             isInstalled(extra.Client) &&
             typeof zone === 'string' &&
             isUTCZone(zone) &&
-            urls.every((url) => typeof extractPostgresUrlOptions(url).options === 'undefined')
-        ) {
+            urls.every((url) => typeof extractPostgresUrlOptions(url).options === 'undefined');
+
+        if (matchesTimezoneOptions) {
             return options;
         }
 
@@ -425,6 +450,7 @@ export function applyPostgresTimezone(options: PostgresDataSourceOptions) : Post
     }
 
     const own : PostgresTypes | undefined = extra.types;
+
     if (own && !isDefaultTimestampParsing(own)) {
         throw OptionsError.timezoneConflict('extra.types customises timestamp parsing.');
     }
@@ -433,8 +459,10 @@ export function applyPostgresTimezone(options: PostgresDataSourceOptions) : Post
 
     // session
     let fromUrl : string | undefined;
+
     if (typeof options.url === 'string') {
         const extracted = extractPostgresUrlOptions(options.url);
+
         output.url = extracted.url;
         fromUrl = extracted.options;
     }
@@ -442,19 +470,24 @@ export function applyPostgresTimezone(options: PostgresDataSourceOptions) : Post
     if (typeof extra.connectionString === 'string') {
         // typeorm merges extra last: this string replaces the url entirely
         const extracted = extractPostgresUrlOptions(extra.connectionString);
+
         extra.connectionString = extracted.url;
         fromUrl = extracted.options;
     }
 
     if (options.replication) {
         const nodes = [options.replication.master, ...options.replication.slaves];
-        if (nodes.some((node) => typeof node.url === 'string' && typeof extractPostgresUrlOptions(node.url).options !== 'undefined')) {
+
+        const matchesTimezoneOptions = nodes.some((node) => typeof node.url === 'string' && typeof extractPostgresUrlOptions(node.url).options !== 'undefined');
+
+        if (matchesTimezoneOptions) {
             throw OptionsError.timezoneConflict('a replication node url carries startup options, which can not be combined with the pin.');
         }
     }
 
     let source = 'PGOPTIONS';
     let base = process.env.PGOPTIONS ?? '';
+
     if (typeof fromUrl === 'string') {
         source = 'the connection url';
         base = fromUrl;
@@ -474,6 +507,7 @@ export function applyPostgresTimezone(options: PostgresDataSourceOptions) : Post
             driver.native.Client :
             driver.Client
     );
+
     extra.Client = createPostgresUTCClient(Base);
 
     output.extra = extra;

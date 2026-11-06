@@ -38,6 +38,7 @@ describe.runIf(supportsDatabaseLock(driver))(`src/database/lock (${driver})`, ()
     // two sessions of a test actually compete for the lock.
     async function connect(source: DataSource = dataSource) : Promise<QueryRunner> {
         const queryRunner = source.createQueryRunner();
+
         await queryRunner.connect();
         runners.push(queryRunner);
 
@@ -192,6 +193,7 @@ describe.runIf(supportsDatabaseLock(driver))(`src/database/lock (${driver})`, ()
         await dataSource.query(`CREATE DATABASE IF NOT EXISTS \`${SECOND_DATABASE}\``);
 
         const second = new TypeORMDataSource(createIntegrationDataSourceOptions([], { database: SECOND_DATABASE }));
+
         await second.initialize();
 
         try {

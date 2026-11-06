@@ -30,6 +30,7 @@ describe('src/seeder/utils/file-path.ts', () => {
             expect(result.length).toBeGreaterThanOrEqual(2);
 
             const names = result.map((el) => path.basename(el));
+
             expect(names).toEqual([...names].sort());
         });
     });

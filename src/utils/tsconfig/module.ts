@@ -1,7 +1,7 @@
 import { read } from 'locter';
 import { isObject } from '../object';
 import path from 'node:path';
-import type { TSConfig } from './type';
+import type { TSConfig } from './types';
 
 export async function readTSConfig(input?: string) : Promise<TSConfig> {
     input = input || process.cwd();

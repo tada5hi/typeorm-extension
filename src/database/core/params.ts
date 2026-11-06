@@ -1,6 +1,6 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DriverUtils } from 'typeorm/driver/DriverUtils';
-import type { ConnectionParams } from './type';
+import type { ConnectionParams } from './types';
 
 function readStringOption(options: DataSourceOptions, key: string): string | undefined {
     const record = options as Record<string, any>;
@@ -27,9 +27,11 @@ export function buildConnectionParams(options: DataSourceOptions): ConnectionPar
         case 'mssql':
         case 'oracle':
             driverOptions = DriverUtils.buildDriverOptions(options.replication ? options.replication.master : options);
+
             break;
         case 'mongodb':
             driverOptions = DriverUtils.buildMongoDBDriverOptions(options);
+
             break;
         default:
             driverOptions = DriverUtils.buildDriverOptions(options);

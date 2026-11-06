@@ -114,7 +114,7 @@ One of those round trips runs against `[User, Role]` rather than a single entity
 
 Tests should assert *expected* behavior based on the documented API contracts (CLI options, database create/drop semantics, seeder tracking semantics) — not merely confirm what the implementation currently does. If a test fails after a refactor, first consider whether the test caught a real regression in user-visible behavior.
 
-### Prefer fakes / real in-memory DBs over `jest.fn()` mocks
+### Prefer fakes / real in-memory DBs over `vi.fn()` mocks
 
 The codebase already provides the building blocks:
 
@@ -139,9 +139,9 @@ expect(connectionFactory.statements()).toEqual(['CREATE DATABASE "app"']);
 ```
 
 ```ts
-// Avoid — hand-rolled jest.fn() stubs of TypeORM internals.
+// Avoid — hand-rolled vi.fn() stubs of TypeORM internals.
 // They drift from real behavior and tend to mask bugs.
-const runner = { query: jest.fn(), release: jest.fn() } as any;
+const runner = { query: vi.fn(), release: vi.fn() } as any;
 ```
 
 After mutating `process.env` in a test, call `resetEnv()` from `src/env` to clear the cached `Environment` instance, otherwise the next test sees stale values. For a full process-state teardown (data sources, options, env, factories at once), call `useRuntimeRegistry().reset()` from `src/runtime` (internal module — import it by path in tests).

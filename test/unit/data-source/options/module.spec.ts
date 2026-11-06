@@ -17,6 +17,7 @@ describe('src/data-source/options', () => {
         expect(hasDataSource()).toBeFalsy();
 
         const instance = await useDataSource();
+
         expect(instance.options).toEqual(dataSource.options);
 
         unsetDataSource();

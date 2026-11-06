@@ -31,6 +31,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/drift (${dri
         // start from a known state without dropping the whole schema —
         // oracle refuses that from within a pluggable database
         const queryRunner = dataSource.createQueryRunner();
+
         try {
             await queryRunner.dropTable('user', true, true, true);
             await queryRunner.dropTable('role', true, true, true);
@@ -79,6 +80,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/schema/drift (${dri
             const table = await queryRunner.getTable('user');
             const column = table!.findColumnByName('email')!;
             const next = column.clone();
+
             next.length = '64';
 
             await queryRunner.changeColumn(table!, column, next);
