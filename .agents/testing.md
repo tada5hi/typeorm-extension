@@ -61,7 +61,7 @@ npm run test:integration
 
 The suites bring the schema to a known state by dropping the two fixture tables and running `synchronize(false)` — **not** `synchronize(true)`, which drops the whole schema and which oracle refuses from within a pluggable database (`ORA-65040`).
 
-In CI a `Test (<driver>)` matrix job (`main.yml`) runs the suite against one service container per driver. Because each image ignores the env variables meant for the others, a single `services.database.env` block serves all of them; only image, port, credentials, health command and (for oracle) the retry count come from the matrix.
+In CI a `Test (<driver>)` matrix job (`main.yml`) runs the suite against one service container per driver. MongoDB uses the Ubuntu 22.04 runner because `mongo:8` refuses Linux kernels >=6.19 (SERVER-121912); the other drivers use `ubuntu-latest`. Because each image ignores the env variables meant for the others, a single `services.database.env` block serves all of them; only image, port, credentials, health command and (for oracle) the retry count come from the matrix.
 
 Write assertions in terms the *driver* agrees with, not in terms of one dialect's spelling: `text` is not a type oracle has, `character varying` is what postgres calls a `varchar`, and cockroachdb reports `text` back as `string`. Changing a column's **length** is the one alteration every driver expresses the same way.
 
