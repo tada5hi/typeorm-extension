@@ -1,5 +1,5 @@
 import type { DataSource, DataSourceOptions } from 'typeorm';
-import type { Environment } from '../env/type';
+import type { Environment } from '../env/types';
 import type { SeederFactoryManager } from '../seeder/factory/manager';
 import { AsyncKeyedCache } from './cache';
 

@@ -4,7 +4,7 @@ import type {
     DatabaseDropOperation,
     IDatabaseDialect,
     IFileSystem,
-} from '../type';
+} from '../types';
 import { resolveSQLiteDatabaseDirectory, resolveSQLiteDatabasePath } from './path';
 
 /**

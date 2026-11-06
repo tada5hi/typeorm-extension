@@ -10,10 +10,12 @@ import type {
 
 async function normalizeDataSourceOptions(context: DatabaseBaseContextInput) : Promise<DataSourceOptions> {
     let options : DataSourceOptions | undefined;
+
     if (context.options) {
         options = { ...context.options };
     } else {
         const dataSource = await findDataSource(context.findOptions);
+
         if (dataSource) {
             options = { ...dataSource.options };
         }

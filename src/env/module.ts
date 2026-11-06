@@ -8,7 +8,7 @@ import {
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import { useRuntimeRegistry } from '../runtime';
 import { EnvironmentName, EnvironmentVariableName } from './constants';
-import type { Environment } from './type';
+import type { Environment } from './types';
 import {
     transformCache,
     transformLogging,
@@ -18,6 +18,7 @@ export function useEnv() : Environment;
 export function useEnv<K extends keyof Environment>(key: K) : Environment[K];
 export function useEnv(key?: string) : any {
     const registry = useRuntimeRegistry();
+
     if (typeof registry.env !== 'undefined') {
         if (typeof key === 'string') {
             return registry.env[key as keyof Environment];

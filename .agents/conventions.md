@@ -96,7 +96,7 @@ Common `type`s used in this repo (see `git log`): `feat`, `fix`, `chore`, `build
   - `noUnusedLocals: false`
   - `noUnusedParameters: false`
   - `verbatimModuleSyntax: false`
-- TypeScript **6** is in use. Its public types restructured — `CompilerOptions` / `TypeAcquisition` etc. live under the `ts.*` namespace (`import type ts from 'typescript'` then `ts.CompilerOptions`). Do not use `import type { CompilerOptions } from 'typescript'`; it no longer resolves.
+- TypeScript **6** is in use. Its public types restructured — `CompilerOptions` / `TypeAcquisition` etc. live under the `ts.*` namespace (`import type ts from 'typescript'` then `ts.CompilerOptions`). Do not use `import type { CompilerOptions } from 'typescript'`; it does not resolve.
 - Output: `dist/` (library), `bin/` (CLI). Both are gitignored; only `dist/` and `bin/` ship in the `files` array.
 
 ## Build Output

@@ -2,7 +2,7 @@ import path from 'node:path';
 import { CommandUtils } from 'typeorm/commands/CommandUtils';
 import { MigrationGenerateCommand } from 'typeorm/commands/MigrationGenerateCommand';
 import { resolveFilePath } from '../../utils';
-import type { MigrationGenerateCommandContext, MigrationGenerateResult } from './type';
+import type { MigrationGenerateCommandContext, MigrationGenerateResult } from './types';
 
 /**
  * typeorm keeps the statement escaping, the query-parameter formatting and both file

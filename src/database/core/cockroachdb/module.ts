@@ -3,7 +3,7 @@ import type {
     DatabaseDropOperation,
     IDatabaseConnectionFactory,
     IDatabaseDialect,
-} from '../type';
+} from '../types';
 import {
     buildCockroachDBCreateDatabaseQuery,
     buildCockroachDBDropDatabaseQuery,
@@ -16,6 +16,7 @@ export class CockroachDBDialect implements IDatabaseDialect {
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {
@@ -32,6 +33,7 @@ export class CockroachDBDialect implements IDatabaseDialect {
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {

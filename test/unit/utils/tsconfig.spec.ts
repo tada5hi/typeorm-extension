@@ -8,6 +8,7 @@ describe('src/utils/tsconfig.ts', () => {
         const tsConfig = await readTSConfig(rootPath);
 
         expect(tsConfig.compilerOptions).toBeDefined();
+
         if (tsConfig.compilerOptions) {
             expect(tsConfig.compilerOptions.outDir).toEqual('output');
         }

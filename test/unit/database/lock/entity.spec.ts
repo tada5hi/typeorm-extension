@@ -46,6 +46,7 @@ describe('src/database/lock/entity', () => {
 
     async function readName() : Promise<string | undefined> {
         const role = await dataSource.getRepository(Role).findOneBy({ id: 1 });
+
         return role?.name;
     }
 

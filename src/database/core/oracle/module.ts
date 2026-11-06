@@ -3,7 +3,7 @@ import type {
     DatabaseDropOperation,
     IDatabaseConnectionFactory,
     IDatabaseDialect,
-} from '../type';
+} from '../types';
 import { buildOracleCreateDatabaseQuery } from './statements';
 
 export class OracleDialect implements IDatabaseDialect {
@@ -13,6 +13,7 @@ export class OracleDialect implements IDatabaseDialect {
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {

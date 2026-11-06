@@ -35,6 +35,7 @@ describe('src/seeder/index.ts', () => {
     it('should seed with data-source options', async () => {
         const executor = new SeederExecutor(dataSource);
         let output = await executor.execute();
+
         expect(output.length).toEqual(2);
 
         output = await executor.execute();
@@ -59,11 +60,13 @@ describe('src/seeder/index.ts', () => {
 
     it('should not touch the default alias and seed into the executor data-source', async () => {
         const options = createDataSourceOptions();
+
         Object.assign(options, { database: 'writable/seeder-secondary.sqlite' });
 
         await createDatabase({ options });
 
         const secondary = new DataSource(options);
+
         await secondary.initialize();
 
         try {
@@ -71,15 +74,18 @@ describe('src/seeder/index.ts', () => {
 
             // constructing an executor must not repoint the default alias
             const defaultDataSource = await useDataSource();
+
             expect(defaultDataSource).toBe(dataSource);
 
             await executor.execute({ seeds: [UserSeeder] });
 
             // factory saves belong to the executor's data-source, not the default one
             const secondaryCount = await secondary.getRepository(User).count();
+
             expect(secondaryCount).toBeGreaterThanOrEqual(7);
 
             const defaultCount = await dataSource.getRepository(User).count();
+
             expect(defaultCount).toEqual(0);
         } finally {
             await secondary.destroy();
@@ -89,10 +95,13 @@ describe('src/seeder/index.ts', () => {
 
     it('should seed with explicit definition', async () => {
         const response = await runSeeder(dataSource, UserSeeder);
+
         expect(response).toBeDefined();
 
         const { result } = (response as SeederEntity);
+
         expect(Array.isArray(result)).toBeTruthy();
+
         if (Array.isArray(result)) {
             expect(result.length).toEqual(6);
         }

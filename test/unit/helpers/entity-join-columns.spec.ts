@@ -9,6 +9,7 @@ import { createDataSource } from '../../data/typeorm/factory';
 describe('entity-relation-columns', () => {
     it('should validate entity relation columns', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
@@ -34,6 +35,7 @@ describe('entity-relation-columns', () => {
 
     it('should validate entity nullable relation columns', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
@@ -53,6 +55,7 @@ describe('entity-relation-columns', () => {
 
     it('should not validate entity relation columns', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
@@ -82,14 +85,17 @@ describe('entity-relation-columns', () => {
 
     it('should resolve a fully provided composite relation', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
         try {
             const tenantRepository = dataSource.getRepository(Tenant);
+
             await tenantRepository.save(tenantRepository.create({ region: 'eu', code: 'a' }));
 
             const membership : Partial<Membership> = { tenantRegion: 'eu', tenantCode: 'a' };
+
             await validateEntityJoinColumns(membership, { dataSource, entityTarget: Membership });
 
             expect(membership.tenant).toBeDefined();
@@ -101,16 +107,19 @@ describe('entity-relation-columns', () => {
 
     it('should skip a composite relation which is only partially provided', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
         try {
             const tenantRepository = dataSource.getRepository(Tenant);
+
             await tenantRepository.save(tenantRepository.create({ region: 'eu', code: 'a' }));
 
             // Only one half of the composite foreign key is set. Looking the
             // relation up by that half alone would match an unrelated tenant.
             const membership : Partial<Membership> = { tenantRegion: 'eu' };
+
             await validateEntityJoinColumns(membership, { dataSource, entityTarget: Membership });
 
             expect(membership.tenant).toBeUndefined();

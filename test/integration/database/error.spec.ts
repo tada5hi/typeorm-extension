@@ -58,6 +58,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
         await dataSource.initialize();
 
         const queryRunner = dataSource.createQueryRunner();
+
         try {
             await queryRunner.dropTable('constraint_child', true, true, true);
             await queryRunner.dropTable('constraint_parent', true, true, true);
@@ -84,6 +85,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
         }
 
         const queryRunner = dataSource.createQueryRunner();
+
         try {
             await queryRunner.dropTable('constraint_child', true, true, true);
             await queryRunner.dropTable('constraint_parent', true, true, true);
@@ -98,9 +100,9 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
         const error = await capture(() => dataSource.getRepository(ConstraintParent).insert({ id: 3, name: 'a' }));
 
         expect(classify(error)).toEqual({
-            unique: true, 
-            foreignKey: false, 
-            lock: false, 
+            unique: true,
+            foreignKey: false,
+            lock: false,
         });
     });
 
@@ -108,9 +110,9 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
         const error = await capture(() => dataSource.getRepository(ConstraintParent).insert({ id: 1, name: 'c' }));
 
         expect(classify(error)).toEqual({
-            unique: true, 
-            foreignKey: false, 
-            lock: false, 
+            unique: true,
+            foreignKey: false,
+            lock: false,
         });
     });
 
@@ -118,9 +120,9 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
         const error = await capture(() => dataSource.getRepository(ConstraintChild).insert({ id: 1, parentId: 99 }));
 
         expect(classify(error)).toEqual({
-            unique: false, 
-            foreignKey: true, 
-            lock: false, 
+            unique: false,
+            foreignKey: true,
+            lock: false,
         });
     });
 
@@ -130,9 +132,9 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
         const error = await capture(() => dataSource.getRepository(ConstraintParent).delete({ id: 1 }));
 
         expect(classify(error)).toEqual({
-            unique: false, 
-            foreignKey: true, 
-            lock: false, 
+            unique: false,
+            foreignKey: true,
+            lock: false,
         });
     });
 
@@ -154,6 +156,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
                 .catch(async (e) => {
                     // mssql has already aborted the transaction of its victim
                     await runner.rollbackTransaction().catch(() => undefined);
+
                     throw e;
                 });
 
@@ -167,11 +170,12 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
                 .map((result) => (result as PromiseRejectedResult).reason);
 
             expect(errors.length).toBeGreaterThanOrEqual(1);
+
             for (const error of errors) {
                 expect(classify(error)).toEqual({
-                    unique: false, 
-                    foreignKey: false, 
-                    lock: true, 
+                    unique: false,
+                    foreignKey: false,
+                    lock: true,
                 });
             }
         } finally {
@@ -208,14 +212,15 @@ describe.runIf(driver === 'mongodb')('src/database/error (mongodb)', () => {
 
     it('should classify a duplicate key', async () => {
         const repository = dataSource.getMongoRepository(ConstraintDocument);
+
         await repository.insertOne({ name: 'a' });
 
         const error = await capture(() => repository.insertOne({ name: 'a' }));
 
         expect(classify(error)).toEqual({
-            unique: true, 
-            foreignKey: false, 
-            lock: false, 
+            unique: true,
+            foreignKey: false,
+            lock: false,
         });
     });
 });

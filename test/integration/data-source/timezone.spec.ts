@@ -55,9 +55,11 @@ async function readWallClock(dataSource: DataSource, column: string, id: number)
     switch (driver) {
         case 'postgres':
             rows = await dataSource.query(`SELECT to_char("${column}", 'YYYY-MM-DD"T"HH24:MI:SS') AS "w" FROM "stamp" WHERE "id" = $1`, [id]);
+
             break;
         case 'oracle':
             rows = await dataSource.query(`SELECT TO_CHAR("${column}", 'YYYY-MM-DD"T"HH24:MI:SS') AS "w" FROM "stamp" WHERE "id" = :1`, [id]);
+
             break;
         default:
             rows = await dataSource.query(`SELECT DATE_FORMAT(\`${column}\`, '%Y-%m-%dT%H:%i:%s') AS w FROM \`stamp\` WHERE \`id\` = ?`, [id]);
@@ -90,12 +92,14 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         async function measure(options: DataSourceOptions) : Promise<Measurement> {
             const dataSource = new DataSource(options);
+
             await dataSource.initialize();
 
             try {
                 const repository = dataSource.getRepository(Stamp);
                 const before = Date.now();
                 const written = new Date(before);
+
                 written.setUTCMilliseconds(0);
 
                 const saved = await repository.save(repository.create({ writtenAt: written }));
@@ -116,15 +120,18 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         beforeAll(async () => {
             const options = createIntegrationDataSourceOptions([Stamp]);
+
             admin = new DataSource(options);
             await admin.initialize();
 
             const queryRunner = admin.createQueryRunner();
+
             try {
                 await queryRunner.dropTable('stamp', true, true, true);
             } finally {
                 await queryRunner.release();
             }
+
             await admin.synchronize(false);
 
             if (driver === 'postgres') {
@@ -134,11 +141,13 @@ describe.runIf(supportsDataSourceTimezone(driver))(
                     'WHERE setrole = 0 AND setdatabase = (SELECT oid FROM pg_database WHERE datname = current_database())',
                 );
                 const found = rows.find((row) => /^timezone=/i.test(row.setting));
+
                 previousZone = found ? found.setting.slice(found.setting.indexOf('=') + 1) : undefined;
 
                 await admin.query(`ALTER DATABASE ${quoteIdentifier(String(options.database))} SET timezone TO 'Pacific/Kiritimati'`);
             } else if (driver === 'mysql' || driver === 'mariadb') {
                 const [row] = await admin.query('SELECT @@GLOBAL.time_zone AS zone');
+
                 previousZone = row.zone;
                 await admin.query('SET GLOBAL time_zone = \'+13:00\'');
             }
@@ -160,9 +169,11 @@ describe.runIf(supportsDataSourceTimezone(driver))(
             // each step runs whatever the one before it did: a server left
             // at a foreign default zone would skew every later suite on it
             const { options } = admin;
+
             try {
                 if (driver === 'postgres') {
                     const database = quoteIdentifier(String(options.database));
+
                     await admin.query(typeof previousZone === 'undefined' ?
                         `ALTER DATABASE ${database} RESET timezone` :
                         `ALTER DATABASE ${database} SET timezone TO ${quoteLiteral(previousZone)}`);
@@ -172,6 +183,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
             } finally {
                 try {
                     const queryRunner = admin.createQueryRunner();
+
                     try {
                         await queryRunner.dropTable('stamp', true, true, true);
                     } finally {
@@ -211,6 +223,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
                 createIntegrationDataSourceOptions([Stamp]),
                 'UTC',
             ));
+
             await dataSource.initialize();
 
             return dataSource;
@@ -218,6 +231,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         it('should hand the saved entity its stamped values as UTC', async () => {
             const dataSource = await pinned();
+
             try {
                 const repository = dataSource.getRepository(Stamp);
                 const before = Date.now();
@@ -232,6 +246,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         it('should keep a calendar date as it was written', async () => {
             const dataSource = await pinned();
+
             try {
                 const repository = dataSource.getRepository(Stamp);
                 const saved = await repository.save(repository.create({ day: '2024-01-02' }));
@@ -268,18 +283,23 @@ describe.runIf(supportsDataSourceTimezone(driver))(
             // writes and the stored wall clock go through the master,
             // the find reads back through the slave
             const measurement = await measure(replicated);
+
             expect(Math.abs(measurement.createdAtStored - measurement.before)).toBeLessThan(MINUTE);
             expect(Math.abs(measurement.createdAt - measurement.before)).toBeLessThan(MINUTE);
             expect(measurement.writtenAtStored).toEqual(measurement.written);
             expect(measurement.writtenAt).toEqual(measurement.written);
 
             const dataSource = new DataSource(replicated);
+
             await dataSource.initialize();
+
             try {
                 for (const mode of ['master', 'slave'] as const) {
                     const queryRunner = dataSource.createQueryRunner(mode);
+
                     try {
                         const [row] = await queryRunner.query('SELECT @@SESSION.time_zone AS zone');
+
                         expect(row.zone).toEqual('+00:00');
                     } finally {
                         await queryRunner.release();
@@ -315,12 +335,16 @@ describe.runIf(supportsDataSourceTimezone(driver))(
                     poolSize: 1,
                     extra: { resetOnRelease: true },
                 } as DataSourceOptions, 'UTC'));
+
                 await dataSource.initialize();
+
                 try {
                     for (let i = 0; i < 3; i++) {
                         const queryRunner = dataSource.createQueryRunner(i % 2 === 0 ? 'master' : 'slave');
+
                         try {
                             const [row] = await queryRunner.query('SELECT @@SESSION.time_zone AS zone');
+
                             expect(row.zone).toEqual('+00:00');
                         } finally {
                             await queryRunner.release();
@@ -334,6 +358,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         it.runIf(driver === 'postgres')('should read a timestamp array as UTC', async () => {
             const dataSource = await pinned();
+
             try {
                 const before = Date.now();
                 const [row] = await dataSource.query('SELECT ARRAY[LOCALTIMESTAMP, LOCALTIMESTAMP] AS "values"');
@@ -347,10 +372,13 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         it.runIf(driver === 'postgres')('should send the Date parameters of a stream as UTC', async () => {
             const dataSource = await pinned();
+
             try {
                 const repository = dataSource.getRepository(Stamp);
                 const written = new Date();
+
                 written.setUTCMilliseconds(0);
+
                 const saved = await repository.save(repository.create({ writtenAt: written }));
 
                 const stream = await repository.createQueryBuilder('stamp')
@@ -360,7 +388,10 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
                 const rows : Record<string, any>[] = await new Promise((resolve, reject) => {
                     const collected : Record<string, any>[] = [];
-                    stream.on('data', (row: Record<string, any>) => { collected.push(row); });
+
+                    stream.on('data', (row: Record<string, any>) => {
+                        collected.push(row);
+                    });
                     stream.on('end', () => resolve(collected));
                     stream.on('error', reject);
                 });
@@ -378,14 +409,17 @@ describe.runIf(supportsDataSourceTimezone(driver))(
                 '?options=-c%20search_path%3Dpublic';
 
             const fromUrl = new DataSource(pinTimezone({
-                type: 'postgres', 
-                url, 
-                entities: [Stamp], 
+                type: 'postgres',
+                url,
+                entities: [Stamp],
             }, 'UTC'));
+
             await fromUrl.initialize();
+
             try {
                 const [zone] = await fromUrl.query('SHOW timezone');
                 const [path] = await fromUrl.query('SHOW search_path');
+
                 expect(zone.TimeZone).toEqual('UTC');
                 expect(path.search_path).toEqual('public');
             } finally {
@@ -393,12 +427,16 @@ describe.runIf(supportsDataSourceTimezone(driver))(
             }
 
             const previous = process.env.PGOPTIONS;
+
             process.env.PGOPTIONS = '-c statement_timeout=12345';
+
             try {
                 const fromEnv = await pinned();
+
                 try {
                     const [zone] = await fromEnv.query('SHOW timezone');
                     const [timeout] = await fromEnv.query('SHOW statement_timeout');
+
                     expect(zone.TimeZone).toEqual('UTC');
                     expect(timeout.statement_timeout).toEqual('12345ms');
                 } finally {
@@ -415,11 +453,14 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         it.runIf(driver === 'oracle')('should bind executeMany rows as UTC', async () => {
             const dataSource = await pinned();
+
             try {
                 const written = new Date();
+
                 written.setUTCMilliseconds(0);
 
                 const connection = await (dataSource.driver as any).master.getConnection();
+
                 try {
                     await connection.executeMany(
                         'INSERT INTO "stamp" ("writtenAt") VALUES (:1)',
@@ -431,6 +472,7 @@ describe.runIf(supportsDataSourceTimezone(driver))(
                 }
 
                 const rows = await dataSource.getRepository(Stamp).findBy({ writtenAt: written });
+
                 expect(rows.length).toBeGreaterThanOrEqual(2);
                 expect(await readWallClock(dataSource, 'writtenAt', rows[0].id)).toEqual(written.getTime());
             } finally {
@@ -440,8 +482,10 @@ describe.runIf(supportsDataSourceTimezone(driver))(
 
         it.runIf(driver === 'oracle')('should compare a Date parameter without converting the column', async () => {
             const dataSource = await pinned();
+
             try {
                 await dataSource.query('SELECT /* timezone-plan */ "id" FROM "stamp" WHERE "writtenAt" > :1', [new Date(0)]);
+
                 const plan : { l: string }[] = await dataSource.query(
                     'SELECT plan_table_output AS "l" FROM TABLE(DBMS_XPLAN.DISPLAY_CURSOR(' +
                     '(SELECT sql_id FROM v$sql WHERE sql_text LIKE \'SELECT /* timezone-plan */%\' AND ROWNUM = 1), NULL, \'BASIC +PREDICATE\'))',

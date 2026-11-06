@@ -9,7 +9,7 @@ import {
     buildRenameForeignKeyQuery,
     buildRenameIndexQuery,
 } from './statements';
-import type { SchemaDialect, SchemaRenameForeignKeyInput } from './type';
+import type { SchemaDialect, SchemaRenameForeignKeyInput } from './types';
 import { findTableForeignKey, findTableIndex, isStrict } from './utils';
 
 /**
@@ -30,6 +30,7 @@ async function alignForeignKeyBackingIndex(
     input: SchemaRenameForeignKeyInput,
 ) : Promise<void> {
     const table = await queryRunner.getTable(input.table);
+
     if (!table || !findTableIndex(table, input.from)) {
         return;
     }
@@ -54,6 +55,7 @@ async function recreateForeignKey(
     input: SchemaRenameForeignKeyInput,
 ) : Promise<boolean> {
     const { meta } = input;
+
     if (!meta) {
         if (isStrict(input)) {
             throw SchemaAlterationError.foreignKeyNotFound(input.table, input.from);
@@ -108,6 +110,7 @@ export async function renameForeignKey(
     const dialect = resolveSchemaDialect(queryRunner.dataSource.options.type);
 
     const table = await queryRunner.getTable(input.table);
+
     if (!table) {
         if (isStrict(input)) {
             throw SchemaAlterationError.tableNotFound(input.table);
@@ -121,6 +124,7 @@ export async function renameForeignKey(
     }
 
     const foreignKey = findTableForeignKey(table, input.from);
+
     if (!foreignKey) {
         return recreateForeignKey(queryRunner, dialect, input);
     }

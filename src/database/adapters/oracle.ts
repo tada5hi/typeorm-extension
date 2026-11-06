@@ -79,6 +79,7 @@ export class OracleConnectionFactory implements IDatabaseConnectionFactory {
                 }
 
                 const current = connection;
+
                 connection = undefined;
                 await current.close();
             },

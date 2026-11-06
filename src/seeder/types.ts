@@ -2,6 +2,8 @@ import type { DataSource } from 'typeorm';
 import type { TSConfig } from '../utils/tsconfig';
 import type { SeederFactoryItem, SeederFactoryManager } from './factory';
 
+// Public interface name supports downstream declaration merging.
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export interface Seeder {
     /**
      * Track seeder execution.

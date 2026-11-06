@@ -6,7 +6,7 @@ import type {
     MysqlModule,
     MysqlPoolCluster,
     MysqlPoolConnectionCallback,
-} from './type';
+} from './types';
 import { isInstalled, markInstalled } from './utils';
 
 const MYSQL_SESSION_TIMEZONE_SQL = 'SET time_zone = \'+00:00\'';
@@ -30,9 +30,11 @@ function repinMysqlConnectionOnReset(connection: MysqlConnection) : void {
     }
 
     const reset = connection.reset.bind(connection);
+
     connection.reset = (callback) => reset((err) => {
         if (err) {
             callback(err);
+
             return;
         }
 
@@ -58,14 +60,17 @@ function pinMysqlPoolCluster<T extends MysqlPoolCluster>(cluster: T) : T {
 
     cluster.of = (...args: any[]) => {
         const namespace = of(...args);
+
         if (wrapped.has(namespace)) {
             return namespace;
         }
 
         const getConnection = namespace.getConnection.bind(namespace);
+
         namespace.getConnection = (callback: MysqlPoolConnectionCallback) => getConnection((err, connection) => {
             if (err || !connection || pinned.has(connection)) {
                 callback(err, connection);
+
                 return;
             }
 
@@ -73,6 +78,7 @@ function pinMysqlPoolCluster<T extends MysqlPoolCluster>(cluster: T) : T {
                 if (queryError) {
                     connection.destroy();
                     callback(queryError);
+
                     return;
                 }
 
@@ -101,6 +107,7 @@ export function createMysqlUTCDriver<T extends MysqlModule>(driver: T) : T {
         ...driver,
         createPool(...args: any[]) {
             const pool = driver.createPool(...args);
+
             pool.on('connection', (connection) => {
                 repinMysqlConnectionOnReset(connection);
                 connection.query(MYSQL_SESSION_TIMEZONE_SQL, (err) => {
@@ -123,6 +130,7 @@ export function createMysqlUTCDriver<T extends MysqlModule>(driver: T) : T {
 function readSetting<K extends string>(options: Record<string, any>, key: K) : unknown {
     // typeorm merges `extra` over the options it passes to mysql2
     const extra = options.extra ?? {};
+
     return typeof extra[key] !== 'undefined' ? extra[key] : options[key];
 }
 
@@ -144,6 +152,7 @@ export function applyMysqlTimezone(options: MysqlDataSourceOptions) : MysqlDataS
     if (isInstalled(options.driver)) {
         const timezone = readSetting(options, 'timezone');
         const dateStrings = readSetting(options, 'dateStrings');
+
         if (
             timezone === 'Z' &&
             Array.isArray(dateStrings) &&
@@ -158,6 +167,7 @@ export function applyMysqlTimezone(options: MysqlDataSourceOptions) : MysqlDataS
     }
 
     const timezone = readSetting(options, 'timezone');
+
     if (
         typeof timezone !== 'undefined' &&
         !(typeof timezone === 'string' && MYSQL_UTC_TIMEZONE.test(timezone))
@@ -166,11 +176,12 @@ export function applyMysqlTimezone(options: MysqlDataSourceOptions) : MysqlDataS
     }
 
     const dateStrings = readSetting(options, 'dateStrings');
-    if (
-        typeof dateStrings !== 'undefined' &&
+
+    const matchesTimezoneOptions = typeof dateStrings !== 'undefined' &&
         dateStrings !== false &&
-        !(Array.isArray(dateStrings) && dateStrings.every((type) => type === 'DATE'))
-    ) {
+        !(Array.isArray(dateStrings) && dateStrings.every((type) => type === 'DATE'));
+
+    if (matchesTimezoneOptions) {
         throw OptionsError.timezoneConflict('mysql dateStrings would hand DATETIME or TIMESTAMP values over as zone-less strings.');
     }
 
@@ -180,6 +191,7 @@ export function applyMysqlTimezone(options: MysqlDataSourceOptions) : MysqlDataS
 
     const driver = options.driver ?? PlatformTools.load('mysql2');
     const extra = { ...(options.extra ?? {}) };
+
     delete extra.timezone;
     delete extra.dateStrings;
 

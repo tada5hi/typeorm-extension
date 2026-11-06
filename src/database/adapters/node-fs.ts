@@ -10,6 +10,7 @@ export class NodeFileSystem implements IFileSystem {
     async isFileWritable(path: string): Promise<boolean> {
         try {
             await fs.promises.access(path, fs.constants.F_OK | fs.constants.W_OK);
+
             return true;
         } catch (error) {
             if (hasErrorCode(error, 'ENOENT')) {
@@ -27,6 +28,7 @@ export class NodeFileSystem implements IFileSystem {
     async removeFile(path: string): Promise<boolean> {
         try {
             await fs.promises.unlink(path);
+
             return true;
         } catch (error) {
             if (hasErrorCode(error, 'ENOENT')) {

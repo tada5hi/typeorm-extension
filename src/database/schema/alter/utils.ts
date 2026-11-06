@@ -1,6 +1,6 @@
 import type { Table, TableColumn } from 'typeorm';
 import { isObject } from '../../../utils';
-import type { SchemaColumnType, SchemaStrictInput } from './type';
+import type { SchemaColumnDescriber, SchemaColumnType, SchemaStrictInput  } from './types';
 
 /**
  * Guarded alterations raise on an unexpected database state unless told
@@ -29,6 +29,7 @@ export function isForeignKeyChecksEnabled(rows: unknown) : boolean {
     }
 
     const [row] = rows;
+
     if (!isObject(row)) {
         return true;
     }
@@ -49,21 +50,6 @@ export function normalizeColumnLength(length?: string | number | null) : string 
 
     return `${length}`;
 }
-
-export type SchemaColumnDescriber = {
-    /**
-     * The driver's own spelling of a type, e.g. varchar -> character varying.
-     */
-    normalizeType: (type: string) => string,
-    /**
-     * The full type the server would report, e.g. varchar + 255 ->
-     * varchar(255). Resolves the default length of a type, which the driver
-     * leaves empty on the loaded column: mysql reports a `varchar(255)` as
-     * length `''` for a table it has no entity metadata for, and comparing the
-     * raw values would call that a mismatch.
-     */
-    describeType: (type: string, length?: string | number) => string,
-};
 
 /**
  * Whether a column still matches a (partial) type description.
@@ -93,3 +79,4 @@ export function matchesColumnType(
 
     return typeof input.nullable !== 'boolean' || input.nullable === column.isNullable;
 }
+export type { SchemaColumnDescriber };

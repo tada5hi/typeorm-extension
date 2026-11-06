@@ -1,7 +1,7 @@
 import type {
-    DataSource, 
-    EntityTarget, 
-    FindOptionsWhere, 
+    DataSource,
+    EntityTarget,
+    FindOptionsWhere,
     ObjectLiteral,
 } from 'typeorm';
 import { useDataSource } from '../../data-source';
@@ -29,6 +29,7 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
     const entityMetadata = await getEntityMetadata(options.entityTarget, dataSource);
 
     const relations : Partial<T> = {};
+
     for (let i = 0; i < entityMetadata.relations.length; i++) {
         const relation = entityMetadata.relations[i];
 
@@ -36,8 +37,10 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
 
         const where : FindOptionsWhere<ObjectLiteral> = {};
         const columns : string[] = [];
+
         for (let j = 0; j < relation.joinColumns.length; j++) {
             const joinColumn = relation.joinColumns[j];
+
             if (typeof entity[joinColumn.propertyName] === 'undefined') {
                 continue;
             }
@@ -47,6 +50,7 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
                 entity[joinColumn.propertyName] === null
             ) {
                 skipRelation = true;
+
                 break;
             }
 
@@ -65,13 +69,8 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
         // Nothing to look the relation up by. A relation which does not own the
         // foreign key (one-to-many, ...) never has join columns, and querying
         // without a condition would match an arbitrary row.
-        if (skipRelation || columns.length === 0) {
-            continue;
-        }
-
-        // A composite foreign key can only be looked up if every join column is
-        // provided. Querying by a subset of them could match an unrelated row.
-        if (columns.length !== relation.joinColumns.length) {
+        // Composite foreign keys also require every join column to avoid matching an unrelated row.
+        if (skipRelation || columns.length === 0 || columns.length !== relation.joinColumns.length) {
             continue;
         }
 
@@ -86,6 +85,7 @@ export async function validateEntityJoinColumns<T extends ObjectLiteral>(
     }
 
     const relationKeys = Object.keys(relations);
+
     for (const relationKey of relationKeys) {
         entity[relationKey as keyof T] = relations[relationKey] as T[keyof T];
     }

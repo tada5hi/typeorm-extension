@@ -2,7 +2,7 @@ import type { Driver, QueryRunner, TableColumn } from 'typeorm';
 import { DriverError, SchemaAlterationError } from '../../../errors';
 import { findSchemaColumnDialect } from './dialect';
 import { buildChangeColumnTypeQueries } from './statements';
-import type { SchemaChangeColumnTypeInput, SchemaColumnDefinition } from './type';
+import type { SchemaChangeColumnTypeInput, SchemaColumnDefinition } from './types';
 import type { SchemaColumnDescriber } from './utils';
 import { isStrict, matchesColumnType, normalizeColumnLength } from './utils';
 
@@ -70,6 +70,7 @@ export async function changeColumnType(
     input: SchemaChangeColumnTypeInput,
 ) : Promise<boolean> {
     const table = await queryRunner.getTable(input.table);
+
     if (!table) {
         if (isStrict(input)) {
             throw SchemaAlterationError.tableNotFound(input.table);
@@ -79,6 +80,7 @@ export async function changeColumnType(
     }
 
     const column = table.findColumnByName(input.column);
+
     if (!column) {
         if (isStrict(input)) {
             throw SchemaAlterationError.columnNotFound(input.table, input.column);
@@ -93,6 +95,7 @@ export async function changeColumnType(
         normalizeType,
         describeType: (type, length) => {
             const probe = column.clone();
+
             probe.type = normalizeType(type);
             probe.length = normalizeColumnLength(length);
 
@@ -114,6 +117,7 @@ export async function changeColumnType(
     }
 
     const next = column.clone();
+
     next.type = normalizeType(input.to.type);
 
     if (typeof input.to.length !== 'undefined') {

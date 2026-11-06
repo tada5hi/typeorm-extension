@@ -24,6 +24,7 @@ export default class UserSeeder implements Seeder {
         const items : User[] = [];
 
         const userFactory = factoryManager.get(User);
+
         userFactory.setMeta({ foo: 'bar' });
 
         // save 1 factory generated entity, to the database

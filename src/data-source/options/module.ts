@@ -2,7 +2,7 @@ import type { DataSourceOptions } from 'typeorm';
 import { OptionsError } from '../../errors';
 import { PathResolverMode, createPathResolver } from '../../utils';
 import { findDataSource } from '../find';
-import type { DataSourceOptionsBuildContext } from './type';
+import type { DataSourceOptionsBuildContext } from './types';
 import {
     mergeDataSourceOptionsWithEnv,
     readDataSourceOptionsFromEnv,
@@ -42,6 +42,7 @@ export async function buildDataSourceOptions(
     }
 
     const options = readDataSourceOptionsFromEnv();
+
     if (options) {
         return pathResolver.transformKeys(
             options,

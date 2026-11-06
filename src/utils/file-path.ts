@@ -17,6 +17,7 @@ export function transformFilePath(
 ): string {
     let separator = path.sep;
     const windowsSeparatorReplaceable = canReplaceWindowsSeparator(input);
+
     if (windowsSeparatorReplaceable) {
         separator = '/';
         input = replaceWindowSeparator(input);
@@ -24,6 +25,7 @@ export function transformFilePath(
 
     let base = input;
     let baseIndex = input.lastIndexOf(separator);
+
     if (baseIndex !== -1) {
         base = base.substring(baseIndex + 1);
     }
@@ -35,6 +37,7 @@ export function transformFilePath(
 
         src = withoutTrailingSlash(stripLeadingModifier(src));
     }
+
     src = src || 'src';
 
     if (dist) {
@@ -44,6 +47,7 @@ export function transformFilePath(
 
         dist = withoutTrailingSlash(stripLeadingModifier(dist));
     }
+
     dist = dist || 'dist';
 
     if (
@@ -52,6 +56,7 @@ export function transformFilePath(
     ) {
         const lastIndex = input.lastIndexOf(src);
         const prevCharacter = input.substring(lastIndex - 1, lastIndex);
+
         if (!prevCharacter || prevCharacter === separator) {
             input = input.substring(0, lastIndex) +
                 dist +
@@ -68,15 +73,18 @@ export function transformFilePath(
     // anywhere in the basename — `my-json.ts` must still be transformable),
     // we are done.
     const jsExtensionRegex = /(?:^|[./{,])(?:js|cjs|mjs)(?:[}.,]|$)/;
+
     if (jsExtensionRegex.test(base)) {
         return input;
     }
 
     const tsExtensions = ['ts', 'cts', 'mts'];
+
     for (const [i, tsExtension] of tsExtensions.entries()) {
         const regex = new RegExp(`(\\.${tsExtension}|${tsExtension})`, 'g');
         let matchesSum: number | undefined;
         const matches = base.match(regex);
+
         if (Array.isArray(matches)) {
             matchesSum = matches.length;
         }
@@ -84,6 +92,7 @@ export function transformFilePath(
         let matchesCounter = 0;
 
         const bracketIndex = base.lastIndexOf('{');
+
         base = base.replace(
             regex,
             (...args) => {

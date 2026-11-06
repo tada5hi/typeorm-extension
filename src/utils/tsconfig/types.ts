@@ -14,6 +14,8 @@ export type StripEnums<T extends Record<string, any>> = {
                         any;
 };
 
+// Public interface name supports downstream declaration merging.
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export interface TSConfig {
     compilerOptions?: StripEnums<CompilerOptions>;
     exclude?: string[];

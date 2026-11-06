@@ -87,6 +87,7 @@ export class PostgresConnectionFactory implements IDatabaseConnectionFactory {
                 }
 
                 const current = client;
+
                 client = undefined;
                 await current.end();
             },

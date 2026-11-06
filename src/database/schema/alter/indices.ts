@@ -2,7 +2,7 @@ import type { QueryRunner } from 'typeorm';
 import { SchemaAlterationError } from '../../../errors';
 import { resolveSchemaDialect } from './dialect';
 import { buildRenameIndexQuery } from './statements';
-import type { SchemaRenameIndexInput } from './type';
+import type { SchemaRenameIndexInput } from './types';
 import { findTableIndex, isStrict } from './utils';
 
 /**
@@ -31,6 +31,7 @@ export async function renameIndex(
     const dialect = resolveSchemaDialect(queryRunner.dataSource.options.type);
 
     const table = await queryRunner.getTable(input.table);
+
     if (!table) {
         if (isStrict(input)) {
             throw SchemaAlterationError.tableNotFound(input.table);

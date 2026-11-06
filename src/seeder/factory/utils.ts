@@ -3,10 +3,11 @@ import type { EntitySchema, ObjectType } from 'typeorm';
 import { useRuntimeRegistry } from '../../runtime';
 import { resolveFilePaths, resolveFilePatterns } from '../utils';
 import { SeederFactoryManager } from './manager';
-import type { FactoryCallback, SeederFactoryItem } from './type';
+import type { FactoryCallback, SeederFactoryItem } from './types';
 
 export function useSeederFactoryManager() {
     const registry = useRuntimeRegistry();
+
     if (typeof registry.factories === 'undefined') {
         registry.factories = new SeederFactoryManager();
     }
@@ -23,6 +24,7 @@ export function setSeederFactory<O extends Record<string, any>, Meta = unknown>(
     factoryFn: FactoryCallback<O, Meta>,
 ) : SeederFactoryItem {
     const manager = useSeederFactoryManager();
+
     return manager.set(entity, factoryFn);
 }
 
@@ -30,6 +32,7 @@ export function useSeederFactory<O extends Record<string, any>, Meta = unknown>(
     entity: ObjectType<O> | EntitySchema<O>,
 ) {
     const manager = useSeederFactoryManager();
+
     return manager.get<O, Meta>(entity);
 }
 
@@ -57,14 +60,16 @@ export async function prepareSeederFactories(
         }
     }
 
-    if (factoryConfigs.length > 0) {
-        const factoryManager = useSeederFactoryManager();
+    if (factoryConfigs.length === 0) {
+        return;
+    }
 
-        for (const factoryConfig of factoryConfigs) {
-            factoryManager.set(
-                factoryConfig.entity,
-                factoryConfig.factoryFn,
-            );
-        }
+    const factoryManager = useSeederFactoryManager();
+
+    for (const factoryConfig of factoryConfigs) {
+        factoryManager.set(
+            factoryConfig.entity,
+            factoryConfig.factoryFn,
+        );
     }
 }

@@ -3,7 +3,7 @@ import type {
     DatabaseDropOperation,
     IDatabaseConnectionFactory,
     IDatabaseDialect,
-} from '../type';
+} from '../types';
 import {
     MYSQL_FOREIGN_KEY_CHECKS_OFF,
     MYSQL_FOREIGN_KEY_CHECKS_ON,
@@ -21,6 +21,7 @@ export class MySQLDialect implements IDatabaseDialect {
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {
@@ -34,6 +35,7 @@ export class MySQLDialect implements IDatabaseDialect {
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {

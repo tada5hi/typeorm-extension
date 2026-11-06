@@ -1,2 +1,2 @@
 export { pinTimezone } from './module';
-export type { DataSourceTimezone } from './type';
+export type { DataSourceTimezone } from './types';

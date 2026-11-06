@@ -8,11 +8,11 @@ import {
     parseFilePath,
 } from '../../../utils';
 import { runWithExitCode } from '../../exit';
-import { 
-    CLIUserError, 
-    LOG_LEVEL_VALUES, 
-    createLogger, 
-    normalizeLogLevel, 
+import {
+    CLIUserError,
+    LOG_LEVEL_VALUES,
+    createLogger,
+    normalizeLogLevel,
 } from '../../logger';
 
 export function defineCLIDatabaseDriftCommand() {
@@ -59,6 +59,7 @@ export function defineCLIDatabaseDriftCommand() {
         },
         async run({ args }) {
             const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+
             await runWithExitCode(logger, async () => {
                 logger.info('Checking schema drift');
 
@@ -73,7 +74,9 @@ export function defineCLIDatabaseDriftCommand() {
                 const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
+
                 const pad = 'directory'.length;
+
                 logger.kv('directory', source.directory, pad);
                 logger.kv('name', source.name, pad);
 
@@ -95,6 +98,7 @@ export function defineCLIDatabaseDriftCommand() {
                 }
 
                 logger.section('Statements');
+
                 for (let i = 0; i < drift.up.length; i++) {
                     const statement = drift.up[i];
 

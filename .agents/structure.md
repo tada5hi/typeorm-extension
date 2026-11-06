@@ -92,8 +92,8 @@ typeorm-extension/
 
 | Dependency           | Role                                                                                          |
 |----------------------|-----------------------------------------------------------------------------------------------|
-| `typeorm` (peer)     | The ORM being extended. Requires `^1.1.0` (TypeORM 0.3 is no longer supported).                |
-| `locter`             | Glob + file loading (used to discover data-source / seed / factory files).                    |
+| `typeorm` (peer)     | The ORM being extended. Requires `^1.1.0` (TypeORM 0.3 is unsupported).                |
+| `locter`             | Glob + file loading (for discovering data-source / seed / factory files).                    |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |
 | `smob`               | Object merge utility (deep merge of data-source options).                                     |
@@ -127,7 +127,7 @@ export * from './seeder';
 export * from './utils';
 ```
 
-CLI command factories are **not** part of the public barrel — they are internal to the CLI bundle. Consumers who want to embed a command into their own citty pipeline should fork or copy it; that surface is no longer a public API contract.
+CLI command factories are **not** part of the public barrel — they are internal to the CLI bundle. Consumers who want to embed a command into their own citty pipeline should fork or copy it; that surface is outside the public API contract.
 
 `src/cli/index.ts` is **not** in the public barrel — it is the executable entry, bundled separately into `bin/cli.mjs` by tsdown. A tsdown plugin (`cliRewriteExternal` in `tsdown.config.ts`) rewrites cross-domain imports inside `src/cli/` to import from `typeorm-extension` itself, so the CLI bundle stays small AND shares singleton state (data-source registry, env cache, factory manager) with the library that consumers import directly.
 

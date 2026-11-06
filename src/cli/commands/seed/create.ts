@@ -7,11 +7,11 @@ import process from 'node:process';
 import { pascalCase } from 'pascal-case';
 import { buildSeederFileName, buildSeederFileTemplate } from '../../../seeder';
 import { runWithExitCode } from '../../exit';
-import { 
-    CLIUserError, 
-    LOG_LEVEL_VALUES, 
-    createLogger, 
-    normalizeLogLevel, 
+import {
+    CLIUserError,
+    LOG_LEVEL_VALUES,
+    createLogger,
+    normalizeLogLevel,
 } from '../../logger';
 
 export function defineCLISeedCreateCommand() {
@@ -53,6 +53,7 @@ export function defineCLISeedCreateCommand() {
         },
         async run({ args }) {
             const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+
             await runWithExitCode(logger, async () => {
                 logger.info('Creating seeder file');
 
@@ -66,6 +67,7 @@ export function defineCLISeedCreateCommand() {
                 const sourcePath = parseFilePath(args.name, args.root);
 
                 const dirNameIsDirectory = await isDirectory(sourcePath.directory);
+
                 if (!dirNameIsDirectory) {
                     throw new CLIUserError(
                         `The output directory ${sourcePath.directory} does not exist.`,
@@ -79,7 +81,9 @@ export function defineCLISeedCreateCommand() {
                 const template = buildSeederFileTemplate(nameWithoutExtension, timestamp);
 
                 logger.section('Seed');
+
                 const pad = 'directory'.length;
+
                 logger.kv('directory', sourcePath.directory, pad);
                 logger.kv('fileName', fileName, pad);
                 logger.kv('name', pascalCase(nameWithoutExtension), pad);

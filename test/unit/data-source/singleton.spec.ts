@@ -27,6 +27,7 @@ describe('src/data-source/singleton.ts', () => {
         expect(hasDataSource()).toBeTruthy();
 
         let instance = await useDataSource();
+
         expect(instance).toEqual(dataSource);
 
         instance = await useDataSource();
@@ -45,6 +46,7 @@ describe('src/data-source/singleton.ts', () => {
         expect(hasDataSource('foo')).toBeTruthy();
 
         const instance = await useDataSource('foo');
+
         expect(instance).toEqual(dataSource);
 
         unsetDataSource('foo');

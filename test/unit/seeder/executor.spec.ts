@@ -49,12 +49,14 @@ describe('src/seeder/executor.ts', () => {
             seeds: [UserSeeder],
             seedTableName: 'custom_seed_table',
         });
+
         expect(output.length).toEqual(1);
 
         expect(await findTable(dataSource, 'custom_seed_table')).toHaveLength(1);
         expect(await findTable(dataSource, 'seeds')).toHaveLength(0);
 
         const rows = await dataSource.query('SELECT name FROM custom_seed_table');
+
         expect(rows).toHaveLength(1);
         expect(rows[0].name).toEqual('UserSeeder');
     });
@@ -65,6 +67,7 @@ describe('src/seeder/executor.ts', () => {
         const executor = new SeederExecutor(dataSource);
 
         let output = await executor.execute({ seeds: [UntrackedSeeder] });
+
         expect(output.length).toEqual(1);
 
         output = await executor.execute({ seeds: [UntrackedSeeder] });
@@ -78,6 +81,7 @@ describe('src/seeder/executor.ts', () => {
             seeds: [UntrackedSeeder],
             seedTracking: true,
         });
+
         expect(output.length).toEqual(1);
 
         output = await executor.execute({
@@ -122,6 +126,7 @@ describe('src/seeder/executor.ts', () => {
             seeds: [TimestampSeeder1700000000000],
             seedTracking: true,
         });
+
         expect(output.length).toEqual(1);
         expect(output[0].timestamp).toEqual(1700000000000);
 

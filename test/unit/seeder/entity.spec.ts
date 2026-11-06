@@ -93,6 +93,7 @@ describe('src/seeder/entity.ts', () => {
             ];
 
             const sorted = [...entities].sort(SeederEntity.compare);
+
             expect(sorted.map((entity) => entity.fileName)).toEqual([
                 'a-seed.ts',
                 'b-seed.ts',

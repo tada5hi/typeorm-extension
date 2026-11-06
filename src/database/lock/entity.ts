@@ -8,7 +8,7 @@ import type {
 import { InstanceChecker } from 'typeorm';
 import { DriverError, OptionsError } from '../../errors';
 import { isObject } from '../../utils';
-import type { EntityLockOptions } from './type';
+import type { EntityLockOptions } from './types';
 
 /**
  * Drivers for which typeorm emits a row lock (FOR UPDATE, on mssql an UPDLOCK
@@ -45,6 +45,7 @@ export async function withLockedEntity<T extends ObjectLiteral, R>(
     const manager = InstanceChecker.isDataSource(source) ? source.manager : source;
     const { type } = manager.dataSource.options;
     const locked = DRIVERS.includes(type);
+
     if (!locked && options.strict !== false) {
         throw DriverError.lockNotSupported(type);
     }
@@ -64,6 +65,7 @@ export async function withLockedEntity<T extends ObjectLiteral, R>(
             (isObject(value) || Array.isArray(value)) &&
             !InstanceChecker.isFindOperator(value);
     });
+
     if (relation) {
         throw OptionsError.lockWhereRelation(relation);
     }
@@ -77,6 +79,7 @@ export async function withLockedEntity<T extends ObjectLiteral, R>(
             relationLoadStrategy: 'query',
             ...(locked ? { lock: { mode: 'pessimistic_write', onLocked: options.onLocked } } : {}),
         });
+
         if (!entity) {
             return null;
         }

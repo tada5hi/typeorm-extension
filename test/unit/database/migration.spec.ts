@@ -74,11 +74,13 @@ async function executeMigrationFile(
 
         try {
             await migration.up(queryRunner);
+
             for (const tableName of tableNames) {
                 expect(await queryRunner.hasTable(tableName)).toBeTruthy();
             }
 
             await migration.down(queryRunner);
+
             for (const tableName of tableNames) {
                 expect(await queryRunner.hasTable(tableName)).toBeFalsy();
             }
@@ -172,6 +174,7 @@ describe('src/database/migration', () => {
         }));
 
         const filePath = path.join(directoryPath, '1-add-role.ts');
+
         expect(fs.existsSync(filePath)).toBeTruthy();
 
         await executeMigrationFile(filePath);
@@ -188,6 +191,7 @@ describe('src/database/migration', () => {
         }));
 
         const filePath = path.join(directoryPath, '1-add-role.js');
+
         expect(fs.existsSync(filePath)).toBeTruthy();
 
         await executeMigrationFile(filePath);
@@ -206,6 +210,7 @@ describe('src/database/migration', () => {
 
         // the package is esm, so a commonjs migration only loads under the cjs extension.
         const filePath = path.join(directoryPath, '1-add-role.cjs');
+
         await fs.promises.writeFile(filePath, output.content as string);
 
         await executeMigrationFile(filePath);
@@ -220,6 +225,7 @@ describe('src/database/migration', () => {
         }));
 
         const filePath = path.join(directoryPath, '1-add-user.ts');
+
         expect(fs.existsSync(filePath)).toBeTruthy();
 
         // The foreign key makes sqlite rebuild the table instead of just creating it, so down()
@@ -235,6 +241,7 @@ describe('src/database/migration', () => {
         }));
 
         const [statement] = output.up;
+
         expect(statement).toContain('\\`\\${danger}\\`\\\\');
         expect(statement).not.toContain('`${danger}`');
     });

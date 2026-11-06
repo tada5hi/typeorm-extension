@@ -57,6 +57,7 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
 
     async function readStatus(id: number) : Promise<string | undefined> {
         const item = await dataSource.getRepository(LockItem).findOneBy({ id });
+
         return item?.status;
     }
 
@@ -82,6 +83,7 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
         await dataSource.initialize();
 
         const queryRunner = dataSource.createQueryRunner();
+
         try {
             await queryRunner.dropTable('lock_item', true);
             await queryRunner.dropTable('lock_owner', true);
@@ -98,14 +100,14 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
         await dataSource.getRepository(LockItem).clear();
         await dataSource.getRepository(LockItem).insert([
             {
-                id: 1, 
-                status: 'draft', 
-                owner: { id: 1 }, 
+                id: 1,
+                status: 'draft',
+                owner: { id: 1 },
             },
             {
-                id: 2, 
-                status: 'draft', 
-                owner: null, 
+                id: 2,
+                status: 'draft',
+                owner: null,
             },
         ]);
     });
@@ -116,6 +118,7 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
         }
 
         const queryRunner = dataSource.createQueryRunner();
+
         try {
             await queryRunner.dropTable('lock_item', true);
             await queryRunner.dropTable('lock_owner', true);
@@ -131,6 +134,7 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
         const entered = Promise.withResolvers<void>();
 
         const first = publish(hold.promise, entered.resolve);
+
         await entered.promise;
 
         // the second caller has to wait for the first transaction to end,
@@ -139,6 +143,7 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
         const second = publish(undefined, () => {
             entered2 = true;
         });
+
         try {
             await delay(500);
             // proof that its read waited, rather than ran before the first committed
@@ -168,6 +173,7 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
             // the eager relation is loaded, outside the locked query
             // (cockroachdb reads an int back as a string)
             expect(Number(item.owner?.id)).toBe(1);
+
             return item.status === 'published';
         });
 
@@ -195,6 +201,7 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
             if (driver !== 'mssql') {
                 // the inner row stays locked until the outer transaction ends
                 const error = await capture(withLockedEntity(dataSource, LockItem, { id: 2 }, () => 'x', { onLocked: 'nowait' }));
+
                 expect(isDatabaseLockConflictError(error)).toBe(true);
             }
 
@@ -211,10 +218,12 @@ describe.runIf(supportsRowLock(driver))(`src/database/lock/entity (${driver})`, 
         const entered = Promise.withResolvers<void>();
 
         const first = publish(hold.promise, entered.resolve);
+
         await entered.promise;
 
         try {
             const error = await capture(withLockedEntity(dataSource, LockItem, { id: 1 }, () => 'x', { onLocked: 'nowait' }));
+
             expect(isDatabaseLockConflictError(error)).toBe(true);
         } finally {
             hold.resolve();

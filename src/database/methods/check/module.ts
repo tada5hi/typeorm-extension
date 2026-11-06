@@ -46,6 +46,7 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
         }
     } else {
         let dataSourceOptions : DataSourceOptions;
+
         if (context.options) {
             dataSourceOptions = context.options;
         } else {
@@ -77,11 +78,13 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
         dataSource.migrations.length > 0
     ) {
         const migrationExecutor = new MigrationExecutor(dataSource, queryRunner);
+
         result.migrationsPending = await migrationExecutor.getPendingMigrations();
 
         result.schema = result.migrationsPending.length === 0;
     } else {
         let schema : string | undefined;
+
         if (hasStringProperty(dataSource.driver.options, 'schema')) {
             schema = dataSource.driver.options.schema;
         }
@@ -92,6 +95,7 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
             dataSource.driver.database,
         );
         const migrationsTableExists = await queryRunner.hasTable(migrationsTableName);
+
         if (migrationsTableExists) {
             result.schema = dataSource.entityMetadatas.length === 0;
         } else {

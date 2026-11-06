@@ -12,6 +12,7 @@ const filePath = path.join('/cwd', 'writable', 'db.sqlite');
 
 const createFileSystem = () => {
     const fs = new MemoryFileSystem();
+
     fs.writableDirectories.add(path.join('/cwd', 'writable'));
 
     return fs;
@@ -32,6 +33,7 @@ describe('src/database/core/sqlite', () => {
 
     it('should keep an existing database file with the exist guard', async () => {
         const fs = createFileSystem();
+
         fs.files.add(filePath);
 
         const dialect = new SQLiteDialect(fs, '/cwd');
@@ -46,6 +48,7 @@ describe('src/database/core/sqlite', () => {
 
     it('should fail on create when the database file already exists', async () => {
         const fs = createFileSystem();
+
         fs.files.add(filePath);
 
         const dialect = new SQLiteDialect(fs, '/cwd');
@@ -82,6 +85,7 @@ describe('src/database/core/sqlite', () => {
 
     it('should remove the database file on drop, even without the exist guard', async () => {
         const fs = createFileSystem();
+
         fs.files.add(filePath);
 
         const dialect = new SQLiteDialect(fs, '/cwd');
@@ -121,6 +125,7 @@ describe('src/database/core/sqlite', () => {
             .toEqual(path.join('/cwd', 'db.sqlite'));
 
         const absolute = path.resolve('/data', 'db.sqlite');
+
         expect(resolveSQLiteDatabasePath(absolute, '/cwd')).toEqual(absolute);
     });
 });

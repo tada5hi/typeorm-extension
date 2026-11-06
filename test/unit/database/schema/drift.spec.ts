@@ -5,6 +5,7 @@ import { createDataSource, createDataSourceOptions } from '../../../data/typeorm
 describe('src/database/schema/drift', () => {
     it('should detect drift for a schema which does not exist yet', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
 
         try {
@@ -20,6 +21,7 @@ describe('src/database/schema/drift', () => {
 
     it('should not detect drift for a synchronized schema', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
 
         try {
@@ -43,6 +45,7 @@ describe('src/database/schema/drift', () => {
 
     it('should skip a data source without migrations', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
 
         try {
@@ -91,6 +94,7 @@ describe('src/database/schema/drift', () => {
 
     it('should throw on drift', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
 
         try {
@@ -108,6 +112,7 @@ describe('src/database/schema/drift', () => {
 
     it('should not throw for a synchronized schema', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
 
         try {

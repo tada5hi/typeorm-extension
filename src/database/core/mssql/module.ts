@@ -3,7 +3,7 @@ import type {
     DatabaseDropOperation,
     IDatabaseConnectionFactory,
     IDatabaseDialect,
-} from '../type';
+} from '../types';
 import {
     buildMsSQLCreateDatabaseQuery,
     buildMsSQLDropDatabaseQuery,
@@ -16,6 +16,7 @@ export class MsSQLDialect implements IDatabaseDialect {
 
     async create(operation: DatabaseCreateOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {
@@ -29,6 +30,7 @@ export class MsSQLDialect implements IDatabaseDialect {
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {

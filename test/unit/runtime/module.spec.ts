@@ -37,6 +37,7 @@ describe('src/runtime/module.ts', () => {
         expect(registry.env).toBeDefined();
 
         const manager = useSeederFactoryManager();
+
         expect(registry.factories).toBe(manager);
     });
 
@@ -46,6 +47,7 @@ describe('src/runtime/module.ts', () => {
         setDataSource(dataSource);
         setDataSourceOptions(dataSource.options);
         useEnv();
+
         const manager = useSeederFactoryManager();
 
         registry.reset();

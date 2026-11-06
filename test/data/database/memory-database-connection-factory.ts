@@ -4,14 +4,14 @@ import type {
 } from '../../../src/database/core';
 
 export type MemoryConnectorEvent =    | {
-    type: 'open', 
-    connection: number, 
-    database?: string 
+    type: 'open',
+    connection: number,
+    database?: string
 } |
     {
-        type: 'execute', 
-        connection: number, 
-        statement: string     
+        type: 'execute',
+        connection: number,
+        statement: string
     } |
     { type: 'close', connection: number };
 
@@ -34,6 +34,7 @@ export class MemoryDatabaseConnectionFactory implements IDatabaseConnectionFacto
 
     create(database?: string): IDatabaseConnection {
         this.counter += 1;
+
         const connection = this.counter;
 
         let opened = false;
@@ -51,9 +52,9 @@ export class MemoryDatabaseConnectionFactory implements IDatabaseConnectionFacto
             opened = true;
             this.openConnections.add(connection);
             this.events.push({
-                type: 'open', 
-                connection, 
-                database, 
+                type: 'open',
+                connection,
+                database,
             });
         };
 
@@ -63,10 +64,11 @@ export class MemoryDatabaseConnectionFactory implements IDatabaseConnectionFacto
                 await open();
 
                 this.events.push({
-                    type: 'execute', 
-                    connection, 
+                    type: 'execute',
+                    connection,
                     statement,
                 });
+
                 return this.respond(statement, database);
             },
             close: async () => {

@@ -61,6 +61,7 @@ export function defineCLIDatabaseCreateCommand() {
         },
         async run({ args }) {
             const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+
             await runWithExitCode(logger, async () => {
                 logger.info('Creating database');
 
@@ -75,7 +76,9 @@ export function defineCLIDatabaseCreateCommand() {
                 const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
+
                 const pad = 'directory'.length;
+
                 logger.kv('directory', source.directory, pad);
                 logger.kv('name', source.name, pad);
 

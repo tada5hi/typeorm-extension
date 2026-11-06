@@ -50,6 +50,7 @@ function readPropertyPath(data: Record<string, any>, path: string) : unknown {
     const parts = path.split('.');
 
     let current : any = data;
+
     for (const part of parts) {
         if (!isObject(current)) {
             return undefined;
@@ -63,6 +64,7 @@ function readPropertyPath(data: Record<string, any>, path: string) : unknown {
 
 function pickPropertyPaths(data: Record<string, any>, paths: string[]) : Record<string, any> {
     const output : Record<string, any> = {};
+
     for (const path of paths) {
         output[path] = readPropertyPath(data, path);
     }
@@ -88,6 +90,7 @@ function applyMatchExpression(
     data: Record<string, any>,
 ) {
     const keys = Object.keys(data);
+
     for (const [index, key] of keys.entries()) {
         const value = transformUndefinedToNull(data[key]);
         const propertyPath = buildPropertyPath(alias, key);
@@ -119,6 +122,7 @@ function applyExclusionExpression(
     data: Record<string, any>,
 ) {
     const keys = Object.keys(data);
+
     for (const [index, key] of keys.entries()) {
         const value = transformUndefinedToNull(data[key]);
         const propertyPath = buildPropertyPath(alias, key);
@@ -151,6 +155,7 @@ function resolveColumnGroupValues<T extends ObjectLiteral>(
 
     for (const path of columnGroup) {
         const value = readPropertyPath(entity, path);
+
         if (typeof value !== 'undefined') {
             output[path] = value;
 
@@ -160,6 +165,7 @@ function resolveColumnGroupValues<T extends ObjectLiteral>(
         const valueExisting = entityExisting ?
             readPropertyPath(entityExisting, path) :
             undefined;
+
         if (typeof valueExisting !== 'undefined') {
             output[path] = valueExisting;
 
@@ -191,6 +197,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
     const primaryColumnPaths = metadata.primaryColumns.map((c) => c.propertyPath);
 
     const columnGroups : string[][] = [];
+
     if (
         metadata.ownUniques &&
         metadata.ownUniques.length > 0
@@ -203,6 +210,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
     } else {
         for (let i = 0; i < metadata.indices.length; i++) {
             const index = metadata.indices[i];
+
             if (!index.isUnique || index.entityMetadata.target !== metadata.target) {
                 continue;
             }
@@ -216,6 +224,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
     for (const columnGroup of columnGroups) {
         const alias = 'entity';
         const queryBuilder = repository.createQueryBuilder(alias);
+
         queryBuilder.where(new Brackets((qb) => {
             applyMatchExpression(
                 qb,
@@ -231,6 +240,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
         }
 
         const entity = await queryBuilder.getOne();
+
         if (entity) {
             return false;
         }

@@ -32,6 +32,7 @@ export async function useDataSource(alias?: string) : Promise<DataSource> {
         const options = await useDataSourceOptions(key);
 
         const dataSource = new DataSource(options);
+
         await dataSource.initialize();
 
         return dataSource;

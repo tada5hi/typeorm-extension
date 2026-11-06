@@ -1,5 +1,5 @@
 import type { DataSource, EntitySchema, ObjectType } from 'typeorm';
-import type { FactoryCallback, SeederFactoryItem, SeederFactoryManagerContext } from './type';
+import type { FactoryCallback, SeederFactoryItem, SeederFactoryManagerContext } from './types';
 import { getEntityName } from '../../helpers';
 import { hasOwnProperty } from '../../utils';
 import { SeederFactory } from './module';

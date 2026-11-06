@@ -8,6 +8,7 @@ import { createDataSource } from '../../data/typeorm/factory';
 describe('entity-uniqueness', () => {
     it('should check entity uniqueness', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
@@ -17,6 +18,7 @@ describe('entity-uniqueness', () => {
             lastName: 'bar',
             email: 'foo@gmail.com',
         });
+
         await repository.save(user);
 
         let isUnique = await isEntityUnique({
@@ -24,6 +26,7 @@ describe('entity-uniqueness', () => {
             entityTarget: User,
             entity: user,
         });
+
         expect(isUnique).toBeFalsy();
 
         isUnique = await isEntityUnique({
@@ -39,11 +42,13 @@ describe('entity-uniqueness', () => {
 
     it('should check entity uniqueness for columns with a distinct database name', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
         try {
             const repository = dataSource.getRepository(Account);
+
             await repository.save(repository.create({
                 userName: 'admin',
                 tenantId: 1,
@@ -54,6 +59,7 @@ describe('entity-uniqueness', () => {
                 entityTarget: Account,
                 entity: { userName: 'admin', tenantId: 1 },
             });
+
             expect(conflicting).toBeFalsy();
 
             const free = await isEntityUnique({
@@ -61,6 +67,7 @@ describe('entity-uniqueness', () => {
                 entityTarget: Account,
                 entity: { userName: 'admin', tenantId: 2 },
             });
+
             expect(free).toBeTruthy();
         } finally {
             await dataSource.destroy();
@@ -69,19 +76,22 @@ describe('entity-uniqueness', () => {
 
     it('should detect a conflict with a row sharing part of a composite primary key', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
         try {
             const repository = dataSource.getRepository(Tenant);
+
             await repository.save(repository.create({
-                region: 'eu', 
-                code: 'a', 
+                region: 'eu',
+                code: 'a',
                 name: 'foo',
             }));
+
             const updated = await repository.save(repository.create({
-                region: 'us', 
-                code: 'a', 
+                region: 'us',
+                code: 'a',
                 name: 'bar',
             }));
 
@@ -93,6 +103,7 @@ describe('entity-uniqueness', () => {
                 entity: { name: 'foo' },
                 entityExisting: updated,
             });
+
             expect(conflicting).toBeFalsy();
 
             const free = await isEntityUnique({
@@ -101,6 +112,7 @@ describe('entity-uniqueness', () => {
                 entity: { name: 'baz' },
                 entityExisting: updated,
             });
+
             expect(free).toBeTruthy();
         } finally {
             await dataSource.destroy();
@@ -109,6 +121,7 @@ describe('entity-uniqueness', () => {
 
     it('should keep persisted values for columns absent from a partial update', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
@@ -118,6 +131,7 @@ describe('entity-uniqueness', () => {
                 userName: 'first',
                 tenantId: 1,
             }));
+
             await repository.save(repository.create({
                 userName: 'second',
                 tenantId: 2,
@@ -131,6 +145,7 @@ describe('entity-uniqueness', () => {
                 entity: { displayName: 'First Account' },
                 entityExisting: first,
             });
+
             expect(untouched).toBeTruthy();
 
             // Moving the first account onto the second one's group conflicts.
@@ -140,6 +155,7 @@ describe('entity-uniqueness', () => {
                 entity: { userName: 'second', tenantId: 2 },
                 entityExisting: first,
             });
+
             expect(conflicting).toBeFalsy();
         } finally {
             await dataSource.destroy();

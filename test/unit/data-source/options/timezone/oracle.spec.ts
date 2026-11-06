@@ -19,9 +19,9 @@ const TYPES = {
 };
 
 type Call = {
-    sql: unknown, 
-    binds: unknown, 
-    options: any 
+    sql: unknown,
+    binds: unknown,
+    options: any
 };
 
 /**
@@ -36,13 +36,16 @@ function createFakeOracle(outBinds?: unknown) {
     const connection = {
         execute(sql: unknown, binds: unknown, options: any, callback?: (err: unknown, result: unknown) => void) {
             executed.push({
-                sql, 
-                binds, 
-                options, 
+                sql,
+                binds,
+                options,
             });
+
             const result = { rows: [], outBinds };
+
             if (callback) {
                 callback(null, result);
+
                 return undefined;
             }
 
@@ -50,10 +53,11 @@ function createFakeOracle(outBinds?: unknown) {
         },
         executeMany(sql: unknown, binds: unknown, options: any) {
             many.push({
-                sql, 
-                binds, 
-                options, 
+                sql,
+                binds,
+                options,
             });
+
             return Promise.resolve({ outBinds });
         },
         close: () => 'closed',
@@ -63,6 +67,7 @@ function createFakeOracle(outBinds?: unknown) {
         getConnection(callback?: (err: unknown, connection: unknown) => void) {
             if (callback) {
                 callback(null, connection);
+
                 return undefined;
             }
 
@@ -76,6 +81,7 @@ function createFakeOracle(outBinds?: unknown) {
         createPool(_options: unknown, callback?: (err: unknown, pool: unknown) => void) {
             if (callback) {
                 callback(null, pool);
+
                 return undefined;
             }
 
@@ -86,9 +92,9 @@ function createFakeOracle(outBinds?: unknown) {
     };
 
     return {
-        driver, 
-        executed, 
-        many, 
+        driver,
+        executed,
+        many,
     };
 }
 
@@ -114,10 +120,12 @@ describe('src/data-source/options/timezone/oracle', () => {
 
         it('should keep the years 0 to 99', () => {
             const local = new Date(2026, 0, 1);
+
             local.setFullYear(5);
             expect(readLocalDateAsUTC(local).getUTCFullYear()).toEqual(5);
 
             const utc = new Date('2026-01-01T00:00:00.000Z');
+
             utc.setUTCFullYear(5);
             expect(writeUTCAsLocalDate(utc).getFullYear()).toEqual(5);
         });
@@ -129,6 +137,7 @@ describe('src/data-source/options/timezone/oracle', () => {
             const connection = await connect(createOracleUTCDriver(driver));
 
             await connection.execute('SELECT', [], { outFormat: 4002 });
+
             const { options } = executed[0];
 
             expect(options.outFormat).toEqual(4002);
@@ -136,6 +145,7 @@ describe('src/data-source/options/timezone/oracle', () => {
             expect(options.fetchTypeHandler({ dbType: 'tstz' })).toBeUndefined();
 
             const { converter } = options.fetchTypeHandler({ dbType: 'ts' });
+
             expect(converter(new Date(2026, 8, 22, 11, 0))).toEqual(new Date('2026-09-22T11:00:00.000Z'));
             expect(converter(null)).toBeNull();
         });
@@ -149,6 +159,7 @@ describe('src/data-source/options/timezone/oracle', () => {
             expect(executed[0].options.fetchTypeHandler({ dbType: 'ts' })).toBe(own);
 
             const call = { type: 'number' };
+
             await connection.execute('SELECT', [], { fetchTypeHandler: () => call });
             expect(executed[1].options.fetchTypeHandler({ dbType: 'ts' })).toBe(call);
         });
@@ -185,9 +196,9 @@ describe('src/data-source/options/timezone/oracle', () => {
             const utc = new Date('2026-09-22T11:00:00.000Z');
 
             const named = createFakeOracle({
-                at: [local], 
-                id: [1], 
-                stamp: [local], 
+                at: [local],
+                id: [1],
+                stamp: [local],
             });
             let connection = await connect(createOracleUTCDriver(named.driver));
             const result = await connection.execute('INSERT', {
@@ -197,17 +208,19 @@ describe('src/data-source/options/timezone/oracle', () => {
             });
 
             expect(result.outBinds).toEqual({
-                at: [utc], 
-                id: [1], 
-                stamp: [local], 
+                at: [utc],
+                id: [1],
+                stamp: [local],
             });
 
             const positional = createFakeOracle([local, 1]);
+
             connection = await connect(createOracleUTCDriver(positional.driver));
+
             const second = await connection.execute('INSERT', [1, { dir: 'out', type: 'ts' }, {
-                dir: 'inout', 
-                type: 'number', 
-                val: 1, 
+                dir: 'inout',
+                type: 'number',
+                val: 1,
             }]);
 
             expect(second.outBinds).toEqual([utc, 1]);
@@ -260,9 +273,11 @@ describe('src/data-source/options/timezone/oracle', () => {
             const wrapped : any = createOracleUTCDriver(driver);
 
             const standalone = await wrapped.getConnection();
+
             await standalone.execute('SELECT', []);
 
             const pooled = await wrapped.getPool().getConnection();
+
             await pooled.execute('SELECT', []);
 
             expect(executed.map((entry) => entry.sql)).toEqual(['ALTER SESSION SET TIME_ZONE = \'+00:00\'', 'SELECT', 'SELECT']);
@@ -274,8 +289,10 @@ describe('src/data-source/options/timezone/oracle', () => {
             const connection = await new Promise<any>((resolve) => {
                 const getConnection = (callback: any) => driver.getConnection().then((value) => callback(null, value));
                 const wrapped : any = createOracleUTCDriver({ ...driver, getConnection });
+
                 wrapped.getConnection((_err: unknown, value: unknown) => resolve(value));
             });
+
             expect(executed[0].sql).toEqual('ALTER SESSION SET TIME_ZONE = \'+00:00\'');
             await connection.execute('SELECT', []);
             expect(typeof executed[1].options.fetchTypeHandler).toEqual('function');
@@ -283,9 +300,12 @@ describe('src/data-source/options/timezone/oracle', () => {
             let closed = false;
             const failing = {
                 execute: () => Promise.reject(new Error('denied')),
-                close: () => { closed = true; },
+                close: () => {
+                    closed = true;
+                },
             };
             const wrapped : any = createOracleUTCDriver({ ...driver, getConnection: () => Promise.resolve(failing) });
+
             await expect(wrapped.getConnection()).rejects.toThrow('denied');
             expect(closed).toBe(true);
         });
@@ -334,6 +354,7 @@ describe('src/data-source/options/timezone/oracle', () => {
             expect(wrapped.createPool).toBe(wrapped.createPool);
 
             const connection = await connect(wrapped);
+
             expect(connection.execute).toBe(connection.execute);
         });
     });
@@ -348,7 +369,9 @@ describe('src/data-source/options/timezone/oracle', () => {
                     executed.push(sql);
                     done(null);
                 },
-            }, 'tag', (err?: unknown) => { result = err; });
+            }, 'tag', (err?: unknown) => {
+                result = err;
+            });
 
             return { executed, result };
         }
@@ -356,15 +379,16 @@ describe('src/data-source/options/timezone/oracle', () => {
         it('should pin the session and wrap the driver', () => {
             const { driver } = createFakeOracle();
             const options = applyOracleTimezone({
-                type: 'oracle', 
-                driver, 
-                extra: { poolMax: 2 }, 
+                type: 'oracle',
+                driver,
+                extra: { poolMax: 2 },
             }) as any;
 
             expect(options.extra.poolMax).toEqual(2);
             expect(options.driver).not.toBe(driver);
 
             const { executed, result } = runSessionCallback(options.extra.sessionCallback);
+
             expect(executed).toEqual(['ALTER SESSION SET TIME_ZONE = \'+00:00\'']);
             expect(result).toBeUndefined();
         });
@@ -384,6 +408,7 @@ describe('src/data-source/options/timezone/oracle', () => {
             }) as any;
 
             const { executed } = runSessionCallback(options.extra.sessionCallback);
+
             expect(executed).toEqual(['ALTER SESSION SET TIME_ZONE = \'+00:00\'']);
             expect(seen).toEqual(['tag']);
         });
@@ -392,9 +417,9 @@ describe('src/data-source/options/timezone/oracle', () => {
             const { driver } = createFakeOracle();
 
             expect(() => applyOracleTimezone({
-                type: 'oracle', 
-                driver, 
-                extra: { sessionCallback: 'pkg.init' }, 
+                type: 'oracle',
+                driver,
+                extra: { sessionCallback: 'pkg.init' },
             }))
                 .toThrow(OptionsError);
         });

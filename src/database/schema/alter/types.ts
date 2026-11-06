@@ -2,6 +2,9 @@
  * Dialects for which a rename can be expressed.
  * mariadb is served by mysql, cockroachdb by postgres.
  */
+import type { Table } from 'typeorm';
+
+
 export type SchemaDialect = 'postgres' | 'mysql';
 
 /**
@@ -168,4 +171,19 @@ export type SchemaChangeColumnTypeInput = SchemaStrictInput & {
      * ignoring it and leaving the server to coerce the values its own way.
      */
     using?: string
+};
+
+export type SchemaColumnDescriber = {
+    /**
+     * The driver's own spelling of a type, e.g. varchar -> character varying.
+     */
+    normalizeType: (type: string) => string,
+    /**
+     * The full type the server would report, e.g. varchar + 255 ->
+     * varchar(255). Resolves the default length of a type, which the driver
+     * leaves empty on the loaded column: mysql reports a `varchar(255)` as
+     * length `''` for a table it has no entity metadata for, and comparing the
+     * raw values would call that a mismatch.
+     */
+    describeType: (type: string, length?: string | number) => string,
 };

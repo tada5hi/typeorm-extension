@@ -34,14 +34,16 @@ describe('src/data-source/options/timezone (better-sqlite3)', () => {
         expect(new Date().getTimezoneOffset()).toEqual(600);
 
         const options = {
-            type: 'better-sqlite3' as const, 
-            database: ':memory:', 
-            entities: [Stamp], 
-            synchronize: true, 
+            type: 'better-sqlite3' as const,
+            database: ':memory:',
+            entities: [Stamp],
+            synchronize: true,
         };
+
         expect(pinTimezone(options, 'UTC')).toBe(options);
 
         const dataSource = new DataSource(options);
+
         await dataSource.initialize();
 
         try {
@@ -56,7 +58,9 @@ describe('src/data-source/options/timezone (better-sqlite3)', () => {
 
             // written by the application, stored as a UTC wall clock
             expect(read.writtenAt.getTime()).toEqual(written.getTime());
+
             const [row] = await dataSource.query('SELECT "writtenAt" AS w FROM "stamp" WHERE "id" = ?', [saved.id]);
+
             expect(Date.parse(`${String(row.w).replace(' ', 'T')}Z`)).toEqual(written.getTime());
         } finally {
             await dataSource.destroy();

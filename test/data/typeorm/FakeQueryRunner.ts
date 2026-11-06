@@ -1,7 +1,7 @@
 import type {
-    DataSourceOptions, 
-    QueryRunner, 
-    Table, 
+    DataSourceOptions,
+    QueryRunner,
+    Table,
     TableColumn,
 } from 'typeorm';
 
@@ -42,6 +42,7 @@ export class FakeQueryRunner {
 
     constructor(options: FakeQueryRunnerOptions) {
         this.tables = {};
+
         for (const table of options.tables || []) {
             this.tables[table.name] = table;
         }
@@ -49,6 +50,7 @@ export class FakeQueryRunner {
         this.respond = options.respond || (() => []);
 
         const { type } = options;
+
         this.dataSource = {
             options: { type },
             driver: {

@@ -3,7 +3,7 @@ import type {
     DatabaseDropOperation,
     IDatabaseConnectionFactory,
     IDatabaseDialect,
-} from '../type';
+} from '../types';
 import { hasResultRows } from '../utils';
 import {
     buildPostgresCreateDatabaseQuery,
@@ -21,6 +21,7 @@ export class PostgresDialect implements IDatabaseDialect {
         const { params } = operation;
 
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         let exists = false;
@@ -52,6 +53,7 @@ export class PostgresDialect implements IDatabaseDialect {
          */
         if (typeof params.schema === 'string' && params.schema !== 'public') {
             const schemaConnection = this.connectionFactory.create(params.database);
+
             await schemaConnection.open();
 
             try {
@@ -66,6 +68,7 @@ export class PostgresDialect implements IDatabaseDialect {
 
     async drop(operation: DatabaseDropOperation): Promise<unknown> {
         const connection = this.connectionFactory.create(operation.initialDatabase);
+
         await connection.open();
 
         try {

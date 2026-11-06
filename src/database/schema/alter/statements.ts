@@ -6,7 +6,7 @@ import type {
     SchemaDialect,
     SchemaRenameForeignKeyInput,
     SchemaRenameIndexInput,
-} from './type';
+} from './types';
 
 /**
  * Quote a value mysql expects as a string literal (a charset name,
@@ -33,6 +33,7 @@ function isEscapedStringBody(value: string) : boolean {
 
         if (char === '\\') {
             index += 2;
+
             continue;
         }
 
@@ -42,6 +43,7 @@ function isEscapedStringBody(value: string) : boolean {
             }
 
             index += 2;
+
             continue;
         }
 
@@ -99,6 +101,7 @@ export function escapeSchemaPath(dialect: SchemaColumnDialect, path: string) : s
  */
 function buildSiblingPath(table: string, name: string) : string {
     const parts = table.split('.');
+
     parts[parts.length - 1] = name;
 
     return parts.join('.');

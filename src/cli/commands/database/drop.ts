@@ -54,6 +54,7 @@ export function defineCLIDatabaseDropCommand() {
         },
         async run({ args }) {
             const logger = createLogger(normalizeLogLevel(args['log-level'] as string | undefined));
+
             await runWithExitCode(logger, async () => {
                 logger.info('Dropping database');
 
@@ -68,7 +69,9 @@ export function defineCLIDatabaseDropCommand() {
                 const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
+
                 const pad = 'directory'.length;
+
                 logger.kv('directory', source.directory, pad);
                 logger.kv('name', source.name, pad);
 

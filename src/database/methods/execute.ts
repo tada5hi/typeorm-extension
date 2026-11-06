@@ -6,7 +6,7 @@ import type {
 } from '../core';
 import { useDatabaseDialectEntry } from '../registry';
 import { synchronizeDatabaseSchema } from '../schema';
-import type { DatabaseCreateContext, DatabaseDropContext } from './type';
+import type { DatabaseCreateContext, DatabaseDropContext } from './types';
 
 /**
  * Wraps a caller supplied connection as a connection factory.

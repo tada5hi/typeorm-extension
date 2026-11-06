@@ -25,11 +25,13 @@ class IndexedRecord {
 describe('entity-uniqueness-edge-cases', () => {
     it('should detect a conflict on a column of an embedded entity', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
         try {
             const repository = dataSource.getRepository(Person);
+
             await repository.save(repository.create({ profile: { email: 'taken@example.com', nickname: null } }));
 
             // The property path of an embedded column is nested and differs
@@ -39,6 +41,7 @@ describe('entity-uniqueness-edge-cases', () => {
                 entityTarget: Person,
                 entity: { profile: { email: 'taken@example.com', nickname: null } },
             });
+
             expect(conflicting).toBeFalsy();
 
             const free = await isEntityUnique({
@@ -46,6 +49,7 @@ describe('entity-uniqueness-edge-cases', () => {
                 entityTarget: Person,
                 entity: { profile: { email: 'free@example.com', nickname: null } },
             });
+
             expect(free).toBeTruthy();
         } finally {
             await dataSource.destroy();
@@ -59,10 +63,12 @@ describe('entity-uniqueness-edge-cases', () => {
             entities: [IndexedRecord],
             synchronize: true,
         });
+
         await dataSource.initialize();
 
         try {
             const repository = dataSource.getRepository(IndexedRecord);
+
             await repository.save(repository.create({ label: 'taken' }));
 
             const conflicting = await isEntityUnique({
@@ -70,6 +76,7 @@ describe('entity-uniqueness-edge-cases', () => {
                 entityTarget: IndexedRecord,
                 entity: { label: 'taken' },
             });
+
             expect(conflicting).toBeFalsy();
 
             const free = await isEntityUnique({
@@ -77,6 +84,7 @@ describe('entity-uniqueness-edge-cases', () => {
                 entityTarget: IndexedRecord,
                 entity: { label: 'free' },
             });
+
             expect(free).toBeTruthy();
         } finally {
             await dataSource.destroy();
@@ -85,11 +93,13 @@ describe('entity-uniqueness-edge-cases', () => {
 
     it('should report an entity without unique columns as unique', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
         try {
             const repository = dataSource.getRepository(Role);
+
             await repository.save(repository.create({ name: 'admin' }));
 
             // Role declares neither a unique constraint nor a unique index,
@@ -99,6 +109,7 @@ describe('entity-uniqueness-edge-cases', () => {
                 entityTarget: Role,
                 entity: { name: 'admin' },
             });
+
             expect(unique).toBeTruthy();
         } finally {
             await dataSource.destroy();
@@ -107,11 +118,13 @@ describe('entity-uniqueness-edge-cases', () => {
 
     it('should treat a column absent from an insert as null', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
         try {
             const repository = dataSource.getRepository(Account);
+
             await repository.save(repository.create({ userName: 'admin', tenantId: null }));
 
             // No existing entity, so tenantId is what an insert would store.
@@ -120,6 +133,7 @@ describe('entity-uniqueness-edge-cases', () => {
                 entityTarget: Account,
                 entity: { userName: 'admin' },
             });
+
             expect(conflicting).toBeFalsy();
         } finally {
             await dataSource.destroy();
@@ -128,6 +142,7 @@ describe('entity-uniqueness-edge-cases', () => {
 
     it('should not report a conflict with the entity being updated itself', async () => {
         const dataSource = createDataSource();
+
         await dataSource.initialize();
         await dataSource.synchronize();
 
@@ -144,6 +159,7 @@ describe('entity-uniqueness-edge-cases', () => {
                 entity: { userName: 'admin', tenantId: 1 },
                 entityExisting: account,
             });
+
             expect(unique).toBeTruthy();
         } finally {
             await dataSource.destroy();

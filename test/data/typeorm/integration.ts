@@ -148,6 +148,7 @@ export function createIntegrationDataSourceOptions(
     override: Record<string, any> = {},
 ) : DataSourceOptions {
     const type = useIntegrationDriver();
+
     if (!type) {
         throw new Error('No integration driver is configured (TYPEORM_CONNECTION).');
     }

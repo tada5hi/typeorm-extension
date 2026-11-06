@@ -40,6 +40,7 @@ export class AsyncKeyedCache<V> {
      */
     async resolve(key: string, build: (existing?: V) => Promise<V>) : Promise<V> {
         const existing = this.pending.get(key);
+
         if (existing) {
             return existing;
         }
@@ -47,6 +48,7 @@ export class AsyncKeyedCache<V> {
         const promise : Promise<V> = build(this.values.get(key))
             .then((value) => {
                 this.values.set(key, value);
+
                 return value;
             })
             .catch((e) => {
