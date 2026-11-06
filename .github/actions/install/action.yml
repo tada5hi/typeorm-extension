@@ -15,6 +15,7 @@ runs:
           uses: actions/setup-node@v4
           with:
               node-version: ${{ inputs.node-version }}
+              check-latest: true
               registry-url: ${{ inputs.registry-url }}
 
         - name: Use cache
