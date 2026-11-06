@@ -65,7 +65,7 @@ typeorm-extension/
 ├── bin/                        # tsdown output: cli.mjs (gitignored, built)
 ├── dist/                       # tsdown output: index.mjs + index.d.mts
 ├── tsdown.config.ts            # Two entries: src/cli/index.ts → bin/, src/index.ts → dist/
-├── eslint.config.mjs           # ESLint v10 flat config (extends @tada5hi/eslint-config v2)
+├── eslint.config.mjs           # ESLint v10 flat config (extends @tada5hi/eslint-config v3)
 ├── tsconfig.json               # extends @tada5hi/tsconfig; emit decorators + metadata
 ├── package.json                # "type": "module" — ESM-only
 └── release-please-config.json  # release-please manifest-driven releases
