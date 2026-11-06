@@ -1,7 +1,5 @@
 <!-- NOTE: Keep this file and all corresponding files in the .agents directory updated as the project evolves. When making architectural changes, adding new patterns, or discovering important conventions, update the relevant sections. -->
 
-Use this guide as the entry point. Read linked guides on demand before changing their areas.
-
 # typeorm-extension — Agent Guide
 
 A TypeScript library that extends [TypeORM](https://typeorm.io) with:
