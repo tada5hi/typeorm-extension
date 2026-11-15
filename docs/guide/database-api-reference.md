@@ -149,6 +149,51 @@ The function returns a promise with the query result of the underlying database 
 **References**
 - [DatabaseDropContext](#databasedropcontext)
 
+## `checkDatabase`
+
+```ts
+declare function checkDatabase(
+    context?: DatabaseCheckContext
+): Promise<DatabaseCheckResult>;
+```
+
+Check whether the database exists and whether its schema is up to date. Nothing is created, synchronized or migrated.
+
+**Example: DataSourceOptions**
+
+```typescript
+import { DataSourceOptions } from 'typeorm';
+import { checkDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options : DataSourceOptions = {
+        //...
+    };
+
+    const { exists, schema, migrationsPending } = await checkDatabase({
+        options
+    });
+})();
+```
+
+**Parameters**
+
+| Name      | Type                   | Description                                                                     |
+|:----------|:-----------------------|:--------------------------------------------------------------------------------|
+| `context` | `DatabaseCheckContext` | Specify DataSourceOptions or a registry alias. [Details](#databasecheckcontext) |
+
+**Returns**
+
+`Promise`<`DatabaseCheckResult`>
+
+A missing database is reported as `exists: false`, on cockroachdb as well. On mongodb, `exists` is `true` once the
+connection succeeds (a database is created lazily there), and `schema` is `true` when no migrations are configured,
+because there is no schema to compare.
+
+**References**
+- [DatabaseCheckContext](#databasecheckcontext)
+- [DatabaseCheckResult](#databasecheckresult)
+
 ## `getSchemaDrift`
 
 Compare the database schema against the entity metadata and return the statements which would reconcile them.
@@ -675,6 +720,62 @@ export type DatabaseDropContext = DatabaseBaseContext & {
 
 **References**
 - [DatabaseBaseContext](#databasebasecontext)
+
+## DatabaseCheckContext
+
+```typescript
+import { DataSourceOptions } from 'typeorm';
+
+export type DatabaseCheckContext = {
+    /**
+     * Options for finding the typeorm DataSource.
+     *
+     * Default: undefined
+     */
+    options?: DataSourceOptions,
+
+    /**
+     * Use alias to access already registered DataSource / DataSourceOptions.
+     *
+     * default: undefined
+     */
+    alias?: string,
+
+    /**
+     * Indicates whether to destroy the data-source
+     * afterward or not.
+     * If a datasource previously existed, this option will be ignored.
+     *
+     * default: true
+     */
+    dataSourceCleanup?: boolean
+};
+```
+
+## DatabaseCheckResult
+
+```typescript
+import { Migration } from 'typeorm';
+
+export type DatabaseCheckResult = {
+    /**
+     * Indicates whether the database
+     * has already been created or not.
+     */
+    exists: boolean,
+
+    /**
+     * Indicates whether the database's schema
+     * is up-to-date.
+     */
+    schema: boolean,
+
+    /**
+     * Array of un applied migrations.
+     */
+    migrationsPending: Migration[]
+};
+```
 
 ## MigrationGenerateCommandContext
 

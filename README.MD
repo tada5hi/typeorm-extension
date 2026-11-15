@@ -265,6 +265,27 @@ To get a better overview and understanding of the
 [dropDatabase](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#dropDatabase)
 function, check out the documentation.
 
+#### Check
+
+Ask whether the database exists and whether its schema is current, without changing anything.
+
+```typescript
+import { checkDatabase } from 'typeorm-extension';
+
+(async () => {
+    const { exists, schema, migrationsPending } = await checkDatabase({
+        options
+    });
+})();
+```
+
+A missing database is reported as `exists: false`. On mongodb, which creates a database lazily, `exists` is `true`
+once the connection succeeds, and `schema` is `true` when no migrations are configured.
+
+To get a better overview and understanding of the
+[checkDatabase](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#checkdatabase)
+function, check out the documentation.
+
 #### Schema Drift
 
 Compare the database schema against the entity metadata and get back the statements which would reconcile them.

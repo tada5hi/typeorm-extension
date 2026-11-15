@@ -132,6 +132,42 @@ import { dropDatabase } from 'typeorm-extension';
 
 To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions---database) section and read more about it.
 
+## Check
+
+`checkDatabase` tells setup code whether the database exists and whether its schema is current.
+It never creates, synchronizes or migrates anything.
+
+```typescript
+import { checkDatabase, createDatabase } from 'typeorm-extension';
+
+(async () => {
+    const check = await checkDatabase({
+        options
+    });
+
+    if (!check.exists) {
+        await createDatabase({
+            options
+        });
+    }
+})();
+```
+
+The result has three fields:
+
+- `exists`: whether the database exists. A missing database is reported as `false`, on cockroachdb as well.
+- `schema`: whether the schema is up to date. With migrations configured, this is `true` when none are pending.
+  Without migrations, the entity tables are compared against the entity metadata.
+- `migrationsPending`: the migrations which have not run yet.
+
+Without `options`, the data source is looked up by `alias` in the registry, or discovered the same way as for `createDatabase`.
+For details, see [checkDatabase](./database-api-reference#checkdatabase).
+
+::: warning NOTE
+mongodb has no schema to compare. Without migrations configured, `schema` is always `true` there, and `exists` is
+`true` once the connection succeeds: mongodb creates a database lazily, so a missing one is not reported.
+:::
+
 ## Custom Connection
 
 By default, the library opens a raw connection with the driver's native client
