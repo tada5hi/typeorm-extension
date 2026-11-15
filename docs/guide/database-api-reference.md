@@ -186,13 +186,14 @@ import { checkDatabase } from 'typeorm-extension';
 
 `Promise`<`DatabaseCheckResult`>
 
-A missing database is reported as `exists: false`, on cockroachdb as well. On mongodb, `exists` is `true` once the
-connection succeeds (a database is created lazily there), and `schema` is `true` when no migrations are configured,
-because there is no schema to compare.
+A missing database is reported as `exists: false`, on cockroachdb as well, and so is any failure to connect (also
+wrong credentials or an unreachable host). On mongodb, `exists` is `true` once the connection succeeds (a database is
+created lazily there), and `schema` is `true` when no migrations are configured, because there is no schema to compare.
 
-A `dataSource` in the context takes precedence over `options` and `alias`. It is used as is and never destroyed. An
-uninitialized one is initialized, unless it has `synchronize` or `migrationsRun` set: then the check runs on a copy
-without them.
+A `dataSource` in the context takes precedence over `options` and `alias`. It and a data source registered under the
+alias follow the same rule: an initialized one is used as is and never destroyed, an uninitialized one is left
+untouched and the check runs on a copy. A copy, like any data source built from options, never synchronizes, runs
+migrations or drops the schema.
 
 **References**
 - [DatabaseCheckContext](#databasecheckcontext)
@@ -740,6 +741,9 @@ export type DatabaseCheckContext = {
 
     /**
      * Use alias to access already registered DataSource / DataSourceOptions.
+     * Without options, a DataSource registered under the alias is
+     * handled like a passed dataSource. Otherwise the options
+     * registered or discovered for the alias are used.
      *
      * default: undefined
      */
@@ -747,9 +751,10 @@ export type DatabaseCheckContext = {
 
     /**
      * Indicates whether to destroy the data-source
-     * afterward or not.
-     * Ignored for a passed or registered data source,
-     * which is never destroyed.
+     * built from options afterward or not.
+     * Ignored for a passed or registered data source:
+     * an initialized one is never destroyed,
+     * a copy of an uninitialized one always is.
      *
      * default: true
      */
@@ -757,10 +762,10 @@ export type DatabaseCheckContext = {
 
     /**
      * Use predefined data-source for checks.
-     * It takes precedence over options and alias, and is never destroyed.
-     * An uninitialized one is initialized and left initialized,
-     * unless it has synchronize or migrationsRun set: then the check
-     * runs on a copy without them and the passed one stays untouched.
+     * It takes precedence over options and alias.
+     * An initialized one is used as is and never destroyed.
+     * An uninitialized one is left untouched and the check runs on a copy.
+     * A copy never synchronizes, runs migrations or drops the schema.
      *
      * default: undefined
      */

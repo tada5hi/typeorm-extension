@@ -2,7 +2,7 @@
 
 ### Context-builder pattern (database methods)
 
-Each public method (`createDatabase`, `dropDatabase`, `checkDatabase`) takes a loose `ContextInput` object and runs it through a `buildXContext()` function in `src/database/utils/context.ts` that:
+Each public method (`createDatabase`, `dropDatabase`) takes a loose `ContextInput` object and runs it through a `buildXContext()` function in `src/database/utils/context.ts` that:
 
 1. Resolves the `DataSourceOptions` (passed in, or discovered via `findDataSource`).
 2. Layers env-var defaults from `useEnv()` over them.

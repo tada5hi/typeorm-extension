@@ -279,11 +279,13 @@ import { checkDatabase } from 'typeorm-extension';
 })();
 ```
 
-A missing database is reported as `exists: false`. On mongodb, which creates a database lazily, `exists` is `true`
-once the connection succeeds, and `schema` is `true` when no migrations are configured.
+A missing database is reported as `exists: false`, and so is any failure to connect (also wrong credentials or an
+unreachable host). On mongodb, which creates a database lazily, `exists` is `true` once the connection succeeds, and
+`schema` is `true` when no migrations are configured.
 
-A data source passed as `dataSource` takes precedence over `options` and is never destroyed. If it is not initialized
-and has `synchronize` or `migrationsRun` set, the check runs on a copy without them.
+A data source passed as `dataSource` takes precedence over `options`. It and a registered one follow the same rule:
+an initialized one is used as is and never destroyed, an uninitialized one is left untouched and the check runs on a
+copy. A copy never synchronizes, runs migrations or drops the schema.
 
 To get a better overview and understanding of the
 [checkDatabase](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#checkdatabase)
