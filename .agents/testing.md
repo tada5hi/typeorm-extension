@@ -37,7 +37,7 @@ Not every driver can do everything, so `test/data/typeorm/integration.ts` expose
 | `supportsForeignKeyColumnAlter`  | everything but mysql     | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
 | `supportsSchemaMetadata`         | mongodb                  | no relational schema to compare, and the fixtures use relations                            |
 | `supportsDatabaseDrop`           | oracle                   | `OracleDialect.drop` is a documented no-op                                                 |
-| `supportsDatabaseExistenceCheck` | cockroachdb, mongodb     | `checkDatabase` derives `exists` from a failing `initialize()`, which cockroachdb does not do for a missing database |
+| `supportsDatabaseExistenceCheck` | mongodb                  | mongodb creates a database lazily, so `checkDatabase` does not report a dropped one as missing |
 | `supportsDatabaseCharset`        | everything but mysql/mariadb | only the mysql dialect turns `charset` into a `CHARACTER SET` (and `COLLATE`) clause |
 | `supportsDatabaseLock`           | everything but postgres/mysql/mariadb | `withDatabaseLock` refuses them with a `DriverError` (cockroachdb's advisory locks are no-ops) |
 | `supportsRowLock`                | mongodb                  | `withLockedEntity` refuses it with a `DriverError` (typeorm emits no row lock there)        |

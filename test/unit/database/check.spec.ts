@@ -102,9 +102,14 @@ describe('src/database/methods/check', () => {
         expect(destroy).toHaveBeenCalledTimes(1);
     });
 
-    it('should report an existing database on plain options', async () => {
+    it('should report an existing database without its tables on plain options', async () => {
+        // a fresh in-memory database exists, but none of the entity tables do
         const result = await checkDatabase({ options: createDataSourceOptions() });
 
-        expect(result.exists).toBe(true);
+        expect(result).toEqual({
+            exists: true,
+            schema: false,
+            migrationsPending: [],
+        });
     });
 });
