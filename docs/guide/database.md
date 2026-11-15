@@ -135,7 +135,8 @@ To get a better overview and understanding of the [dropDatabase](#dropdatabase) 
 ## Check
 
 `checkDatabase` tells setup code whether the database exists and whether its schema is current.
-It never creates, synchronizes or migrates anything.
+It never synchronizes, migrates or drops the schema. On better-sqlite3, connecting creates a missing database
+file, so `exists` is `true` there.
 
 ```typescript
 import { checkDatabase, createDatabase } from 'typeorm-extension';

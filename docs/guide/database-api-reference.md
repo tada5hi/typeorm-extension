@@ -157,7 +157,7 @@ declare function checkDatabase(
 ): Promise<DatabaseCheckResult>;
 ```
 
-Check whether the database exists and whether its schema is up to date. Nothing is created, synchronized or migrated.
+Check whether the database exists and whether its schema is up to date. The schema is never synchronized, migrated or dropped.
 
 **Example: DataSourceOptions**
 
