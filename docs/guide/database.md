@@ -132,6 +132,52 @@ import { dropDatabase } from 'typeorm-extension';
 
 To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions---database) section and read more about it.
 
+## Check
+
+`checkDatabase` tells setup code whether the database exists and whether its schema is current.
+It never synchronizes, migrates or drops the schema. On better-sqlite3, connecting creates a missing database
+file, so `exists` is `true` there.
+
+```typescript
+import { checkDatabase, createDatabase } from 'typeorm-extension';
+
+(async () => {
+    const check = await checkDatabase({
+        options
+    });
+
+    if (!check.exists) {
+        await createDatabase({
+            options
+        });
+    }
+})();
+```
+
+The result has three fields:
+
+- `exists`: whether the database exists. A missing database is reported as `false`, on cockroachdb as well.
+  Any failure to connect (also wrong credentials or an unreachable host) is reported as `false`.
+- `schema`: whether the schema is up to date. With migrations configured, this is `true` when none are pending.
+  Without migrations, a database which already has a migrations table counts as up to date only when no entities are
+  defined. Otherwise the entity tables are compared against the entity metadata. On mongodb it is `true` when no
+  migrations are configured.
+- `migrationsPending`: the migrations which have not run yet.
+
+Without `options`, the data source is looked up by `alias` in the registry, or discovered the same way as for `createDatabase`.
+
+A data source passed as `dataSource` takes precedence over `options` and `alias`. It and a registered one follow the
+same rule: an initialized one is used as is and never destroyed, an uninitialized one is left untouched and the check
+runs on a copy. A copy, like any data source the check builds itself, never synchronizes, runs migrations or drops
+the schema, and on postgres it installs no extensions.
+
+For details, see [checkDatabase](./database-api-reference#checkdatabase).
+
+::: warning NOTE
+mongodb has no schema to compare. Without migrations configured, `schema` is always `true` there, and `exists` is
+`true` once the connection succeeds: mongodb creates a database lazily, so a missing one is not reported.
+:::
+
 ## Custom Connection
 
 By default, the library opens a raw connection with the driver's native client

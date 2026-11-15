@@ -149,6 +149,56 @@ The function returns a promise with the query result of the underlying database 
 **References**
 - [DatabaseDropContext](#databasedropcontext)
 
+## `checkDatabase`
+
+```ts
+declare function checkDatabase(
+    context?: DatabaseCheckContext
+): Promise<DatabaseCheckResult>;
+```
+
+Check whether the database exists and whether its schema is up to date. The schema is never synchronized, migrated or dropped.
+
+**Example: DataSourceOptions**
+
+```typescript
+import { DataSourceOptions } from 'typeorm';
+import { checkDatabase } from 'typeorm-extension';
+
+(async () => {
+    const options : DataSourceOptions = {
+        //...
+    };
+
+    const { exists, schema, migrationsPending } = await checkDatabase({
+        options
+    });
+})();
+```
+
+**Parameters**
+
+| Name      | Type                   | Description                                                                     |
+|:----------|:-----------------------|:--------------------------------------------------------------------------------|
+| `context` | `DatabaseCheckContext` | Specify a DataSource, DataSourceOptions or a registry alias. [Details](#databasecheckcontext) |
+
+**Returns**
+
+`Promise`<`DatabaseCheckResult`>
+
+A missing database is reported as `exists: false`, on cockroachdb as well, and so is any failure to connect (also
+wrong credentials or an unreachable host). On mongodb, `exists` is `true` once the connection succeeds (a database is
+created lazily there), and `schema` is `true` when no migrations are configured, because there is no schema to compare.
+
+A `dataSource` in the context takes precedence over `options` and `alias`. It and a data source registered under the
+alias follow the same rule: an initialized one is used as is and never destroyed, an uninitialized one is left
+untouched and the check runs on a copy. A copy, like any data source built from options, never synchronizes, runs
+migrations or drops the schema, and on postgres it installs no extensions.
+
+**References**
+- [DatabaseCheckContext](#databasecheckcontext)
+- [DatabaseCheckResult](#databasecheckresult)
+
 ## `getSchemaDrift`
 
 Compare the database schema against the entity metadata and return the statements which would reconcile them.
@@ -675,6 +725,78 @@ export type DatabaseDropContext = DatabaseBaseContext & {
 
 **References**
 - [DatabaseBaseContext](#databasebasecontext)
+
+## DatabaseCheckContext
+
+```typescript
+import { DataSource, DataSourceOptions } from 'typeorm';
+
+export type DatabaseCheckContext = {
+    /**
+     * Options for finding the typeorm DataSource.
+     *
+     * Default: undefined
+     */
+    options?: DataSourceOptions,
+
+    /**
+     * Use alias to access already registered DataSource / DataSourceOptions.
+     * Without options, a DataSource registered under the alias is
+     * handled like a passed dataSource. Otherwise the options
+     * registered or discovered for the alias are used.
+     *
+     * default: undefined
+     */
+    alias?: string,
+
+    /**
+     * Indicates whether to destroy the data-source
+     * built from options afterward or not.
+     * Ignored for a passed or registered data source:
+     * an initialized one is never destroyed,
+     * a copy of an uninitialized one always is.
+     *
+     * default: true
+     */
+    dataSourceCleanup?: boolean,
+
+    /**
+     * Use predefined data-source for checks.
+     * It takes precedence over options and alias.
+     * An initialized one is used as is and never destroyed.
+     * An uninitialized one is left untouched and the check runs on a copy.
+     * A copy never synchronizes, runs migrations or drops the schema.
+     *
+     * default: undefined
+     */
+    dataSource?: DataSource
+};
+```
+
+## DatabaseCheckResult
+
+```typescript
+import { Migration } from 'typeorm';
+
+export type DatabaseCheckResult = {
+    /**
+     * Indicates whether the database
+     * has already been created or not.
+     */
+    exists: boolean,
+
+    /**
+     * Indicates whether the database's schema
+     * is up-to-date.
+     */
+    schema: boolean,
+
+    /**
+     * Array of un applied migrations.
+     */
+    migrationsPending: Migration[]
+};
+```
 
 ## MigrationGenerateCommandContext
 

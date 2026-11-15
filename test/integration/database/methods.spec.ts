@@ -56,14 +56,10 @@ describe.runIf(driver && supportsDatabaseDrop(driver))(`src/database/methods (${
             synchronize: supportsSchemaMetadata(driver),
         });
 
-        // checkDatabase inspects the schema, which the mongodb query runner
-        // does not implement ("Check schema queries are not supported")
-        if (supportsSchemaMetadata(driver)) {
-            expect(await checkDatabase({ options })).toMatchObject({
-                exists: true,
-                schema: true,
-            });
-        }
+        expect(await checkDatabase({ options })).toMatchObject({
+            exists: true,
+            schema: true,
+        });
 
         await dropDatabase({
             options,

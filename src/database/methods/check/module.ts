@@ -1,12 +1,26 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DataSource, MigrationExecutor } from 'typeorm';
-import {
-    hasDataSource,
-    useDataSource,
-    useDataSourceOptions,
-} from '../../../data-source';
+import { useDataSourceOptions } from '../../../data-source';
+import { useRuntimeRegistry } from '../../../runtime';
 import { hasStringProperty } from '../../../utils';
+import { isDatabaseNotFoundError } from '../../error/module';
 import type { DatabaseCheckContext, DatabaseCheckResult } from './types';
+
+/**
+ * A data source for the check alone. typeorm's initialize() would
+ * otherwise synchronize, run migrations, drop the schema or
+ * (postgres) install extensions.
+ */
+function createCheckDataSource(options: DataSourceOptions) : DataSource {
+    return new DataSource({
+        ...options,
+        synchronize: false,
+        migrationsRun: false,
+        dropSchema: false,
+        // a postgres / cockroachdb option, which the options union does not carry for every driver.
+        installExtensions: false,
+    } as DataSourceOptions);
+}
 
 /**
  * Check database setup progress.
@@ -23,26 +37,24 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
     let dataSource : DataSource;
     let dataSourceCleanup : boolean;
 
+    let candidate = context.dataSource;
+
     if (
-        typeof context.dataSource === 'undefined' &&
-        typeof context.options === 'undefined' &&
-        hasDataSource(context.alias)
+        typeof candidate === 'undefined' &&
+        typeof context.options === 'undefined'
     ) {
-        dataSource = await useDataSource(context.alias);
+        // read the registry without initializing: useDataSource() would.
+        candidate = useRuntimeRegistry().dataSources.get(context.alias || 'default');
+    }
 
-        if (
-            dataSource.options.synchronize ||
-            dataSource.options.migrationsRun
-        ) {
-            dataSource = new DataSource({
-                ...dataSource.options,
-                synchronize: false,
-                migrationsRun: false,
-            });
-
-            dataSourceCleanup = true;
-        } else {
+    if (candidate) {
+        if (candidate.isInitialized) {
+            dataSource = candidate;
             dataSourceCleanup = false;
+        } else {
+            // the candidate is never touched, the check runs on a copy.
+            dataSource = createCheckDataSource(candidate.options);
+            dataSourceCleanup = true;
         }
     } else {
         let dataSourceOptions : DataSourceOptions;
@@ -53,11 +65,7 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
             dataSourceOptions = await useDataSourceOptions(context.alias);
         }
 
-        dataSource = new DataSource({
-            ...dataSourceOptions,
-            synchronize: false,
-            migrationsRun: false,
-        });
+        dataSource = createCheckDataSource(dataSourceOptions);
         dataSourceCleanup = context.dataSourceCleanup ?? true;
     }
 
@@ -73,52 +81,70 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
 
     const queryRunner = dataSource.createQueryRunner();
 
-    if (
-        dataSource.migrations &&
-        dataSource.migrations.length > 0
-    ) {
-        const migrationExecutor = new MigrationExecutor(dataSource, queryRunner);
+    try {
+        if (
+            dataSource.migrations &&
+            dataSource.migrations.length > 0
+        ) {
+            const migrationExecutor = new MigrationExecutor(dataSource, queryRunner);
 
-        result.migrationsPending = await migrationExecutor.getPendingMigrations();
+            result.migrationsPending = await migrationExecutor.getPendingMigrations();
 
-        result.schema = result.migrationsPending.length === 0;
-    } else {
-        let schema : string | undefined;
-
-        if (hasStringProperty(dataSource.driver.options, 'schema')) {
-            schema = dataSource.driver.options.schema;
-        }
-
-        const migrationsTableName = dataSource.driver.buildTableName(
-            dataSource.options.migrationsTableName || 'migrations',
-            schema,
-            dataSource.driver.database,
-        );
-        const migrationsTableExists = await queryRunner.hasTable(migrationsTableName);
-
-        if (migrationsTableExists) {
-            result.schema = dataSource.entityMetadatas.length === 0;
+            result.schema = result.migrationsPending.length === 0;
+        } else if (dataSource.options.type === 'mongodb') {
+            // mongodb has no tables to probe, collections appear on first write.
+            result.schema = true;
         } else {
-            const tableNames = dataSource.entityMetadatas.map(
-                (entityMetadata) => entityMetadata.tablePath,
+            let schema : string | undefined;
+
+            if (hasStringProperty(dataSource.driver.options, 'schema')) {
+                schema = dataSource.driver.options.schema;
+            }
+
+            const migrationsTableName = dataSource.driver.buildTableName(
+                dataSource.options.migrationsTableName || 'migrations',
+                schema,
+                dataSource.driver.database,
             );
-            const tables = await queryRunner.getTables(tableNames);
+            const migrationsTableExists = await queryRunner.hasTable(migrationsTableName);
 
-            if (tables.length === dataSource.entityMetadatas.length) {
-                const { upQueries } = await dataSource.driver.createSchemaBuilder()
-                    .log();
-
-                result.schema = upQueries.length === 0;
+            if (migrationsTableExists) {
+                result.schema = dataSource.entityMetadatas.length === 0;
             } else {
-                result.schema = false;
+                const tableNames = dataSource.entityMetadatas.map(
+                    (entityMetadata) => entityMetadata.tablePath,
+                );
+                const tables = await queryRunner.getTables(tableNames);
+
+                if (tables.length === dataSource.entityMetadatas.length) {
+                    const { upQueries } = await dataSource.driver.createSchemaBuilder()
+                        .log();
+
+                    result.schema = upQueries.length === 0;
+                } else {
+                    result.schema = false;
+                }
             }
         }
-    }
+    } catch (e) {
+        // cockroachdb connects to a missing database and fails on the first query.
+        if (isDatabaseNotFoundError(e)) {
+            return {
+                exists: false,
+                schema: false,
+                migrationsPending: [],
+            };
+        }
 
-    await queryRunner.release();
-
-    if (dataSourceCleanup) {
-        await dataSource.destroy();
+        throw e;
+    } finally {
+        try {
+            await queryRunner.release();
+        } finally {
+            if (dataSourceCleanup) {
+                await dataSource.destroy();
+            }
+        }
     }
 
     return result;

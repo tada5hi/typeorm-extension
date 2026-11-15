@@ -121,12 +121,10 @@ export function supportsDatabaseDrop(driver?: IntegrationDriver) : boolean {
 /**
  * Whether checkDatabase can report a missing database as `exists: false`.
  *
- * It derives that from a failing `DataSource.initialize()`, and cockroachdb
- * accepts the connection for a database which does not exist — the error only
- * surfaces on the first query, which checkDatabase lets propagate.
+ * mongodb creates a database lazily, so a dropped one is not reported as missing.
  */
 export function supportsDatabaseExistenceCheck(driver?: IntegrationDriver) : boolean {
-    return supportsSchemaMetadata(driver) && driver !== 'cockroachdb';
+    return !!driver && driver !== 'mongodb';
 }
 
 /**
