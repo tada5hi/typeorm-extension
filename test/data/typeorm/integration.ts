@@ -96,6 +96,14 @@ export function supportsRowLock(driver?: IntegrationDriver) : boolean {
 }
 
 /**
+ * Whether createDatabase turns the `charset` option into a
+ * CHARACTER SET (and COLLATE) clause for the driver.
+ */
+export function supportsDatabaseCharset(driver?: IntegrationDriver) : boolean {
+    return driver === 'mysql' || driver === 'mariadb';
+}
+
+/**
  * Whether the driver has a relational schema to compare against
  * the entity metadata at all.
  */

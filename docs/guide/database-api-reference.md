@@ -35,6 +35,7 @@ E.g.
   ```typescript
   await createDatabase({ charset: "utf8mb4_general_ci", characterSet: "utf8mb4" });
   ```
+  A collation (`utf8mb4_general_ci`) yields `CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci`. A plain character set name (`utf8mb4`) yields `CHARACTER SET utf8mb4` only, so the server picks that set's default collation.
 
 **Example: DataSourceOptions**
 
