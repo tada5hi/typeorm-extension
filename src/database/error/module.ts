@@ -1,6 +1,6 @@
 import { isObject } from '../../utils';
 
-type DatabaseErrorKind = 'uniqueViolation' | 'foreignKeyViolation' | 'lockConflict';
+type DatabaseErrorKind = 'uniqueViolation' | 'foreignKeyViolation' | 'lockConflict' | 'notFound';
 
 /**
  * The fields a driver reports its vendor code in. QueryFailedError copies
@@ -113,6 +113,13 @@ const CODES : Record<DatabaseErrorKind, DatabaseErrorCodes> = {
         ],
         errorNum: [60, 8177, 54],
     },
+    notFound: {
+        code: [
+            '3D000', // postgres, cockroachdb: invalid_catalog_name
+        ],
+        number: [],
+        errorNum: [],
+    },
 };
 
 const MSSQL_CONSTRAINT_CONFLICT = 547;
@@ -185,4 +192,17 @@ export function isDatabaseLockConflictError(error: unknown) : boolean {
     const signature = readSignature(error);
 
     return !!signature && matches(signature, CODES.lockConflict);
+}
+
+/**
+ * True when the database the connection names does not exist.
+ * cockroachdb connects to a missing database and fails on the first
+ * query instead, which is where checkDatabase needs this.
+ *
+ * Internal, not part of the public barrel.
+ */
+export function isDatabaseNotFoundError(input: unknown) : boolean {
+    const signature = readSignature(input);
+
+    return !!signature && matches(signature, CODES.notFound);
 }

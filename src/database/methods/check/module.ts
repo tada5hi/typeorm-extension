@@ -6,6 +6,7 @@ import {
     useDataSourceOptions,
 } from '../../../data-source';
 import { hasStringProperty } from '../../../utils';
+import { isDatabaseNotFoundError } from '../../error/module';
 import type { DatabaseCheckContext, DatabaseCheckResult } from './types';
 
 /**
@@ -73,52 +74,68 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
 
     const queryRunner = dataSource.createQueryRunner();
 
-    if (
-        dataSource.migrations &&
-        dataSource.migrations.length > 0
-    ) {
-        const migrationExecutor = new MigrationExecutor(dataSource, queryRunner);
+    try {
+        if (
+            dataSource.migrations &&
+            dataSource.migrations.length > 0
+        ) {
+            const migrationExecutor = new MigrationExecutor(dataSource, queryRunner);
 
-        result.migrationsPending = await migrationExecutor.getPendingMigrations();
+            result.migrationsPending = await migrationExecutor.getPendingMigrations();
 
-        result.schema = result.migrationsPending.length === 0;
-    } else {
-        let schema : string | undefined;
-
-        if (hasStringProperty(dataSource.driver.options, 'schema')) {
-            schema = dataSource.driver.options.schema;
-        }
-
-        const migrationsTableName = dataSource.driver.buildTableName(
-            dataSource.options.migrationsTableName || 'migrations',
-            schema,
-            dataSource.driver.database,
-        );
-        const migrationsTableExists = await queryRunner.hasTable(migrationsTableName);
-
-        if (migrationsTableExists) {
-            result.schema = dataSource.entityMetadatas.length === 0;
+            result.schema = result.migrationsPending.length === 0;
+        } else if (dataSource.options.type === 'mongodb') {
+            // mongodb has no tables to probe, collections appear on first write.
+            result.schema = true;
         } else {
-            const tableNames = dataSource.entityMetadatas.map(
-                (entityMetadata) => entityMetadata.tablePath,
+            let schema : string | undefined;
+
+            if (hasStringProperty(dataSource.driver.options, 'schema')) {
+                schema = dataSource.driver.options.schema;
+            }
+
+            const migrationsTableName = dataSource.driver.buildTableName(
+                dataSource.options.migrationsTableName || 'migrations',
+                schema,
+                dataSource.driver.database,
             );
-            const tables = await queryRunner.getTables(tableNames);
+            const migrationsTableExists = await queryRunner.hasTable(migrationsTableName);
 
-            if (tables.length === dataSource.entityMetadatas.length) {
-                const { upQueries } = await dataSource.driver.createSchemaBuilder()
-                    .log();
-
-                result.schema = upQueries.length === 0;
+            if (migrationsTableExists) {
+                result.schema = dataSource.entityMetadatas.length === 0;
             } else {
-                result.schema = false;
+                const tableNames = dataSource.entityMetadatas.map(
+                    (entityMetadata) => entityMetadata.tablePath,
+                );
+                const tables = await queryRunner.getTables(tableNames);
+
+                if (tables.length === dataSource.entityMetadatas.length) {
+                    const { upQueries } = await dataSource.driver.createSchemaBuilder()
+                        .log();
+
+                    result.schema = upQueries.length === 0;
+                } else {
+                    result.schema = false;
+                }
             }
         }
-    }
+    } catch (e) {
+        // cockroachdb connects to a missing database and fails on the first query.
+        if (isDatabaseNotFoundError(e)) {
+            return {
+                exists: false,
+                schema: false,
+                migrationsPending: [],
+            };
+        }
 
-    await queryRunner.release();
+        throw e;
+    } finally {
+        await queryRunner.release();
 
-    if (dataSourceCleanup) {
-        await dataSource.destroy();
+        if (dataSourceCleanup) {
+            await dataSource.destroy();
+        }
     }
 
     return result;

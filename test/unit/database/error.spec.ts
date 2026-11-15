@@ -11,6 +11,7 @@ import {
     isDatabaseLockConflictError,
     isDatabaseUniqueViolationError,
 } from '../../../src';
+import { isDatabaseNotFoundError } from '../../../src/database/error/module';
 import { ConstraintChild } from '../../data/entity/constraint-child';
 import { ConstraintParent } from '../../data/entity/constraint-parent';
 
@@ -159,5 +160,19 @@ describe('src/database/error', () => {
             await expect(children.insert({ id: 2, parentId: 99 })).rejects.toSatisfy(isDatabaseForeignKeyViolationError);
             await expect(parents.delete({ id: 1 })).rejects.toSatisfy(isDatabaseForeignKeyViolationError);
         });
+    });
+});
+
+describe('isDatabaseNotFoundError', () => {
+    it('should recognize a missing database on the wrapper and on the driver error', () => {
+        expect(isDatabaseNotFoundError({ code: '3D000' })).toBe(true);
+        expect(isDatabaseNotFoundError({ driverError: { code: '3D000' }, message: 'x' })).toBe(true);
+    });
+
+    it('should reject other errors and non objects', () => {
+        expect(isDatabaseNotFoundError({ code: '23505' })).toBe(false);
+        expect(isDatabaseNotFoundError(new Error('database "x" does not exist'))).toBe(false);
+        expect(isDatabaseNotFoundError(undefined)).toBe(false);
+        expect(isDatabaseNotFoundError('3D000')).toBe(false);
     });
 });
