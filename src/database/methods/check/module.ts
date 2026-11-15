@@ -1,13 +1,23 @@
 import type { DataSourceOptions } from 'typeorm';
 import { DataSource, MigrationExecutor } from 'typeorm';
-import {
-    hasDataSource,
-    useDataSource,
-    useDataSourceOptions,
-} from '../../../data-source';
+import { useDataSourceOptions } from '../../../data-source';
+import { useRuntimeRegistry } from '../../../runtime';
 import { hasStringProperty } from '../../../utils';
 import { isDatabaseNotFoundError } from '../../error/module';
 import type { DatabaseCheckContext, DatabaseCheckResult } from './types';
+
+/**
+ * A data source for the check alone. typeorm's initialize() would
+ * otherwise synchronize, run migrations or drop the schema.
+ */
+function createCheckDataSource(options: DataSourceOptions) : DataSource {
+    return new DataSource({
+        ...options,
+        synchronize: false,
+        migrationsRun: false,
+        dropSchema: false,
+    });
+}
 
 /**
  * Check database setup progress.
@@ -24,43 +34,24 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
     let dataSource : DataSource;
     let dataSourceCleanup : boolean;
 
-    if (typeof context.dataSource !== 'undefined') {
-        dataSource = context.dataSource;
+    let candidate = context.dataSource;
 
-        // initializing it would change the schema, so check on a copy instead.
-        if (
-            !dataSource.isInitialized &&
-            (dataSource.options.synchronize || dataSource.options.migrationsRun)
-        ) {
-            dataSource = new DataSource({
-                ...dataSource.options,
-                synchronize: false,
-                migrationsRun: false,
-            });
-
-            dataSourceCleanup = true;
-        } else {
-            dataSourceCleanup = false;
-        }
-    } else if (
-        typeof context.options === 'undefined' &&
-        hasDataSource(context.alias)
+    if (
+        typeof candidate === 'undefined' &&
+        typeof context.options === 'undefined'
     ) {
-        dataSource = await useDataSource(context.alias);
+        // read the registry without initializing: useDataSource() would.
+        candidate = useRuntimeRegistry().dataSources.get(context.alias || 'default');
+    }
 
-        if (
-            dataSource.options.synchronize ||
-            dataSource.options.migrationsRun
-        ) {
-            dataSource = new DataSource({
-                ...dataSource.options,
-                synchronize: false,
-                migrationsRun: false,
-            });
-
-            dataSourceCleanup = true;
-        } else {
+    if (candidate) {
+        if (candidate.isInitialized) {
+            dataSource = candidate;
             dataSourceCleanup = false;
+        } else {
+            // the candidate is never touched, the check runs on a copy.
+            dataSource = createCheckDataSource(candidate.options);
+            dataSourceCleanup = true;
         }
     } else {
         let dataSourceOptions : DataSourceOptions;
@@ -71,11 +62,7 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
             dataSourceOptions = await useDataSourceOptions(context.alias);
         }
 
-        dataSource = new DataSource({
-            ...dataSourceOptions,
-            synchronize: false,
-            migrationsRun: false,
-        });
+        dataSource = createCheckDataSource(dataSourceOptions);
         dataSourceCleanup = context.dataSourceCleanup ?? true;
     }
 

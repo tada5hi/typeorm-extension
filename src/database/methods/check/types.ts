@@ -10,6 +10,9 @@ export type DatabaseCheckContext = {
 
     /**
      * Use alias to access already registered DataSource / DataSourceOptions.
+     * Without options, a DataSource registered under the alias is
+     * handled like a passed dataSource. Otherwise the options
+     * registered or discovered for the alias are used.
      *
      * default: undefined
      */
@@ -17,9 +20,10 @@ export type DatabaseCheckContext = {
 
     /**
      * Indicates whether to destroy the data-source
-     * afterward or not.
-     * Ignored for a passed or registered data source,
-     * which is never destroyed.
+     * built from options afterward or not.
+     * Ignored for a passed or registered data source:
+     * an initialized one is never destroyed,
+     * a copy of an uninitialized one always is.
      *
      * default: true
      */
@@ -27,10 +31,10 @@ export type DatabaseCheckContext = {
 
     /**
      * Use predefined data-source for checks.
-     * It takes precedence over options and alias, and is never destroyed.
-     * An uninitialized one is initialized and left initialized,
-     * unless it has synchronize or migrationsRun set: then the check
-     * runs on a copy without them and the passed one stays untouched.
+     * It takes precedence over options and alias.
+     * An initialized one is used as is and never destroyed.
+     * An uninitialized one is left untouched and the check runs on a copy.
+     * A copy never synchronizes, runs migrations or drops the schema.
      *
      * default: undefined
      */

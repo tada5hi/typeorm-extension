@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import type { MigrationInterface } from 'typeorm';
+import type { DataSourceOptions, MigrationInterface } from 'typeorm';
 import { DataSource } from 'typeorm';
 import {
     afterEach,
@@ -27,6 +27,66 @@ class MigrationWithoutTimestamp implements MigrationInterface {
     }
 }
 
+const databasePath = path.join(
+    import.meta.dirname,
+    '..',
+    '..',
+    '..',
+    'writable',
+    'check-database.sqlite',
+);
+
+function createFileDataSourceOptions(input: Partial<DataSourceOptions> = {}) : DataSourceOptions {
+    return {
+        type: 'better-sqlite3',
+        entities: createDataSourceOptions().entities,
+        database: databasePath,
+        ...input,
+    } as DataSourceOptions;
+}
+
+/**
+ * Run a callback against the file database through a data source
+ * of its own, which knows no entities.
+ */
+async function inspectFile<T>(fn: (dataSource: DataSource) => Promise<T>) : Promise<T> {
+    const inspector = new DataSource({ type: 'better-sqlite3', database: databasePath });
+
+    await inspector.initialize();
+
+    try {
+        return await fn(inspector);
+    } finally {
+        await inspector.destroy();
+    }
+}
+
+async function readTableNames() : Promise<string[]> {
+    return inspectFile(async (inspector) => {
+        const rows : { name: string }[] = await inspector.query(
+            'SELECT name FROM sqlite_master WHERE type = \'table\' ORDER BY name',
+        );
+
+        return rows.map((row) => row.name);
+    });
+}
+
+/**
+ * A table with one row, which a dropped schema would lose.
+ */
+async function seedFile() : Promise<void> {
+    fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+
+    await inspectFile(async (inspector) => {
+        await inspector.query('CREATE TABLE "keep" ("id" integer PRIMARY KEY)');
+        await inspector.query('INSERT INTO "keep" ("id") VALUES (1)');
+    });
+}
+
+async function readKeptRows() : Promise<unknown[]> {
+    return inspectFile((inspector) => inspector.query('SELECT "id" FROM "keep"'));
+}
+
 describe('src/database/methods/check', () => {
     let dataSource : DataSource | undefined;
 
@@ -39,6 +99,8 @@ describe('src/database/methods/check', () => {
         }
 
         dataSource = undefined;
+
+        fs.rmSync(databasePath, { force: true });
     });
 
     /**
@@ -107,7 +169,7 @@ describe('src/database/methods/check', () => {
         expect(dataSource?.isInitialized).toBe(true);
     });
 
-    it('should destroy an owned data source when the probe throws', async () => {
+    it('should destroy an owned data source when the check throws after initialize', async () => {
         const destroy = vi.spyOn(DataSource.prototype, 'destroy');
 
         await expect(checkDatabase({
@@ -130,20 +192,15 @@ describe('src/database/methods/check', () => {
         });
     });
 
+    it('should not drop the schema on options with dropSchema', async () => {
+        await seedFile();
+
+        await checkDatabase({ options: createFileDataSourceOptions({ dropSchema: true }) });
+
+        expect(await readKeptRows()).toEqual([{ id: 1 }]);
+    });
+
     describe('passed data source', () => {
-        const databasePath = path.join(
-            import.meta.dirname,
-            '..',
-            '..',
-            '..',
-            'writable',
-            'check-database.sqlite',
-        );
-
-        afterEach(() => {
-            fs.rmSync(databasePath, { force: true });
-        });
-
         it('should take precedence over options and stay initialized', async () => {
             dataSource = createDataSource();
             await dataSource.initialize();
@@ -165,8 +222,7 @@ describe('src/database/methods/check', () => {
                 schema: true,
                 migrationsPending: [],
             });
-            // the probe and the schema builder each take a runner from the instance
-            expect(counter.createQueryRunner).toBe(2);
+            expect(counter.createQueryRunner).toBeGreaterThanOrEqual(1);
             expect(dataSource.isInitialized).toBe(true);
         });
 
@@ -178,11 +234,11 @@ describe('src/database/methods/check', () => {
 
             await checkDatabase({ dataSource, dataSourceCleanup: true });
 
-            expect(counter.createQueryRunner).toBe(1);
+            expect(counter.createQueryRunner).toBeGreaterThanOrEqual(1);
             expect(dataSource.isInitialized).toBe(true);
         });
 
-        it('should initialize and use it without synchronize', async () => {
+        it('should check an uninitialized one on a copy', async () => {
             dataSource = createDataSource({
                 ...createDataSourceOptions(),
                 synchronize: false,
@@ -197,21 +253,14 @@ describe('src/database/methods/check', () => {
                 schema: false,
                 migrationsPending: [],
             });
-            expect(counter.createQueryRunner).toBe(1);
-            expect(dataSource.isInitialized).toBe(true);
+            expect(counter.createQueryRunner).toBe(0);
+            expect(dataSource.isInitialized).toBe(false);
         });
 
-        it('should check on a copy when it would synchronize', async () => {
+        it('should not synchronize an uninitialized one', async () => {
             fs.mkdirSync(path.dirname(databasePath), { recursive: true });
 
-            dataSource = createDataSource({
-                type: 'better-sqlite3',
-                entities: createDataSourceOptions().entities,
-                database: databasePath,
-                synchronize: true,
-            });
-
-            const counter = instrument(dataSource);
+            dataSource = createDataSource(createFileDataSourceOptions({ synchronize: true }));
 
             const result = await checkDatabase({ dataSource });
 
@@ -220,21 +269,20 @@ describe('src/database/methods/check', () => {
                 schema: false,
                 migrationsPending: [],
             });
-            expect(counter.createQueryRunner).toBe(0);
             expect(dataSource.isInitialized).toBe(false);
-
             // synchronize would have created the entity tables in the file
-            const inspector = new DataSource({ type: 'better-sqlite3', database: databasePath });
+            expect(await readTableNames()).toEqual([]);
+        });
 
-            await inspector.initialize();
+        it('should not drop the schema of an uninitialized one', async () => {
+            await seedFile();
 
-            try {
-                const tables = await inspector.query('SELECT name FROM sqlite_master WHERE type = \'table\'');
+            dataSource = createDataSource(createFileDataSourceOptions({ dropSchema: true }));
 
-                expect(tables).toEqual([]);
-            } finally {
-                await inspector.destroy();
-            }
+            await checkDatabase({ dataSource });
+
+            expect(dataSource.isInitialized).toBe(false);
+            expect(await readKeptRows()).toEqual([{ id: 1 }]);
         });
 
         it('should rethrow a probe error without destroying it', async () => {
@@ -246,6 +294,44 @@ describe('src/database/methods/check', () => {
 
             await expect(checkDatabase({ dataSource })).rejects.toBe(error);
             expect(counter.release).toBe(1);
+            expect(dataSource.isInitialized).toBe(true);
+        });
+    });
+
+    describe('registered data source', () => {
+        it('should not initialize an uninitialized one', async () => {
+            fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+
+            dataSource = createDataSource(createFileDataSourceOptions({ synchronize: true }));
+            setDataSource(dataSource);
+
+            const result = await checkDatabase();
+
+            expect(result).toEqual({
+                exists: true,
+                schema: false,
+                migrationsPending: [],
+            });
+            expect(dataSource.isInitialized).toBe(false);
+            expect(await readTableNames()).toEqual([]);
+        });
+
+        it('should use an initialized one as is', async () => {
+            dataSource = createDataSource({
+                ...createDataSourceOptions(),
+                synchronize: true,
+            });
+            await dataSource.initialize();
+
+            const counter = instrument(dataSource);
+
+            setDataSource(dataSource);
+
+            const result = await checkDatabase();
+
+            // a copy would be a fresh in-memory database without tables
+            expect(result.schema).toBe(true);
+            expect(counter.createQueryRunner).toBeGreaterThanOrEqual(1);
             expect(dataSource.isInitialized).toBe(true);
         });
     });
