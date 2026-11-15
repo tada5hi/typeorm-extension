@@ -193,7 +193,7 @@ created lazily there), and `schema` is `true` when no migrations are configured,
 A `dataSource` in the context takes precedence over `options` and `alias`. It and a data source registered under the
 alias follow the same rule: an initialized one is used as is and never destroyed, an uninitialized one is left
 untouched and the check runs on a copy. A copy, like any data source built from options, never synchronizes, runs
-migrations or drops the schema.
+migrations or drops the schema, and on postgres it installs no extensions.
 
 **References**
 - [DatabaseCheckContext](#databasecheckcontext)

@@ -181,6 +181,24 @@ describe('src/database/methods/check', () => {
         expect(destroy).toHaveBeenCalledTimes(1);
     });
 
+    it('should destroy an owned data source when releasing the runner fails', async () => {
+        const destroy = vi.spyOn(DataSource.prototype, 'destroy');
+        const { createQueryRunner } = DataSource.prototype;
+
+        vi.spyOn(DataSource.prototype, 'createQueryRunner').mockImplementation(function create(this: DataSource, mode) {
+            const queryRunner = createQueryRunner.call(this, mode);
+
+            queryRunner.release = async () => {
+                throw new Error('release failed');
+            };
+
+            return queryRunner;
+        });
+
+        await expect(checkDatabase({ options: createDataSourceOptions() })).rejects.toThrow('release failed');
+        expect(destroy).toHaveBeenCalledTimes(1);
+    });
+
     it('should report an existing database without its tables on plain options', async () => {
         // a fresh in-memory database exists, but none of the entity tables do
         const result = await checkDatabase({ options: createDataSourceOptions() });

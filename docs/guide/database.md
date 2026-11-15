@@ -169,7 +169,7 @@ Without `options`, the data source is looked up by `alias` in the registry, or d
 A data source passed as `dataSource` takes precedence over `options` and `alias`. It and a registered one follow the
 same rule: an initialized one is used as is and never destroyed, an uninitialized one is left untouched and the check
 runs on a copy. A copy, like any data source the check builds itself, never synchronizes, runs migrations or drops
-the schema.
+the schema, and on postgres it installs no extensions.
 
 For details, see [checkDatabase](./database-api-reference#checkdatabase).
 

@@ -8,7 +8,8 @@ import type { DatabaseCheckContext, DatabaseCheckResult } from './types';
 
 /**
  * A data source for the check alone. typeorm's initialize() would
- * otherwise synchronize, run migrations or drop the schema.
+ * otherwise synchronize, run migrations, drop the schema or
+ * (postgres) install extensions.
  */
 function createCheckDataSource(options: DataSourceOptions) : DataSource {
     return new DataSource({
@@ -16,7 +17,9 @@ function createCheckDataSource(options: DataSourceOptions) : DataSource {
         synchronize: false,
         migrationsRun: false,
         dropSchema: false,
-    });
+        // a postgres / cockroachdb option, which the options union does not carry for every driver.
+        installExtensions: false,
+    } as DataSourceOptions);
 }
 
 /**
@@ -135,10 +138,12 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
 
         throw e;
     } finally {
-        await queryRunner.release();
-
-        if (dataSourceCleanup) {
-            await dataSource.destroy();
+        try {
+            await queryRunner.release();
+        } finally {
+            if (dataSourceCleanup) {
+                await dataSource.destroy();
+            }
         }
     }
 
