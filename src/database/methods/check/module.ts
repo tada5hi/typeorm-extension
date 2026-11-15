@@ -24,8 +24,25 @@ export async function checkDatabase(context: DatabaseCheckContext = {}) : Promis
     let dataSource : DataSource;
     let dataSourceCleanup : boolean;
 
-    if (
-        typeof context.dataSource === 'undefined' &&
+    if (typeof context.dataSource !== 'undefined') {
+        dataSource = context.dataSource;
+
+        // initializing it would change the schema, so check on a copy instead.
+        if (
+            !dataSource.isInitialized &&
+            (dataSource.options.synchronize || dataSource.options.migrationsRun)
+        ) {
+            dataSource = new DataSource({
+                ...dataSource.options,
+                synchronize: false,
+                migrationsRun: false,
+            });
+
+            dataSourceCleanup = true;
+        } else {
+            dataSourceCleanup = false;
+        }
+    } else if (
         typeof context.options === 'undefined' &&
         hasDataSource(context.alias)
     ) {

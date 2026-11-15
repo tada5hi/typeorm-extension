@@ -18,7 +18,8 @@ export type DatabaseCheckContext = {
     /**
      * Indicates whether to destroy the data-source
      * afterward or not.
-     * If a datasource previously existed, this option will be ignored.
+     * Ignored for a passed or registered data source,
+     * which is never destroyed.
      *
      * default: true
      */
@@ -26,6 +27,10 @@ export type DatabaseCheckContext = {
 
     /**
      * Use predefined data-source for checks.
+     * It takes precedence over options and alias, and is never destroyed.
+     * An uninitialized one is initialized and left initialized,
+     * unless it has synchronize or migrationsRun set: then the check
+     * runs on a copy without them and the passed one stays untouched.
      *
      * default: undefined
      */

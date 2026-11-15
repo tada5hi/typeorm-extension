@@ -180,7 +180,7 @@ import { checkDatabase } from 'typeorm-extension';
 
 | Name      | Type                   | Description                                                                     |
 |:----------|:-----------------------|:--------------------------------------------------------------------------------|
-| `context` | `DatabaseCheckContext` | Specify DataSourceOptions or a registry alias. [Details](#databasecheckcontext) |
+| `context` | `DatabaseCheckContext` | Specify a DataSource, DataSourceOptions or a registry alias. [Details](#databasecheckcontext) |
 
 **Returns**
 
@@ -189,6 +189,10 @@ import { checkDatabase } from 'typeorm-extension';
 A missing database is reported as `exists: false`, on cockroachdb as well. On mongodb, `exists` is `true` once the
 connection succeeds (a database is created lazily there), and `schema` is `true` when no migrations are configured,
 because there is no schema to compare.
+
+A `dataSource` in the context takes precedence over `options` and `alias`. It is used as is and never destroyed. An
+uninitialized one is initialized, unless it has `synchronize` or `migrationsRun` set: then the check runs on a copy
+without them.
 
 **References**
 - [DatabaseCheckContext](#databasecheckcontext)
@@ -724,7 +728,7 @@ export type DatabaseDropContext = DatabaseBaseContext & {
 ## DatabaseCheckContext
 
 ```typescript
-import { DataSourceOptions } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 
 export type DatabaseCheckContext = {
     /**
@@ -744,11 +748,23 @@ export type DatabaseCheckContext = {
     /**
      * Indicates whether to destroy the data-source
      * afterward or not.
-     * If a datasource previously existed, this option will be ignored.
+     * Ignored for a passed or registered data source,
+     * which is never destroyed.
      *
      * default: true
      */
-    dataSourceCleanup?: boolean
+    dataSourceCleanup?: boolean,
+
+    /**
+     * Use predefined data-source for checks.
+     * It takes precedence over options and alias, and is never destroyed.
+     * An uninitialized one is initialized and left initialized,
+     * unless it has synchronize or migrationsRun set: then the check
+     * runs on a copy without them and the passed one stays untouched.
+     *
+     * default: undefined
+     */
+    dataSource?: DataSource
 };
 ```
 

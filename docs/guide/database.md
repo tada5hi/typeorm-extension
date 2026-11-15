@@ -161,6 +161,11 @@ The result has three fields:
 - `migrationsPending`: the migrations which have not run yet.
 
 Without `options`, the data source is looked up by `alias` in the registry, or discovered the same way as for `createDatabase`.
+
+A data source passed as `dataSource` takes precedence over `options` and `alias`. It is used as is and never destroyed.
+An uninitialized one is initialized, unless it has `synchronize` or `migrationsRun` set: then the check runs on a
+copy without them, so it never changes the schema.
+
 For details, see [checkDatabase](./database-api-reference#checkdatabase).
 
 ::: warning NOTE
