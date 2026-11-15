@@ -1,3 +1,4 @@
+import { DataSource } from 'typeorm';
 import type { DataSourceOptions } from 'typeorm';
 import {
     afterAll,
@@ -11,6 +12,7 @@ import { Role } from '../../data/entity/role';
 import { User } from '../../data/entity/user';
 import {
     createIntegrationDataSourceOptions,
+    supportsDatabaseCharset,
     supportsDatabaseDrop,
     supportsDatabaseExistenceCheck,
     supportsSchemaMetadata,
@@ -95,5 +97,37 @@ describe.runIf(driver && supportsDatabaseDrop(driver))(`src/database/methods (${
             options,
             ifExist: true,
         });
+    });
+
+    it.runIf(supportsDatabaseCharset(driver))('should create a database with a plain character set name', async () => {
+        const database = 'typeorm_extension_integration_charset';
+        const charsetOptions = createIntegrationDataSourceOptions([], { database, charset: 'utf8mb4' });
+
+        await dropDatabase({ options: charsetOptions, ifExist: true });
+
+        try {
+            await createDatabase({
+                options: charsetOptions,
+                ifNotExist: true,
+                synchronize: false,
+            });
+
+            const dataSource = new DataSource(charsetOptions);
+
+            await dataSource.initialize();
+
+            try {
+                const rows = await dataSource.query(
+                    'SELECT DEFAULT_CHARACTER_SET_NAME AS `value` FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = ?',
+                    [database],
+                );
+
+                expect(rows[0].value).toEqual('utf8mb4');
+            } finally {
+                await dataSource.destroy();
+            }
+        } finally {
+            await dropDatabase({ options: charsetOptions, ifExist: true });
+        }
     });
 });

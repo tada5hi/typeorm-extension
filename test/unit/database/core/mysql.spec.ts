@@ -34,6 +34,45 @@ describe('src/database/core/mysql', () => {
         ]);
     });
 
+    it('should create database with a plain character set name and no collation', async () => {
+        const connectionFactory = new MemoryDatabaseConnectionFactory();
+        const dialect = new MySQLDialect(connectionFactory);
+
+        await dialect.create({
+            params: { database: 'app', charset: 'utf8mb4' },
+            ifNotExist: true,
+        });
+
+        expect(connectionFactory.statements()).toEqual([
+            'CREATE DATABASE IF NOT EXISTS `app` CHARACTER SET utf8mb4',
+        ]);
+    });
+
+    it('should not emit a collation for a plain character set name', () => {
+        expect(buildMySQLCreateDatabaseQuery({ database: 'app', charset: 'utf8' }, false))
+            .toEqual('CREATE DATABASE `app` CHARACTER SET utf8');
+        expect(buildMySQLCreateDatabaseQuery({ database: 'app', charset: 'UTF8MB4' }, false))
+            .toEqual('CREATE DATABASE `app` CHARACTER SET utf8mb4');
+        expect(buildMySQLCreateDatabaseQuery({
+            database: 'app',
+            charset: 'utf8mb4',
+            characterSet: 'utf8mb4',
+        }, false)).toEqual('CREATE DATABASE `app` CHARACTER SET utf8mb4');
+    });
+
+    it('should keep the collation next to an explicit character set', () => {
+        expect(buildMySQLCreateDatabaseQuery({
+            database: 'app',
+            charset: 'latin1_swedish_ci',
+            characterSet: 'latin1',
+        }, false)).toEqual('CREATE DATABASE `app` CHARACTER SET latin1 COLLATE latin1_swedish_ci');
+        expect(buildMySQLCreateDatabaseQuery({
+            database: 'app',
+            charset: 'binary',
+            characterSet: 'binary',
+        }, false)).toEqual('CREATE DATABASE `app` CHARACTER SET binary');
+    });
+
     it('should wrap drop in foreign key check toggles on one connection', async () => {
         const connectionFactory = new MemoryDatabaseConnectionFactory();
         const dialect = new MySQLDialect(connectionFactory);

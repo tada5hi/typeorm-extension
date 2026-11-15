@@ -27,6 +27,18 @@ export function deriveMySQLCharacterSet(charset: string, characterSet?: string):
 }
 
 /**
+ * Whether the charset option needs a COLLATE clause: it names a collation
+ * (utf8mb4_general_ci) rather than a character set (utf8mb4).
+ *
+ * Character set names never carry an underscore. Every collation does,
+ * except `binary`, the only (and thus default) collation of the character
+ * set of the same name, so leaving the clause out is equivalent there.
+ */
+function needsMySQLCollateClause(charset: string): boolean {
+    return charset.includes('_');
+}
+
+/**
  * @link https://github.com/typeorm/typeorm/blob/master/src/driver/mysql/MysqlQueryRunner.ts#L297
  */
 export function buildMySQLCreateDatabaseQuery(params: ConnectionParams, ifNotExist: boolean): string {
@@ -38,7 +50,11 @@ export function buildMySQLCreateDatabaseQuery(params: ConnectionParams, ifNotExi
         const characterSet = deriveMySQLCharacterSet(params.charset, params.characterSet);
 
         if (typeof characterSet === 'string') {
-            query += ` CHARACTER SET ${characterSet} COLLATE ${params.charset}`;
+            query += ` CHARACTER SET ${characterSet}`;
+
+            if (needsMySQLCollateClause(params.charset)) {
+                query += ` COLLATE ${params.charset}`;
+            }
         }
     }
 
