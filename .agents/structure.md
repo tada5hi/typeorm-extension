@@ -103,6 +103,7 @@ typeorm-extension/
 | `smob`               | Object merge utility (deep merge of data-source options).                                     |
 | `reflect-metadata`   | Imported at the top of `src/cli/index.ts` so TypeORM decorators work in CLI-loaded files.     |
 | `pascal-case`        | Used in seed/factory file generation (template stamps `PascalCaseName`).                      |
+| `get-tsconfig`       | `readTSConfig`: JSONC parsing + `extends` resolution (pinned to 4.x; tsdown pulls a 5 beta for itself). |
 
 ## Package Exports
 

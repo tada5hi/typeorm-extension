@@ -1,0 +1,8 @@
+{
+    // outDir and rootDir are relative to this file
+    "compilerOptions": {
+        "outDir": "../build",
+        "rootDir": "../src",
+        "target": "ES2022", /* a trailing comma follows */
+    },
+}

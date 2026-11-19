@@ -183,6 +183,15 @@ describe('src/utils/path-resolver', () => {
             expect(await resolver.transform('src/entities.ts')).toEqual('output/entities.js');
         });
 
+        it('should use the outDir of an extended tsconfig', async () => {
+            const resolver = createPathResolver({
+                root: 'test/data/tsconfig-extends',
+                mode: 'transform',
+            });
+
+            expect(await resolver.transform('src/entities.ts')).toEqual('build/entities.js');
+        });
+
         it('should use a tsconfig object as is', async () => {
             const input = { compilerOptions: { outDir: 'out' } };
             const resolver = createPathResolver({ tsconfig: input });
