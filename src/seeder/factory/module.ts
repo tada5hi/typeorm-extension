@@ -79,19 +79,14 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         const keys = Object.keys(entity);
 
         for (const key of keys as (keyof O)[]) {
-            const value : O[keyof O] = entity[key];
+            const value : unknown = entity[key];
 
             if (!hasOwnProperty(entity, key)) {
                 continue;
             }
 
-            if (
-                typeof value === 'object' &&
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                value instanceof SeederFactory
-            ) {
-                const factory = value as SeederFactory<any>;
+            if (value instanceof SeederFactory) {
+                const factory : SeederFactory<any> = value;
 
                 if (this.context.dataSource && !factory.context.dataSource) {
                     factory.context.dataSource = this.context.dataSource;
@@ -102,14 +97,10 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
                 } else {
                     entity[key] = await factory.make();
                 }
-            }
-
-            if (
-                value &&
-                hasOwnProperty(value, 'then') &&
-                typeof value.then === 'function'
-            ) {
-                entity[key] = await value;
+            } else if (isPromise(value)) {
+                // native promises inherit `then`, so test the
+                // shape rather than an own property.
+                entity[key] = await value as O[keyof O];
             }
         }
 

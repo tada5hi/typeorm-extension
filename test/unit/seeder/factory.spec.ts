@@ -156,7 +156,7 @@ describe('src/seeder/factory/index.ts', () => {
         }
     });
 
-    it('should resolve a factory passed as param', async () => {
+    it('should resolve a factory or promise passed as param', async () => {
         setSeederFactory(Role, () => {
             const role = new Role();
 
@@ -166,13 +166,51 @@ describe('src/seeder/factory/index.ts', () => {
         });
 
         try {
-            const user = await useSeederFactory(User).save({ role: useSeederFactory(Role) as unknown as Role });
+            const user = await useSeederFactory(User).save({
+                role: useSeederFactory(Role) as unknown as Role,
+                email: Promise.resolve('param@example.com') as unknown as string,
+            });
 
             expect(user.role).toBeInstanceOf(Role);
             expect(user.role.id).toBeDefined();
+            expect(user.email).toEqual('param@example.com');
             expect(await dataSource.getRepository(Role).count()).toEqual(1);
         } finally {
             delete useSeederFactoryManager().items[Role.name];
+        }
+    });
+
+    it('should await native promises in factory properties', async () => {
+        setSeederFactory(User, async () => {
+            const user = new User();
+
+            user.firstName = 'native';
+            user.lastName = 'native';
+            user.email = Promise.resolve('native@example.com') as unknown as string;
+            user.role = dataSource.getRepository(Role).findOneByOrFail({ name: 'admin' }) as unknown as Role;
+
+            return user;
+        });
+
+        try {
+            const role = await dataSource.getRepository(Role).save({ name: 'admin' });
+
+            const made = await useSeederFactory(User).make();
+
+            expect(made.email).toEqual('native@example.com');
+            expect(made.role).toBeInstanceOf(Role);
+
+            const saved = await useSeederFactory(User).save({ firstName: 'other' });
+
+            expect(saved.id).toBeDefined();
+            expect(saved.role.id).toEqual(role.id);
+
+            const loaded = await dataSource.getRepository(User).findOneByOrFail({ id: saved.id });
+
+            expect(loaded.email).toEqual('native@example.com');
+            expect(loaded.roleId).toEqual(role.id);
+        } finally {
+            setSeederFactory(User, userFactoryItem.factoryFn);
         }
     });
 
