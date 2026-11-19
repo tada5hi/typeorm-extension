@@ -8,7 +8,7 @@ A TypeScript library that extends [TypeORM](https://typeorm.io) with:
 - A schema-drift assertion (`getSchemaDrift` / `assertSchemaMatchesMetadata`) plus guarded, idempotent rename/alter helpers for repair migrations.
 - A named advisory lock (`withDatabaseLock`) to serialize work such as migrations across processes (postgres, mysql, mariadb).
 - A row-level locked read-modify-write (`withLockedEntity`): one row read with a write lock (`FOR UPDATE`, an `UPDLOCK` hint on mssql) inside a transaction (postgres, cockroachdb, mysql, mariadb, oracle, mssql).
-- Driver error classifiers (`isDatabaseUniqueViolationError`, `isDatabaseForeignKeyViolationError`, `isDatabaseLockConflictError`) that read the vendor code wherever the driver puts it.
+- Driver error classifiers (`isDatabaseUniqueViolationError`, `isDatabaseForeignKeyViolationError`, `isDatabaseLockConflictError`) that read the vendor code wherever the driver puts it, and `readDatabaseErrorCode`, which returns that code as a plain token.
 - A seeder/factory system (similar to Laravel). The factory callback brings its own data generator; the library ships none.
 - Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`) for downstream CRUD layers.
 - A data-source registry with auto-discovery and lazy initialization.

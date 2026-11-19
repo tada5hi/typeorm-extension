@@ -21,6 +21,11 @@ type DatabaseErrorSignature = {
      * oracle: the numeric part of the `ORA-xxxxx` code.
      */
     errorNum?: number,
+    /**
+     * mysql/mariadb (mysql2): the server error number. mysql2 derives `code`
+     * from it with MySQL's table, so an error only mariadb has gets none.
+     */
+    errno?: number,
     message?: string,
 };
 
@@ -47,12 +52,14 @@ function readSignature(input: unknown) : DatabaseErrorSignature | undefined {
     const code = readProperty(input, 'code');
     const number = readProperty(input, 'number');
     const errorNum = readProperty(input, 'errorNum');
+    const errno = readProperty(input, 'errno');
     const message = readProperty(input, 'message');
 
     return {
         code: typeof code === 'string' || typeof code === 'number' ? code : undefined,
         number: typeof number === 'number' ? number : undefined,
         errorNum: typeof errorNum === 'number' ? errorNum : undefined,
+        errno: typeof errno === 'number' ? errno : undefined,
         message: typeof message === 'string' ? message : undefined,
     };
 }
@@ -124,6 +131,13 @@ const CODES : Record<DatabaseErrorKind, DatabaseErrorCodes> = {
 
 const MSSQL_CONSTRAINT_CONFLICT = 547;
 
+/**
+ * sqlite runs ON DELETE / ON UPDATE RESTRICT as a trigger. A trigger of the
+ * schema's own (RAISE) reports the same code with its own message.
+ */
+const SQLITE_CONSTRAINT_TRIGGER = 'SQLITE_CONSTRAINT_TRIGGER';
+const SQLITE_FOREIGN_KEY_MESSAGE = 'FOREIGN KEY constraint failed';
+
 function matches(signature: DatabaseErrorSignature, codes: DatabaseErrorCodes) : boolean {
     return (typeof signature.code !== 'undefined' && codes.code.includes(signature.code)) ||
         (typeof signature.number !== 'undefined' && codes.number.includes(signature.number)) ||
@@ -151,7 +165,9 @@ export function isDatabaseUniqueViolationError(error: unknown) : boolean {
  *
  * mssql raises 547 for a CHECK constraint as well, so the message decides:
  * it names a FOREIGN KEY constraint when the referenced row is missing and a
- * REFERENCE constraint when a referenced row is deleted.
+ * REFERENCE constraint when a referenced row is deleted. better-sqlite3
+ * reports a RESTRICT foreign key as a trigger failure, which the message
+ * tells apart from a trigger of the schema's own.
  */
 export function isDatabaseForeignKeyViolationError(error: unknown) : boolean {
     const signature = readSignature(error);
@@ -167,6 +183,13 @@ export function isDatabaseForeignKeyViolationError(error: unknown) : boolean {
             signature.message.includes('FOREIGN KEY constraint') ||
             signature.message.includes('REFERENCE constraint')
         )
+    ) {
+        return true;
+    }
+
+    if (
+        signature.code === SQLITE_CONSTRAINT_TRIGGER &&
+        signature.message === SQLITE_FOREIGN_KEY_MESSAGE
     ) {
         return true;
     }
@@ -205,4 +228,55 @@ export function isDatabaseNotFoundError(input: unknown) : boolean {
     const signature = readSignature(input);
 
     return !!signature && matches(signature, CODES.notFound);
+}
+
+/**
+ * A code is a SQLSTATE, a driver code name or a number: never spaces, quotes
+ * or a value a message could carry along. mysql's longest names have 64
+ * characters.
+ */
+const DATABASE_ERROR_CODE_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
+function toDatabaseErrorCode(input: unknown) : string | undefined {
+    if (typeof input === 'number') {
+        return Number.isSafeInteger(input) ? `${input}` : undefined;
+    }
+
+    if (typeof input === 'string' && DATABASE_ERROR_CODE_PATTERN.test(input)) {
+        return input;
+    }
+
+    return undefined;
+}
+
+/**
+ * The vendor code of a failed query as a plain token, e.g. to log which
+ * driver error happened: `23505`, `ER_DUP_ENTRY`, `SQLITE_CONSTRAINT_UNIQUE`,
+ * `ORA-00001`, or a number as a string (mssql `2627`, mongodb `11000`).
+ *
+ * mssql's `number` is read before its `code`, which is the generic
+ * `EREQUEST` for every server error. mysql2 names a mariadb error after
+ * MySQL's table: an error only mariadb has comes back as its `errno`, and a
+ * number both servers use for different errors carries MySQL's name. A value which is not a short plain
+ * token (at most 64 letters, digits, `_`, `-`) is skipped, so a message, which may
+ * quote stored values, is never returned.
+ *
+ * Takes the QueryFailedError typeorm throws, or the raw driver error.
+ */
+export function readDatabaseErrorCode(error: unknown) : string | undefined {
+    const signature = readSignature(error);
+
+    if (!signature) {
+        return undefined;
+    }
+
+    for (const candidate of [signature.number, signature.code, signature.errorNum, signature.errno]) {
+        const code = toDatabaseErrorCode(candidate);
+
+        if (typeof code !== 'undefined') {
+            return code;
+        }
+    }
+
+    return undefined;
 }

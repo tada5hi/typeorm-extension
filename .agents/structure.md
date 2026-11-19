@@ -33,7 +33,7 @@ typeorm-extension/
 │   │   │   ├── drift.ts        # getSchemaDrift / assertSchemaMatchesMetadata
 │   │   │   ├── alter/          # guarded renameIndex / renameForeignKey / changeColumnType / withForeignKeyChecksDisabled
 │   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
-│   │   ├── error/              # isDatabaseUniqueViolationError / isDatabaseForeignKeyViolationError / isDatabaseLockConflictError
+│   │   ├── error/              # isDatabaseUniqueViolationError / isDatabaseForeignKeyViolationError / isDatabaseLockConflictError / readDatabaseErrorCode
 │   │   ├── lock/               # withDatabaseLock: named advisory lock over a QueryRunner (postgres, mysql, mariadb); entity.ts: withLockedEntity row lock
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)

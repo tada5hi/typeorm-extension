@@ -5,7 +5,62 @@ import type { DatabaseLockOptions } from './types';
 type DatabaseLockStatements = {
     acquire: string,
     release: string,
+    /**
+     * End the session instead of letting it go back to the pool, which frees
+     * every lock it holds. Used when the release statement failed. Must not
+     * throw, and must leave the query runner released.
+     */
+    discard: (queryRunner: QueryRunner, error: unknown) => Promise<void>,
 };
+
+/**
+ * typeorm keeps `releasePostgresConnection` private: handing an error to
+ * pg's release callback makes the pool destroy the client instead of
+ * reusing it. It sets `isReleased`, so a later `release()` is a no-op.
+ */
+type PostgresQueryRunnerInternals = {
+    releasePostgresConnection?: (error?: unknown) => Promise<void>,
+};
+
+async function discardPostgresSession(queryRunner: QueryRunner, error: unknown) : Promise<void> {
+    const runner = queryRunner as unknown as PostgresQueryRunnerInternals;
+
+    try {
+        if (typeof runner.releasePostgresConnection === 'function') {
+            await runner.releasePostgresConnection(error instanceof Error ? error : new Error(String(error)));
+        } else {
+            await queryRunner.release();
+        }
+    } catch {
+        // the session is ended as far as it can be
+    }
+}
+
+/**
+ * The connection is protected on typeorm's query runner. mysql2's
+ * `PoolConnection.destroy()` removes it from the pool, so the later
+ * `release()` of the caller is a no-op.
+ */
+type MysqlQueryRunnerInternals = {
+    databaseConnection?: { destroy?: () => void },
+    isReleased: boolean,
+};
+
+async function discardMysqlSession(queryRunner: QueryRunner) : Promise<void> {
+    const runner = queryRunner as unknown as MysqlQueryRunnerInternals;
+
+    try {
+        const connection = runner.databaseConnection;
+
+        if (connection && typeof connection.destroy === 'function') {
+            connection.destroy();
+        }
+    } catch {
+        // the connection is unusable either way
+    }
+
+    runner.isReleased = true;
+}
 
 const MYSQL_LOCK_STATEMENTS : DatabaseLockStatements = {
     // A named lock is global to the server: namespace it with the database,
@@ -14,6 +69,7 @@ const MYSQL_LOCK_STATEMENTS : DatabaseLockStatements = {
     // mariadb would answer GET_LOCK(NULL) with NULL instead of an error.
     acquire: 'SELECT GET_LOCK(SHA2(CONCAT(COALESCE(DATABASE(), \'\'), \':\', ?), 256), 0) AS `acquired`',
     release: 'SELECT RELEASE_LOCK(SHA2(CONCAT(COALESCE(DATABASE(), \'\'), \':\', ?), 256)) AS `released`',
+    discard: discardMysqlSession,
 };
 
 /**
@@ -25,6 +81,7 @@ const statements = new Map<string, DatabaseLockStatements>([
         // The name as a bigint key. An advisory lock is scoped to the database.
         acquire: 'SELECT pg_try_advisory_lock(hashtextextended($1, 0)) AS "acquired"',
         release: 'SELECT pg_advisory_unlock(hashtextextended($1, 0)) AS "released"',
+        discard: discardPostgresSession,
     }],
     ['mysql', MYSQL_LOCK_STATEMENTS],
     ['mariadb', MYSQL_LOCK_STATEMENTS],
@@ -54,6 +111,13 @@ export function isDatabaseLockAcquired(rows: unknown) : boolean {
  * afterwards, also when the callback throws. A transaction the callback
  * leaves open on the query runner is rolled back first.
  *
+ * If the release statement fails (e.g. postgres refuses it in a transaction
+ * a failed rollback left aborted), the session is ended instead of going
+ * back to the pool, which frees the lock. The query runner is released
+ * then and can not be used any further. Ending the session frees the locks
+ * of enclosing calls on it as well: a callback which catches the error of a
+ * nested call and carries on runs without the lock.
+ *
  * The lock is session scoped: the query runner must stay on one connection
  * for the whole call, which a typeorm QueryRunner does until it is released.
  * Nested calls with the same name on the same query runner do not block.
@@ -63,6 +127,10 @@ export function isDatabaseLockAcquired(rows: unknown) : boolean {
  * @throws DriverError on any other driver, unless `strict` is false.
  * @throws DatabaseLockError if the lock can not be acquired within `timeout`,
  * the query runner is in a transaction, or the callback left one open.
+ * @throws DatabaseLockError (`releaseFailed`, the release error as `cause`)
+ * if the callback returned but the release failed. It takes precedence over
+ * a transaction the callback left open. If the callback threw, its error is
+ * rethrown instead.
  */
 export async function withDatabaseLock<T>(
     queryRunner: QueryRunner,
@@ -109,9 +177,9 @@ export async function withDatabaseLock<T>(
         output = await fn();
     } catch (e) {
         await rollbackTransaction(queryRunner);
-        // Only a lost connection is left to fail the release here, and that
-        // frees the lock anyway: it must not hide the callback's error.
-        await queryRunner.query(statement.release, [name]).catch(() => undefined);
+
+        // A failed release must not hide the callback's error.
+        await releaseLock(queryRunner, statement, name);
 
         throw e;
     }
@@ -119,7 +187,12 @@ export async function withDatabaseLock<T>(
     // Committing it after the lock is gone would defeat the lock.
     const transactionLeftOpen = await rollbackTransaction(queryRunner);
 
-    await queryRunner.query(statement.release, [name]);
+    const release = await releaseLock(queryRunner, statement, name);
+
+    // The query runner is gone: that matters more than the open transaction.
+    if (!release.released) {
+        throw DatabaseLockError.releaseFailed(name, release.error);
+    }
 
     if (transactionLeftOpen) {
         throw DatabaseLockError.transactionLeftOpen(name);
@@ -129,8 +202,29 @@ export async function withDatabaseLock<T>(
 }
 
 /**
+ * Release the lock, or end the session if the release fails: a session which
+ * goes back to the pool still holding the lock would block every later
+ * caller with the same name forever.
+ */
+async function releaseLock(
+    queryRunner: QueryRunner,
+    statement: DatabaseLockStatements,
+    name: string,
+) : Promise<{ released: true } | { released: false, error: unknown }> {
+    try {
+        await queryRunner.query(statement.release, [name]);
+
+        return { released: true };
+    } catch (e) {
+        await statement.discard(queryRunner, e);
+
+        return { released: false, error: e };
+    }
+}
+
+/**
  * A transaction the callback left open (or postgres aborted) would make
- * postgres refuse the release, and the lock would go back to the pool held.
+ * postgres refuse the release, and the session would have to be ended.
  *
  * Nested transactions are savepoints in typeorm: one rollback only unwinds
  * the innermost, so repeat until the outer one is gone (or a rollback fails).

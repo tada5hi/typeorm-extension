@@ -433,6 +433,12 @@ The lock is session scoped: the query runner must stay on one connection for the
 transaction `fn` leaves open on the query runner is rolled back first. Nested calls with the same
 name on the same query runner do not block.
 
+If the release statement fails (for example postgres refuses it in a transaction a failed rollback left aborted), the
+session is ended instead of going back to the pool, which frees the lock. The query runner is released then, so a
+later `queryRunner.release()` does nothing, and it can not run further queries. Ending the session frees the locks of
+enclosing calls on it as well, so a callback which catches the error of a nested call and carries on runs without the
+lock.
+
 The lock is taken with `pg_try_advisory_lock` (postgres) or `GET_LOCK` (mysql, mariadb) and retried every 100ms until
 `timeout` has passed. On mysql and mariadb the name is namespaced with the current database, so each database has its
 own locks.
@@ -443,6 +449,8 @@ own locks.
   functions, but they do not lock anything), unless `strict` is `false`: then `fn` runs without a lock.
 - `DatabaseLockError` if the lock can not be acquired within `timeout`, if the query runner is in a transaction
   (the lock would outlive a rollback), or if `fn` returned with a transaction left open on it.
+- `DatabaseLockError` (`releaseFailed`, with the release error as `cause`) if `fn` returned but the release failed.
+  It takes precedence over a transaction left open. If `fn` threw, its error is rethrown instead.
 
 ## `withLockedEntity`
 
@@ -494,7 +502,9 @@ declare function isDatabaseForeignKeyViolationError(error: unknown): boolean;
 ```
 
 True when the error is a foreign key violation, in either direction: a row references a missing one, or a row which is
-still referenced is deleted. On mssql, where error 547 covers CHECK constraints as well, the message decides.
+still referenced is deleted. On mssql, where error 547 covers CHECK constraints as well, the message decides. The same
+holds for better-sqlite3, which reports an `ON DELETE` / `ON UPDATE RESTRICT` key as a trigger failure, the code a trigger
+of your own raises as well.
 
 ## `isDatabaseLockConflictError`
 
@@ -516,10 +526,25 @@ typeorm throws as well as the raw driver error. The codes they recognize:
 |-------------------------|-------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------|
 | postgres, cockroachdb   | `23505`                                               | `23503`                                                           | `40P01`, `40001`, `55P03`                  |
 | mysql, mariadb          | `ER_DUP_ENTRY`                                        | `ER_NO_REFERENCED_ROW(_2)`, `ER_ROW_IS_REFERENCED(_2)`            | `ER_LOCK_DEADLOCK`, `ER_LOCK_WAIT_TIMEOUT`, `ER_LOCK_NOWAIT` |
-| better-sqlite3          | `SQLITE_CONSTRAINT_UNIQUE`, `SQLITE_CONSTRAINT_PRIMARYKEY` | `SQLITE_CONSTRAINT_FOREIGNKEY`                               | not covered                                |
+| better-sqlite3          | `SQLITE_CONSTRAINT_UNIQUE`, `SQLITE_CONSTRAINT_PRIMARYKEY` | `SQLITE_CONSTRAINT_FOREIGNKEY`, `SQLITE_CONSTRAINT_TRIGGER` with the message `FOREIGN KEY constraint failed` | not covered |
 | mssql (`number`)        | `2627`, `2601`                                        | `547` naming a FOREIGN KEY or REFERENCE constraint                | `1205`, `1222`                             |
 | oracle                  | `ORA-00001`                                           | `ORA-02291`, `ORA-02292`                                          | `ORA-00060`, `ORA-08177`, `ORA-00054`      |
 | mongodb                 | `11000`, `11001`                                      | not applicable                                                    | not covered                                |
+
+## `readDatabaseErrorCode`
+
+```typescript
+declare function readDatabaseErrorCode(error: unknown): string | undefined;
+```
+
+The vendor code of a failed query as a plain token, e.g. to log which driver error happened: `23505`, `ER_DUP_ENTRY`,
+`SQLITE_CONSTRAINT_UNIQUE`, `ORA-00001`, or a number as a string (mssql `2627`, mongodb `11000`). It reads the same fields
+as the three checks above, mssql's `number` before its generic `EREQUEST` code. A value which is not a short plain token
+(at most 64 letters, digits, `_` or `-`) is skipped, so a message, which may quote stored values, is never returned.
+`undefined` when the error carries no such code.
+
+mysql2 names a mysql or mariadb error after MySQL's error table. An error only mariadb has therefore comes back as its
+number (`1927`), and a number both servers use for different errors carries MySQL's name.
 
 ## DatabaseLockOptions
 ```typescript

@@ -263,6 +263,48 @@ declare async function buildDataSourceOptions(
 **References**
 - [DataSourceOptionsBuildContext](#datasourceoptionsbuildcontext)
 
+## `hasEnvDataSourceOptions`
+
+```typescript
+declare function hasEnvDataSourceOptions(options?: { strict?: boolean }): boolean;
+```
+
+True when the environment names a driver: `DB_TYPE` (or `TYPEORM_CONNECTION`), or a `DB_URL` whose scheme names it
+(`postgres://...`). A `DB_URL` without a scheme names no driver. Only then are data source options read from the
+environment.
+
+With `strict: true` it is only true when the environment describes a data source completely: a driver and at least one
+connection setting (`DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` or `DB_SID`, or one of
+their `TYPEORM_*` aliases).
+
+An incomplete environment gives `false`, never an error (`assertEnvDataSourceOptions` tells why it is refused). A
+malformed `DB_DRIVER_EXTRA` still fails, as everywhere the environment is read. An empty value counts as unset, and it
+checks the values data source options are built from, so it always agrees with what `buildDataSourceOptions` reads.
+
+## `assertEnvDataSourceOptions`
+
+```typescript
+declare function assertEnvDataSourceOptions(options?: { required?: boolean }): void;
+```
+
+Refuses an environment which sets connection settings (`DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`,
+`DB_DATABASE`, `DB_SID`, or a `TYPEORM_*` alias) but names no driver. Data source options are not read from such an
+environment, so the settings would otherwise be ignored without a word, and a default driver (e.g. sqlite) used instead.
+
+With `required: true` it also refuses an environment which names no driver at all, e.g. to require the database
+configuration in production:
+
+```typescript
+import { assertEnvDataSourceOptions } from 'typeorm-extension';
+
+assertEnvDataSourceOptions({ required: process.env.NODE_ENV === 'production' });
+```
+
+**Throws**
+
+- `OptionsError` naming the variables which are set when the driver is missing.
+- `OptionsError` when `required` is set and the environment names no driver.
+
 ## `pinTimezone`
 
 ```typescript
