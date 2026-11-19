@@ -1,0 +1,238 @@
+/*
+ * Chrome: the site footer, and the transparent nav and hidden local nav on
+ * landing pages (`pageClass: te-home`). VitePress's own component styles
+ * are unlayered, so these overrides are unlayered too and imported last.
+ */
+
+/* ---------- TeFooter ---------- */
+.te-footer {
+    position: relative;
+    padding: 64px 0 32px;
+    border-top: 1px solid var(--te-border-on-dark);
+    background: var(--te-surface-dark);
+    color: var(--te-on-dark-muted);
+    font-size: 14px;
+    color-scheme: dark;
+}
+
+/* The sidebar is fixed. From 960px it sits at --vp-z-index-sidebar (25):
+ * the footer paints above it so its band reaches the left edge. Below
+ * 960px the sidebar is the mobile drawer (60) and must cover the footer,
+ * and the sticky local nav (20) must stay above it, so no z-index there.
+ * --vp-z-index-footer (10) is not enough. */
+@media (min-width: 960px) {
+    .te-footer {
+        z-index: 26;
+    }
+
+    /* The sidebar ends where the footer begins, so the footer never hides
+     * sidebar entries (on a short page it is in view at once). Layout.vue
+     * keeps --te-footer-visible at the footer's height inside the viewport.
+     * The element selector outranks VitePress's scoped `.VPSidebar` rule. */
+    .Layout > aside.VPSidebar {
+        bottom: var(--te-footer-visible, 0px);
+    }
+}
+
+.te-footer a {
+    color: inherit;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.te-footer a:hover {
+    color: var(--te-on-dark);
+}
+
+.te-footer a:focus-visible {
+    outline: 2px solid var(--te-color-primary-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+.te-footer__grid {
+    display: grid;
+    grid-template-columns: repeat(var(--te-footer-columns, 3), minmax(0, 1fr));
+    gap: 40px 24px;
+}
+
+.te-footer__brand {
+    display: grid;
+    grid-column: 1 / -1;
+    gap: 14px;
+    align-content: start;
+    max-width: 320px;
+}
+
+.te-footer__home {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.te-footer a.te-footer__home {
+    color: var(--te-on-dark);
+}
+
+.te-footer__logo {
+    display: block;
+    flex: none;
+}
+
+.te-footer__tagline {
+    margin: 0;
+    line-height: 1.6;
+}
+
+.te-footer__title {
+    margin: 0 0 14px;
+    border: 0;
+    padding: 0;
+    font-family: var(--te-font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.4;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--te-on-dark-faint);
+}
+
+.te-footer__links {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.te-footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 56px;
+    padding-top: 22px;
+    border-top: 1px solid var(--te-border-on-dark);
+    font-family: var(--te-font-mono);
+    font-size: 12px;
+    color: var(--te-on-dark-faint);
+}
+
+@media (max-width: 519px) {
+    .te-footer__grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+@media (min-width: 820px) {
+    .te-footer__grid {
+        grid-template-columns: minmax(0, 2fr) repeat(var(--te-footer-columns, 3), minmax(0, 1fr));
+    }
+
+    .te-footer__brand {
+        grid-column: auto;
+    }
+}
+
+/* ---------- Transparent nav on te-home ---------- */
+
+/* From 960px the nav is fixed: let the hero run under it. The hero adds
+ * --te-nav-offset to its own top padding to clear the bar. 960px is
+ * VitePress's breakpoint for the fixed nav. */
+.Layout.te-home {
+    --te-nav-offset: 0px;
+}
+
+@media (min-width: 960px) {
+    .Layout.te-home {
+        --te-nav-offset: var(--vp-nav-height);
+    }
+
+    .Layout.te-home .VPContent {
+        padding-top: 0;
+    }
+}
+
+/* Below 960px the nav scrolls with the page above the hero: give it the
+ * hero's background so no light strip sits over a dark page. */
+@media (max-width: 959px) {
+    .Layout.te-home .VPNav {
+        background-color: var(--te-surface-dark);
+    }
+}
+
+/* The bar takes the hero's colours while it sits on the hero. From 960px
+ * the nav is fixed, so that is only at scrollY 0 (`.top`). Below 960px it
+ * scrolls away with the hero, so it keeps them while scrolling too. The
+ * open mobile menu (`.screen-open`) keeps VitePress's opaque bar.
+ *
+ * The text variables are re-scoped on the bar's own items only. On
+ * .VPNavBar, or on .VPNavBarMenu (which contains the flyout roots), they
+ * would reach the open dropdown menus and paint light text on their light
+ * background.
+ */
+@media (min-width: 960px) {
+    .Layout.te-home .VPNavBar.top:not(.screen-open) {
+        --vp-nav-bg-color: transparent;
+        --vp-c-gutter: transparent;
+    }
+
+    .Layout.te-home .VPNavBar.top:not(.screen-open) :is(
+        .VPNavBarTitle,
+        .VPNavBarMenuLink,
+        .VPNavBarSearch,
+        .VPNavBarAppearance,
+        .VPNavBarSocialLinks,
+        .VPNavBarHamburger
+    ),
+    .Layout.te-home .VPNavBar.top:not(.screen-open) :is(.VPNavBarMenuGroup, .VPNavBarExtra) > .button {
+        --vp-c-text-1: var(--te-on-dark);
+        --vp-c-text-2: var(--te-on-dark-muted);
+        --vp-c-text-3: var(--te-on-dark-faint);
+        --vp-c-brand-1: var(--te-color-primary-400);
+        --vp-c-brand-2: var(--te-color-primary-300);
+        --vp-c-divider: var(--te-border-on-dark-strong);
+        --vp-c-bg-alt: rgb(255 255 255 / 0.06);
+        --vp-input-border-color: var(--te-border-on-dark-strong);
+        --vp-input-switch-bg-color: rgb(255 255 255 / 0.08);
+    }
+}
+
+@media (max-width: 959px) {
+    .Layout.te-home .VPNavBar:not(.screen-open) {
+        --vp-nav-bg-color: transparent;
+        --vp-c-gutter: transparent;
+    }
+
+    .Layout.te-home .VPNavBar:not(.screen-open) :is(
+        .VPNavBarTitle,
+        .VPNavBarMenuLink,
+        .VPNavBarSearch,
+        .VPNavBarAppearance,
+        .VPNavBarSocialLinks,
+        .VPNavBarHamburger
+    ),
+    .Layout.te-home .VPNavBar:not(.screen-open) :is(.VPNavBarMenuGroup, .VPNavBarExtra) > .button {
+        --vp-c-text-1: var(--te-on-dark);
+        --vp-c-text-2: var(--te-on-dark-muted);
+        --vp-c-text-3: var(--te-on-dark-faint);
+        --vp-c-brand-1: var(--te-color-primary-400);
+        --vp-c-brand-2: var(--te-color-primary-300);
+        --vp-c-divider: var(--te-border-on-dark-strong);
+        --vp-c-bg-alt: rgb(255 255 255 / 0.06);
+        --vp-input-border-color: var(--te-border-on-dark-strong);
+        --vp-input-switch-bg-color: rgb(255 255 255 / 0.08);
+    }
+}
+
+/* ---------- No local nav on te-home ---------- */
+
+/* A landing page has no sidebar and no outline. Below 960px VitePress
+ * still shows its local nav, a "Return to top" bar, once the page is
+ * scrolled past the nav height. */
+.Layout.te-home .VPLocalNav {
+    display: none;
+}

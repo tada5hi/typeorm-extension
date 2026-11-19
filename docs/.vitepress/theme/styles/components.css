@@ -1,0 +1,407 @@
+/*
+ * Shared building blocks (TeSection, TeHeading, TeCard, TeCodePanel,
+ * TeButton). Sections publish --te-section-*
+ * properties so headings, buttons and cards adapt to dark surfaces;
+ * outside a section they fall back to the page tokens.
+ *
+ * The blocks also render inside markdown (.vp-doc), where VitePress styles
+ * links, headings, paragraphs and inline code with selectors such as
+ * `.vp-doc a` (0,1,1), `.vp-doc a:hover` (0,2,1) and `.vp-doc :not(pre) > code`
+ * (0,1,2). Rules that must win there match or beat that specificity and
+ * rely on this file loading after VitePress's and doc.css.
+ */
+
+/* ---------- TeSection ---------- */
+.te-section {
+    --te-section-fg: var(--te-color-fg);
+    --te-section-fg-muted: var(--te-color-fg-muted);
+    --te-section-accent: var(--te-color-primary-text);
+    --te-section-border: var(--te-color-border);
+    --te-section-border-strong: var(--te-color-border);
+
+    position: relative;
+    padding: 96px 0;
+    background: var(--te-color-bg);
+    color: var(--te-section-fg);
+}
+
+.te-section--tinted {
+    background: var(--te-color-bg-muted);
+    border-top: 1px solid var(--te-color-border);
+    border-bottom: 1px solid var(--te-color-border);
+}
+
+.te-section--dark {
+    --te-section-fg: var(--te-on-dark);
+    --te-section-fg-muted: var(--te-on-dark-muted);
+    --te-section-accent: var(--te-color-primary-400);
+    --te-section-border: var(--te-border-on-dark);
+    --te-section-border-strong: var(--te-border-on-dark-strong);
+
+    color-scheme: dark;
+    isolation: isolate;
+}
+
+.te-section--dark {
+    background:
+        radial-gradient(900px 480px at 85% -10%, rgba(14, 165, 233, 0.16), transparent 60%),
+        radial-gradient(rgba(148, 163, 184, 0.1) 1px, transparent 1.2px) 0 0 / 22px 22px,
+        var(--te-surface-dark);
+}
+
+.te-container {
+    --te-container-gutter: 24px;
+
+    box-sizing: border-box;
+    width: 100%;
+    max-width: calc(1200px + 2 * var(--te-container-gutter));
+    margin: 0 auto;
+    padding: 0 var(--te-container-gutter);
+}
+
+@media (max-width: 719px) {
+    .te-section {
+        padding: 72px 0;
+    }
+}
+
+@media (max-width: 640px) {
+    .te-container {
+        --te-container-gutter: 16px;
+    }
+}
+
+/* ---------- TeHeading ---------- */
+.te-heading {
+    display: grid;
+    gap: 14px;
+    max-width: 720px;
+}
+
+.te-heading--center {
+    justify-items: center;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.te-heading__eyebrow {
+    font-family: var(--te-font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--te-section-accent, var(--te-color-primary-text));
+}
+
+.te-heading .te-heading__title {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-weight: 600;
+    color: var(--te-section-fg, var(--te-color-fg));
+}
+
+.te-heading .te-heading__title--h1 {
+    font-size: clamp(40px, 6.4vw, 72px);
+    line-height: 1.02;
+    letter-spacing: -0.035em;
+}
+
+.te-heading .te-heading__title--h2 {
+    font-size: clamp(30px, 4.2vw, 46px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.te-heading .te-heading__highlight {
+    background: var(--te-text-gradient-brand);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+}
+
+.te-heading .te-heading__lede {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--te-section-fg-muted, var(--te-color-fg-muted));
+}
+
+/* ---------- TeCard ---------- */
+.te-card {
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    box-sizing: border-box;
+    min-width: 0;
+    height: 100%;
+    padding: 22px 22px 20px;
+    border: 1px solid var(--te-color-border);
+    border-radius: 12px;
+    background: var(--te-color-surface);
+    color: var(--te-color-fg);
+}
+
+a.te-card--link {
+    color: var(--te-color-fg);
+    font-weight: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+a.te-card--link:hover {
+    color: var(--te-color-fg);
+}
+
+.te-card--link:hover {
+    border-color: var(--te-color-primary-500);
+    transform: translateY(-1px);
+}
+
+.te-card--link:focus-visible {
+    outline: 2px solid var(--te-color-primary-500);
+    outline-offset: 2px;
+}
+
+.te-card h3 {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.35;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+}
+
+.te-card p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--te-color-fg-muted);
+}
+
+.te-card :not(pre) > code {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: var(--te-font-mono);
+    font-size: 0.9em;
+    color: var(--te-color-fg);
+}
+
+/* ---------- TeButton ---------- */
+a.te-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-sizing: border-box;
+    height: 46px;
+    padding: 0 20px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: transform 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.te-button:hover {
+    transform: translateY(-1px);
+}
+
+/* Sky 500 keeps 3:1 or more against white, tinted and dark surfaces. */
+.te-button:focus-visible {
+    outline: 2px solid var(--te-color-primary-500);
+    outline-offset: 2px;
+}
+
+a.te-button.te-button--primary {
+    background: var(--te-color-primary-700);
+    color: var(--te-color-on-primary);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 8px 28px -10px rgba(3, 105, 161, 0.8);
+}
+
+a.te-button.te-button--primary:hover {
+    background: var(--te-color-primary-800);
+    color: var(--te-color-on-primary);
+}
+
+a.te-button.te-button--ghost {
+    border-color: var(--te-section-border-strong, var(--te-color-border));
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--te-section-fg, var(--te-color-fg));
+}
+
+a.te-button.te-button--ghost:hover {
+    border-color: var(--te-color-primary-400);
+    color: var(--te-section-fg, var(--te-color-fg));
+}
+
+/* ---------- TeCodePanel (dark in both colour modes) ---------- */
+.te-code-panel {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--te-border-on-dark-strong);
+    border-radius: 14px;
+    background: linear-gradient(180deg, var(--te-surface-dark-elevated), var(--te-surface-dark));
+    box-shadow: 0 40px 80px -48px rgba(11, 18, 32, 0.7);
+    color: var(--te-on-dark);
+    color-scheme: dark;
+}
+
+.te-code-panel__tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    height: 44px;
+    padding: 0 10px;
+    border-bottom: 1px solid var(--te-border-on-dark);
+    font-family: var(--te-font-mono);
+    font-size: 12.5px;
+}
+
+/* The active underline is an inset shadow, so nothing overflows the
+ * tablist vertically and no scrollbar appears beside the tabs. */
+.te-code-panel__tablist {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.te-code-panel__tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    background: none;
+    color: var(--te-on-dark-faint);
+    font: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.te-code-panel__tab:hover {
+    color: var(--te-on-dark-muted);
+}
+
+.te-code-panel__tab:focus-visible {
+    outline: 2px solid var(--te-color-accent-400);
+    outline-offset: -2px;
+}
+
+.te-code-panel__tab[aria-selected='true'] {
+    box-shadow: inset 0 -2px 0 var(--te-color-accent-400);
+    color: var(--te-on-dark);
+}
+
+.te-code-panel__step {
+    font-size: 11px;
+}
+
+.te-code-panel__tab[aria-selected='true'] .te-code-panel__step {
+    color: var(--te-color-accent-400);
+}
+
+/* A long title truncates and never takes more than 40% of the row, so the
+ * tablist beside it keeps room for its (scrollable) tabs. */
+.te-code-panel__file {
+    flex: 0 1 auto;
+    align-self: center;
+    min-width: 0;
+    max-width: 40%;
+    margin-left: auto;
+    padding-right: 6px;
+    overflow: hidden;
+    color: var(--te-on-dark-faint);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.te-code-panel__bar {
+    display: flex;
+    align-items: center;
+    height: 40px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--te-border-on-dark);
+    font-family: var(--te-font-mono);
+    font-size: 12px;
+    color: var(--te-on-dark-muted);
+}
+
+.te-code-panel__code {
+    margin: 0;
+    padding: 18px 20px 20px 0;
+    overflow-x: auto;
+    background: none;
+    color: var(--te-on-dark);
+    font-family: var(--te-font-mono);
+    font-size: clamp(12px, 1.6vw, 14px);
+    line-height: 1.75;
+    counter-reset: te-line;
+}
+
+.te-code-panel__code:focus-visible {
+    outline: 2px solid var(--te-color-accent-400);
+    outline-offset: -2px;
+}
+
+.te-code-panel__code code {
+    display: block;
+    min-width: max-content;
+    padding: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+}
+
+.te-code-panel__line {
+    position: relative;
+    display: block;
+    padding-left: 52px;
+}
+
+.te-code-panel__line::before {
+    position: absolute;
+    left: 0;
+    width: 32px;
+    color: rgba(148, 163, 184, 0.32);
+    text-align: right;
+    content: counter(te-line);
+    counter-increment: te-line;
+}
+
+.te-code-panel__foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    padding: 12px 18px;
+    border-top: 1px solid var(--te-border-on-dark);
+    background: rgba(0, 0, 0, 0.18);
+    font-family: var(--te-font-mono);
+    font-size: 12.5px;
+    color: var(--te-on-dark-muted);
+}
+
+@media (max-width: 520px) {
+    .te-code-panel__line {
+        padding-left: 40px;
+    }
+
+    .te-code-panel__line::before {
+        width: 24px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    a.te-card--link,
+    a.te-button {
+        transition: none;
+    }
+
+    .te-card--link:hover,
+    .te-button:hover {
+        transform: none;
+    }
+}

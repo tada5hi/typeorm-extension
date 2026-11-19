@@ -1,0 +1,121 @@
+/*
+ * typeorm-extension design tokens: slate and sky, taken from the logo
+ * (slate database piece #7C8DA6, sky extension piece #0EA5E9).
+ * Components read every colour, border and font through these custom
+ * properties, so the dark-mode flip needs no per-component overrides.
+ * The --te-surface-dark* and --te-on-dark* tokens are fixed: hero, code
+ * panels and footer stay dark in both colour modes.
+ */
+:root {
+    --te-color-bg: #ffffff;
+    --te-color-bg-elevated: #f8fafc;
+    --te-color-bg-muted: #f1f5f9;
+    --te-color-surface: #ffffff;
+
+    --te-color-fg: #0f172a;
+    --te-color-fg-muted: #475569;
+
+    --te-color-border: #e2e8f0;
+    --te-color-border-muted: #f1f5f9;
+
+    /* sky: the extension piece */
+    --te-color-primary-300: #7dd3fc;
+    --te-color-primary-400: #38bdf8;
+    --te-color-primary-500: #0ea5e9;
+    --te-color-primary-600: #0284c7;
+    --te-color-primary-700: #0369a1;
+    --te-color-primary-800: #075985;
+
+    /* slate: the database piece */
+    --te-color-accent-300: #cbd5e1;
+    --te-color-accent-400: #94a3b8;
+    --te-color-accent-500: #7c8da6;
+    --te-color-accent-600: #64748b;
+
+    --te-color-warning-500: #f59e0b;
+    --te-color-error-500: #ef4444;
+    --te-color-success-500: #10b981;
+
+    --te-color-on-primary: #ffffff;
+    --te-color-primary-text: var(--te-color-primary-700);
+
+    --te-surface-dark: #0b1220;
+    --te-surface-dark-elevated: #121b2d;
+    --te-on-dark: #e2e8f0;
+    --te-on-dark-muted: #94a3b8;
+    --te-on-dark-faint: #7d8aa3;
+    --te-border-on-dark: rgba(148, 163, 184, 0.14);
+    --te-border-on-dark-strong: rgba(148, 163, 184, 0.26);
+
+    --te-gradient-brand: linear-gradient(90deg, var(--te-color-accent-300), var(--te-color-primary-400));
+    /* Both stops keep 3:1 or more (large text) on the white and tinted backgrounds. */
+    --te-gradient-brand-on-light: linear-gradient(90deg, var(--te-color-accent-600), var(--te-color-primary-700));
+
+    --te-font-sans: var(--vp-font-family-base);
+    --te-font-mono: var(--vp-font-family-mono);
+
+    --vp-c-brand-1: var(--te-color-primary-700);
+    --vp-c-brand-2: var(--te-color-primary-800);
+    --vp-c-brand-3: var(--te-color-primary-600);
+    --vp-c-brand-soft: color-mix(in oklab, var(--te-color-primary-500) 14%, transparent);
+
+    /* White text keeps 4.5:1 or more on sky 700 and 800; sky 600 drops to 4.1:1. */
+    --vp-button-brand-bg: var(--te-color-primary-700);
+    --vp-button-brand-hover-bg: var(--te-color-primary-800);
+    --vp-button-brand-active-bg: var(--te-color-primary-800);
+    --vp-button-brand-border: var(--te-color-primary-700);
+    --vp-button-brand-hover-border: var(--te-color-primary-800);
+    --vp-button-brand-active-border: var(--te-color-primary-800);
+}
+
+.dark {
+    --te-color-bg: #0b1220;
+    --te-color-bg-elevated: #131c2e;
+    --te-color-bg-muted: #0f1729;
+    --te-color-surface: #0e1626;
+
+    --te-color-fg: #e2e8f0;
+    --te-color-fg-muted: #94a3b8;
+
+    --te-color-border: #243047;
+    --te-color-border-muted: #172235;
+
+    --te-color-primary-text: var(--te-color-primary-400);
+
+    --vp-c-brand-1: var(--te-color-primary-400);
+    --vp-c-brand-2: var(--te-color-primary-300);
+    --vp-c-brand-3: var(--te-color-primary-500);
+    --vp-c-brand-soft: color-mix(in oklab, var(--te-color-primary-400) 16%, transparent);
+
+    /* One slate palette: VitePress's page, nav, sidebar, flyout, search and
+     * code backgrounds, lines and text all derive from these. */
+    --vp-c-bg: var(--te-color-bg);
+    --vp-c-bg-alt: var(--te-color-bg-muted);
+    --vp-c-bg-elv: var(--te-color-bg-elevated);
+    --vp-c-bg-soft: var(--te-color-bg-elevated);
+
+    --vp-c-border: var(--te-border-on-dark-strong);
+    --vp-c-divider: var(--te-color-border);
+    --vp-c-gutter: var(--te-color-border-muted);
+
+    --vp-c-gray-soft: rgb(148 163 184 / 0.1);
+
+    --vp-c-text-1: var(--te-color-fg);
+    --vp-c-text-2: var(--te-color-fg-muted);
+    --vp-c-text-3: var(--te-on-dark-faint);
+}
+
+/*
+ * The heading highlight depends on the surface below it: the light page
+ * and its default and tinted sections get the darker gradient; dark mode
+ * and the surfaces that stay dark in both modes get the bright one.
+ */
+:root {
+    --te-text-gradient-brand: var(--te-gradient-brand-on-light);
+}
+
+.dark,
+.te-section--dark,
+.te-code-panel {
+    --te-text-gradient-brand: var(--te-gradient-brand);
+}

@@ -12,6 +12,40 @@ export default defineConfig({
     ],
     themeConfig: {
         logo: { src: '/logo.svg', alt: 'typeorm-extension' },
+        teFooter: {
+            tagline: 'Create, migrate, check, lock and seed TypeORM databases on every driver, from code or the CLI.',
+            columns: [
+                {
+                    title: 'Guide',
+                    links: [
+                        { text: 'Installation', link: '/guide/installation' },
+                        { text: 'CLI', link: '/guide/cli' },
+                        { text: 'Database', link: '/guide/database' },
+                        { text: 'Instances', link: '/guide/instances' },
+                        { text: 'Seeding', link: '/guide/seeding' },
+                    ],
+                },
+                {
+                    title: 'API Reference',
+                    links: [
+                        { text: 'Database', link: '/guide/database-api-reference' },
+                        { text: 'DataSource', link: '/guide/datasource-api-reference' },
+                        { text: 'Entity', link: '/guide/entity-api-reference' },
+                        { text: 'Seeding', link: '/guide/seeding-api-reference' },
+                    ],
+                },
+                {
+                    title: 'Project',
+                    links: [
+                        { text: 'GitHub', link: 'https://github.com/tada5hi/typeorm-extension' },
+                        { text: 'npm', link: 'https://www.npmjs.com/package/typeorm-extension' },
+                        { text: 'Changelog', link: 'https://github.com/tada5hi/typeorm-extension/blob/master/CHANGELOG.md' },
+                        { text: 'rapiq (query successor)', link: 'https://rapiq.tada5hi.net' },
+                    ],
+                },
+            ],
+            note: 'Released under the MIT License.',
+        },
         socialLinks: [
             { icon: 'github', link: 'https://github.com/tada5hi/typeorm-extension' },
         ],
