@@ -12,10 +12,12 @@ import {
     isDatabaseForeignKeyViolationError,
     isDatabaseLockConflictError,
     isDatabaseUniqueViolationError,
+    readDatabaseErrorCode,
 } from '../../../src';
 import { ConstraintChild } from '../../data/entity/constraint-child';
 import { ConstraintDocument } from '../../data/entity/constraint-document';
 import { ConstraintParent } from '../../data/entity/constraint-parent';
+import type { IntegrationDriver } from '../../data/typeorm/integration';
 import {
     createIntegrationDataSourceOptions,
     supportsSchemaMetadata,
@@ -23,6 +25,19 @@ import {
 } from '../../data/typeorm/integration';
 
 const driver = useIntegrationDriver();
+
+/**
+ * The code each server reports for a duplicate primary key.
+ */
+const DUPLICATE_KEY_CODES : Record<IntegrationDriver, string> = {
+    postgres: '23505',
+    cockroachdb: '23505',
+    mysql: 'ER_DUP_ENTRY',
+    mariadb: 'ER_DUP_ENTRY',
+    mssql: '2627',
+    oracle: 'ORA-00001',
+    mongodb: '11000',
+};
 
 async function capture(fn: () => Promise<unknown>) : Promise<unknown> {
     try {
@@ -114,6 +129,7 @@ describe.runIf(supportsSchemaMetadata(driver))(`src/database/error (${driver})`,
             foreignKey: false,
             lock: false,
         });
+        expect(readDatabaseErrorCode(error)).toEqual(DUPLICATE_KEY_CODES[driver as IntegrationDriver]);
     });
 
     it('should classify a reference to a missing row', async () => {
@@ -222,5 +238,6 @@ describe.runIf(driver === 'mongodb')('src/database/error (mongodb)', () => {
             foreignKey: false,
             lock: false,
         });
+        expect(readDatabaseErrorCode(error)).toEqual(DUPLICATE_KEY_CODES[driver as IntegrationDriver]);
     });
 });

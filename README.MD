@@ -429,6 +429,9 @@ try {
 }
 ```
 
+`readDatabaseErrorCode(error)` returns the driver's code as a plain token (`23505`, `ER_DUP_ENTRY`, `2627`, ...) for
+logging, never a message which could quote stored values.
+
 To get a better overview and understanding of these functions, check out the
 [documentation](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html).
 

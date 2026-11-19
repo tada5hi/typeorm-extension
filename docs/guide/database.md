@@ -580,3 +580,6 @@ the error only reaches your code once those retries are used up.
 
 The codes each helper recognizes per driver are listed in the
 [API reference](./database-api-reference#isdatabaseuniqueviolationerror).
+
+To log which driver error happened, `readDatabaseErrorCode(error)` returns the vendor code as a plain token (`23505`,
+`ER_DUP_ENTRY`, `2627`, ...), never a message which could quote stored values.

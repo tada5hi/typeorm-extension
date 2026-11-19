@@ -523,6 +523,21 @@ typeorm throws as well as the raw driver error. The codes they recognize:
 | oracle                  | `ORA-00001`                                           | `ORA-02291`, `ORA-02292`                                          | `ORA-00060`, `ORA-08177`, `ORA-00054`      |
 | mongodb                 | `11000`, `11001`                                      | not applicable                                                    | not covered                                |
 
+## `readDatabaseErrorCode`
+
+```typescript
+declare function readDatabaseErrorCode(error: unknown): string | undefined;
+```
+
+The vendor code of a failed query as a plain token, e.g. to log which driver error happened: `23505`, `ER_DUP_ENTRY`,
+`SQLITE_CONSTRAINT_UNIQUE`, `ORA-00001`, or a number as a string (mssql `2627`, mongodb `11000`). It reads the same fields
+as the three checks above, mssql's `number` before its generic `EREQUEST` code. A value which is not a short plain token
+(at most 64 letters, digits, `_` or `-`) is skipped, so a message, which may quote stored values, is never returned.
+`undefined` when the error carries no such code.
+
+mysql2 names a mysql or mariadb error after MySQL's error table. An error only mariadb has therefore comes back as its
+number (`1927`), and a number both servers use for different errors carries MySQL's name.
+
 ## DatabaseLockOptions
 ```typescript
 export type DatabaseLockOptions = {

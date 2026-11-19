@@ -10,6 +10,7 @@ import {
     isDatabaseForeignKeyViolationError,
     isDatabaseLockConflictError,
     isDatabaseUniqueViolationError,
+    readDatabaseErrorCode,
 } from '../../../src';
 import { isDatabaseNotFoundError } from '../../../src/database/error/module';
 import { ConstraintChild } from '../../data/entity/constraint-child';
@@ -195,6 +196,65 @@ describe('src/database/error', () => {
             expect(isDatabaseNotFoundError(new Error('database "x" does not exist'))).toBe(false);
             expect(isDatabaseNotFoundError(undefined)).toBe(false);
             expect(isDatabaseNotFoundError('3D000')).toBe(false);
+        });
+    });
+
+    describe('readDatabaseErrorCode', () => {
+        it.each([
+            [{ code: '23505' }, '23505'],
+            [{ code: 'ER_DUP_ENTRY', errno: 1062 }, 'ER_DUP_ENTRY'],
+            [{ code: 'SQLITE_CONSTRAINT_UNIQUE' }, 'SQLITE_CONSTRAINT_UNIQUE'],
+            [{ code: 'EREQUEST', number: 2627 }, '2627'],
+            [{ code: 'ORA-00001', errorNum: 1 }, 'ORA-00001'],
+            [{ errorNum: 1 }, '1'],
+            [{ code: 11000 }, '11000'],
+            [{ code: 'ECONNREFUSED' }, 'ECONNREFUSED'],
+            [{ code: 'ER_FOREIGN_DUPLICATE_KEY_WITHOUT_CHILD_INFO', errno: 1557 }, 'ER_FOREIGN_DUPLICATE_KEY_WITHOUT_CHILD_INFO'],
+            [{ errno: 1927 }, '1927'],
+        ])('should read %j', (shape, expected) => {
+            expect(readDatabaseErrorCode(shape)).toEqual(expected);
+            expect(readDatabaseErrorCode(wrap(shape))).toEqual(expected);
+            expect(readDatabaseErrorCode({ driverError: shape })).toEqual(expected);
+        });
+
+        it('should never return a message or anything else than a plain token', () => {
+            expect(readDatabaseErrorCode({ code: 'duplicate key value (name)=(alice)' })).toBeUndefined();
+            expect(readDatabaseErrorCode({ code: 'a'.repeat(65) })).toBeUndefined();
+            expect(readDatabaseErrorCode({ code: '' })).toBeUndefined();
+            expect(readDatabaseErrorCode({ code: 1.5 })).toBeUndefined();
+            expect(readDatabaseErrorCode({ code: NaN })).toBeUndefined();
+            expect(readDatabaseErrorCode({ code: { toString: () => '23505' } })).toBeUndefined();
+            expect(readDatabaseErrorCode(new Error('23505'))).toBeUndefined();
+            expect(readDatabaseErrorCode('23505')).toBeUndefined();
+            expect(readDatabaseErrorCode(undefined)).toBeUndefined();
+            expect(readDatabaseErrorCode(null)).toBeUndefined();
+        });
+
+        it('should fall back to the next field when one is no plain token', () => {
+            expect(readDatabaseErrorCode({ code: 'not a code', errorNum: 1 })).toEqual('1');
+        });
+
+        it('should read the code of an error the driver raises', async () => {
+            const dataSource = new DataSource({
+                type: 'better-sqlite3',
+                database: ':memory:',
+                entities: [ConstraintParent, ConstraintChild],
+                synchronize: true,
+            });
+
+            await dataSource.initialize();
+
+            try {
+                const parents = dataSource.getRepository(ConstraintParent);
+
+                await parents.insert({ id: 1, name: 'a' });
+
+                const error = await parents.insert({ id: 1, name: 'b' }).catch((e) => e);
+
+                expect(readDatabaseErrorCode(error)).toEqual('SQLITE_CONSTRAINT_PRIMARYKEY');
+            } finally {
+                await dataSource.destroy();
+            }
         });
     });
 });
