@@ -1,7 +1,7 @@
 import { InstanceChecker } from 'typeorm';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findDataSource } from '../../../src';
+import { findDataSource, findDataSourceOptions } from '../../../src';
 
 describe('src/data-source/utils/find.ts', () => {
     it('should find and load data-source', async () => {
@@ -94,6 +94,23 @@ describe('src/data-source/utils/find.ts', () => {
 
         it('should not call a default export class', async () => {
             await expect(findMarker('default-class')).resolves.toEqual('fallback');
+        });
+
+        it('should call a default export whose parameters all have defaults', async () => {
+            await expect(findMarker('default-optional')).resolves.toEqual('default-optional');
+        });
+
+        it('should return exported options without constructing a data source', async () => {
+            const options = await findDataSourceOptions({ directory, fileName: 'options-missing-driver' });
+
+            expect(options?.type).toEqual('sap');
+            expect(options?.extra?.marker).toEqual('missing-driver');
+        });
+
+        it('should return the options of an exported data source', async () => {
+            const options = await findDataSourceOptions({ directory, fileName: 'precedence-data-source' });
+
+            expect(options?.extra?.marker).toEqual('data-source');
         });
 
         it('should skip classes, functions with parameters and other values', async () => {

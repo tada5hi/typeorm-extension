@@ -15,7 +15,8 @@ scheme).
 **Fix:**
 
 - Export a `DataSource`, e.g. `export const dataSource = new DataSource(options)`, a default export factory function
-  returning one, or the options object itself. Named functions, functions with parameters and classes are not called.
+  returning one, or the options object itself. Named functions, functions with a required parameter and classes are not
+  called.
 - Point the CLI at the file with `-d`, e.g. `-d src/config/orm.ts`. The path is relative to `--root`.
 - Outside `tsx` and `ts-node`, `src` in the path is rewritten to your tsconfig `outDir` (default `dist`). If you run
   TypeScript sources with plain Node, or there is no build yet, pass `--preserveFilePaths` or run the CLI with `tsx`.

@@ -73,10 +73,11 @@ Within one file the first match wins, in this order:
 
 1. A `DataSource`, or a promise that resolves to one.
 2. A default export function without parameters (sync or async) that returns a `DataSource`. It is called once, with
-   no arguments. Named exports are never called, nor are classes or functions with parameters, and a result that is
-   not a `DataSource` is ignored.
-3. A `DataSourceOptions` object (an object with a string `type`), default or named. It is wrapped in
-   `new DataSource(options)`.
+   no arguments. "Without parameters" means `Function.length` is `0`, so a function whose parameters all have defaults
+   (`(name = 'app') => ...`) or a rest parameter is called too. Named exports are never called, nor are classes or
+   functions with a required parameter, and a result that is not a `DataSource` is ignored.
+3. A `DataSourceOptions` object (an object with a string `type`), default or named. The library reads the options
+   directly; only `findDataSource()` wraps them in `new DataSource(options)`.
 
 The factory should return an uninitialized `DataSource`. The library only reads its options and creates its own
 instance, so an initialized one keeps an open connection the library never closes.
@@ -102,7 +103,8 @@ keeps every import. `import { DataSource, DataSourceOptions } from 'typeorm'` th
 Node's type stripping also does not support decorators, so files with entities need `tsx` or a build.
 :::
 
-In code, `buildDataSourceOptions()` runs the same lookup and `findDataSource()` returns the `DataSource` it finds.
+In code, `buildDataSourceOptions()` runs the same lookup, `findDataSource()` returns the `DataSource` it finds and
+`findDataSourceOptions()` returns only its options.
 
 - [`buildDataSourceOptions`](./datasource-api-reference#builddatasourceoptions)
 - [`DataSourceFindOptions`](./datasource-api-reference#datasourcefindoptions)

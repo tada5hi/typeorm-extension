@@ -36,11 +36,12 @@ function isDataSourceOptions(value: unknown) : value is DataSourceOptions {
  * Pick a DataSource from a module record. Precedence: a DataSource
  * (or a promise of one), then a default export factory without
  * parameters whose (awaited) result is a DataSource, then plain
- * DataSourceOptions. Named exports are never called.
+ * DataSourceOptions (returned as they are, no DataSource is constructed:
+ * that would load the driver package). Named exports are never called.
  *
  * @param input
  */
-async function extractDataSource(input: unknown) : Promise<DataSource | undefined> {
+async function extractDataSource(input: unknown) : Promise<DataSource | DataSourceOptions | undefined> {
     let moduleRecord = input;
 
     if (isPromise(moduleRecord)) {
@@ -91,15 +92,15 @@ async function extractDataSource(input: unknown) : Promise<DataSource | undefine
     const options = values.find((value) => isDataSourceOptions(value));
 
     if (options) {
-        return new DataSource(options as DataSourceOptions);
+        return options as DataSourceOptions;
     }
 
     return undefined;
 }
 
-export async function findDataSource(
-    context: DataSourceFindOptions = {},
-) : Promise<DataSource | undefined> {
+async function findDataSourceExport(
+    context: DataSourceFindOptions,
+) : Promise<DataSource | DataSourceOptions | undefined> {
     const pathResolver = createPathResolver({
         tsconfig: context.tsconfig,
         mode: context.preserveFilePaths ?
@@ -171,13 +172,51 @@ export async function findDataSource(
         );
 
         if (info) {
-            const dataSource = await extractDataSource(await readAsModule(info));
+            const output = await extractDataSource(await readAsModule(info));
 
-            if (dataSource) {
-                return dataSource;
+            if (output) {
+                return output;
             }
         }
     }
 
     return undefined;
+}
+
+/**
+ * Locate the data source file and return its DataSource. An exported
+ * DataSourceOptions object is wrapped in a new DataSource.
+ *
+ * @param context
+ */
+export async function findDataSource(
+    context: DataSourceFindOptions = {},
+) : Promise<DataSource | undefined> {
+    const output = await findDataSourceExport(context);
+
+    if (!output || InstanceChecker.isDataSource(output)) {
+        return output;
+    }
+
+    return new DataSource(output);
+}
+
+/**
+ * Locate the data source file and return its options, without constructing
+ * a DataSource for exported options (which would load the driver package).
+ *
+ * @param context
+ */
+export async function findDataSourceOptions(
+    context: DataSourceFindOptions = {},
+) : Promise<DataSourceOptions | undefined> {
+    const output = await findDataSourceExport(context);
+
+    if (!output) {
+        return undefined;
+    }
+
+    return InstanceChecker.isDataSource(output) ?
+        output.options :
+        output;
 }

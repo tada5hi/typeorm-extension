@@ -1,7 +1,7 @@
 import type { DataSourceOptions } from 'typeorm';
 import { OptionsError } from '../../errors';
 import { PathResolverMode, createPathResolver } from '../../utils';
-import { findDataSource } from '../find';
+import { findDataSourceOptions } from '../find';
 import type { DataSourceOptionsBuildContext } from './types';
 import {
     mergeDataSourceOptionsWithEnv,
@@ -25,16 +25,16 @@ export async function buildDataSourceOptions(
             PathResolverMode.AUTO,
     });
 
-    const dataSource = await findDataSource({
+    const fileOptions = await findDataSourceOptions({
         directory,
         fileName: context.dataSourceName,
         tsconfig: context.tsconfig,
         preserveFilePaths: context.preserveFilePaths,
     });
 
-    if (dataSource) {
+    if (fileOptions) {
         const options = await pathResolver.transformKeys(
-            dataSource.options,
+            fileOptions,
             ['entities', 'migrations', 'subscribers'],
         );
 
