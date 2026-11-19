@@ -271,7 +271,8 @@ The callback receives the value assigned through `SeederFactory.setMeta()` and n
 The argument is `undefined` when `setMeta()` was not called, which is why the parameter has to
 be declared as optional (`(meta?: Meta) => …`) or handled as possibly undefined. The callback
 may be synchronous or asynchronous, and may return other factories or promises as property
-values: they are resolved (and persisted, for `save()`) before the entity itself.
+values: they are resolved (and persisted, for `save()`) before the entity itself. `params` passed to
+`make()`, `save()` or `saveMany()` replace those values first, so an overridden factory never runs.
 
 ## `resetSeederFactoryManager`
 

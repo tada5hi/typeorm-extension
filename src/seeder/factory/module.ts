@@ -26,14 +26,12 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
     public async make(params?: Partial<O>, save?: boolean) {
         const factoryFn = this.context.factoryFn(this.meta);
-        let entity : O;
+        const entity : O = isPromise(factoryFn) ?
+            await factoryFn :
+            factoryFn;
 
-        if (isPromise(factoryFn)) {
-            entity = await this.resolve(await factoryFn, save);
-        } else {
-            entity = await this.resolve(factoryFn, save);
-        }
-
+        // Apply params before resolving, so a nested factory of an
+        // overridden key never runs (and never saves a row).
         if (params) {
             const keys : (keyof O)[] = Object.keys(params);
 
@@ -42,7 +40,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
             }
         }
 
-        return entity;
+        return this.resolve(entity, save);
     }
 
     // --------------------------------------------------------------
