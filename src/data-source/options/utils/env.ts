@@ -9,8 +9,36 @@ import { mergeDataSourceOptions } from './merge';
 import { pinTimezone } from '../timezone';
 import { hasInstalledTimezone, isDataSourceTimezone } from '../timezone/utils';
 
+/**
+ * True when the environment names a driver: DB_TYPE (or TYPEORM_CONNECTION),
+ * or a DB_URL whose scheme names it.
+ */
 export function hasEnvDataSourceOptions() : boolean {
     return !!useEnv('type');
+}
+
+/**
+ * True when the environment names a connection: DB_URL, DB_HOST, DB_PORT,
+ * DB_USERNAME, DB_PASSWORD, DB_DATABASE or DB_SID (or a TYPEORM_* alias).
+ *
+ * Together with hasEnvDataSourceOptions() it finds an environment which
+ * names a connection but no driver, e.g. to refuse it instead of falling
+ * back to a default driver. An empty value counts as unset, as an empty
+ * DB_TYPE does. It reads the values data source options are built from, so
+ * an empty DB_* variable hides its TYPEORM_* alias here as it does there.
+ */
+export function hasEnvDataSourceConnectionOptions() : boolean {
+    const env = useEnv();
+
+    return [
+        env.url,
+        env.host,
+        env.port,
+        env.username,
+        env.password,
+        env.database,
+        env.sid,
+    ].some((value) => typeof value !== 'undefined' && value !== '');
 }
 
 /**

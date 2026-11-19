@@ -168,7 +168,7 @@ Env reader               → src/env/module.ts (+ constants.ts for var names)
 
 ## Configuration
 
-`useEnv()` reads from a primary and an `_ALT` variant for every key (see `src/env/constants.ts` — the `_ALT` group is the `DB_*` aliases for the canonical `TYPEORM_*` names). All values are lazily cached on first call; call `resetEnv()` in tests after mutating `process.env`.
+`useEnv()` reads from a primary and an `_ALT` variant for every key (see `src/env/constants.ts`: the primary is the `DB_*` name, the `_ALT` variant the legacy `TYPEORM_*` one, and the primary wins). All values are lazily cached on first call; call `resetEnv()` in tests after mutating `process.env`.
 
 Selected variables (full list in `src/env/constants.ts`):
 
@@ -178,11 +178,13 @@ Selected variables (full list in `src/env/constants.ts`):
 | `TYPEORM_URL` / `DB_URL`            | Connection URL (driver inferred from scheme)         |
 | `TYPEORM_HOST` / `DB_HOST`          | Host                                                 |
 | `TYPEORM_PORT` / `DB_PORT`          | Port (int)                                           |
-| `TYPEORM_USERNAME` / `DB_USER`      | Username                                             |
-| `TYPEORM_PASSWORD` / `DB_PASS`      | Password                                             |
-| `TYPEORM_DATABASE` / `DB_NAME`      | Database name                                        |
+| `TYPEORM_USERNAME` / `DB_USERNAME`  | Username                                             |
+| `TYPEORM_PASSWORD` / `DB_PASSWORD`  | Password                                             |
+| `TYPEORM_DATABASE` / `DB_DATABASE`  | Database name                                        |
 | `TYPEORM_SCHEMA` / `DB_SCHEMA`      | Schema (postgres / mssql)                            |
-| `TYPEORM_SEEDS` / `DB_SEEDS`        | Glob(s) for seeder files                             |
-| `TYPEORM_FACTORIES` / `DB_FACTORIES`| Glob(s) for factory files                            |
-| `TYPEORM_SYNCHRONIZE`               | Auto-sync schema after `db:create`                   |
-| `TYPEORM_MIGRATIONS_RUN`            | Run migrations on initialize                         |
+| `TYPEORM_SEEDING_SEEDS` / `DB_SEEDS` | Glob(s) for seeder files                             |
+| `TYPEORM_SEEDING_FACTORIES` / `DB_FACTORIES` | Glob(s) for factory files                            |
+| `TYPEORM_SYNCHRONIZE` / `DB_SYNCHRONIZE` | Auto-sync schema after `db:create`                   |
+| `TYPEORM_MIGRATIONS_RUN` / `DB_MIGRATIONS_RUN` | Run migrations on initialize                         |
+
+`hasEnvDataSourceOptions()` is true once a driver is named (`DB_TYPE`, or the scheme of `DB_URL`); `hasEnvDataSourceConnectionOptions()` once any connection setting is (url, host, port, username, password, database, sid; an empty variable counts as unset). Both read `useEnv()`, so they cannot drift from the variable names.

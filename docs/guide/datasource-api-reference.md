@@ -263,6 +263,39 @@ declare async function buildDataSourceOptions(
 **References**
 - [DataSourceOptionsBuildContext](#datasourceoptionsbuildcontext)
 
+## `hasEnvDataSourceOptions`
+
+```typescript
+declare function hasEnvDataSourceOptions(): boolean;
+```
+
+True when the environment names a driver: `DB_TYPE` (or `TYPEORM_CONNECTION`), or a `DB_URL` whose scheme names it.
+Only then are data source options read from the environment.
+
+## `hasEnvDataSourceConnectionOptions`
+
+```typescript
+declare function hasEnvDataSourceConnectionOptions(): boolean;
+```
+
+True when the environment names a connection: `DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`,
+`DB_DATABASE` or `DB_SID`, or one of their `TYPEORM_*` aliases. An empty value counts as unset. It reads the values
+data source options are built from, so an empty `DB_*` variable hides its `TYPEORM_*` alias here as it does there.
+
+Together with `hasEnvDataSourceOptions()` it finds an environment which names a connection but no driver, e.g. to
+refuse it instead of falling back to a default driver:
+
+```typescript
+import {
+    hasEnvDataSourceConnectionOptions,
+    hasEnvDataSourceOptions,
+} from 'typeorm-extension';
+
+if (hasEnvDataSourceConnectionOptions() && !hasEnvDataSourceOptions()) {
+    throw new Error('DB_HOST and the like are set, but DB_TYPE is missing.');
+}
+```
+
 ## `pinTimezone`
 
 ```typescript
