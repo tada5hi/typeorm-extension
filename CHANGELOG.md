@@ -18,6 +18,21 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.5.0](https://github.com/tada5hi/typeorm-extension/compare/v4.4.0...v4.5.0) (2026-11-19)
+
+
+### Features
+
+* add hasEnvDataSourceOptions strict mode and assertEnvDataSourceOptions ([#1493](https://github.com/tada5hi/typeorm-extension/issues/1493)) ([b46328a](https://github.com/tada5hi/typeorm-extension/commit/b46328ac26484102f1d3b73a603a705e9c104acc))
+* add readDatabaseErrorCode to read a driver error code as a plain token ([#1492](https://github.com/tada5hi/typeorm-extension/issues/1492)) ([b46328a](https://github.com/tada5hi/typeorm-extension/commit/b46328ac26484102f1d3b73a603a705e9c104acc))
+
+
+### Bug Fixes
+
+* classify a sqlite RESTRICT foreign key as a foreign key violation ([#1491](https://github.com/tada5hi/typeorm-extension/issues/1491)) ([b46328a](https://github.com/tada5hi/typeorm-extension/commit/b46328ac26484102f1d3b73a603a705e9c104acc))
+* end the session when withDatabaseLock fails to release its lock ([#1490](https://github.com/tada5hi/typeorm-extension/issues/1490)) ([b46328a](https://github.com/tada5hi/typeorm-extension/commit/b46328ac26484102f1d3b73a603a705e9c104acc))
+* take the driver type only from a DB_URL with a scheme ([b46328a](https://github.com/tada5hi/typeorm-extension/commit/b46328ac26484102f1d3b73a603a705e9c104acc))
+
 ## [4.4.0](https://github.com/tada5hi/typeorm-extension/compare/v4.3.0...v4.4.0) (2026-11-15)
 
 
