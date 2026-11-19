@@ -128,7 +128,8 @@ DB_ENTITIES=dist/database/entities/*.js
 | `DB_DEBUG`                    | `TYPEORM_DEBUG`                    | `useEnv('debug')` only, no option                       | string                                          |
 | `NODE_ENV`                    |                                    | `useEnv('env')` only (default `development`)            | string                                          |
 
-A list is comma separated. A bool is `true`, `t` or `1`, or `false`, `f` or `0`; any other value counts as unset. A
+A list is comma separated. A comma inside a brace group belongs to its glob pattern, so
+`DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one entry. A bool is `true`, `t` or `1`, or `false`, `f` or `0`; any other value counts as unset. A
 JSON value that does not parse throws when the environment is read.
 
 How the environment combines with the data source file:

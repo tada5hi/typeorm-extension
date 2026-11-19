@@ -38,8 +38,8 @@ The library reads the options from three sources. The first source that has a va
 
 - An empty `seeds` or `factories` array counts as unset, so the next source applies.
 - Glob patterns use the posix separator (`/`), also on Windows. A backslash escapes glob characters.
-- The environment variables hold a comma separated list. A brace list such as `*{.ts,.js}` contains a comma and is
-  split apart, so write one pattern per entry: `DB_SEEDS=src/database/seeds/**/*.ts`.
+- The environment variables hold a comma separated list. A comma inside a brace group such as `*{.ts,.js}` does not
+  split, so `DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one pattern.
 - The environment is read once and cached. Call `resetEnv()` after you change `process.env` at runtime.
 
 When the compiled output runs instead of the TypeScript sources, see [Running from a build](./recipes/production-build).

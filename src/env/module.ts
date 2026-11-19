@@ -1,13 +1,13 @@
 import {
     oneOf,
     read,
-    readArray,
     readBool,
     readInt,
 } from 'envix';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import { useRuntimeRegistry } from '../runtime';
 import { EnvironmentName, EnvironmentVariableName } from './constants';
+import { readEnvList } from './list';
 import type { Environment } from './types';
 import {
     transformCache,
@@ -32,12 +32,12 @@ export function useEnv(key?: string) : any {
 
         // Seeder
         seeds: oneOf([
-            readArray(EnvironmentVariableName.SEEDS),
-            readArray(EnvironmentVariableName.SEEDS_ALT),
+            readEnvList(EnvironmentVariableName.SEEDS),
+            readEnvList(EnvironmentVariableName.SEEDS_ALT),
         ]) ?? [],
         factories: oneOf([
-            readArray(EnvironmentVariableName.FACTORIES),
-            readArray(EnvironmentVariableName.FACTORIES_ALT),
+            readEnvList(EnvironmentVariableName.FACTORIES),
+            readEnvList(EnvironmentVariableName.FACTORIES_ALT),
         ]) ?? [],
 
         // Database
@@ -90,12 +90,12 @@ export function useEnv(key?: string) : any {
             readBool(EnvironmentVariableName.MIGRATIONS_RUN_ALT),
         ]),
         entities: oneOf([
-            readArray(EnvironmentVariableName.ENTITIES),
-            readArray(EnvironmentVariableName.ENTITIES_ALT),
+            readEnvList(EnvironmentVariableName.ENTITIES),
+            readEnvList(EnvironmentVariableName.ENTITIES_ALT),
         ]) ?? [],
         migrations: oneOf([
-            readArray(EnvironmentVariableName.MIGRATIONS),
-            readArray(EnvironmentVariableName.MIGRATIONS_ALT),
+            readEnvList(EnvironmentVariableName.MIGRATIONS),
+            readEnvList(EnvironmentVariableName.MIGRATIONS_ALT),
         ]) ?? [],
         migrationsTableName: oneOf([
             read(EnvironmentVariableName.MIGRATIONS_TABLE_NAME),
@@ -106,8 +106,8 @@ export function useEnv(key?: string) : any {
             read(EnvironmentVariableName.METADATA_TABLE_NAME_ALT),
         ]),
         subscribers: oneOf([
-            readArray(EnvironmentVariableName.SUBSCRIBERS),
-            readArray(EnvironmentVariableName.SUBSCRIBERS_ALT),
+            readEnvList(EnvironmentVariableName.SUBSCRIBERS),
+            readEnvList(EnvironmentVariableName.SUBSCRIBERS_ALT),
         ]) ?? [],
         logging: transformLogging(oneOf([
             read(EnvironmentVariableName.LOGGING),
