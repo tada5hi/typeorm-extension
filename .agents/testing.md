@@ -166,7 +166,7 @@ Thresholds (enforced — Vitest fails the run below these):
 
 `coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, and `src/errors/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/seeder/**`, `src/utils/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
 
-The `tests` job in `main.yml` runs `npm run test:coverage` and uploads the report to Codecov via `codecov/codecov-action` on every push / PR. Coverage runs there (not in `release.yml`) so it executes under the pinned Node version: the `tada5hi/monoship` publish step in `release.yml` re-inits the runner to Node 22 via its own `setup-node`. better-sqlite3 13+ is an N-API module, so its prebuilt binary loads on any supported Node version; that switch no longer breaks it.
+The `tests` job in `main.yml` runs `npm run test:coverage` and uploads the report to Codecov via `codecov/codecov-action` on every push / PR. Coverage runs there (not in `release.yml`) so it executes under the pinned Node version: the `tada5hi/monoship` publish step in `release.yml` re-inits the runner to Node 22 via its own `setup-node`. better-sqlite3 13+ is an N-API module, so its prebuilt binary loads on any supported Node version, including across that switch.
 
 ## Infrastructure
 
