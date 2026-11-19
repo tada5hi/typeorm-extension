@@ -92,7 +92,7 @@ typeorm-extension/
 
 | Dependency           | Role                                                                                          |
 |----------------------|-----------------------------------------------------------------------------------------------|
-| `typeorm` (peer)     | The ORM being extended. Requires `^1.1.0` (TypeORM 0.3 is unsupported).                |
+| `typeorm` (peer)     | The ORM being extended. Requires `^1.1.3` (TypeORM 0.3 is unsupported).                |
 | `locter`             | Glob + file loading (for discovering data-source / seed / factory files).                    |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |

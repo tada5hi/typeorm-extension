@@ -49,22 +49,24 @@ different schemas, and every driver reports a duplicate key in its own way. type
 | **Development and test data** | Ad-hoc scripts that insert rows and break on the second run. | Seeder classes and factories, run by `seed run`, optionally tracked so each seeder runs once. |
 | **Finding the DataSource** | Every script imports and initializes its own instance. | `data-source.ts` is discovered, and `useDataSource()` initializes it lazily, per alias. |
 
-A deploy script which uses all of it in every replica:
+Create the database once per deployment (`db create` in a release step, so replicas do not race to create it), then let every replica run:
 
 ```typescript
 import { DataSource } from 'typeorm';
 import {
     assertSchemaMatchesMetadata,
-    createDatabase,
     runSeeders,
     withDatabaseLock,
 } from 'typeorm-extension';
 import { options } from './data-source';
 
-// creates the database only if it is missing, the schema comes from the migrations below
-await createDatabase({ options, synchronize: false });
-
-const dataSource = new DataSource(options);
+// initialize() must not touch the schema: that happens under the lock below
+const dataSource = new DataSource({
+    ...options,
+    migrationsRun: false,
+    synchronize: false,
+    dropSchema: false,
+});
 await dataSource.initialize();
 
 const queryRunner = dataSource.createQueryRunner();
@@ -120,12 +122,13 @@ try {
 npm install typeorm-extension typeorm --save
 ```
 
-`typeorm` is a peer dependency and is required in the range `^1.1.0` (TypeORM 0.3 is not supported). Install the
+`typeorm` is a peer dependency and is required in the range `^1.1.3` (TypeORM 0.3 is not supported). Install the
 native client of your driver as usual (`pg`, `mysql2`, `mssql`, `oracledb`, `mongodb`, `better-sqlite3`). The legacy
 `sqlite` driver was removed in TypeORM 1.0, use `better-sqlite3`.
 
 The package is ESM-only and needs Node.js `>=22.0.0`. CommonJS projects can still `require('typeorm-extension')`
-through Node's `require(esm)` support.
+through Node's `require(esm)` support, which is enabled by default from Node.js 22.12 (earlier 22.x releases need
+`--experimental-require-module`, or a dynamic `import()`).
 
 Seeder factories generate their data with a library of your choice, so nothing else is required. The examples below
 use [faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker`).
@@ -518,8 +521,9 @@ const published = await withLockedEntity(dataSource, Post, { id }, async (post, 
 });
 ```
 
-A throw in `fn` rolls the transaction back. An entity manager which is already in a transaction is reused, so a
-nested call locks a second row within the outer transaction.
+When the helper opens the transaction (it was given a `DataSource`, or an entity manager outside a transaction), a
+throw in `fn` rolls it back. An entity manager which is already in a transaction is reused instead: a nested call locks
+a second row within the outer transaction, and a throw only rolls back if the outer caller lets it propagate.
 
 | Option     | Type       | Default            | Description                                                                                                  |
 |------------|------------|--------------------|--------------------------------------------------------------------------------------------------------------|
