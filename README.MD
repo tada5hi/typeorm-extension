@@ -1,8 +1,13 @@
 <p align="center">
-  <img src=".github/assets/logo.svg" alt="typeorm-extension" width="120">
+  <img src=".github/assets/logo.svg" alt="typeorm-extension logo: an amber extension piece clicking into a teal database piece" width="120">
 </p>
 
 <h1 align="center">typeorm-extension</h1>
+
+<p align="center">
+  <strong>Create, migrate, check, lock and seed TypeORM databases on every driver, from code or the CLI.</strong><br>
+  Stop writing per-dialect <code>CREATE DATABASE</code> scripts, hand-rolled advisory locks and driver error-code switches.
+</p>
 
 <p align="center">
   <a href="https://badge.fury.io/js/typeorm-extension"><img src="https://badge.fury.io/js/typeorm-extension.svg" alt="npm version"></a>
@@ -12,11 +17,71 @@
   <a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits"></a>
 </p>
 
-This is a library to
-- `create`, `drop` & `seed` the (default-) database 🔥
-- manage one or many data-source instances 👻
+<p align="center">
+  <a href="#why-typeorm-extension">Why</a> ·
+  <a href="#installation">Installation</a> ·
+  <a href="#cli">CLI</a> ·
+  <a href="#database">Database</a> ·
+  <a href="#locks">Locks</a> ·
+  <a href="#error-classification">Errors</a> ·
+  <a href="#seeding">Seeding</a> ·
+  <a href="#api">API</a> ·
+  <a href="https://typeorm-extension.tada5hi.net">Docs</a>
+</p>
+
+---
+
+## Why typeorm-extension?
+
+TypeORM maps your entities and runs your migrations. It stops at the edges of a real deployment: the database has to
+exist before the first connection, several replicas start at once, the migrations and `synchronize()` can describe
+different schemas, and every driver reports a duplicate key in its own way. typeorm-extension covers those edges for
+`postgres`, `cockroachdb`, `mysql`, `mariadb`, `mssql`, `oracle`, `mongodb` and `better-sqlite3`.
+
+| Concern | Without it | With it |
+|---------|------------|---------|
+| **The database exists** | Connect to a server-level database and run each dialect's own `CREATE DATABASE` (postgres needs an initial database, better-sqlite3 is a file). | `createDatabase()` or `db create`. Skips an existing database, then runs the migrations or `synchronize()`. |
+| **Several replicas migrate** | Each replica runs the migrations at boot, or you hand-roll `pg_advisory_lock` / `GET_LOCK` and their different return values. | `withDatabaseLock(queryRunner, 'migrations', fn)`: one session at a time, released also when `fn` throws. |
+| **Migrations drift from the entities** | Noticed when the next generated migration suddenly contains unrelated changes. | `assertSchemaMatchesMetadata()` or `db drift` fails the deploy and lists the reconciling statements. |
+| **Repair migrations** | Rename statements differ per dialect, and a half-applied migration fails on the rerun. | `renameIndex`, `renameForeignKey`, `changeColumnType` check the current state first and return `false` when already applied. |
+| **Read-modify-write races** | Two requests read the same row, both pass the check, both write. | `withLockedEntity()` reads the row with a write lock (`FOR UPDATE`, `UPDLOCK` on mssql) inside a transaction. |
+| **A failed write** | Read `code`, `number` or `errorNum`, on the error or on its `driverError`, depending on the driver. | `isDatabaseUniqueViolationError(e)` and its siblings know where each driver puts the vendor code. |
+| **Development and test data** | Ad-hoc scripts that insert rows and break on the second run. | Seeder classes and factories, run by `seed run`, optionally tracked so each seeder runs once. |
+| **Finding the DataSource** | Every script imports and initializes its own instance. | `data-source.ts` is discovered, and `useDataSource()` initializes it lazily, per alias. |
+
+A deploy script which uses all of it in every replica:
+
+```typescript
+import { DataSource } from 'typeorm';
+import {
+    assertSchemaMatchesMetadata,
+    createDatabase,
+    runSeeders,
+    withDatabaseLock,
+} from 'typeorm-extension';
+import { options } from './data-source';
+
+// creates the database only if it is missing, the schema comes from the migrations below
+await createDatabase({ options, synchronize: false });
+
+const dataSource = new DataSource(options);
+await dataSource.initialize();
+
+const queryRunner = dataSource.createQueryRunner();
+try {
+    // one replica at a time, the others wait for the lock
+    await withDatabaseLock(queryRunner, 'migrations', async () => {
+        await dataSource.runMigrations();
+        await assertSchemaMatchesMetadata(dataSource);
+        await runSeeders(dataSource, { seedTracking: true });
+    });
+} finally {
+    await queryRunner.release();
+}
+```
 
 **Table of Contents**
+- [Why typeorm-extension?](#why-typeorm-extension)
 - [Installation](#installation)
 - [Documentation](#documentation)
 - [Usage](#usage)
@@ -26,9 +91,14 @@ This is a library to
   - [Database](#database)
     - [Create](#create)
     - [Drop](#drop)
+    - [Check](#check)
     - [Schema Drift](#schema-drift)
     - [Generate Migration](#generate-migration)
     - [Repair Migrations](#repair-migrations)
+  - [Locks](#locks)
+    - [Advisory Lock](#advisory-lock)
+    - [Row Lock](#row-lock)
+  - [Error Classification](#error-classification)
   - [Instances](#instances)
     - [Single](#single)
     - [Multiple](#multiple)
@@ -39,6 +109,8 @@ This is a library to
     - [Seed](#seed)
     - [Execute](#execute)
   - [Query](#query)
+- [API](#api)
+- [Notes](#notes)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -48,9 +120,15 @@ This is a library to
 npm install typeorm-extension typeorm --save
 ```
 
-`typeorm` is a peer dependency and is required in the range `^1.1.0`. Seeder factories generate their data
-with a library of your choice, so nothing else is required. The examples below use
-[faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker`).
+`typeorm` is a peer dependency and is required in the range `^1.1.0` (TypeORM 0.3 is not supported). Install the
+native client of your driver as usual (`pg`, `mysql2`, `mssql`, `oracledb`, `mongodb`, `better-sqlite3`). The legacy
+`sqlite` driver was removed in TypeORM 1.0, use `better-sqlite3`.
+
+The package is ESM-only and needs Node.js `>=22.0.0`. CommonJS projects can still `require('typeorm-extension')`
+through Node's `require(esm)` support.
+
+Seeder factories generate their data with a library of your choice, so nothing else is required. The examples below
+use [faker](https://fakerjs.dev/guide/) (`npm install @faker-js/faker`).
 
 ## Documentation
 
@@ -159,6 +237,7 @@ import { createDatabase } from 'typeorm-extension';
 
 **`Example #2`**
 ```typescript
+import { DataSource } from 'typeorm';
 import {
     buildDataSourceOptions,
     createDatabase
@@ -262,7 +341,7 @@ import { dropDatabase } from 'typeorm-extension';
 ```
 
 To get a better overview and understanding of the
-[dropDatabase](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#dropDatabase)
+[dropDatabase](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#dropdatabase)
 function, check out the documentation.
 
 #### Check
@@ -368,6 +447,10 @@ export class RepairSchema1700000000000 implements MigrationInterface {
             to: { type: 'varchar', length: 255 },
         });
     }
+
+    public async down(): Promise<void> {
+        // a repair has nothing to undo
+    }
 }
 ```
 
@@ -381,11 +464,17 @@ database is in **neither** the expected nor the desired state it raises a `Schem
 quietly, since a repair migration which repairs nothing would otherwise pass for a successful one. Pass
 `strict: false` per call to opt out.
 
+### Locks
+
+#### Advisory Lock
+
 `withDatabaseLock(queryRunner, name, fn, { timeout })` runs `fn` while holding a named advisory lock (`postgres`,
 `mysql`, `mariadb`), for example so only one replica runs the migrations (with `migrationsRun` off, since
 `initialize()` would run them before the lock is taken):
 
 ```typescript
+import { withDatabaseLock } from 'typeorm-extension';
+
 const queryRunner = dataSource.createQueryRunner();
 try {
     await withDatabaseLock(queryRunner, 'migrations', () => dataSource.runMigrations());
@@ -394,12 +483,29 @@ try {
 }
 ```
 
+The lock belongs to the session of the query runner. It is released afterwards, also when `fn` throws, and a
+transaction `fn` leaves open is rolled back first. Nested calls with the same name on the same query runner do not
+block. If the release itself fails, the session is ended instead of going back to the pool, which frees the lock; the
+query runner can not be used any further then.
+
+| Option    | Type      | Default | Description                                                                                                   |
+|-----------|-----------|---------|---------------------------------------------------------------------------------------------------------------|
+| `timeout` | `number`  | unset   | How long to wait for the lock, in milliseconds. `0` tries once, unset waits until the lock is free.            |
+| `strict`  | `boolean` | `true`  | Throw a `DriverError` on a driver without advisory locks. `false` runs `fn` without a lock there (e.g. sqlite in tests). |
+
+A lock which can not be acquired within `timeout` raises a `DatabaseLockError`, and so does a query runner which is
+already in a transaction.
+
+#### Row Lock
+
 `withLockedEntity(source, Entity, where, fn)` reads one row with a write lock inside a transaction and hands it to
 `fn`, so concurrent callers for the same row take turns (`postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle`,
 `mssql`; `isRowLockSupported(source)` tells whether a driver is one of them). It resolves what `fn` returns, or `null` when
 no row matches:
 
 ```typescript
+import { withLockedEntity } from 'typeorm-extension';
+
 const published = await withLockedEntity(dataSource, Post, { id }, async (post, manager) => {
     if (post.status !== 'draft') {
         return false;
@@ -411,6 +517,16 @@ const published = await withLockedEntity(dataSource, Post, { id }, async (post, 
     return true;
 });
 ```
+
+A throw in `fn` rolls the transaction back. An entity manager which is already in a transaction is reused, so a
+nested call locks a second row within the outer transaction.
+
+| Option     | Type       | Default            | Description                                                                                                  |
+|------------|------------|--------------------|--------------------------------------------------------------------------------------------------------------|
+| `onLocked` | `'nowait'` | wait for the row   | Fail at once with the driver's error (recognized by `isDatabaseLockConflictError`). Not supported on mssql.  |
+| `strict`   | `boolean`  | `true`             | Throw a `DriverError` on a driver without row locks. `false` runs `fn` without a lock there (e.g. sqlite in tests). |
+
+### Error Classification
 
 `isDatabaseUniqueViolationError(error)`, `isDatabaseForeignKeyViolationError(error)` and `isDatabaseLockConflictError(error)`
 classify a failed write whichever driver raised it, e.g. to answer a duplicate key with a conflict rather than a
@@ -430,6 +546,12 @@ try {
 }
 ```
 
+| Function                             | True for                                                                       |
+|--------------------------------------|--------------------------------------------------------------------------------|
+| `isDatabaseUniqueViolationError`     | a duplicate unique key or primary key (`23505`, `ER_DUP_ENTRY`, mssql `2627` / `2601`, `ORA-00001`, mongodb `11000`) |
+| `isDatabaseForeignKeyViolationError` | a missing referenced row, or the delete of a row which is still referenced     |
+| `isDatabaseLockConflictError`        | a deadlock victim, a serialization failure or a lock wait that gave up (also `onLocked: 'nowait'`) |
+
 `readDatabaseErrorCode(error)` returns the driver's code as a plain token (`23505`, `ER_DUP_ENTRY`, `2627`, ...) for
 logging, never a message which could quote stored values.
 
@@ -445,6 +567,7 @@ If no DataSource instance or DataSourceOptions object is deposited initially the
 the DataSource file and initialize itself from there.
 
 ```typescript
+import { DataSource } from 'typeorm';
 import { useDataSource } from 'typeorm-extension';
 
 (async () => {
@@ -894,6 +1017,44 @@ To move over from the removed submodule, follow the migration guide:
 > **Note**: This section is kept during the v4 release cycle to route former `applyQuery` users to the
 > successor. With the next major release (v5) it will be removed from the README and docs; the
 > [rapiq documentation](https://rapiq.tada5hi.net) is the canonical reference.
+
+## API
+
+Everything below is exported from `typeorm-extension`. The [API reference](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html) on the
+docs site has the signatures and option types.
+
+| Area | Exports | Reference |
+|------|---------|-----------|
+| Database | `createDatabase`, `dropDatabase`, `checkDatabase`, `synchronizeDatabaseSchema`, `generateMigration` | [Database](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html) |
+| Schema | `getSchemaDrift`, `assertSchemaMatchesMetadata`, `renameIndex`, `renameForeignKey`, `changeColumnType`, `withForeignKeyChecksDisabled` | [Database](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#getschemadrift) |
+| Locks | `withDatabaseLock`, `withLockedEntity`, `isRowLockSupported` | [Database](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#withdatabaselock) |
+| Error classification | `isDatabaseUniqueViolationError`, `isDatabaseForeignKeyViolationError`, `isDatabaseLockConflictError`, `readDatabaseErrorCode` | [Database](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html#isdatabaseuniqueviolationerror) |
+| Data source | `setDataSource`, `useDataSource`, `hasDataSource`, `unsetDataSource`, `setDataSourceOptions`, `useDataSourceOptions`, `buildDataSourceOptions`, `findDataSource`, `hasEnvDataSourceOptions`, `assertEnvDataSourceOptions` | [DataSource](https://typeorm-extension.tada5hi.net/guide/datasource-api-reference.html) |
+| Seeding | `runSeeder`, `runSeeders`, `Seeder`, `setSeederFactory`, `useSeederFactory`, `useSeederFactoryManager`, `resetSeederFactoryManager`, `resolveSeederConfig` | [Seeding](https://typeorm-extension.tada5hi.net/guide/seeding-api-reference.html) |
+| Environment | `useEnv`, `resetEnv` (reads the `TYPEORM_*` / `DB_*` variables) | |
+| Entity helpers (experimental) | `getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique` | [Entity](https://typeorm-extension.tada5hi.net/guide/entity-api-reference.html) |
+| Errors | `TypeormExtensionError`, `DriverError`, `OptionsError`, `SchemaDriftError`, `SchemaAlterationError`, `DatabaseLockError`, `EntityMetadataError`, `EntityRelationLookupError` | [Database](https://typeorm-extension.tada5hi.net/guide/database-api-reference.html) |
+
+## Notes
+
+- **`createDatabase` is not a lock.** On postgres and cockroachdb "only if missing" is a lookup followed by a
+  `CREATE DATABASE`, so two replicas starting at the same moment can both try to create it. Create the database from one
+  place (a deploy step, `db create`) or tolerate the second attempt.
+- **Advisory locks exist on postgres, mysql and mariadb only.** cockroachdb accepts postgres' advisory lock functions
+  but they lock nothing, so `withDatabaseLock` refuses it with a `DriverError`, like every other driver. Pass
+  `strict: false` to run the callback without a lock instead.
+- **`withLockedEntity` refuses mongodb**, where typeorm emits no row lock, and `onLocked: 'nowait'` on mssql, which
+  typeorm ignores there.
+- **A failed lock release ends the session.** The query runner is released then; a caller which catches the error of a
+  nested `withDatabaseLock` and carries on runs without the lock.
+- **The rename helpers know four dialects.** `renameIndex` and `renameForeignKey` throw a `DriverError` on anything but
+  postgres, cockroachdb, mysql and mariadb. `changeColumnType` falls back to typeorm's `changeColumn()` there.
+- **`dropDatabase` does nothing on oracle**, and mongodb creates a database lazily, so `checkDatabase` reports it as
+  existing once the connection succeeds.
+- **Seed tracking is off by default.** Without `seedTracking` (or a seeder's `track = true`) every seeder runs on every
+  `seed run`. Seeders found by a glob pattern run in alphabetical order of their file names.
+- **The `Query` section is temporary.** It will be removed in v5; the [rapiq documentation](https://rapiq.tada5hi.net) is
+  the reference.
 
 ## Contributing
 
