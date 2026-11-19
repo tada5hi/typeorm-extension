@@ -166,7 +166,7 @@ Thresholds (enforced — Vitest fails the run below these):
 
 `coverage.exclude` (in `test/vitest.config.ts`) **excludes** `src/cli/**`, `src/database/adapters/**`, `src/database/driver/**` (deprecated delegates), `src/env/utils.ts`, and `src/errors/**` from coverage scoring — the gate covers `src/data-source/**`, `src/helpers/**`, `src/seeder/**`, `src/utils/**`, and the database layer (`core/`, `registry.ts`, `methods/`, `utils/`). Be aware: a change inside the excluded folders won't be caught by the threshold, so write tests proactively for those.
 
-The `tests` job in `main.yml` runs `npm run test:coverage` and uploads the report to Codecov via `codecov/codecov-action` on every push / PR. Coverage runs there (not in `release.yml`) so it executes under the pinned Node version: the `tada5hi/monoship` publish step in `release.yml` re-inits the runner to Node 22 via its own `setup-node`, which would leave the native `better-sqlite3` binary (built for the install-step Node) ABI-mismatched for any test step that ran after it.
+The `tests` job in `main.yml` runs `npm run test:coverage` and uploads the report to Codecov via `codecov/codecov-action` on every push / PR. Coverage runs there (not in `release.yml`) so it executes under the pinned Node version: the `tada5hi/monoship` publish step in `release.yml` re-inits the runner to Node 22 via its own `setup-node`. better-sqlite3 13+ is an N-API module, so its prebuilt binary loads on any supported Node version; that switch no longer breaks it.
 
 ## Infrastructure
 
@@ -180,7 +180,7 @@ GitHub Actions (`.github/workflows/main.yml`):
 install → build → (lint || tests+coverage-upload || integration × {postgres, cockroachdb, mysql, mariadb, mssql, mongodb, oracle})
 ```
 
-All jobs use a single Node version (`PRIMARY_NODE_VERSION = 24`); there is no matrix across Node versions. The `tests` job runs `npm run test:coverage` and uploads to Codecov. The `integration` matrix job runs `npm run test:integration` against one service container per driver (`fail-fast: false`, so a mysql-only failure still reports postgres). `release.yml` handles `release-please` PRs + npm publish + docs deploy (no coverage — see above). The install action's cache key includes the Node version so a native binary built for one Node ABI is never restored for another.
+All jobs use a single Node version (`PRIMARY_NODE_VERSION = 24`); there is no matrix across Node versions. The `tests` job runs `npm run test:coverage` and uploads to Codecov. The `integration` matrix job runs `npm run test:integration` against one service container per driver (`fail-fast: false`, so a mysql-only failure still reports postgres). `release.yml` handles `release-please` PRs + npm publish + docs deploy (no coverage — see above). The install action's cache key includes the Node version, so a native binary is never restored for another Node version (better-sqlite3 and oracledb are N-API modules today, so this is a safeguard).
 
 ## Writing New Tests
 
