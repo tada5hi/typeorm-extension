@@ -28,6 +28,20 @@ export class OptionsError extends TypeormExtensionError {
         );
     }
 
+    static envDriverMissing(names: string[]) {
+        return new OptionsError(
+            `The environment sets ${names.join(', ')} (or a TYPEORM_* alias), but names no driver: ` +
+            'set DB_TYPE (or TYPEORM_CONNECTION), or give DB_URL a scheme.',
+        );
+    }
+
+    static envMissing() {
+        return new OptionsError(
+            'The environment names no database: set DB_TYPE (or TYPEORM_CONNECTION) and its connection settings, ' +
+            'or DB_URL.',
+        );
+    }
+
     static databaseNotDefined() {
         return new OptionsError('The database name to connect to is not defined.');
     }

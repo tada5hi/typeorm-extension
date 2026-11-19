@@ -3,42 +3,100 @@ import type { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOp
 import type { PostgresDataSourceOptions } from 'typeorm/driver/postgres/PostgresDataSourceOptions';
 import type { DatabaseType } from 'typeorm/driver/types/DatabaseType';
 import type { LoggerOptions } from 'typeorm/logger/LoggerOptions';
-import { useEnv } from '../../../env';
+import { EnvironmentVariableName, useEnv } from '../../../env';
 import { OptionsError } from '../../../errors';
 import { mergeDataSourceOptions } from './merge';
 import { pinTimezone } from '../timezone';
 import { hasInstalledTimezone, isDataSourceTimezone } from '../timezone/utils';
 
+type EnvDataSourceOptionsInspection = {
+    /**
+     * DB_TYPE (or TYPEORM_CONNECTION), or a DB_URL whose scheme names it.
+     */
+    driver: boolean,
+    /**
+     * The connection settings which are set, by their DB_* name (the
+     * TYPEORM_* alias may be the one set).
+     */
+    connection: string[],
+};
+
+const CONNECTION_VARIABLES = [
+    ['url', EnvironmentVariableName.URL],
+    ['host', EnvironmentVariableName.HOST],
+    ['port', EnvironmentVariableName.PORT],
+    ['username', EnvironmentVariableName.USERNAME],
+    ['password', EnvironmentVariableName.PASSWORD],
+    ['database', EnvironmentVariableName.DATABASE],
+    ['sid', EnvironmentVariableName.SID],
+] as const;
+
 /**
- * True when the environment names a driver: DB_TYPE (or TYPEORM_CONNECTION),
- * or a DB_URL whose scheme names it.
+ * The one place for the rules of the env checks. It reads the values data
+ * source options are built from (useEnv()), so it always agrees with what
+ * buildDataSourceOptions() reads. An empty value counts as unset, as an
+ * empty DB_TYPE does.
+ *
+ * Internal: this file is part of the public barrel, so it is not exported.
  */
-export function hasEnvDataSourceOptions() : boolean {
-    return !!useEnv('type');
+function inspectEnvDataSourceOptions() : EnvDataSourceOptionsInspection {
+    const env = useEnv();
+
+    return {
+        driver: !!env.type,
+        connection: CONNECTION_VARIABLES
+            .filter(([key]) => typeof env[key] !== 'undefined' && env[key] !== '')
+            .map(([, name]) => name),
+    };
 }
 
 /**
- * True when the environment names a connection: DB_URL, DB_HOST, DB_PORT,
- * DB_USERNAME, DB_PASSWORD, DB_DATABASE or DB_SID (or a TYPEORM_* alias).
+ * True when the environment names a driver: DB_TYPE (or TYPEORM_CONNECTION),
+ * or a DB_URL whose scheme names it.
  *
- * Together with hasEnvDataSourceOptions() it finds an environment which
- * names a connection but no driver, e.g. to refuse it instead of falling
- * back to a default driver. An empty value counts as unset, as an empty
- * DB_TYPE does. It checks the values data source options are built from
- * (useEnv()), so it always agrees with what buildDataSourceOptions() reads.
+ * With `strict`, it is only true when the environment describes a data
+ * source completely: a driver and at least one connection setting (DB_URL,
+ * DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE or DB_SID, or a
+ * TYPEORM_* alias).
+ *
+ * Never throws: assertEnvDataSourceOptions() tells why an environment is
+ * refused.
  */
-export function hasEnvDataSourceConnectionOptions() : boolean {
-    const env = useEnv();
+export function hasEnvDataSourceOptions(options: { strict?: boolean } = {}) : boolean {
+    const inspection = inspectEnvDataSourceOptions();
 
-    return [
-        env.url,
-        env.host,
-        env.port,
-        env.username,
-        env.password,
-        env.database,
-        env.sid,
-    ].some((value) => typeof value !== 'undefined' && value !== '');
+    if (options.strict) {
+        return inspection.driver && inspection.connection.length > 0;
+    }
+
+    return inspection.driver;
+}
+
+/**
+ * Refuse an environment which names connection settings (DB_URL, DB_HOST,
+ * DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE, DB_SID, or a TYPEORM_*
+ * alias) but no driver (DB_TYPE): data source options are not read from it,
+ * so the settings would be ignored without a word.
+ *
+ * With `required`, an environment which names no driver at all is refused
+ * as well, e.g. to require the database configuration in production.
+ *
+ * @throws OptionsError naming the variables involved.
+ */
+export function assertEnvDataSourceOptions(options: { required?: boolean } = {}) : void {
+    const inspection = inspectEnvDataSourceOptions();
+
+    if (inspection.driver) {
+        return;
+    }
+
+    if (inspection.connection.length > 0) {
+        throw OptionsError.envDriverMissing(inspection.connection);
+    }
+
+    if (options.required) {
+        throw OptionsError.envMissing();
+    }
 }
 
 /**

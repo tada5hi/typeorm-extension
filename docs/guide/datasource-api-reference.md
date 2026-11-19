@@ -266,35 +266,42 @@ declare async function buildDataSourceOptions(
 ## `hasEnvDataSourceOptions`
 
 ```typescript
-declare function hasEnvDataSourceOptions(): boolean;
+declare function hasEnvDataSourceOptions(options?: { strict?: boolean }): boolean;
 ```
 
 True when the environment names a driver: `DB_TYPE` (or `TYPEORM_CONNECTION`), or a `DB_URL` whose scheme names it.
 Only then are data source options read from the environment.
 
-## `hasEnvDataSourceConnectionOptions`
+With `strict: true` it is only true when the environment describes a data source completely: a driver and at least one
+connection setting (`DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` or `DB_SID`, or one of
+their `TYPEORM_*` aliases).
+
+It never throws. An empty value counts as unset, and it checks the values data source options are built from, so it
+always agrees with what `buildDataSourceOptions` reads.
+
+## `assertEnvDataSourceOptions`
 
 ```typescript
-declare function hasEnvDataSourceConnectionOptions(): boolean;
+declare function assertEnvDataSourceOptions(options?: { required?: boolean }): void;
 ```
 
-True when the environment names a connection: `DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`,
-`DB_DATABASE` or `DB_SID`, or one of their `TYPEORM_*` aliases. An empty value counts as unset. It checks the values
-data source options are built from, so it always agrees with what `buildDataSourceOptions` reads.
+Refuses an environment which sets connection settings (`DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`,
+`DB_DATABASE`, `DB_SID`, or a `TYPEORM_*` alias) but names no driver. Data source options are not read from such an
+environment, so the settings would otherwise be ignored without a word, and a default driver (e.g. sqlite) used instead.
 
-Together with `hasEnvDataSourceOptions()` it finds an environment which names a connection but no driver, e.g. to
-refuse it instead of falling back to a default driver:
+With `required: true` it also refuses an environment which names no driver at all, e.g. to require the database
+configuration in production:
 
 ```typescript
-import {
-    hasEnvDataSourceConnectionOptions,
-    hasEnvDataSourceOptions,
-} from 'typeorm-extension';
+import { assertEnvDataSourceOptions } from 'typeorm-extension';
 
-if (hasEnvDataSourceConnectionOptions() && !hasEnvDataSourceOptions()) {
-    throw new Error('DB_HOST and the like are set, but DB_TYPE is missing.');
-}
+assertEnvDataSourceOptions({ required: process.env.NODE_ENV === 'production' });
 ```
+
+**Throws**
+
+- `OptionsError` naming the variables which are set when the driver is missing.
+- `OptionsError` when `required` is set and the environment names no driver.
 
 ## `pinTimezone`
 

@@ -1,8 +1,9 @@
 import type { DataSourceOptions } from 'typeorm';
 import {
     EnvironmentVariableName,
+    OptionsError,
+    assertEnvDataSourceOptions,
     buildDataSourceOptions,
-    hasEnvDataSourceConnectionOptions,
     hasEnvDataSourceOptions,
     mergeDataSourceOptionsWithEnv,
     readDataSourceOptionsFromEnv,
@@ -90,8 +91,9 @@ describe('src/data-source/options/env', () => {
         expect(options).toBeUndefined();
     });
 
-    describe('hasEnvDataSourceConnectionOptions', () => {
+    describe('env checks', () => {
         const names = [
+            EnvironmentVariableName.TYPE,
             EnvironmentVariableName.URL,
             EnvironmentVariableName.HOST,
             EnvironmentVariableName.PORT,
@@ -101,8 +103,12 @@ describe('src/data-source/options/env', () => {
             EnvironmentVariableName.SID,
             EnvironmentVariableName.HOST_ALT,
             EnvironmentVariableName.DATABASE_ALT,
-            EnvironmentVariableName.TYPE,
         ];
+
+        function setEnv(values: Record<string, string>) {
+            Object.assign(process.env, values);
+            resetEnv();
+        }
 
         afterEach(() => {
             for (const name of names) {
@@ -112,45 +118,96 @@ describe('src/data-source/options/env', () => {
             resetEnv();
         });
 
-        it('should be false without connection settings', () => {
-            expect(hasEnvDataSourceConnectionOptions()).toEqual(false);
+        describe('hasEnvDataSourceOptions', () => {
+            it('should be false for an empty environment', () => {
+                expect(hasEnvDataSourceOptions()).toEqual(false);
+                expect(hasEnvDataSourceOptions({ strict: true })).toEqual(false);
+            });
+
+            it('should need only a driver, unless strict', () => {
+                setEnv({ [EnvironmentVariableName.TYPE]: 'postgres' });
+
+                expect(hasEnvDataSourceOptions()).toEqual(true);
+                expect(hasEnvDataSourceOptions({ strict: true })).toEqual(false);
+            });
+
+            it('should be true when strict for a driver and a connection setting', () => {
+                setEnv({
+                    [EnvironmentVariableName.TYPE]: 'postgres',
+                    [EnvironmentVariableName.HOST]: 'localhost',
+                });
+
+                expect(hasEnvDataSourceOptions({ strict: true })).toEqual(true);
+            });
+
+            it('should take the driver from the scheme of the url', () => {
+                setEnv({ [EnvironmentVariableName.URL]: 'postgres://localhost:5432/app' });
+
+                expect(hasEnvDataSourceOptions()).toEqual(true);
+                expect(hasEnvDataSourceOptions({ strict: true })).toEqual(true);
+            });
+
+            it('should never throw for connection settings without a driver', () => {
+                setEnv({ [EnvironmentVariableName.HOST]: 'localhost' });
+
+                expect(hasEnvDataSourceOptions()).toEqual(false);
+                expect(hasEnvDataSourceOptions({ strict: true })).toEqual(false);
+            });
+
+            it('should treat an empty value as unset', () => {
+                setEnv({
+                    [EnvironmentVariableName.TYPE]: 'postgres',
+                    [EnvironmentVariableName.HOST]: '',
+                    [EnvironmentVariableName.PASSWORD]: '',
+                });
+
+                expect(hasEnvDataSourceOptions({ strict: true })).toEqual(false);
+            });
         });
 
-        it('should treat an empty variable as unset', () => {
-            process.env[EnvironmentVariableName.HOST] = '';
-            process.env[EnvironmentVariableName.PASSWORD] = '';
+        describe('assertEnvDataSourceOptions', () => {
+            it('should accept an empty environment, unless required', () => {
+                expect(() => assertEnvDataSourceOptions()).not.toThrow();
+                expect(() => assertEnvDataSourceOptions({ required: true })).toThrow(OptionsError);
+            });
 
-            expect(hasEnvDataSourceConnectionOptions()).toEqual(false);
-        });
+            it('should accept a driver, required or not', () => {
+                setEnv({ [EnvironmentVariableName.TYPE]: 'better-sqlite3' });
 
-        it('should be false for a driver alone', () => {
-            process.env[EnvironmentVariableName.TYPE] = 'postgres';
+                expect(() => assertEnvDataSourceOptions()).not.toThrow();
+                expect(() => assertEnvDataSourceOptions({ required: true })).not.toThrow();
+            });
 
-            expect(hasEnvDataSourceConnectionOptions()).toEqual(false);
-            expect(hasEnvDataSourceOptions()).toEqual(true);
-        });
+            it.each([
+                [EnvironmentVariableName.HOST, 'localhost'],
+                [EnvironmentVariableName.PORT, '5432'],
+                [EnvironmentVariableName.USERNAME, 'admin'],
+                [EnvironmentVariableName.PASSWORD, 'start123'],
+                [EnvironmentVariableName.DATABASE, 'app'],
+                [EnvironmentVariableName.SID, 'xe'],
+            ])('should refuse %s without a driver', (name, value) => {
+                setEnv({ [name]: value });
 
-        it.each([
-            [EnvironmentVariableName.URL, 'postgres://localhost:5432/app'],
-            [EnvironmentVariableName.HOST, 'localhost'],
-            [EnvironmentVariableName.PORT, '5432'],
-            [EnvironmentVariableName.USERNAME, 'admin'],
-            [EnvironmentVariableName.PASSWORD, 'start123'],
-            [EnvironmentVariableName.DATABASE, 'app'],
-            [EnvironmentVariableName.SID, 'xe'],
-            [EnvironmentVariableName.HOST_ALT, 'localhost'],
-            [EnvironmentVariableName.DATABASE_ALT, 'app'],
-        ])('should be true for %s', (name, value) => {
-            process.env[name] = value;
+                expect(() => assertEnvDataSourceOptions()).toThrow(OptionsError);
+                expect(() => assertEnvDataSourceOptions()).toThrow(name);
+            });
 
-            expect(hasEnvDataSourceConnectionOptions()).toEqual(true);
-        });
+            it('should name the DB_* variable when its alias is set', () => {
+                setEnv({
+                    [EnvironmentVariableName.HOST_ALT]: 'localhost',
+                    [EnvironmentVariableName.DATABASE_ALT]: 'app',
+                });
 
-        it('should tell connection settings without a driver apart', () => {
-            process.env[EnvironmentVariableName.HOST] = 'localhost';
+                expect(() => assertEnvDataSourceOptions()).toThrow(
+                    `${EnvironmentVariableName.HOST}, ${EnvironmentVariableName.DATABASE}`,
+                );
+            });
 
-            expect(hasEnvDataSourceConnectionOptions()).toEqual(true);
-            expect(hasEnvDataSourceOptions()).toEqual(false);
+            it('should treat an empty value as unset', () => {
+                setEnv({ [EnvironmentVariableName.HOST]: '' });
+
+                expect(() => assertEnvDataSourceOptions()).not.toThrow();
+            });
         });
     });
 });
