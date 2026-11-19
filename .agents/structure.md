@@ -62,6 +62,9 @@ typeorm-extension/
 │   │   └── tsconfig.json
 │   └── unit/                   # Test suites mirroring src/ folder names
 ├── docs/                       # VitePress site (guide/, index.md)
+│   └── .vitepress/
+│       ├── theme/              # default theme + slate/sky tokens, transparent landing nav, site footer (decisions in theme/README.md)
+│       └── components/home/    # landing sections; their copy lives in docs/index.md frontmatter
 ├── bin/                        # tsdown output: cli.mjs (gitignored, built)
 ├── dist/                       # tsdown output: index.mjs + index.d.mts
 ├── tsdown.config.ts            # Two entries: src/cli/index.ts → bin/, src/index.ts → dist/
@@ -92,7 +95,7 @@ typeorm-extension/
 
 | Dependency           | Role                                                                                          |
 |----------------------|-----------------------------------------------------------------------------------------------|
-| `typeorm` (peer)     | The ORM being extended. Requires `^1.1.0` (TypeORM 0.3 is unsupported).                |
+| `typeorm` (peer)     | The ORM being extended. Requires `^1.1.3` (TypeORM 0.3 is unsupported).                |
 | `locter`             | Glob + file loading (for discovering data-source / seed / factory files).                    |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |

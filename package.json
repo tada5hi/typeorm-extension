@@ -2,7 +2,7 @@
     "name": "typeorm-extension",
     "version": "4.5.0",
     "type": "module",
-    "description": "A library to create/drop database, simple seeding data sets, ...",
+    "description": "Create, migrate, check, lock and seed TypeORM databases on every driver, from code or the CLI.",
     "author": {
         "name": "Peter Placzek",
         "email": "contact@tada5hi.net",

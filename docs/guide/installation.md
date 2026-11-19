@@ -6,7 +6,7 @@ Add the package as a dependency to the project.
 npm install typeorm-extension typeorm --save
 ```
 
-`typeorm` is a peer dependency and is required in the range `^1.1.0`.
+`typeorm` is a peer dependency and is required in the range `^1.1.3`.
 
 Seeder factories generate their data with a library of your choice, so nothing extra is required by this
 package. The documentation examples use [faker](https://fakerjs.dev/guide/):

@@ -12,7 +12,7 @@ version if you depend on them.
 :::
 
 Every helper which queries the database accepts an optional `DataSource`. If
-none is provided, the [registered instance](./instances.md) is resolved via
+none is provided, the [registered instance](./data-source#multiple-instances) is resolved via
 `useDataSource()`. `getEntityName` is the exception: it only inspects the given
 entity and never touches a data source.
 
