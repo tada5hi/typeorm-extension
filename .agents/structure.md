@@ -97,6 +97,7 @@ typeorm-extension/
 |----------------------|-----------------------------------------------------------------------------------------------|
 | `typeorm` (peer)     | The ORM being extended. Requires `^1.1.3` (TypeORM 0.3 is unsupported).                |
 | `locter`             | Glob + file loading (for discovering data-source / seed / factory files).                    |
+| `@ebec/core`         | `markInstanceof` / `hasInstanceof`: `Symbol.for` class markers behind `isSeederFactory`, so the check works across duplicate library copies. |
 | `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |
 | `smob`               | Object merge utility (deep merge of data-source options).                                     |

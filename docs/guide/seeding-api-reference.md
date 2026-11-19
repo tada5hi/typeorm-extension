@@ -274,6 +274,19 @@ may be synchronous or asynchronous, and may return other factories or promises a
 values: they are resolved (and persisted, for `save()`) before the entity itself. `params` passed to
 `make()`, `save()` or `saveMany()` replace those values first, so an overridden factory never runs.
 
+## `isSeederFactory`
+
+```typescript
+declare function isSeederFactory(input: unknown) : input is ISeederFactory<any, any>;
+```
+
+Check whether a value is a seeder factory. `SeederFactory` implements the `ISeederFactory`
+interface (`setMeta`, `make`, `save`, `saveMany` and the `context`). The check reads the
+`Symbol.for('typeorm-extension/SeederFactory')` marker every instance carries (exported as
+`SEEDER_FACTORY_INSTANCE`) instead of using `instanceof`, so a factory created by another copy of
+the library, e.g. a second install in a monorepo, is still recognized. Factory property values are
+resolved with this check.
+
 ## `resetSeederFactoryManager`
 
 ```typescript

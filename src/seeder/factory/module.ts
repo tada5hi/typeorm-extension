@@ -1,9 +1,12 @@
-import { hasOwnProperty, isPromise  } from '../../utils';
+import { markInstanceof } from '@ebec/core';
+import { hasOwnProperty, isPromise } from '../../utils';
 import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import type { SeederFactoryContext } from './types';
+import { isSeederFactory } from './check';
+import { SEEDER_FACTORY_INSTANCE } from './constants';
+import type { ISeederFactory, SeederFactoryContext } from './types';
 
-export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
+export class SeederFactory<O extends Record<string, any>, Meta = unknown> implements ISeederFactory<O, Meta> {
     public readonly context: SeederFactoryContext<O, Meta>;
 
     public meta: Meta | undefined;
@@ -11,6 +14,8 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     // --------------------------------------------------------------
 
     constructor(context: SeederFactoryContext<O, Meta>) {
+        markInstanceof(this, SEEDER_FACTORY_INSTANCE);
+
         this.context = context;
     }
 
@@ -85,8 +90,8 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
                 continue;
             }
 
-            if (value instanceof SeederFactory) {
-                const factory : SeederFactory<any> = value;
+            if (isSeederFactory(value)) {
+                const factory = value;
 
                 if (this.context.dataSource && !factory.context.dataSource) {
                     factory.context.dataSource = this.context.dataSource;
