@@ -118,6 +118,7 @@ const family = await factory.setMeta({ lastName: 'Barrows' }).saveMany(3);
   generated values can collide and one save fails while others are already stored. Derive unique values from a
   counter, or call `save()` in a loop.
 - `params` are assigned after the callback ran and replace the generated property values, one property at a time.
+  This happens before nested factories are resolved, so a factory under an overridden property never runs.
 - `setMeta(value)` passes `value` to the callback. Use it when the callback needs the value to decide something,
   and `params` when you only overwrite a property.
 
@@ -140,9 +141,11 @@ export default setSeederFactory(User, () => {
 });
 ```
 
-- The nested factory is resolved before `params` apply. Overriding `role` through `params` still saves an unused
-  `Role` row first; pass the parent through `setMeta()` instead (see [Factories with relations](./recipes/factories-with-relations)).
-- A native `Promise` in a property is not awaited. Make the callback `async` and await the value there.
+- `save({ role })` assigns the given role and saves no extra `Role` row. A factory or promise passed in `params`
+  is resolved like one set by the callback (see [Factories with relations](./recipes/factories-with-relations)).
+- A promise (or any thenable) in a property is awaited, for example `user.role = repository.findOneByOrFail(...)`.
+  If `params` override that property, the promise is not awaited (a lazy thenable is not called) and its rejection is
+  ignored.
 
 ## Seeders
 
@@ -216,8 +219,7 @@ await runSeeder(dataSource, 'UserSeeder');
 ```
 
 To run several seeders in a fixed order, write one seeder that calls `runSeeder` for each of them, or pass the
-classes as an array. An array keeps its order unless class names end in a timestamp (13 or more digits): those run
-after the others, sorted by that timestamp.
+classes as an array (ordered as described above).
 
 ## Tracking
 

@@ -271,7 +271,22 @@ The callback receives the value assigned through `SeederFactory.setMeta()` and n
 The argument is `undefined` when `setMeta()` was not called, which is why the parameter has to
 be declared as optional (`(meta?: Meta) => …`) or handled as possibly undefined. The callback
 may be synchronous or asynchronous, and may return other factories or promises as property
-values: they are resolved (and persisted, for `save()`) before the entity itself.
+values: they are resolved (and persisted, for `save()`) before the entity itself. `params` passed to
+`make()`, `save()` or `saveMany()` replace those values first, so an overridden factory never runs.
+
+## `isSeederFactory`
+
+```typescript
+declare function isSeederFactory(input: unknown) : input is ISeederFactory<any, any>;
+```
+
+Check whether a value is a seeder factory. `SeederFactory` implements the `ISeederFactory`
+interface (`setMeta`, `make`, `save`, `saveMany` and the `context`). The check reads the
+`Symbol.for('typeorm-extension/SeederFactory')` marker every instance carries (exported as
+`SEEDER_FACTORY_INSTANCE`) instead of using `instanceof`, so a factory created by another copy of
+the library, e.g. a second install in a monorepo, is still recognized. An object without the marker
+(a copy from before it existed) counts when it has a `context` object and every method above.
+Factory property values are resolved with this check.
 
 ## `resetSeederFactoryManager`
 

@@ -1,9 +1,22 @@
-import { hasOwnProperty, isPromise  } from '../../utils';
+import { markInstanceof } from '@ebec/core';
+import { hasOwnProperty, isPromise } from '../../utils';
 import type { SaveOptions } from 'typeorm';
 import { useDataSource } from '../../data-source';
-import type { SeederFactoryContext } from './types';
+import { isSeederFactory } from './check';
+import { SEEDER_FACTORY_INSTANCE } from './constants';
+import type { ISeederFactory, SeederFactoryContext } from './types';
 
-export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
+/**
+ * Any value with a callable then (native promises inherit it; functions
+ * and arrays may carry one).
+ */
+function isThenable(input: unknown) : input is PromiseLike<unknown> {
+    return (typeof input === 'object' || typeof input === 'function') &&
+        input !== null &&
+        typeof (input as { then?: unknown }).then === 'function';
+}
+
+export class SeederFactory<O extends Record<string, any>, Meta = unknown> implements ISeederFactory<O, Meta> {
     public readonly context: SeederFactoryContext<O, Meta>;
 
     public meta: Meta | undefined;
@@ -11,6 +24,8 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
     // --------------------------------------------------------------
 
     constructor(context: SeederFactoryContext<O, Meta>) {
+        markInstanceof(this, SEEDER_FACTORY_INSTANCE);
+
         this.context = context;
     }
 
@@ -26,23 +41,31 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
 
     public async make(params?: Partial<O>, save?: boolean) {
         const factoryFn = this.context.factoryFn(this.meta);
-        let entity : O;
+        const entity : O = isPromise(factoryFn) ?
+            await factoryFn :
+            factoryFn;
 
-        if (isPromise(factoryFn)) {
-            entity = await this.resolve(await factoryFn, save);
-        } else {
-            entity = await this.resolve(factoryFn, save);
-        }
-
+        // Apply params before resolving, so a nested factory of an
+        // overridden key never runs (and never saves a row).
         if (params) {
             const keys : (keyof O)[] = Object.keys(params);
 
             for (const key of keys) {
+                const value : unknown = entity[key];
+
+                // the overridden value is unused: a rejection of an already
+                // running promise must not end up as an unhandled rejection.
+                // A lazy thenable is left alone, calling its then would
+                // start the discarded work.
+                if (value instanceof Promise) {
+                    value.catch(() => undefined);
+                }
+
                 entity[key] = (params as O)[key];
             }
         }
 
-        return entity;
+        return this.resolve(entity, save);
     }
 
     // --------------------------------------------------------------
@@ -81,19 +104,14 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
         const keys = Object.keys(entity);
 
         for (const key of keys as (keyof O)[]) {
-            const value : O[keyof O] = entity[key];
+            const value : unknown = entity[key];
 
             if (!hasOwnProperty(entity, key)) {
                 continue;
             }
 
-            if (
-                typeof value === 'object' &&
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                value instanceof SeederFactory
-            ) {
-                const factory = value as SeederFactory<any>;
+            if (isSeederFactory(value)) {
+                const factory = value;
 
                 if (this.context.dataSource && !factory.context.dataSource) {
                     factory.context.dataSource = this.context.dataSource;
@@ -104,14 +122,8 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> {
                 } else {
                     entity[key] = await factory.make();
                 }
-            }
-
-            if (
-                value &&
-                hasOwnProperty(value, 'then') &&
-                typeof value.then === 'function'
-            ) {
-                entity[key] = await value;
+            } else if (isThenable(value)) {
+                entity[key] = await value as O[keyof O];
             }
         }
 

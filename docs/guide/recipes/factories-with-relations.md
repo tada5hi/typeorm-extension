@@ -34,9 +34,9 @@ await factoryManager.get<State, { country: Country }>(State)
 ```
 
 - You save the parent once and hand it to the factory with `setMeta()`. All ten states reference the same row.
-- `saveMany(10, { country })` also sets the relation, but `params` apply after the factory ran. The nested
-  `Country` factory in `StateFactory` has then already saved one unused country per state. Use `params` only when the
-  factory has no nested factory for that property.
+- `saveMany(10, { country })` sets the relation as well. `params` apply before nested factories are resolved, so the
+  `Country` factory in `StateFactory` does not run. Prefer `setMeta()` when the callback needs the parent to derive
+  other values.
 - Assigning the entity (or `{ id }`) is enough. TypeORM writes the foreign key column from it.
 
 ## Many-to-one: a new parent per child
