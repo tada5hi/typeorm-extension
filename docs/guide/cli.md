@@ -27,9 +27,12 @@ Before the application is built, run the ESM bundle with a TypeScript-aware load
 }
 ```
 
-The CLI detects `tsx` and `ts-node` and then uses the paths as given. Other loaders, such as Node's
-`--experimental-strip-types`, are not detected: add `--preserveFilePaths` there, or the paths are rewritten as for a
-build (see below).
+The CLI detects `tsx` and `ts-node` and then uses the paths as given. Under other loaders, such as Node's own type
+stripping, the paths are rewritten as for a build (see below), but a rewritten path that matches nothing falls back to
+the path as given. Node's type stripping does not support decorators, though: this only helps when no decorated
+class is loaded from a `.ts` file (entities defined with `EntitySchema`, or `entities` and `migrations` pointing at
+compiled `.js` files). A project with `@Entity()` classes in `src` still needs `tsx` (or `ts-node`) or a build, see
+[Troubleshooting](./troubleshooting#syntaxerror-invalid-or-unexpected-token-at-a-decorator).
 
 ## Against a build
 
@@ -45,8 +48,9 @@ After `tsc` (or another compiler) has written the JavaScript files, run the bina
 `npx typeorm-extension ...` and `node node_modules/typeorm-extension/bin/cli.mjs ...` do the same. Without a
 TypeScript loader, the CLI rewrites every path from `src` to the `outDir` of the tsconfig (default `dist`) and `.ts`
 to `.js`: the `-d` path, `--name`, and the `entities`, `migrations`, `subscribers`, `seeds` and `factories` globs. So
-`-d src/data-source.ts` loads `dist/data-source.js`. Pass `--tsconfig` when the tsconfig is not `tsconfig.json` in the
-root, or `--preserveFilePaths` to use the paths as given. The recipe
+`-d src/data-source.ts` loads `dist/data-source.js`. When the rewritten path matches nothing but the given one does,
+the given path is used. Pass `--tsconfig` when the tsconfig is not `tsconfig.json` in the root, or
+`--preserveFilePaths` to always use the paths as given. The recipe
 [Running from a build or a bundle](./recipes/production-build) covers the details.
 
 Read the [Seeding Configuration](./seeding#configuration) section to find out how to specify the path,

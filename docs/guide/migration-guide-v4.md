@@ -32,7 +32,7 @@ Update any `package.json` scripts:
 
 You can use any TypeScript-aware loader (`tsx`, Node's `--experimental-strip-types`, `bun`, …). `ts-node` is no longer recommended because its ESM mode requires extra setup.
 
-`ts-node` and `tsx` are detected automatically, so file paths are kept as-is (no `src` → `dist` rewrite). For other loaders, pass `--preserveFilePaths` to get the same behaviour.
+`ts-node` and `tsx` are detected automatically, so file paths are kept as-is (no `src` to `dist` rewrite). Under other loaders the paths are rewritten, but a rewritten path that matches nothing falls back to the path as given. Node's type stripping does not support decorators, so this only helps when no decorated class is loaded from a `.ts` file (entities defined with `EntitySchema`, or `entities` and `migrations` pointing at compiled `.js` files). A project with `@Entity()` classes in `src` still needs `tsx` (or `ts-node`) or a build. Pass `--preserveFilePaths` to skip the rewrite.
 
 ### Minimum Node.js version
 

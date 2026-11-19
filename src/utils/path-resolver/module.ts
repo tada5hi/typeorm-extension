@@ -1,6 +1,10 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { locateMany } from 'locter';
 import { isObject } from '../object';
 import { CodeTransformation, isCodeTransformation } from '../code-transformation';
 import { resolveFilePath, transformFilePath } from '../file-path';
+import { safeReplaceWindowsSeparator } from '../separator';
 import type { TSConfig } from '../tsconfig';
 import { readTSConfig } from '../tsconfig';
 import { PathResolverMode } from './constants';
@@ -15,10 +19,13 @@ export class PathResolver implements IPathResolver {
 
     protected tsconfigPromise?: Promise<TSConfig>;
 
+    protected typescript?: boolean;
+
     constructor(options: PathResolverOptions = {}) {
         this.root = options.root;
         this.mode = options.mode || PathResolverMode.AUTO;
         this.tsconfigInput = options.tsconfig;
+        this.typescript = options.typescript;
     }
 
     absolutize(input: string) : string {
@@ -36,7 +43,25 @@ export class PathResolver implements IPathResolver {
 
         const { compilerOptions } = await this.tsconfig();
 
-        return transformFilePath(input, compilerOptions?.outDir);
+        const output = transformFilePath(input, compilerOptions?.outDir);
+
+        if (
+            this.mode !== PathResolverMode.AUTO ||
+            output === input
+        ) {
+            return output;
+        }
+
+        // auto mode: the build path wins, the source path is the fallback on a miss.
+        if (await this.matches(output)) {
+            return output;
+        }
+
+        if (await this.matches(input, true)) {
+            return input;
+        }
+
+        return output;
     }
 
     async transformKeys<T extends Record<string, any>>(
@@ -86,6 +111,55 @@ export class PathResolver implements IPathResolver {
         return readTSConfig(
             resolveFilePath(this.tsconfigInput || 'tsconfig.json', this.root),
         );
+    }
+
+    /**
+     * Check if a path (file, directory or glob pattern) points to something
+     * on disk. With loadable set, a typescript file only counts
+     * when the runtime can load typescript.
+     */
+    protected async matches(input: string, loadable?: boolean) : Promise<boolean> {
+        const filePath = this.absolutize(input);
+
+        try {
+            const stat = await fs.promises.stat(filePath);
+
+            return stat.isDirectory() || !loadable || this.isLoadable(filePath);
+        } catch {
+            // not a plain path, maybe a glob pattern
+        }
+
+        if (!/[*?[\]{}]/.test(input)) {
+            return false;
+        }
+
+        try {
+            const files = await locateMany(safeReplaceWindowsSeparator(input), {
+                cwd: this.root ? this.absolutize('.') : process.cwd(),
+                ignore: ['**/*.d.ts'],
+            });
+
+            return files.some((file) => !loadable || this.isLoadable(file.path));
+        } catch {
+            return false;
+        }
+    }
+
+    protected isLoadable(filePath: string) : boolean {
+        if (!['.ts', '.mts', '.cts'].includes(path.extname(filePath))) {
+            return true;
+        }
+
+        return this.canLoadTypeScript();
+    }
+
+    protected canLoadTypeScript() : boolean {
+        if (typeof this.typescript === 'boolean') {
+            return this.typescript;
+        }
+
+        return isCodeTransformation(CodeTransformation.JUST_IN_TIME) ||
+            !!process.features.typescript;
     }
 
     protected shouldTransform() : boolean {

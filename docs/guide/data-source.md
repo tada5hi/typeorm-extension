@@ -43,7 +43,10 @@ Without `-d`, these paths are tried in order, each with the extensions `.js`, `.
   named file is tried first, and the paths above stay the fallback.
 - Unless the process runs under `tsx` or `ts-node`, the library assumes compiled code: `src` in these paths becomes the
   `outDir` of your tsconfig (default `dist`), and `.ts` becomes `.js`. The same rewrite applies to string paths in
-  `entities`, `migrations`, `subscribers`, `seeds` and `factories`. Pass `--preserveFilePaths` to turn it off.
+  `entities`, `migrations`, `subscribers`, `seeds` and `factories`. When the rewritten path matches nothing but the
+  original one does (e.g. Node's type stripping without a build), the original is used. Node's type stripping does
+  not support decorators, so files with `@Entity()` classes still need `tsx` or a build (see the tip below). Pass
+  `--preserveFilePaths` to turn the rewrite off.
 - Every export of the file is checked, the default export included (see [accepted export shapes](#accepted-export-shapes)).
   If a file has none of them, the next path is tried.
 - The library only reads the `options` of that `DataSource`. `useDataSource()` creates and initializes a new

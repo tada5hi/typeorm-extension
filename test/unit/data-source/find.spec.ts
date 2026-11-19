@@ -18,6 +18,21 @@ describe('src/data-source/utils/find.ts', () => {
         expect(InstanceChecker.isDataSource(dataSource));
     });
 
+    it('should fall back to the src directory when there is no build', async () => {
+        const tsconfig = { compilerOptions: { outDir: 'dist' } };
+
+        let dataSource = await findDataSource({
+            directory: path.join(import.meta.dirname, '..', '..', 'data', 'source-only', 'src'),
+            tsconfig,
+        });
+
+        expect(dataSource?.options.extra).toEqual({ sourceOnly: true });
+
+        dataSource = await findDataSource({ directory: 'test/data/source-only/src', tsconfig });
+
+        expect(dataSource?.options.extra).toEqual({ sourceOnly: true });
+    });
+
     it('should find and load async data-source', async () => {
         const dataSource = await findDataSource({
             directory: path.join(import.meta.dirname, '..', '..', 'data', 'typeorm'),

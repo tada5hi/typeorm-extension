@@ -108,7 +108,7 @@ Input:
 Processing (SeederExecutor.execute — one named stage per step):
   1. resolveConfig(): pure resolveSeederConfig(input, dataSource.options, env) — precedence
      input ← dataSource.options ← env ← defaults (src/seeder/config.ts) — then path transformation
-     via the executor's PathResolver (preserveFilePaths ⇒ mode 'preserve', else 'auto' with JIT probe)
+     via the executor's PathResolver (preserveFilePaths ⇒ mode 'preserve', else 'auto' with JIT probe and fallback to the original path on a miss)
   2. prepareSeederFactories() loads factory files via glob → registers in the global manager
   3. loadEntities(): prepareSeederSeeds() loads seed files via glob → SeederEntity list,
      ordered by SeederEntity.compare (fileName, then timestamp)

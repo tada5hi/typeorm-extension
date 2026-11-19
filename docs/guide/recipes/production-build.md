@@ -42,9 +42,15 @@ The second command loads `dist/data-source.js`, and the seeders from `dist/datab
   applies. When a config in the `extends` chain is missing (e.g. a `@tsconfig/*` base installed as a devDependency
   and pruned from the image), the file is read alone: its own `outDir` still applies, one set only in the base does
   not. In that case the file is read as plain JSON, so it must not contain comments.
+- When a rewritten path matches nothing on disk but the original path does, the original is used. A `.ts` original
+  is only used when the runtime can load it (`tsx`, `ts-node`, or Node's type stripping, see
+  `process.features.typescript`); otherwise the rewritten path and its error stay. Node's type stripping does not
+  support decorators, so this only helps when no decorated class is loaded from a `.ts` file: entities defined with
+  `EntitySchema`, or `entities` / `migrations` that point at compiled `.js` files. A typical project with `@Entity()`
+  classes in `src` still needs `tsx` (or `ts-node`) or a build.
 - `--preserveFilePaths` (or `preserveFilePaths: true` in `buildDataSourceOptions`, `findDataSource` and the seeder
-  executor options) turns the rewrite off. Use it when your paths already point at the build, or when you run the
-  sources through a loader the library does not detect, such as Node's `--experimental-strip-types`.
+  executor options) turns the rewrite off. Use it when your paths already point at the build, or when a stale build
+  in `outDir` would shadow the sources.
 - The data-source file is searched in the working directory before the `-d` directory. If the image still contains a
   `data-source.ts` next to `data-source.js`, ship only the build or run from a directory without the sources.
 

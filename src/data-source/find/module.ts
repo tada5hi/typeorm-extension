@@ -128,13 +128,12 @@ async function findDataSourceExport(
 
     if (context.directory) {
         if (path.isAbsolute(context.directory)) {
-            directory = context.directory;
+            directory = await pathResolver.transform(context.directory);
         } else {
+            // transformed below, as part of each lookup path
             directoryIsPattern = true;
             directory = safeReplaceWindowsSeparator(context.directory);
         }
-
-        directory = await pathResolver.transform(directory);
     }
 
     const lookupPaths = [];
@@ -155,13 +154,15 @@ async function findDataSourceExport(
 
     files.push(...lookupPaths);
 
+    // the extensions are part of the pattern, so the resolver can check
+    // whether the rewritten (build) path matches a file.
     for (let j = 0; j < files.length; j++) {
-        files[j] = await pathResolver.transform(files[j]);
+        files[j] = await pathResolver.transform(`${files[j]}.{js,cjs,mjs,ts,cts,mts}`);
     }
 
     for (const file of files) {
         const info = await locate(
-            `${file}.{js,cjs,mjs,ts,cts,mts}`,
+            file,
             {
                 cwd: [
                     process.cwd(),

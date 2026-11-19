@@ -80,6 +80,7 @@ This is achieved by rewriting the `src` path and `.ts` extension, to the `dist` 
 
 If the function is **not** called within a just-in-time runtime environment (`ts-node` and `tsx` are detected automatically),
 the source path `src/database/entities.ts` for example, will be rewritten to `dist/database/entities.js`.
+If the rewritten path does not exist but the source path does (and the runtime can load it), the source path is kept. Node's type stripping cannot load decorated classes, so entities with `@Entity()` still need `tsx` or a build.
 
 **Parameters**
 
