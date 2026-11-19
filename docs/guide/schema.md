@@ -184,7 +184,9 @@ constraint. All of them are read back from the database, so the rename can not c
 
 On mysql the `DROP` and the `ADD` are separate, auto-committed statements. A run interrupted between them leaves
 neither the old nor the new constraint behind, and there is nothing left to read back. Pass `meta` to make that
-recoverable. It is only used when neither name is present:
+recoverable. It is only used when neither name is present, and then it creates the constraint even under `strict`.
+So `meta` must describe the original constraint exactly: the same columns, referenced table and columns, and
+referential actions, or the migration creates a different constraint than the one it dropped:
 
 ```typescript
 import type { QueryRunner } from 'typeorm';
@@ -205,7 +207,8 @@ await renameForeignKey(queryRunner, {
 });
 ```
 
-Between the drop and the add, the constraint does not exist, and the add runs with the checks disabled. Another
+On mysql and mariadb, between the drop and the add, the constraint does not exist, and the add runs with the checks
+disabled. Another
 session can insert an orphan row in that window, and it is not caught afterwards. Stop writes to the table during a
 repair migration.
 

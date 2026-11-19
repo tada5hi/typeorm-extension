@@ -476,7 +476,13 @@ recreating the table.
 Each helper returns `false` when the change is already applied, which keeps a repair migration resumable. If the
 database is in **neither** the expected nor the desired state it raises a `SchemaAlterationError` instead of returning
 quietly, since a repair migration which repairs nothing would otherwise pass for a successful one. Pass
-`strict: false` per call to opt out.
+`strict: false` per call to opt out. The one exception is a
+`renameForeignKey` call with `meta`: when neither name exists, it recreates the constraint from `meta`, so `meta` must
+match the original constraint exactly.
+
+On mysql and mariadb the foreign key rename drops the constraint and adds it again with the checks disabled (postgres
+renames it in place). A row written in between can violate the constraint and is not caught afterwards, so stop
+writes to the table during a repair migration there.
 
 ### Locks
 

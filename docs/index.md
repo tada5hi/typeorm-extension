@@ -34,6 +34,7 @@ hero:
             ...options,
             migrationsRun: false,
             synchronize: false,
+            dropSchema: false,
         });
         await dataSource.initialize();
 
@@ -122,7 +123,7 @@ quickstart:
     tabs:
         - label: 'Install'
           code: |
-              $ npm install typeorm-extension typeorm
+              $ npm install typeorm-extension typeorm pg
               $ npm install --save-dev tsx
         - label: 'data-source.ts'
           code: |

@@ -90,6 +90,9 @@ describe('schema', () => {
 });
 ```
 
+Run it against an empty database: on one that already has the tables (for example from an earlier
+`synchronize()`), the comparison no longer shows what the migrations alone produce.
+
 Comparing the statements rather than `drift.exists` puts them in the test output when the check fails.
 
 ## Links
