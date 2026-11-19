@@ -494,7 +494,9 @@ declare function isDatabaseForeignKeyViolationError(error: unknown): boolean;
 ```
 
 True when the error is a foreign key violation, in either direction: a row references a missing one, or a row which is
-still referenced is deleted. On mssql, where error 547 covers CHECK constraints as well, the message decides.
+still referenced is deleted. On mssql, where error 547 covers CHECK constraints as well, the message decides. The same
+holds for better-sqlite3, which reports an `ON DELETE` / `ON UPDATE RESTRICT` key as a trigger failure, the code a trigger
+of your own raises as well.
 
 ## `isDatabaseLockConflictError`
 
@@ -516,7 +518,7 @@ typeorm throws as well as the raw driver error. The codes they recognize:
 |-------------------------|-------------------------------------------------------|-------------------------------------------------------------------|--------------------------------------------|
 | postgres, cockroachdb   | `23505`                                               | `23503`                                                           | `40P01`, `40001`, `55P03`                  |
 | mysql, mariadb          | `ER_DUP_ENTRY`                                        | `ER_NO_REFERENCED_ROW(_2)`, `ER_ROW_IS_REFERENCED(_2)`            | `ER_LOCK_DEADLOCK`, `ER_LOCK_WAIT_TIMEOUT`, `ER_LOCK_NOWAIT` |
-| better-sqlite3          | `SQLITE_CONSTRAINT_UNIQUE`, `SQLITE_CONSTRAINT_PRIMARYKEY` | `SQLITE_CONSTRAINT_FOREIGNKEY`                               | not covered                                |
+| better-sqlite3          | `SQLITE_CONSTRAINT_UNIQUE`, `SQLITE_CONSTRAINT_PRIMARYKEY` | `SQLITE_CONSTRAINT_FOREIGNKEY`, `SQLITE_CONSTRAINT_TRIGGER` with the message `FOREIGN KEY constraint failed` | not covered |
 | mssql (`number`)        | `2627`, `2601`                                        | `547` naming a FOREIGN KEY or REFERENCE constraint                | `1205`, `1222`                             |
 | oracle                  | `ORA-00001`                                           | `ORA-02291`, `ORA-02292`                                          | `ORA-00060`, `ORA-08177`, `ORA-00054`      |
 | mongodb                 | `11000`, `11001`                                      | not applicable                                                    | not covered                                |

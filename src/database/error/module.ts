@@ -124,6 +124,13 @@ const CODES : Record<DatabaseErrorKind, DatabaseErrorCodes> = {
 
 const MSSQL_CONSTRAINT_CONFLICT = 547;
 
+/**
+ * sqlite runs ON DELETE / ON UPDATE RESTRICT as a trigger. A trigger of the
+ * schema's own (RAISE) reports the same code with its own message.
+ */
+const SQLITE_CONSTRAINT_TRIGGER = 'SQLITE_CONSTRAINT_TRIGGER';
+const SQLITE_FOREIGN_KEY_MESSAGE = 'FOREIGN KEY constraint failed';
+
 function matches(signature: DatabaseErrorSignature, codes: DatabaseErrorCodes) : boolean {
     return (typeof signature.code !== 'undefined' && codes.code.includes(signature.code)) ||
         (typeof signature.number !== 'undefined' && codes.number.includes(signature.number)) ||
@@ -151,7 +158,9 @@ export function isDatabaseUniqueViolationError(error: unknown) : boolean {
  *
  * mssql raises 547 for a CHECK constraint as well, so the message decides:
  * it names a FOREIGN KEY constraint when the referenced row is missing and a
- * REFERENCE constraint when a referenced row is deleted.
+ * REFERENCE constraint when a referenced row is deleted. better-sqlite3
+ * reports a RESTRICT foreign key as a trigger failure, which the message
+ * tells apart from a trigger of the schema's own.
  */
 export function isDatabaseForeignKeyViolationError(error: unknown) : boolean {
     const signature = readSignature(error);
@@ -167,6 +176,13 @@ export function isDatabaseForeignKeyViolationError(error: unknown) : boolean {
             signature.message.includes('FOREIGN KEY constraint') ||
             signature.message.includes('REFERENCE constraint')
         )
+    ) {
+        return true;
+    }
+
+    if (
+        signature.code === SQLITE_CONSTRAINT_TRIGGER &&
+        signature.message === SQLITE_FOREIGN_KEY_MESSAGE
     ) {
         return true;
     }
