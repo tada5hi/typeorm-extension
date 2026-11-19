@@ -8,7 +8,12 @@ import {
     it,
     vi,
 } from 'vitest';
-import { DriverError, OptionsError, withLockedEntity } from '../../../../src';
+import {
+    DriverError,
+    OptionsError,
+    hasRowLock,
+    withLockedEntity,
+} from '../../../../src';
 import { Role } from '../../../data/entity/role';
 import { User } from '../../../data/entity/user';
 import { createDataSource, createDataSourceOptions } from '../../../data/typeorm/factory';
@@ -130,5 +135,20 @@ describe('src/database/lock/entity', () => {
             .rejects.toBeInstanceOf(DriverError);
 
         expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('should tell whether a driver gets a row lock', () => {
+        const mssql = new DataSource({ type: 'mssql', host: '127.0.0.1' });
+
+        expect(hasRowLock(dataSource)).toBe(false);
+        expect(hasRowLock(dataSource.manager)).toBe(false);
+        expect(hasRowLock('better-sqlite3')).toBe(false);
+        expect(hasRowLock('mongodb')).toBe(false);
+        expect(hasRowLock(mssql)).toBe(true);
+        expect(hasRowLock(mssql.manager)).toBe(true);
+
+        for (const type of ['postgres', 'cockroachdb', 'mysql', 'mariadb', 'oracle', 'mssql'] as const) {
+            expect(hasRowLock(type)).toBe(true);
+        }
     });
 });

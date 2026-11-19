@@ -1,5 +1,6 @@
 import type {
     DataSource,
+    DataSourceOptions,
     EntityManager,
     EntityTarget,
     FindOptionsWhere,
@@ -15,6 +16,30 @@ import type { EntityLockOptions } from './types';
  * hint). typeorm ignores `onLocked` on mssql, so that is refused there.
  */
 const DRIVERS = ['postgres', 'cockroachdb', 'mysql', 'mariadb', 'oracle', 'mssql'];
+
+/**
+ * Whether typeorm emits a row lock (`pessimistic_write`) for the driver of
+ * the given data source, entity manager or driver type. Never throws.
+ *
+ * Use it to skip the `lock` find option on drivers where typeorm would throw
+ * LockNotSupportedOnGivenDriverError (e.g. better-sqlite3). On mssql the lock
+ * holds, but typeorm ignores `onLocked`.
+ */
+export function hasRowLock(
+    source: DataSource | EntityManager | DataSourceOptions['type'],
+) : boolean {
+    let type : string;
+
+    if (typeof source === 'string') {
+        type = source;
+    } else if (InstanceChecker.isDataSource(source)) {
+        type = source.options.type;
+    } else {
+        type = source.dataSource.options.type;
+    }
+
+    return DRIVERS.includes(type);
+}
 
 /**
  * Read one row with a write lock, inside a transaction, and hand it to the
@@ -44,7 +69,7 @@ export async function withLockedEntity<T extends ObjectLiteral, R>(
 ) : Promise<Awaited<R> | null> {
     const manager = InstanceChecker.isDataSource(source) ? source.manager : source;
     const { type } = manager.dataSource.options;
-    const locked = DRIVERS.includes(type);
+    const locked = hasRowLock(manager);
 
     if (!locked && options.strict !== false) {
         throw DriverError.lockNotSupported(type);

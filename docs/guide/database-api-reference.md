@@ -486,6 +486,19 @@ With `onLocked: 'nowait'` a locked row fails the call at once with the driver's 
   join would lock the related rows as well. A find operator on the relation (`{ owner: Equal(id) }`, `IsNull()`)
   compares the join column and is accepted.
 
+## `hasRowLock`
+
+```typescript
+declare function hasRowLock(
+    source: DataSource | EntityManager | DataSourceOptions['type'],
+): boolean;
+```
+
+True when typeorm emits a row lock (`pessimistic_write`) for the driver: `postgres`, `cockroachdb`, `mysql`,
+`mariadb`, `oracle` and `mssql`. It never throws. `withLockedEntity` decides by the same check, so a repository
+adapter building its own locked read can skip the `lock` find option where typeorm would throw
+`LockNotSupportedOnGivenDriverError`. On mssql the lock holds, but typeorm ignores `onLocked`.
+
 ## `isDatabaseUniqueViolationError`
 
 ```typescript
