@@ -8,6 +8,7 @@ import {
     mergeDataSourceOptionsWithEnv,
     readDataSourceOptionsFromEnv,
     resetEnv,
+    useEnv,
 } from '../../../../src';
 import {
     afterEach,
@@ -89,6 +90,89 @@ describe('src/data-source/options/env', () => {
         const options = readDataSourceOptionsFromEnv();
 
         expect(options).toBeUndefined();
+    });
+
+    describe('unset variables over file options', () => {
+        const names = [
+            EnvironmentVariableName.TYPE,
+            EnvironmentVariableName.DATABASE,
+            EnvironmentVariableName.LOGGING,
+            EnvironmentVariableName.LOGGING_ALT,
+        ];
+
+        afterEach(() => {
+            for (const name of names) {
+                delete process.env[name];
+            }
+
+            resetEnv();
+        });
+
+        it('should leave logging unset without DB_LOGGING', () => {
+            resetEnv();
+
+            expect(useEnv('logging')).toBeUndefined();
+        });
+
+        it('should keep the logging and database of the file', () => {
+            process.env[EnvironmentVariableName.TYPE] = 'better-sqlite3';
+            resetEnv();
+
+            const options = mergeDataSourceOptionsWithEnv({
+                type: 'better-sqlite3',
+                database: ':memory:',
+                logging: true,
+            });
+
+            expect(options.logging).toEqual(true);
+            expect(options.database).toEqual(':memory:');
+        });
+
+        it('should let a set DB_LOGGING win over the file', () => {
+            process.env[EnvironmentVariableName.TYPE] = 'better-sqlite3';
+            process.env[EnvironmentVariableName.LOGGING] = 'false';
+            resetEnv();
+
+            const options = mergeDataSourceOptionsWithEnv({
+                type: 'better-sqlite3',
+                database: ':memory:',
+                logging: true,
+            });
+
+            expect(options.logging).toEqual(false);
+        });
+
+        it('should read a DB_LOGGING list', () => {
+            process.env[EnvironmentVariableName.LOGGING_ALT] = 'query, error';
+            resetEnv();
+
+            expect(useEnv('logging')).toEqual(['query', 'error']);
+        });
+
+        it('should default the better-sqlite3 database without a file value', () => {
+            process.env[EnvironmentVariableName.TYPE] = 'better-sqlite3';
+            resetEnv();
+
+            expect(readDataSourceOptionsFromEnv()?.database).toEqual('db.sqlite');
+            expect(mergeDataSourceOptionsWithEnv({ type: 'better-sqlite3' } as DataSourceOptions).database)
+                .toEqual('db.sqlite');
+        });
+
+        it('should keep the timeTravelQueries of the file', () => {
+            process.env[EnvironmentVariableName.TYPE] = 'cockroachdb';
+            resetEnv();
+
+            const env = readDataSourceOptionsFromEnv();
+
+            expect(env && env.type === 'cockroachdb' && env.timeTravelQueries).toEqual(true);
+
+            const options = mergeDataSourceOptionsWithEnv({
+                type: 'cockroachdb',
+                timeTravelQueries: false,
+            });
+
+            expect(options.type === 'cockroachdb' && options.timeTravelQueries).toEqual(false);
+        });
     });
 
     describe('env checks', () => {

@@ -9,7 +9,11 @@ import {
 import type { DataSourceCacheOption } from '../data-source';
 import { EnvironmentVariableName } from './constants';
 
-export function transformLogging(input?: string) : boolean | string | string[] {
+export function transformLogging(input?: string) : boolean | string | string[] | undefined {
+    if (typeof input === 'undefined') {
+        return undefined;
+    }
+
     const value = toBool(input);
 
     if (typeof value === 'boolean') {

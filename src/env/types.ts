@@ -34,7 +34,10 @@ export interface Environment {
     entityPrefix?: string,
     metadataTableName?: string,
     subscribers: string[],
-    logging: string[] | boolean | string,
+    /**
+     * Undefined when DB_LOGGING (TYPEORM_LOGGING) is unset.
+     */
+    logging?: string[] | boolean | string,
     logger?: string,
     maxQueryExecutionTime?: number,
     debug?: string,

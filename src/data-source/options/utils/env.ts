@@ -124,6 +124,29 @@ function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
     return pinTimezone(options, 'UTC');
 }
 
+/**
+ * Fill the driver defaults the environment implies, once the options are
+ * complete. Applied before a merge, a default would win over the value of
+ * the data source file.
+ */
+function applyEnvDefaults(options: DataSourceOptions) : DataSourceOptions {
+    if (
+        options.type === 'better-sqlite3' &&
+        (typeof options.database === 'undefined' || options.database === '')
+    ) {
+        return { ...options, database: 'db.sqlite' };
+    }
+
+    if (
+        options.type === 'cockroachdb' &&
+        typeof options.timeTravelQueries === 'undefined'
+    ) {
+        return { ...options, timeTravelQueries: true };
+    }
+
+    return options;
+}
+
 export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
     const options = readRawDataSourceOptionsFromEnv();
 
@@ -131,7 +154,7 @@ export function readDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
         return undefined;
     }
 
-    return applyEnvTimezone(options);
+    return applyEnvTimezone(applyEnvDefaults(options));
 }
 
 /* istanbul ignore next */
@@ -193,16 +216,17 @@ function readRawDataSourceOptionsFromEnv() : DataSourceOptions | undefined {
             ...credentialOptions,
             type: base.type,
             schema: useEnv('schema'),
-            timeTravelQueries: true,
-        };
+            // timeTravelQueries is left to the file, applyEnvDefaults() fills it.
+        } as DataSourceOptions;
     }
 
     if (base.type === 'better-sqlite3') {
         return {
             ...base,
             type: base.type,
-            database: useEnv('database') || 'db.sqlite',
-        };
+            // An empty value counts as unset, applyEnvDefaults() fills it.
+            database: useEnv('database') || undefined,
+        } as DataSourceOptions;
     }
 
     if (base.type === 'mssql') {
@@ -236,5 +260,5 @@ export function mergeDataSourceOptionsWithEnv(options: DataSourceOptions) {
         return applyEnvTimezone(options);
     }
 
-    return applyEnvTimezone(mergeDataSourceOptions(env, options));
+    return applyEnvTimezone(applyEnvDefaults(mergeDataSourceOptions(env, options)));
 }
