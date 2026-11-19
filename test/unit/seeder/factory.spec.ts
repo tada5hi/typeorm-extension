@@ -214,6 +214,52 @@ describe('src/seeder/factory/index.ts', () => {
         }
     });
 
+    it('should await a callable thenable in a factory property', async () => {
+        setSeederFactory(User, () => {
+            const user = new User();
+
+            user.email = Object.assign(() => undefined, { then: (resolve: (value: string) => void) => resolve('callable@example.com') }) as unknown as string;
+
+            return user;
+        });
+
+        try {
+            const made = await useSeederFactory(User).make();
+
+            expect(made.email).toEqual('callable@example.com');
+        } finally {
+            setSeederFactory(User, userFactoryItem.factoryFn);
+        }
+    });
+
+    it('should not fail on a rejecting promise which params override', async () => {
+        setSeederFactory(User, async () => {
+            const user = await userFactoryItem.factoryFn(undefined);
+
+            // no role "missing" exists: this lookup rejects
+            user.role = dataSource.getRepository(Role).findOneByOrFail({ name: 'missing' }) as unknown as Role;
+
+            return user;
+        });
+
+        try {
+            const role = await dataSource.getRepository(Role).save({ name: 'given' });
+
+            const saved = await useSeederFactory(User).save({ role });
+
+            expect(saved.role.id).toEqual(role.id);
+
+            // let a dangling rejection surface before the test ends
+            await new Promise((resolve) => {
+                setTimeout(resolve, 10); 
+            });
+
+            await expect(useSeederFactory(User).make()).rejects.toThrow();
+        } finally {
+            setSeederFactory(User, userFactoryItem.factoryFn);
+        }
+    });
+
     it('should reset the factory manager', () => {
         setSeederFactory(Role, () => new Role());
 

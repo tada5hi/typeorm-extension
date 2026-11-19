@@ -144,6 +144,7 @@ export default setSeederFactory(User, () => {
 - `save({ role })` assigns the given role and saves no extra `Role` row. A factory or promise passed in `params`
   is resolved like one set by the callback (see [Factories with relations](./recipes/factories-with-relations)).
 - A promise (or any thenable) in a property is awaited, for example `user.role = repository.findOneByOrFail(...)`.
+  If `params` override that property, the promise is not awaited and its rejection is ignored.
 
 ## Seeders
 

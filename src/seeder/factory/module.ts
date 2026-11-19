@@ -6,6 +6,16 @@ import { isSeederFactory } from './check';
 import { SEEDER_FACTORY_INSTANCE } from './constants';
 import type { ISeederFactory, SeederFactoryContext } from './types';
 
+/**
+ * Any value with a callable then (native promises inherit it; functions
+ * and arrays may carry one).
+ */
+function isThenable(input: unknown) : input is PromiseLike<unknown> {
+    return (typeof input === 'object' || typeof input === 'function') &&
+        input !== null &&
+        typeof (input as { then?: unknown }).then === 'function';
+}
+
 export class SeederFactory<O extends Record<string, any>, Meta = unknown> implements ISeederFactory<O, Meta> {
     public readonly context: SeederFactoryContext<O, Meta>;
 
@@ -41,6 +51,14 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> implem
             const keys : (keyof O)[] = Object.keys(params);
 
             for (const key of keys) {
+                const value : unknown = entity[key];
+
+                // the overridden value is unused: a rejection of it must not
+                // end up as an unhandled rejection.
+                if (isThenable(value)) {
+                    Promise.resolve(value).catch(() => undefined);
+                }
+
                 entity[key] = (params as O)[key];
             }
         }
@@ -102,9 +120,7 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> implem
                 } else {
                     entity[key] = await factory.make();
                 }
-            } else if (isPromise(value)) {
-                // native promises inherit `then`, so test the
-                // shape rather than an own property.
+            } else if (isThenable(value)) {
                 entity[key] = await value as O[keyof O];
             }
         }
