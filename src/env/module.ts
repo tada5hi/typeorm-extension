@@ -162,8 +162,12 @@ export function useEnv(key?: string) : any {
             read(EnvironmentVariableName.URL_ALT),
         ]);
 
-        if (envURL) {
-            [type] = envURL.split('://');
+        // Only a scheme names the driver: without one, the whole url would
+        // become the type.
+        const schemeEnd = envURL ? envURL.indexOf('://') : -1;
+
+        if (envURL && schemeEnd > 0) {
+            type = envURL.slice(0, schemeEnd);
         }
     }
 

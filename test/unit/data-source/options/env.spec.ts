@@ -147,6 +147,14 @@ describe('src/data-source/options/env', () => {
                 expect(hasEnvDataSourceOptions({ strict: true })).toEqual(true);
             });
 
+            it('should take no driver from a url without a scheme', () => {
+                setEnv({ [EnvironmentVariableName.URL]: 'localhost:5432/app' });
+
+                expect(hasEnvDataSourceOptions()).toEqual(false);
+                expect(hasEnvDataSourceOptions({ strict: true })).toEqual(false);
+                expect(readDataSourceOptionsFromEnv()).toBeUndefined();
+            });
+
             it('should never throw for connection settings without a driver', () => {
                 setEnv({ [EnvironmentVariableName.HOST]: 'localhost' });
 
@@ -190,6 +198,13 @@ describe('src/data-source/options/env', () => {
 
                 expect(() => assertEnvDataSourceOptions()).toThrow(OptionsError);
                 expect(() => assertEnvDataSourceOptions()).toThrow(name);
+            });
+
+            it('should refuse a url without a scheme, required or not', () => {
+                setEnv({ [EnvironmentVariableName.URL]: 'localhost:5432/app' });
+
+                expect(() => assertEnvDataSourceOptions()).toThrow(EnvironmentVariableName.URL);
+                expect(() => assertEnvDataSourceOptions({ required: true })).toThrow(EnvironmentVariableName.URL);
             });
 
             it('should name the DB_* variable when its alias is set', () => {

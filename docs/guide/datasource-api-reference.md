@@ -269,15 +269,17 @@ declare async function buildDataSourceOptions(
 declare function hasEnvDataSourceOptions(options?: { strict?: boolean }): boolean;
 ```
 
-True when the environment names a driver: `DB_TYPE` (or `TYPEORM_CONNECTION`), or a `DB_URL` whose scheme names it.
-Only then are data source options read from the environment.
+True when the environment names a driver: `DB_TYPE` (or `TYPEORM_CONNECTION`), or a `DB_URL` whose scheme names it
+(`postgres://...`). A `DB_URL` without a scheme names no driver. Only then are data source options read from the
+environment.
 
 With `strict: true` it is only true when the environment describes a data source completely: a driver and at least one
 connection setting (`DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE` or `DB_SID`, or one of
 their `TYPEORM_*` aliases).
 
-It never throws. An empty value counts as unset, and it checks the values data source options are built from, so it
-always agrees with what `buildDataSourceOptions` reads.
+An incomplete environment gives `false`, never an error (`assertEnvDataSourceOptions` tells why it is refused). A
+malformed `DB_DRIVER_EXTRA` still fails, as everywhere the environment is read. An empty value counts as unset, and it
+checks the values data source options are built from, so it always agrees with what `buildDataSourceOptions` reads.
 
 ## `assertEnvDataSourceOptions`
 

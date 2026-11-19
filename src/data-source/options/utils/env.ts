@@ -59,8 +59,9 @@ function inspectEnvDataSourceOptions() : EnvDataSourceOptionsInspection {
  * DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_DATABASE or DB_SID, or a
  * TYPEORM_* alias).
  *
- * Never throws: assertEnvDataSourceOptions() tells why an environment is
- * refused.
+ * An incomplete environment gives false, never an error:
+ * assertEnvDataSourceOptions() tells why it is refused. A malformed
+ * DB_DRIVER_EXTRA still fails, as everywhere the environment is read.
  */
 export function hasEnvDataSourceOptions(options: { strict?: boolean } = {}) : boolean {
     const inspection = inspectEnvDataSourceOptions();
