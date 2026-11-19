@@ -1,9 +1,9 @@
 <svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="te-title">
-    <title id="te-title">typeorm-extension logo: an amber extension piece clicking into a teal database piece, inside a round seal</title>
+    <title id="te-title">typeorm-extension logo: a sky-blue extension piece clicking into a slate database piece, inside a round seal</title>
     <defs>
         <linearGradient id="te-ring" x1="12" y1="128" x2="244" y2="128" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#14B8A6"/>
-            <stop offset="1" stop-color="#F59E0B"/>
+            <stop stop-color="#7C8DA6"/>
+            <stop offset="1" stop-color="#0EA5E9"/>
         </linearGradient>
     </defs>
     <!-- seal -->
@@ -14,18 +14,18 @@
          outline centres everywhere, the same as between the straight edges (x126 / x134). -->
     <g>
         <animateTransform attributeName="transform" type="translate" values="26 0;26 0;-3 0;0 0" keyTimes="0;0.3;0.85;1" dur="1.3s" repeatCount="1" fill="freeze"/>
-        <path d="M150 76 H190 A16 16 0 0 1 206 92 V164 A16 16 0 0 1 190 180 H150 A16 16 0 0 1 134 164 V150 A22 22 0 0 0 134 106 V92 A16 16 0 0 1 150 76 Z" fill="#F59E0B" fill-opacity="0.18" stroke="#F59E0B" stroke-width="4" stroke-linejoin="round"/>
-        <path d="M134 98 V92 A16 16 0 0 1 150 76 H190 A16 16 0 0 1 206 92 V98 Z" fill="#F59E0B"/>
-        <g stroke="#D97706" stroke-width="7" stroke-linecap="round">
+        <path d="M150 76 H190 A16 16 0 0 1 206 92 V164 A16 16 0 0 1 190 180 H150 A16 16 0 0 1 134 164 V150 A22 22 0 0 0 134 106 V92 A16 16 0 0 1 150 76 Z" fill="#0EA5E9" fill-opacity="0.18" stroke="#0EA5E9" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M134 98 V92 A16 16 0 0 1 150 76 H190 A16 16 0 0 1 206 92 V98 Z" fill="#0EA5E9"/>
+        <g stroke="#0284C7" stroke-width="7" stroke-linecap="round">
             <path d="M168 118 H190"/>
             <path d="M170 138 H190"/>
             <path d="M166 158 H190"/>
         </g>
     </g>
     <!-- typeorm piece: a database -->
-    <path d="M66 76 H110 A16 16 0 0 1 126 92 V116.51 A14 14 0 1 1 126 139.49 V164 A16 16 0 0 1 110 180 H66 A16 16 0 0 1 50 164 V92 A16 16 0 0 1 66 76 Z" fill="#14B8A6" fill-opacity="0.18" stroke="#14B8A6" stroke-width="4" stroke-linejoin="round"/>
-    <path d="M50 98 V92 A16 16 0 0 1 66 76 H110 A16 16 0 0 1 126 92 V98 Z" fill="#14B8A6"/>
-    <g stroke="#0D9488" stroke-width="6" stroke-linecap="round">
+    <path d="M66 76 H110 A16 16 0 0 1 126 92 V116.51 A14 14 0 1 1 126 139.49 V164 A16 16 0 0 1 110 180 H66 A16 16 0 0 1 50 164 V92 A16 16 0 0 1 66 76 Z" fill="#7C8DA6" fill-opacity="0.18" stroke="#7C8DA6" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M50 98 V92 A16 16 0 0 1 66 76 H110 A16 16 0 0 1 126 92 V98 Z" fill="#7C8DA6"/>
+    <g stroke="#64748B" stroke-width="6" stroke-linecap="round">
         <ellipse cx="88" cy="117" rx="19" ry="6.5"/>
         <path d="M69 117 V155 A19 6.5 0 0 0 107 155 V117"/>
         <path d="M69 136 A19 6.5 0 0 0 107 136"/>

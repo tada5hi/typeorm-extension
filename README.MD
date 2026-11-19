@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/logo.svg" alt="typeorm-extension logo: an amber extension piece clicking into a teal database piece" width="120">
+  <img src=".github/assets/logo.svg" alt="typeorm-extension logo: a sky-blue extension piece clicking into a slate database piece" width="120">
 </p>
 
 <h1 align="center">typeorm-extension</h1>
