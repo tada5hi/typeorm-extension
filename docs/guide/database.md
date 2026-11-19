@@ -445,6 +445,10 @@ A lock outlives a rollback, so it is refused with a `DatabaseLockError` on a que
 If the callback leaves a transaction open on it, the transaction is rolled back before the release, and a callback
 which returned normally then throws a `DatabaseLockError`: committing after the release would defeat the lock.
 
+If the release itself fails, the session is ended instead of going back to the pool still holding the lock, and the
+query runner counts as released. A callback which returned normally then throws a `DatabaseLockError` with the
+release error as `cause`; the error of a callback which threw is rethrown unchanged.
+
 Only `postgres`, `mysql` and `mariadb` are supported. Every other driver throws a `DriverError`: cockroachdb accepts the
 postgres advisory lock functions, but they do not lock anything. Pass `{ strict: false }` to run the callback without a
 lock there instead, e.g. for a test suite on sqlite. Only do that where a second process can not exist.

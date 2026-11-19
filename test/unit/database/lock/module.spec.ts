@@ -17,6 +17,16 @@ describe('src/database/lock', () => {
         expect(isDatabaseLockAcquired(undefined)).toBeFalsy();
     });
 
+    it('should rely only on driver internals which exist', async () => {
+        // The session discard reaches into typeorm and mysql2: an upgrade
+        // removing either would silently pool a session holding the lock.
+        const { PostgresQueryRunner } = await import('typeorm/driver/postgres/PostgresQueryRunner');
+        const { PoolConnection } = await import('mysql2');
+
+        expect(typeof PostgresQueryRunner.prototype['releasePostgresConnection' as keyof typeof PostgresQueryRunner.prototype]).toEqual('function');
+        expect(typeof PoolConnection.prototype.destroy).toEqual('function');
+    });
+
     it('should acquire and release the lock around the callback', async () => {
         const queryRunner = createFakeQueryRunner({
             type: 'postgres',
@@ -79,6 +89,106 @@ describe('src/database/lock', () => {
         await expect(withDatabaseLock(queryRunner, 'migrations', async () => {
             throw new Error('boom');
         })).rejects.toThrow('boom');
+    });
+
+    function failRelease(type: 'postgres' | 'mysql') {
+        return createFakeQueryRunner({
+            type,
+            respond: (query) => {
+                if (query.includes('unlock') || query.includes('RELEASE_LOCK')) {
+                    throw new Error('current transaction is aborted');
+                }
+
+                return [{ acquired: true }];
+            },
+        });
+    }
+
+    it('should end the postgres session if the release fails', async () => {
+        for (const outcome of ['throws', 'returns'] as const) {
+            const queryRunner = failRelease('postgres');
+            const discarded : unknown[] = [];
+
+            Object.assign(queryRunner, {
+                isReleased: false,
+                async releasePostgresConnection(error: unknown) {
+                    discarded.push(error);
+                    Object.assign(queryRunner, { isReleased: true });
+                },
+            });
+
+            const promise = withDatabaseLock(queryRunner, 'migrations', async () => {
+                if (outcome === 'throws') {
+                    throw new Error('boom');
+                }
+
+                return 'done';
+            });
+
+            if (outcome === 'throws') {
+                await expect(promise).rejects.toThrow('boom');
+            } else {
+                const error = await promise.catch((e) => e);
+
+                expect(error).toBeInstanceOf(DatabaseLockError);
+                expect(error.cause).toBeInstanceOf(Error);
+                expect(error.cause.message).toEqual('current transaction is aborted');
+            }
+
+            expect(discarded).toHaveLength(1);
+            expect((discarded[0] as Error).message).toEqual('current transaction is aborted');
+            expect(queryRunner.isReleased).toBe(true);
+        }
+    });
+
+    it('should destroy the mysql connection if the release fails', async () => {
+        for (const outcome of ['throws', 'returns'] as const) {
+            const queryRunner = failRelease('mysql');
+            let destroyed = 0;
+
+            Object.assign(queryRunner, {
+                isReleased: false,
+                databaseConnection: {
+                    destroy: () => {
+                        destroyed++;
+                    },
+                },
+            });
+
+            const promise = withDatabaseLock(queryRunner, 'migrations', async () => {
+                if (outcome === 'throws') {
+                    throw new Error('boom');
+                }
+
+                return 'done';
+            });
+
+            if (outcome === 'throws') {
+                await expect(promise).rejects.toThrow('boom');
+            } else {
+                await expect(promise).rejects.toBeInstanceOf(DatabaseLockError);
+            }
+
+            expect(destroyed).toEqual(1);
+            expect(queryRunner.isReleased).toBe(true);
+        }
+    });
+
+    it('should prefer the failed release over a transaction left open', async () => {
+        const queryRunner = failRelease('mysql');
+
+        // no connection object: the discard must not throw
+        Object.assign(queryRunner, { isReleased: false });
+
+        const error = await withDatabaseLock(queryRunner, 'migrations', async () => {
+            queryRunner.isTransactionActive = true;
+
+            return 'done';
+        }).catch((e) => e);
+
+        expect(error).toBeInstanceOf(DatabaseLockError);
+        expect(error.message).toContain('could not be released');
+        expect(queryRunner.isReleased).toBe(true);
     });
 
     it('should refuse a query runner in a transaction', async () => {

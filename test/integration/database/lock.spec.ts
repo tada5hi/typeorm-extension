@@ -134,6 +134,55 @@ describe.runIf(supportsDatabaseLock(driver))(`src/database/lock (${driver})`, ()
         expect(await isFree('transaction')).toBe(true);
     });
 
+    // Fail the release statement once, without it reaching the server, so
+    // the session still holds the lock afterwards.
+    function failReleaseOnce(queryRunner: QueryRunner) {
+        const query = queryRunner.query.bind(queryRunner);
+        let failed = false;
+
+        queryRunner.query = (async (statement: string, ...rest: unknown[]) => {
+            if (!failed && /unlock|RELEASE_LOCK/.test(statement)) {
+                failed = true;
+
+                throw new Error('release failed');
+            }
+
+            return (query as (...args: unknown[]) => Promise<unknown>)(statement, ...rest);
+        }) as QueryRunner['query'];
+    }
+
+    for (const outcome of ['throws', 'returns'] as const) {
+        it(`should end the session if the release fails after the callback ${outcome}`, async () => {
+            const a = await connect();
+            // connected now, so it is not handed a's connection from the pool
+            const b = await connect();
+
+            failReleaseOnce(a);
+
+            const promise = withDatabaseLock(a, `release-${outcome}`, async () => {
+                if (outcome === 'throws') {
+                    throw new Error('boom');
+                }
+
+                return 'a';
+            });
+
+            if (outcome === 'throws') {
+                await expect(promise).rejects.toThrow('boom');
+            } else {
+                await expect(promise).rejects.toBeInstanceOf(DatabaseLockError);
+            }
+
+            expect(a.isReleased).toBe(true);
+
+            // what a caller does in its finally block: must not pool the session
+            await a.release();
+
+            await expect(withDatabaseLock(b, `release-${outcome}`, async () => 'b', { timeout: 2_000 }))
+                .resolves.toEqual('b');
+        });
+    }
+
     it('should not deadlock on nested calls with the same name', async () => {
         const a = await connect();
 

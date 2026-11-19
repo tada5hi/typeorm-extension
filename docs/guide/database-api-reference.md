@@ -433,6 +433,12 @@ The lock is session scoped: the query runner must stay on one connection for the
 transaction `fn` leaves open on the query runner is rolled back first. Nested calls with the same
 name on the same query runner do not block.
 
+If the release statement fails (for example postgres refuses it in a transaction a failed rollback left aborted), the
+session is ended instead of going back to the pool, which frees the lock. The query runner is released then, so a
+later `queryRunner.release()` does nothing, and it can not run further queries. Ending the session frees the locks of
+enclosing calls on it as well, so a callback which catches the error of a nested call and carries on runs without the
+lock.
+
 The lock is taken with `pg_try_advisory_lock` (postgres) or `GET_LOCK` (mysql, mariadb) and retried every 100ms until
 `timeout` has passed. On mysql and mariadb the name is namespaced with the current database, so each database has its
 own locks.
@@ -443,6 +449,8 @@ own locks.
   functions, but they do not lock anything), unless `strict` is `false`: then `fn` runs without a lock.
 - `DatabaseLockError` if the lock can not be acquired within `timeout`, if the query runner is in a transaction
   (the lock would outlive a rollback), or if `fn` returned with a transaction left open on it.
+- `DatabaseLockError` (`releaseFailed`, with the release error as `cause`) if `fn` returned but the release failed.
+  It takes precedence over a transaction left open. If `fn` threw, its error is rethrown instead.
 
 ## `withLockedEntity`
 
