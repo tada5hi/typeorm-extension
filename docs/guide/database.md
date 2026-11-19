@@ -1,180 +1,104 @@
 # Database
-An alternative to the CLI variant, is to `create` the database in the code base during the runtime of the application.
-Therefore, provide the `DataSourceOptions` for the DataSource manually, or let it be created automatically:
+
+This page shows how to create, drop and check a database from code. The CLI equivalents are
+[`db create` and `db drop`](./cli).
+
+Related pages: [Schema](./schema) (drift, migrations, repair helpers), [Locks](./locks) (advisory and row locks)
+and [Errors](./errors) (classifying driver errors).
 
 ## Create
-**`Example #1`**
-```typescript
-import { 
-    DataSource, 
-    DataSourceOptions
-} from 'typeorm';
-import { createDatabase } from 'typeorm-extension';
 
-(async () => {
-    const options: DataSourceOptions = {
-        type: 'better-sqlite3',
-        database: 'db.sqlite'
-    };
-
-    // Create the database with specification of the DataSource options
-    await createDatabase({
-        options
-    });
-
-    const dataSource = new DataSource(options);
-    await dataSource.initialize();
-    // do something with the DataSource
-})();
-```
-
-**`Example #2`**
 ```typescript
 import { DataSource } from 'typeorm';
-import {
-    buildDataSourceOptions,
-    createDatabase
-} from 'typeorm-extension';
-
-(async () => {
-    const options = await buildDataSourceOptions();
-
-    // modify options
-
-    // Create the database with specification of the DataSource options
-    await createDatabase({
-        options
-    });
-
-    const dataSource = new DataSource(options);
-    await dataSource.initialize();
-    // do something with the DataSource
-})();
-```
-
-**`Example #3`**
-
-It is also possible to let the library automatically search for the data-source under the hood.
-Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- the project root
-- `src/`
-- `src/db/` and `src/database/`
-
-When the code runs compiled, `src` is replaced by the `outDir` of the tsconfig (e.g. `dist`).
-
-```typescript
+import type { DataSourceOptions } from 'typeorm';
 import { createDatabase } from 'typeorm-extension';
 
-(async () => {
-    // Create the database without specifying it manually
-    await createDatabase();
-})();
+const options: DataSourceOptions = {
+    type: 'better-sqlite3',
+    database: 'db.sqlite',
+};
+
+await createDatabase({ options });
+
+const dataSource = new DataSource(options);
+await dataSource.initialize();
 ```
 
+`createDatabase` takes the `DataSourceOptions` in one of three ways:
 
-To get a better overview and understanding of the `createDatabase` function, read its [API reference](./database-api-reference#createdatabase).
+- `options`: the options you pass, as above.
+- `options` from `await buildDataSourceOptions()`, which finds the data-source file (or reads the environment) and
+  lets you change the result before the call.
+- no `options` at all: the data-source file is discovered, as described on the [Data Source](./data-source) page.
+  Pass `findOptions` to say where to look.
+
+What happens on the call:
+
+- The database is created only if it does not exist yet (`ifNotExist`, default `true`).
+- On postgres, "if it does not exist" is a lookup in `pg_database` followed by `CREATE DATABASE`. Two callers
+  running at the same moment can both see no database, and the second `CREATE` fails. Create the database once,
+  for example in a release step, not from every replica (see [Deploying with several replicas](./recipes/deploy)).
+- With `synchronize` (default `true`) the schema is set up right after, also when the database already existed: the
+  migrations run when the options configure any, otherwise `synchronize(false)` runs. Pass `synchronize: false` to
+  only create the database.
+- The options are used with `synchronize`, `migrationsRun` and `dropSchema` turned off and without subscribers, so
+  nothing beyond the step above touches the schema.
+
+For every option, see [createDatabase](./database-api-reference#createdatabase).
 
 ## Drop
 
-**`Example #1`**
 ```typescript
-import {
-    DataSource, 
-    DataSourceOptions
-} from 'typeorm';
-import { dropDatabase } from 'typeorm-extension';
+import { buildDataSourceOptions, dropDatabase } from 'typeorm-extension';
 
-(async () => {
-    const options: DataSourceOptions = {
-        type: 'better-sqlite3',
-        database: 'db.sqlite'
-    };
+const options = await buildDataSourceOptions();
 
-    // Create the database with specification of the DataSource options
-    await dropDatabase({
-        options
-    });
-})();
+await dropDatabase({ options });
 ```
 
-**`Example #2`**
-```typescript
-import { 
-    buildDataSourceOptions,
-    dropDatabase 
-} from 'typeorm-extension';
+- The options can be passed, built or discovered, the same three ways as for `createDatabase`.
+- A missing database is not an error (`ifExist`, default `true`).
+- On oracle, dropping a database is not supported: the call does nothing.
 
-(async () => {
-    const options = await buildDataSourceOptions();
-
-    // modify options
-
-    // Drop the database with specification of the DataSource options
-    await dropDatabase({
-        options
-    });
-})();
-```
-
-**`Example #3`**
-
-It is also possible to let the library automatically search for the data-source under the hood.
-Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- the project root
-- `src/`
-- `src/db/` and `src/database/`
-
-When the code runs compiled, `src` is replaced by the `outDir` of the tsconfig (e.g. `dist`).
-
-```typescript
-import { dropDatabase } from 'typeorm-extension';
-
-(async () => {
-    // Drop the database without specifying it manually
-    await dropDatabase();
-})();
-```
-
-To get a better overview and understanding of the `dropDatabase` function, read its [API reference](./database-api-reference#dropdatabase).
+For every option, see [dropDatabase](./database-api-reference#dropdatabase).
 
 ## Check
 
 `checkDatabase` tells setup code whether the database exists and whether its schema is current.
-It never synchronizes, migrates or drops the schema. On better-sqlite3, connecting creates a missing database
-file, so `exists` is `true` there.
+It never synchronizes, migrates or drops the schema.
 
 ```typescript
+import type { DataSourceOptions } from 'typeorm';
 import { checkDatabase, createDatabase } from 'typeorm-extension';
 
-(async () => {
-    const check = await checkDatabase({
-        options
-    });
+declare const options: DataSourceOptions;
 
-    if (!check.exists) {
-        await createDatabase({
-            options
-        });
-    }
-})();
+const check = await checkDatabase({ options });
+
+if (!check.exists) {
+    await createDatabase({ options });
+}
 ```
 
 The result has three fields:
 
 - `exists`: whether the database exists. A missing database is reported as `false`, on cockroachdb as well.
-  Any failure to connect (also wrong credentials or an unreachable host) is reported as `false`.
+  Any failure to connect (also wrong credentials or an unreachable host) is reported as `false`. On better-sqlite3,
+  connecting creates a missing database file, so `exists` is `true` there.
 - `schema`: whether the schema is up to date. With migrations configured, this is `true` when none are pending.
   Without migrations, a database which already has a migrations table counts as up to date only when no entities are
-  defined. Otherwise the entity tables are compared against the entity metadata. On mongodb it is `true` when no
-  migrations are configured.
+  defined. Otherwise the entity tables are compared against the entity metadata.
 - `migrationsPending`: the migrations which have not run yet.
 
-Without `options`, the data source is looked up by `alias` in the registry, or discovered the same way as for `createDatabase`.
+Where the data source comes from:
 
-A data source passed as `dataSource` takes precedence over `options` and `alias`. It and a registered one follow the
-same rule: an initialized one is used as is and never destroyed, an uninitialized one is left untouched and the check
-runs on a copy. A copy, like any data source the check builds itself, never synchronizes, runs migrations or drops
-the schema, and on postgres it installs no extensions.
+- Without `options`, the data source is looked up by `alias` in the registry, or discovered the same way as for
+  `createDatabase`.
+- A data source passed as `dataSource` takes precedence over `options` and `alias`.
+- An initialized data source (passed or registered) is used as is and never destroyed. An uninitialized one is left
+  untouched and the check runs on a copy.
+- A copy, like any data source the check builds itself, never synchronizes, runs migrations or drops the schema,
+  and on postgres it installs no extensions.
 
 For details, see [checkDatabase](./database-api-reference#checkdatabase).
 
@@ -185,423 +109,32 @@ mongodb has no schema to compare. Without migrations configured, `schema` is alw
 
 ## Custom Connection
 
-By default, the library opens a raw connection with the driver's native client
-(e.g. `pg`, `mysql2`) to run the `CREATE`/`DROP` statements. For server-backed drivers,
-a caller-supplied server-level connection can be injected instead, for example an
-existing admin pool or a tunnelled connection. The library never closes an injected
-connection; its lifecycle stays with the caller.
+By default, the library opens a raw connection with the driver's native client (for example `pg` or `mysql2`) to
+run the `CREATE` and `DROP` statements. For server-backed drivers you can inject a server-level connection of your
+own instead, such as an existing admin pool or a tunnelled connection.
 
 ```typescript
+import type { DataSourceOptions } from 'typeorm';
 import { createDatabase } from 'typeorm-extension';
-import { pool } from './admin-pool';
 
-(async () => {
-    await createDatabase({
-        options,
-        connection: {
-            execute: (statement) => pool.query(statement),
-        },
-    });
-})();
-```
+declare const options: DataSourceOptions;
+declare const pool: { query: (statement: string) => Promise<unknown> };
 
-The injected object only needs the `execute` part of the `IDatabaseConnection` interface.
-It is treated as already open: the library never opens or closes it. For full control
-over how connections are opened (e.g. per-database targeting), implement the
-`IDatabaseConnectionFactory` interface instead. Both types are exported from the package.
-
-::: warning NOTE
-The former per-driver helpers (`createPostgresDatabase`, `dropMySQLDatabase`, ...)
-are deprecated and will be removed in the next major release. Use `createDatabase` /
-`dropDatabase`; the driver is dispatched automatically from the `type` of the
-provided options. For oracle, dropping a database is not supported and the create
-statement is passed through unchanged.
-:::
-
-## Schema Drift
-
-The database schema and the entity metadata are two independent descriptions of the same thing.
-A project which builds its schema with **migrations** in production but with `synchronize()` in tests has no guard
-against the two drifting apart, and the failure mode is silent: nothing breaks until someone runs
-`migration:generate` and gets a migration full of reconciling statements, potentially including a `DROP COLUMN`
-that looks routine in review.
-
-`getSchemaDrift` wraps the same schema comparison `migration:generate` performs and returns the statements which would
-reconcile the database schema with the entity metadata. It never writes to the database.
-
-```typescript
-import { getSchemaDrift } from 'typeorm-extension';
-
-(async () => {
-    const drift = await getSchemaDrift(dataSource);
-
-    if (drift.exists) {
-        for (const statement of drift.up) {
-            console.log(statement.query);
-        }
-    }
-})();
-```
-
-`assertSchemaMatchesMetadata` is the assertion form. It throws a `SchemaDriftError` whose message lists the
-statements and whose `statements` property carries them:
-
-```typescript
-import { SchemaDriftError, assertSchemaMatchesMetadata } from 'typeorm-extension';
-
-try {
-    await assertSchemaMatchesMetadata(dataSource);
-} catch (e) {
-    if (e instanceof SchemaDriftError) {
-        console.log(e.statements);
-    }
-
-    throw e;
-}
-```
-
-Both accept either a `DataSource` or plain `DataSourceOptions`. A data source built from options is built with
-`synchronize`, `migrationsRun` and `dropSchema` disabled and destroyed afterwards; an existing `DataSource` is
-initialized as is (its own options still apply) and never destroyed.
-
-Use it as a CI gate right after the migrations have run:
-
-```
-migration run  ->  revert x N  ->  run  ->  assert zero drift
-```
-
-The `skipWithoutMigrations` option reports no drift when the data source has no migrations registered. This is useful when
-the same data-source file serves a migration driven environment and a `synchronize()` driven one
-(e.g. `migrations: []` for an in-memory sqlite test database):
-
-```typescript
-await assertSchemaMatchesMetadata(dataSource, { skipWithoutMigrations: true });
-```
-
-The equivalent on the command line is [`typeorm-extension db drift`](./cli#schema-drift).
-
-::: warning NOTE
-`mongodb` has no schema to compare; the drift is always reported as empty for it.
-:::
-
-## Generate Migration
-
-`generateMigration` writes a migration file from the same schema comparison, without shelling out to the typeorm CLI.
-The statements, the escaping and the file templates are typeorm's own, so the result matches
-`typeorm migration:generate`.
-
-```typescript
-import { generateMigration } from 'typeorm-extension';
-
-await generateMigration({
-    dataSource,
-    name: 'add-role',
-    directoryPath: 'src/migrations',
-});
-```
-
-The data source must already be initialized, and it is left initialized. The file is written as
-`<timestamp>-<name>.<language>`, by default into `migrations/` relative to the working directory.
-
-Set `language: 'js'` to emit a JavaScript migration (JSDoc typed, `module.exports = class`) instead of a TypeScript
-one. Add `esm: true` for `export class` module syntax:
-
-```typescript
-await generateMigration({
-    dataSource,
-    name: 'add-role',
-    language: 'js',
-    esm: true,
-});
-```
-
-Pass `preview: true` to get the statements back without writing anything:
-
-```typescript
-const { up, down, content } = await generateMigration({ dataSource, preview: true });
-```
-
-When there is nothing to generate, `up` and `down` are empty, `content` is undefined and no file is written.
-Pass `prettify: true` to format the sql statements.
-
-## Repair Migrations
-
-Fixing schema drift usually means renaming a constraint, which is dialect-asymmetric and easy to get wrong:
-
-- **postgres** renames in place: `ALTER INDEX … RENAME TO`, `ALTER TABLE … RENAME CONSTRAINT`.
-- **mysql** has `ALTER TABLE … RENAME INDEX`, but no `RENAME CONSTRAINT`: a foreign key must be dropped and re-added,
-  and if its column carried no explicit index, mysql created a backing index **under the constraint name** which
-  survives the drop and has to be dealt with before the new constraint is added.
-
-The following helpers own that machinery. The data (which constraint is renamed to what) stays in your migration.
-
-Each helper is **guarded**: it reads the current state back from the database, applies the change only if it is still
-pending and returns whether it did something. A repair migration therefore stays resumable (mysql commits DDL
-regardless of the surrounding transaction) and is safe to run against a database which never had the drift.
-
-A guard only covers the state the change would produce. If the database is in **neither** the expected nor the desired
-state (a mistyped constraint name, a column which is not the type the migration believes it is), the helper raises a
-`SchemaAlterationError` instead of returning quietly, because a repair migration which repairs nothing is otherwise
-indistinguishable from a successful one. Pass `strict: false` to get the silent no-op back:
-
-```typescript
-await renameIndex(queryRunner, {
-    table: 'auth_events',
-    from: 'IDX_auth_events_actor_name',
-    to: 'IDX_9f6d1a2b3c4d5e6f70819293',
-    // this database may never have had the index at all
-    strict: false,
-});
-```
-
-```typescript
-import type { MigrationInterface, QueryRunner } from 'typeorm';
-import { changeColumnType, renameForeignKey, renameIndex } from 'typeorm-extension';
-
-export class RepairSchema1700000000000 implements MigrationInterface {
-    public async up(queryRunner: QueryRunner): Promise<void> {
-        await renameIndex(queryRunner, {
-            table: 'auth_events',
-            from: 'IDX_auth_events_actor_name',
-            to: 'IDX_9f6d1a2b3c4d5e6f70819293',
-        });
-
-        await renameForeignKey(queryRunner, {
-            table: 'auth_permissions',
-            from: 'FK_auth_permissions_client',
-            to: 'FK_1a2b3c4d5e6f708192a3b4c5',
-        });
-
-        await changeColumnType(queryRunner, {
-            table: 'auth_permissions',
-            column: 'client_id',
-            from: { type: 'varchar', length: 36 },
-            to: { type: 'varchar', length: 255 },
-        });
-    }
-
-    public async down(queryRunner: QueryRunner): Promise<void> {
-        // ... the same calls with from & to swapped
-    }
-}
-```
-
-`renameForeignKey` preserves the columns, the referenced table/columns and the referential actions of the constraint.
-All of them are read back from the database, so the rename can not silently change the constraint.
-
-There is one state it can not read them back from: on mysql the `DROP` and the `ADD` are separate, auto-committed
-statements, so a run interrupted between them leaves neither the old nor the new constraint behind. Pass `meta` along to
-make that recoverable; it is only consulted when neither name is present:
-
-```typescript
-await renameForeignKey(queryRunner, {
-    table: 'auth_permissions',
-    from: 'FK_auth_permissions_client',
-    to: 'FK_1a2b3c4d5e6f708192a3b4c5',
-
-    meta: {
-        columns: ['client_id'],
-        referencedTable: 'auth_clients',
-        referencedColumns: ['id'],
-        onDelete: 'CASCADE',
+await createDatabase({
+    options,
+    connection: {
+        execute: (statement) => pool.query(statement),
     },
 });
 ```
 
-On mysql it wraps the drop & re-add in `withForeignKeyChecksDisabled`, which you can also use directly. The constraint
-being recreated was already enforcing, so re-validating it only buys a full table scan plus a failure mode for rows some
-past import inserted with the checks off:
-
-```typescript
-import { withForeignKeyChecksDisabled } from 'typeorm-extension';
-
-await withForeignKeyChecksDisabled(queryRunner, async () => {
-    // ... statements which would otherwise trigger a re-validation
-});
-```
-
-It restores the previous state rather than blindly enabling the checks, so nesting is safe, and it is a transparent
-no-op wrapper on every driver without a session-level switch, so a migration using it stays portable.
-
-### Database Lock
-
-`withDatabaseLock` runs a callback while holding a named advisory lock, so only one process at a time runs it. A
-typical case is running the migrations on startup across several replicas. Leave `migrationsRun` off, since
-`initialize()` would run them before the lock is taken, and run them inside the lock instead:
-
-```typescript
-import { withDatabaseLock } from 'typeorm-extension';
-
-const queryRunner = dataSource.createQueryRunner();
-try {
-    await withDatabaseLock(queryRunner, 'migrations', () => dataSource.runMigrations());
-} finally {
-    await queryRunner.release();
-}
-```
-
-The lock belongs to the query runner's connection, so keep the same query runner for the whole call. The callback's
-own queries (like `runMigrations()`) use another connection, so the pool needs at least two. The lock is released
-afterwards, also when the callback throws. By default the call waits until the lock is free; pass `{ timeout }` (in
-milliseconds, `0` tries once) to throw a `DatabaseLockError` instead. The lock is scoped to the database, so other
-databases on the same server use their own.
-
-A lock outlives a rollback, so it is refused with a `DatabaseLockError` on a query runner which is in a transaction.
-If the callback leaves a transaction open on it, the transaction is rolled back before the release, and a callback
-which returned normally then throws a `DatabaseLockError`: committing after the release would defeat the lock.
-
-If the release itself fails, the session is ended instead of going back to the pool still holding the lock, and the
-query runner counts as released. A callback which returned normally then throws a `DatabaseLockError` with the
-release error as `cause`; the error of a callback which threw is rethrown unchanged.
-
-Only `postgres`, `mysql` and `mariadb` are supported. Every other driver throws a `DriverError`: cockroachdb accepts the
-postgres advisory lock functions, but they do not lock anything. Pass `{ strict: false }` to run the callback without a
-lock there instead, e.g. for a test suite on sqlite. Only do that where a second process can not exist.
-
-### Locked Entity
-
-`withLockedEntity` is a read-modify-write on one row: it reads the row with a write lock (`FOR UPDATE`, an `UPDLOCK`
-hint on mssql) inside a transaction and hands it to the callback. A second caller for the same row waits until the
-first transaction ends, and then reads the row as the first one left it. A typical case is a status transition which
-only one of several concurrent requests may make:
-
-```typescript
-import { withLockedEntity } from 'typeorm-extension';
-
-const published = await withLockedEntity(dataSource, Post, { id }, async (post, manager) => {
-    if (post.status !== 'draft') {
-        return false;
-    }
-
-    post.status = 'published';
-    await manager.save(post);
-
-    return true;
-});
-```
-
-The helper does not save anything: the callback checks and writes through the manager it is handed, so entity
-subscribers fire as usual. It resolves what the callback returns, or `null` without calling it when no row matches.
-A throw rolls the transaction back. Passing an `EntityManager` which is already in a transaction reuses that
-transaction, which is how calls nest: inside the callback, `withLockedEntity(manager, Child, ...)` locks a second row
-within the same transaction.
-
-Pass `{ onLocked: 'nowait' }` to fail at once instead of waiting for a locked row. The error is the driver's own, and
-`isDatabaseLockConflictError` recognizes it. typeorm ignores that option on mssql, so it throws a `DriverError` there.
-
-Only the row itself is locked: relations of the entity, eager ones included, are loaded in separate queries without
-a lock. For the same reason `where` must not look the row up through a relation with a nested object
-(`{ owner: { id } }`), which would join and lock the related row too; that throws an `OptionsError`. Use a find
-operator on the relation instead (`{ owner: Equal(id) }`), which compares the join column.
-
-A few rules keep the lock meaningful:
-
-- Change the entity you were handed. Saving a copy read before the call writes stale values over the locked row.
-- When nesting, lock rows in the same order everywhere. A deadlock is detected by the server, and the error is
-  recognized by `isDatabaseLockConflictError`, so the whole call can be retried.
-- Do slow work (sending a message, an HTTP call) after the call returns, not inside the callback: the row stays locked
-  until the transaction ends.
-- The options of a nested call apply only to the row it locks, but its failure is the transaction's: on postgres and
-  cockroachdb a failed statement (a `nowait` miss included) aborts the whole transaction, so catching the error inside
-  the callback does not let it carry on there.
-- The second caller reading the row as the first left it assumes the default `READ COMMITTED`. In a transaction with a
-  stricter isolation level postgres raises a serialization failure instead, which `isDatabaseLockConflictError`
-  recognizes as well.
-- Inside the callback, pass the manager you were handed, not the data source. A call on the data source opens a
-  second transaction on another connection, and waits forever for a row the first one holds.
-
-Supported are `postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle` and `mssql`. Every other driver throws a
-`DriverError` before a transaction is opened. Pass `{ strict: false }` to run the callback without a lock there
-instead, e.g. for a test suite on sqlite (still within a transaction). On mongodb typeorm has no transactions, so a
-throw does not roll anything back there.
-
-For a locked read of your own, `isRowLockSupported(source)` tells whether the driver gets a row lock. It takes a data
-source, an entity manager or a driver type and never throws, so you can leave the `lock` find option out where typeorm
-would throw `LockNotSupportedOnGivenDriverError` (e.g. better-sqlite3):
-
-```typescript
-import { isRowLockSupported } from 'typeorm-extension';
-
-const post = await manager.findOne(Post, {
-    where: { id },
-    ...(isRowLockSupported(manager) ? { lock: { mode: 'pessimistic_write' } } : {}),
-});
-```
-
-### Driver support
-
-| Helper                         | Drivers                                                                         |
-|--------------------------------|---------------------------------------------------------------------------------|
-| `renameIndex`                  | `postgres`, `cockroachdb`, `mysql`, `mariadb` (throws a `DriverError` otherwise) |
-| `renameForeignKey`             | `postgres`, `cockroachdb`, `mysql`, `mariadb` (throws a `DriverError` otherwise) |
-| `changeColumnType`             | all (altered in place on every relational driver but sqlite)                    |
-| `withForeignKeyChecksDisabled` | all (a no-op wrapper outside `mysql` / `mariadb`)                               |
-| `withDatabaseLock`             | `postgres`, `mysql`, `mariadb` (otherwise throws, or runs unlocked if not `strict`) |
-| `withLockedEntity`             | `postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle`, `mssql` (otherwise throws, or runs unlocked if not `strict`) |
+- The injected object only needs the `execute` part of the `IDatabaseConnection` interface.
+- It is treated as already open: the library never opens or closes it. Its lifecycle stays with you.
+- For full control over how connections are opened (for example one per target database), implement the
+  `IDatabaseConnectionFactory` interface instead. Both types are exported from the package.
 
 ::: warning NOTE
-`changeColumnType` builds its own statement rather than delegating to `queryRunner.changeColumn()`, because typeorm
-drops and re-adds the column *"to avoid data conversion"* as soon as the type or the length differs. That happens on
-postgres, cockroachdb, mysql, mariadb, mssql and oracle alike. On a populated table that silently discards every value in the
-column, so the helper emits `ALTER COLUMN … TYPE` / `MODIFY COLUMN` instead.
-
-Only sqlite still goes through typeorm, which is safe there: the table is recreated and the values are copied over.
-
-On mysql, widening a column a foreign key depends on additionally needs
-[`withForeignKeyChecksDisabled`](./database-api-reference#withforeignkeychecksdisabled); mariadb refuses to alter either end of a constraint
-outright (error 1832/1833), so the constraint has to be dropped around the change there.
+The former per-driver helpers (`createPostgresDatabase`, `dropMySQLDatabase`, ...) are deprecated and will be
+removed in the next major release. Use `createDatabase` and `dropDatabase`: the driver is picked from the `type` of
+the options. On oracle, dropping a database is not supported and the create statement is passed through unchanged.
 :::
-
-::: warning NOTE
-Every helper reads the table back with `queryRunner.getTable()` first. For a table which contains a **generated
-column**, typeorm looks the generation expression up in its own `typeorm_metadata` table. On a database where that
-table does not exist (one built by something other than typeorm), the call fails with `relation "typeorm_metadata" does
-not exist` before the helper does anything.
-:::
-
-::: warning NOTE
-An index which backs a **constraint** is not reported as an index by the driver, and `renameIndex` therefore does not
-see it.
-
-On mysql that is the backing index of a foreign key, which only becomes visible once the constraint is dropped;
-`renameForeignKey` deals with it for you. On postgres it is a unique constraint, which lives in `table.uniques`.
-Renaming a unique constraint is **not** covered by these helpers: `renameForeignKey` only handles foreign keys, so
-issue the `ALTER TABLE … RENAME CONSTRAINT` yourself via `queryRunner.query()`.
-:::
-
-## Driver Errors
-
-A failed write surfaces as the driver's own error, with a vendor code in a different place per driver. Three helpers
-classify it, whichever driver raised it:
-
-```typescript
-import { QueryFailedError } from 'typeorm';
-import { isDatabaseUniqueViolationError } from 'typeorm-extension';
-
-try {
-    await dataSource.getRepository(User).insert({ name: 'admin' });
-} catch (e) {
-    if (isDatabaseUniqueViolationError(e)) {
-        throw new ConflictError('The name is already taken.');
-    }
-
-    throw e;
-}
-```
-
-- `isDatabaseUniqueViolationError`: a duplicate key, a primary key included.
-- `isDatabaseForeignKeyViolationError`: a reference to a missing row, or the delete of a row which is still referenced.
-- `isDatabaseLockConflictError`: the database gave up on the transaction because of lock contention (a deadlock, a
-  serialization failure, a lock wait timeout).
-
-A lock conflict is usually answered by running the whole transaction again. That is only sound when the transaction
-derives its writes from reads made inside it, and a lock wait timeout rolls back just the statement on mysql, mariadb
-and mssql, so roll the transaction back before retrying (typeorm's `transaction()` does). On cockroachdb typeorm's query
-runner already replays a transaction on a serialization failure, up to `maxTransactionRetries` times (default 5), so
-the error only reaches your code once those retries are used up.
-
-The codes each helper recognizes per driver are listed in the
-[API reference](./database-api-reference#isdatabaseuniqueviolationerror).
-
-To log which driver error happened, `readDatabaseErrorCode(error)` returns the vendor code as a plain token (`23505`,
-`ER_DUP_ENTRY`, `2627`, ...), never a message which could quote stored values.

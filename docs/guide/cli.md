@@ -9,9 +9,15 @@ The following commands are available in the terminal:
 
 The legacy colon-form (`db:create`, `db:drop`, `seed:run`, `seed:create`) is still accepted as a backwards-compatibility alias for each command.
 
-If the application has not yet been built and you want to run the CLI against TypeScript sources directly, invoke the ESM bundle with a TypeScript-aware Node loader (e.g. `tsx` or Node's `--experimental-strip-types`):
+The CLI looks for a `data-source.{ts,js}` file in the project root, `src/`, `src/db/` and `src/database/`, or uses
+the file you pass with `-d`. See the [Data Source](./data-source) page for how the file is found and which exports it
+accepts.
 
-```
+## Against TypeScript sources
+
+Before the application is built, run the ESM bundle with a TypeScript-aware loader such as `tsx` (or `ts-node`):
+
+```json
 "scripts": {
     "db:create":  "tsx ./node_modules/typeorm-extension/bin/cli.mjs db create",
     "db:drop":    "tsx ./node_modules/typeorm-extension/bin/cli.mjs db drop",
@@ -21,10 +27,32 @@ If the application has not yet been built and you want to run the CLI against Ty
 }
 ```
 
+The CLI detects `tsx` and `ts-node` and then uses the paths as given. Other loaders, such as Node's
+`--experimental-strip-types`, are not detected: add `--preserveFilePaths` there, or the paths are rewritten as for a
+build (see below).
+
+## Against a build
+
+After `tsc` (or another compiler) has written the JavaScript files, run the binary with plain Node:
+
+```json
+"scripts": {
+    "db:create": "typeorm-extension db create -d src/data-source.ts",
+    "seed:run":  "typeorm-extension seed run -d src/data-source.ts"
+}
+```
+
+`npx typeorm-extension ...` and `node node_modules/typeorm-extension/bin/cli.mjs ...` do the same. Without a
+TypeScript loader, the CLI rewrites every path from `src` to the `outDir` of the tsconfig (default `dist`) and `.ts`
+to `.js`: the `-d` path, `--name`, and the `entities`, `migrations`, `subscribers`, `seeds` and `factories` globs. So
+`-d src/data-source.ts` loads `dist/data-source.js`. Pass `--tsconfig` when the tsconfig is not `tsconfig.json` in the
+root, or `--preserveFilePaths` to use the paths as given. The recipe
+[Running from a build or a bundle](./recipes/production-build) covers the details.
+
 Read the [Seeding Configuration](./seeding#configuration) section to find out how to specify the path,
 for the seeder- & factory-location.
 
-#### CLI Options
+## Options
 
 | Option                  | Commands                                          | Default         | Description                                                                                                                                                                                                                              |
 |-------------------------|---------------------------------------------------|-----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -39,6 +67,34 @@ for the seeder- & factory-location.
 | `--javascript` or `-j`  | `seed create`                                     | `false`         | Generate a seeder file for JavaScript instead of TypeScript.                                                                                                                                                                             |
 | `--preserveFilePaths`   | `db create`, `db drift`, `db drop`, `seed run` | `false`         | This option indicates if file paths should be preserved and treated as if the just-in-time compilation environment is detected.                                                                                                          |
 | `--log-level`           | `db create`, `db drift`, `db drop`, `seed create`, `seed run` | `info`          | Logger verbosity. One of `silent`, `info`, `debug`.                                                                                                                                                                                      |
+
+## Examples
+
+```shell
+# create the database and run the migrations (or synchronize without migrations)
+npx typeorm-extension db create -d src/data-source.ts
+
+# create the database only
+npx typeorm-extension db create -d src/data-source.ts --synchronize no
+
+# postgres: connect to another database than the user name to run CREATE DATABASE
+npx typeorm-extension db create -d src/data-source.ts --initialDatabase postgres
+
+# drop the database
+npx typeorm-extension db drop -d src/data-source.ts
+
+# fail with exit code 1 if the schema deviates from the entities
+npx typeorm-extension db drift -d src/data-source.ts
+
+# run all seeders, or a single one by name or path
+npx typeorm-extension seed run -d src/data-source.ts
+npx typeorm-extension seed run -d src/data-source.ts --name src/database/seeds/user.ts
+
+# create a seeder file (a timestamp is put in front of the name)
+npx typeorm-extension seed create --name src/database/seeds/user.ts
+```
+
+Every command exits with `0` on success, `1` on a user error (such as schema drift) and `2` on any other error.
 
 ## Schema Drift
 
@@ -64,3 +120,6 @@ same data-source file serves a migration driven environment and a `synchronize()
 
 The check never writes to the database: the data-source built from the discovered options is built with
 `synchronize`, `migrationsRun` and `dropSchema` disabled.
+
+The recipe [Schema drift check in CI](./recipes/drift-in-ci) shows a complete CI job, and [Schema](./schema#schema-drift)
+the programmatic form.

@@ -49,7 +49,7 @@ different schemas, and every driver reports a duplicate key in its own way. type
 | **Development and test data** | Ad-hoc scripts that insert rows and break on the second run. | Seeder classes and factories, run by `seed run`, optionally tracked so each seeder runs once. |
 | **Finding the DataSource** | Every script imports and initializes its own instance. | `data-source.ts` is discovered, and `useDataSource()` initializes it lazily, per alias. |
 
-Create the database once per deployment (`db create` in a release step, so replicas do not race to create it), then let every replica run:
+Create the database once per deployment (`db create` in a release step, so replicas do not race to create it), then let every replica run the following. `./data-source` exports both the options and the `dataSource` instance the CLI looks for.
 
 ```typescript
 import { DataSource } from 'typeorm';
@@ -150,7 +150,7 @@ The following commands are available in the terminal:
 
 The legacy colon-form (`db:create`, `db:drop`, `seed:run`, `seed:create`) is still accepted for backwards compatibility.
 
-If the application has not yet been built and you want to run the CLI against TypeScript sources directly, invoke the ESM bundle with a TypeScript-aware Node loader (e.g. `tsx` or Node's `--experimental-strip-types`):
+If the application has not yet been built and you want to run the CLI against TypeScript sources directly, invoke the ESM bundle with `tsx` (or `ts-node`). Other loaders, such as Node's own type stripping, are not detected: pass `--preserveFilePaths` there, or the paths are rewritten as for a build (`src` to the tsconfig `outDir`).
 
 ```
 "scripts": {

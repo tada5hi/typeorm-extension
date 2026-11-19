@@ -18,11 +18,13 @@ export default defineConfig({
                 {
                     title: 'Guide',
                     links: [
-                        { text: 'Installation', link: '/guide/installation' },
+                        { text: 'Data Source', link: '/guide/data-source' },
                         { text: 'CLI', link: '/guide/cli' },
                         { text: 'Database', link: '/guide/database' },
-                        { text: 'Instances', link: '/guide/instances' },
+                        { text: 'Locks', link: '/guide/locks' },
                         { text: 'Seeding', link: '/guide/seeding' },
+                        { text: 'Recipes', link: '/guide/recipes/deploy' },
+                        { text: 'Troubleshooting', link: '/guide/troubleshooting' },
                     ],
                 },
                 {
@@ -71,16 +73,36 @@ export default defineConfig({
                     text: 'Introduction',
                     items: [
                         { text: 'What is it?', link: '/guide/' },
+                        { text: 'Installation', link: '/guide/installation' },
                     ],
                 },
                 {
-                    text: 'Getting Started',
+                    text: 'Guide',
                     items: [
-                        { text: 'Installation', link: '/guide/installation' },
+                        { text: 'Data Source', link: '/guide/data-source' },
                         { text: 'CLI', link: '/guide/cli' },
                         { text: 'Database', link: '/guide/database' },
-                        { text: 'Instances', link: '/guide/instances' },
+                        { text: 'Schema', link: '/guide/schema' },
+                        { text: 'Locks', link: '/guide/locks' },
+                        { text: 'Errors', link: '/guide/errors' },
                         { text: 'Seeding', link: '/guide/seeding' },
+                    ],
+                },
+                {
+                    text: 'Recipes',
+                    items: [
+                        { text: 'Deploying with replicas', link: '/guide/recipes/deploy' },
+                        { text: 'Drift check in CI', link: '/guide/recipes/drift-in-ci' },
+                        { text: 'Testing', link: '/guide/recipes/testing' },
+                        { text: 'Factories with relations', link: '/guide/recipes/factories-with-relations' },
+                        { text: 'Running from a build', link: '/guide/recipes/production-build' },
+                        { text: 'NestJS', link: '/guide/recipes/nestjs' },
+                    ],
+                },
+                {
+                    text: 'Help',
+                    items: [
+                        { text: 'Troubleshooting', link: '/guide/troubleshooting' },
                     ],
                 },
                 {

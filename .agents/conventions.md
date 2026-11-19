@@ -138,7 +138,12 @@ VitePress sources under `docs/`. The site is published to <https://typeorm-exten
 | New CLI option / command              | `docs/guide/cli.md`                         |
 | New database driver                   | `docs/guide/database.md`                    |
 | Seeder/factory contract change        | `docs/guide/seeding.md`                     |
-| Env var rename or addition            | Update both `docs/guide/` page and `README.MD` |
+| Env var rename or addition            | `docs/guide/data-source.md` (env table) and `README.MD` |
+| Data-source discovery or registry     | `docs/guide/data-source.md`                 |
+| Schema drift / repair helpers         | `docs/guide/schema.md`                      |
+| Locks                                 | `docs/guide/locks.md`                       |
+| Error classifiers                     | `docs/guide/errors.md`                      |
+| A new error users hit in setup        | `docs/guide/troubleshooting.md`             |
 
 ## Best Practices
 
