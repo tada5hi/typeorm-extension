@@ -36,6 +36,33 @@ describe('src/env/list', () => {
             expect(splitEnvList('')).toEqual([]);
         });
 
+        it('should not count an escaped brace as a group', () => {
+            expect(splitEnvList('src/legacy\\{/*.ts,src/current/*.ts')).toEqual([
+                'src/legacy\\{/*.ts',
+                'src/current/*.ts',
+            ]);
+            expect(splitEnvList('src/\\{a,b\\}.ts')).toEqual(['src/\\{a', 'b\\}.ts']);
+        });
+
+        it('should not count a brace in a character class as a group', () => {
+            expect(splitEnvList('src/[{]/*.ts,src/current/*.ts')).toEqual([
+                'src/[{]/*.ts',
+                'src/current/*.ts',
+            ]);
+            expect(splitEnvList('src/[}]/*.ts,src/a/*{.ts,.js}')).toEqual([
+                'src/[}]/*.ts',
+                'src/a/*{.ts,.js}',
+            ]);
+        });
+
+        it('should keep a comma in a character class', () => {
+            expect(splitEnvList('src/[,]*.ts,src/b.ts')).toEqual(['src/[,]*.ts', 'src/b.ts']);
+        });
+
+        it('should treat an unclosed character class as literal', () => {
+            expect(splitEnvList('src/[a,src/b.ts')).toEqual(['src/[a', 'src/b.ts']);
+        });
+
         it('should not let a stray closing brace swallow later commas', () => {
             expect(splitEnvList('a},b,c')).toEqual(['a}', 'b', 'c']);
         });

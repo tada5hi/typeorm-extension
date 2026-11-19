@@ -158,6 +158,14 @@ describe('src/data-source/options/env', () => {
                 .toEqual('db.sqlite');
         });
 
+        it('should keep an empty better-sqlite3 database of the file', () => {
+            process.env[EnvironmentVariableName.TYPE] = 'better-sqlite3';
+            resetEnv();
+
+            expect(mergeDataSourceOptionsWithEnv({ type: 'better-sqlite3', database: '' }).database)
+                .toEqual('');
+        });
+
         it('should keep the timeTravelQueries of the file', () => {
             process.env[EnvironmentVariableName.TYPE] = 'cockroachdb';
             resetEnv();

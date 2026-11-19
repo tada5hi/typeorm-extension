@@ -128,8 +128,8 @@ DB_ENTITIES=dist/database/entities/*.js
 | `DB_DEBUG`                    | `TYPEORM_DEBUG`                    | `useEnv('debug')` only, reserved and currently unused   | string                                          |
 | `NODE_ENV`                    |                                    | `useEnv('env')` only (default `development`)            | string                                          |
 
-A list is comma separated. A comma inside a brace group belongs to its glob pattern, so
-`DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one entry. A bool is `true`, `t` or `1`, or `false`, `f` or `0`; any other value counts as unset. A
+A list is comma separated. A comma inside a brace group or a character class (`[,]`) belongs to its glob pattern, so
+`DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one entry. An escaped brace (`\{`) is a literal character. A bool is `true`, `t` or `1`, or `false`, `f` or `0`; any other value counts as unset. A
 JSON value that does not parse throws when the environment is read.
 
 How the environment combines with the data source file:
@@ -143,8 +143,9 @@ How the environment combines with the data source file:
   and `cache` are merged key by key. `entities`, `migrations` and `subscribers` are joined, the environment's entries
   first.
 - File and environment name different drivers: the environment's options are used and the file is ignored.
-- Driver defaults apply last, only to an option that neither the environment nor the file sets: `database: 'db.sqlite'`
-  for better-sqlite3 and `timeTravelQueries: true` for cockroachdb.
+- When the environment names a driver, its defaults apply last, only to an option that neither the environment nor the
+  file sets: `database: 'db.sqlite'` for better-sqlite3 and `timeTravelQueries: true` for cockroachdb. Options from a
+  file alone get no defaults.
 - `DB_SEEDS` and `DB_FACTORIES` are the fallback: seeds or factories set in the data source options or passed in code
   win.
 

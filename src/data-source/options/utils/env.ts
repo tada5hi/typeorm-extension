@@ -132,7 +132,7 @@ function applyEnvTimezone(options: DataSourceOptions) : DataSourceOptions {
 function applyEnvDefaults(options: DataSourceOptions) : DataSourceOptions {
     if (
         options.type === 'better-sqlite3' &&
-        (typeof options.database === 'undefined' || options.database === '')
+        typeof options.database === 'undefined'
     ) {
         return { ...options, database: 'db.sqlite' };
     }
