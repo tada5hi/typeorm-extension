@@ -24,8 +24,8 @@ export function hasEnvDataSourceOptions() : boolean {
  * Together with hasEnvDataSourceOptions() it finds an environment which
  * names a connection but no driver, e.g. to refuse it instead of falling
  * back to a default driver. An empty value counts as unset, as an empty
- * DB_TYPE does. It reads the values data source options are built from, so
- * an empty DB_* variable hides its TYPEORM_* alias here as it does there.
+ * DB_TYPE does. It checks the values data source options are built from
+ * (useEnv()), so it always agrees with what buildDataSourceOptions() reads.
  */
 export function hasEnvDataSourceConnectionOptions() : boolean {
     const env = useEnv();

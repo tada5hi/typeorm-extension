@@ -279,8 +279,8 @@ declare function hasEnvDataSourceConnectionOptions(): boolean;
 ```
 
 True when the environment names a connection: `DB_URL`, `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`,
-`DB_DATABASE` or `DB_SID`, or one of their `TYPEORM_*` aliases. An empty value counts as unset. It reads the values
-data source options are built from, so an empty `DB_*` variable hides its `TYPEORM_*` alias here as it does there.
+`DB_DATABASE` or `DB_SID`, or one of their `TYPEORM_*` aliases. An empty value counts as unset. It checks the values
+data source options are built from, so it always agrees with what `buildDataSourceOptions` reads.
 
 Together with `hasEnvDataSourceOptions()` it finds an environment which names a connection but no driver, e.g. to
 refuse it instead of falling back to a default driver:
