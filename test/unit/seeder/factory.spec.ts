@@ -260,6 +260,36 @@ describe('src/seeder/factory/index.ts', () => {
         }
     });
 
+    it('should not call then of a lazy thenable which params override', async () => {
+        let called = false;
+
+        setSeederFactory(User, async () => {
+            const user = await userFactoryItem.factoryFn(undefined);
+
+            user.role = {
+                then(resolve: (value: Role) => void) {
+                    called = true;
+                    resolve(new Role());
+                },
+            } as unknown as Role;
+
+            return user;
+        });
+
+        try {
+            const role = await dataSource.getRepository(Role).save({ name: 'lazy' });
+
+            await useSeederFactory(User).save({ role });
+            await new Promise((resolve) => {
+                setTimeout(resolve, 10); 
+            });
+
+            expect(called).toBe(false);
+        } finally {
+            setSeederFactory(User, userFactoryItem.factoryFn);
+        }
+    });
+
     it('should reset the factory manager', () => {
         setSeederFactory(Role, () => new Role());
 

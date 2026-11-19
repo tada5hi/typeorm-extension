@@ -53,10 +53,12 @@ export class SeederFactory<O extends Record<string, any>, Meta = unknown> implem
             for (const key of keys) {
                 const value : unknown = entity[key];
 
-                // the overridden value is unused: a rejection of it must not
-                // end up as an unhandled rejection.
-                if (isThenable(value)) {
-                    Promise.resolve(value).catch(() => undefined);
+                // the overridden value is unused: a rejection of an already
+                // running promise must not end up as an unhandled rejection.
+                // A lazy thenable is left alone, calling its then would
+                // start the discarded work.
+                if (value instanceof Promise) {
+                    value.catch(() => undefined);
                 }
 
                 entity[key] = (params as O)[key];
