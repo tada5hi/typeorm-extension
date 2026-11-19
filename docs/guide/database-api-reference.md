@@ -5,8 +5,8 @@
 **Type**
 ```ts
 declare function createDatabase(
-    context?: DatabaseCreateContext
-): Promise<string>;
+    context?: DatabaseCreateContextInput
+): Promise<unknown>;
 ```
 
 Create a database.
@@ -100,7 +100,7 @@ The function returns a promise with the query result of the underlying database 
 
 ```ts
 declare function dropDatabase(
-    context?: DatabaseDropContext
+    context?: DatabaseDropContextInput
 ): Promise<unknown>;
 ```
 

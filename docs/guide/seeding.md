@@ -50,7 +50,7 @@ import { DataSource, DataSourceOptions } from 'typeorm';
 import { SeederOptions } from 'typeorm-extension';
 
 const options: DataSourceOptions & SeederOptions = {
-    type: 'better-sqlite',
+    type: 'better-sqlite3',
     database: 'db.sqlite',
 
     seeds: ['src/database/seeds/**/*{.ts,.js}'],
@@ -68,14 +68,14 @@ import { runSeeders, SeederOptions } from 'typeorm-extension';
 
 (async () => {
     const options: DataSourceOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite',
     };
 
     const dataSource = new DataSource(options);
     await dataSource.initialize();
 
-    runSeeders(dataSource, {
+    await runSeeders(dataSource, {
         seeds: ['src/database/seeds/**/*{.ts,.js}'],
         factories: ['src/database/factories/**/*{.ts,.js}']
     });
@@ -174,7 +174,7 @@ A seeder class only requires one method, called `run` and provides the arguments
 
 **`user.seeder.ts`**
 
-A seeder class must implement the [Seeder](#seeder) interface, and could look like this:
+A seeder class must implement the [Seeder](./seeding-api-reference#seeder) interface, and could look like this:
 
 ```typescript
 import { Seeder, SeederFactoryManager } from 'typeorm-extension';
@@ -223,7 +223,7 @@ import { User } from 'user';
 
 (async () => {
     const options: DataSourceOptions & SeederOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite',
         entities: [User],
 
@@ -249,7 +249,7 @@ import UserFactory from 'user.factory';
 
 (async () => {
     const options: DataSourceOptions & SeederOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite',
         entities: [User],
 

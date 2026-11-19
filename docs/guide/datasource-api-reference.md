@@ -3,7 +3,7 @@
 ## `setDataSource`
 
 ```typescript
-declare function setDataSourceOptions(
+declare function setDataSource(
     dataSource: DataSource,
     alias?: string
 ) : void;
@@ -438,8 +438,28 @@ never modified.
 
 ```typescript
 export type DataSourceFindOptions = {
+    /**
+     * Directory where to look for DataSource files.
+     */
     directory?: string,
-    fileName?: string
+
+    /**
+     * DataSource file name.
+     */
+    fileName?: string,
+
+    /**
+     * Preserve file paths, as if the just-in-time compilation
+     * environment (e.g. tsx) is detected.
+     */
+    preserveFilePaths?: boolean,
+
+    /**
+     * Path to the tsconfig.json file, or its parsed content.
+     *
+     * Default: process.cwd() + path.sep + tsconfig.json
+     */
+    tsconfig?: string | TSConfig,
 };
 ```
 

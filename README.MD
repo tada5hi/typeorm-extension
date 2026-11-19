@@ -173,7 +173,7 @@ for the seeder- & factory-location.
 | `--tsconfig` or `-tc`   | `db create`, `db drift`, `db drop`, `seed run` | `tsconfig.json` | Name (or relative path incl. name) of the tsconfig file.                                                                                                                                                                              |
 | `--dataSource` or `-d`  | `db create`, `db drift`, `db drop`, `seed run` | `data-source`   | Name (or relative path incl. name) of the data-source file.                                                                                                                                                                           |
 | `--synchronize` or `-s` | `db create`                                       | `yes`           | Synchronize the database schema after database creation. Options: `yes` or `no`.                                                                                                                                                      |
-| `--initialDatabase`     | `db create`                                       | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always connect to a database. If no database is provided, the database name will be equal to the connection user name. |
+| `--initialDatabase`     | `db create`, `db drop`                            | `undefined`     | Specify the initial database to connect to. This option is only relevant for the `postgres` driver, which must always connect to a database. If no database is provided, the database name will be equal to the connection user name. |
 | `--skipWithoutMigrations` | `db drift`                                      | `false`         | Report no drift if the data-source has no migrations registered.                                                                                                                                                                      |
 | `--name` or `-n`        | `seed create` (required), `seed run` (optional)   | `undefined`     | Name (or relative path incl. name) of the seeder. Required on `seed create`; on `seed run` restricts execution to the matching seeder.                                                                                                |
 | `--timestamp` or `-t`   | `seed create`                                     | `Date.now()`    | Custom timestamp used in the generated seeder filename.                                                                                                                                                                               |
@@ -266,9 +266,11 @@ import {
 
 It is also possible to let the library automatically search for the data-source under the hood.
 Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- `{src,dist}/db/`
-- `{src,dist}/database`
-- `{src,dist}`
+- the project root
+- `src/`
+- `src/db/` and `src/database/`
+
+When the code runs compiled, `src` is replaced by the `outDir` of the tsconfig (e.g. `dist`).
 
 ```typescript
 import { createDatabase } from 'typeorm-extension';
@@ -330,9 +332,11 @@ import {
 
 It is also possible to let the library automatically search for the data-source under the hood.
 Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- `{src,dist}/db/`
-- `{src,dist}/database`
-- `{src,dist}`
+- the project root
+- `src/`
+- `src/db/` and `src/database/`
+
+When the code runs compiled, `src` is replaced by the `outDir` of the tsconfig (e.g. `dist`).
 
 ```typescript
 import { dropDatabase } from 'typeorm-extension';

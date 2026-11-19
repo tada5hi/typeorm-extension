@@ -13,7 +13,7 @@ import { createDatabase } from 'typeorm-extension';
 
 (async () => {
     const options: DataSourceOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite'
     };
 
@@ -30,6 +30,7 @@ import { createDatabase } from 'typeorm-extension';
 
 **`Example #2`**
 ```typescript
+import { DataSource } from 'typeorm';
 import {
     buildDataSourceOptions,
     createDatabase
@@ -55,9 +56,11 @@ import {
 
 It is also possible to let the library automatically search for the data-source under the hood.
 Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- `{src,dist}/db/`
-- `{src,dist}/database`
-- `{src,dist}`
+- the project root
+- `src/`
+- `src/db/` and `src/database/`
+
+When the code runs compiled, `src` is replaced by the `outDir` of the tsconfig (e.g. `dist`).
 
 ```typescript
 import { createDatabase } from 'typeorm-extension';
@@ -69,7 +72,7 @@ import { createDatabase } from 'typeorm-extension';
 ```
 
 
-To get a better overview and understanding of the [createDatabase](#createdatabase) function go to the [functions](#functions---database) section and read more about it.
+To get a better overview and understanding of the `createDatabase` function, read its [API reference](./database-api-reference#createdatabase).
 
 ## Drop
 
@@ -83,7 +86,7 @@ import { dropDatabase } from 'typeorm-extension';
 
 (async () => {
     const options: DataSourceOptions = {
-        type: 'better-sqlite',
+        type: 'better-sqlite3',
         database: 'db.sqlite'
     };
 
@@ -117,9 +120,11 @@ import {
 
 It is also possible to let the library automatically search for the data-source under the hood.
 Therefore, it will search by default for a `data-source.{ts,js}` file in the following directories:
-- `{src,dist}/db/`
-- `{src,dist}/database`
-- `{src,dist}`
+- the project root
+- `src/`
+- `src/db/` and `src/database/`
+
+When the code runs compiled, `src` is replaced by the `outDir` of the tsconfig (e.g. `dist`).
 
 ```typescript
 import { dropDatabase } from 'typeorm-extension';
@@ -130,7 +135,7 @@ import { dropDatabase } from 'typeorm-extension';
 })();
 ```
 
-To get a better overview and understanding of the [dropDatabase](#dropdatabase) function go to the [functions](#functions---database) section and read more about it.
+To get a better overview and understanding of the `dropDatabase` function, read its [API reference](./database-api-reference#dropdatabase).
 
 ## Check
 
