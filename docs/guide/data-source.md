@@ -5,7 +5,8 @@ how you keep several data sources side by side.
 
 ## Discovery
 
-The CLI and `useDataSource()` look for a file that exports a TypeORM `DataSource`:
+The CLI and `useDataSource()` look for a file that exports a TypeORM `DataSource` (or one of the
+[other accepted shapes](#accepted-export-shapes)):
 
 ```typescript
 // src/database/data-source.ts
@@ -43,8 +44,8 @@ Without `-d`, these paths are tried in order, each with the extensions `.js`, `.
 - Unless the process runs under `tsx` or `ts-node`, the library assumes compiled code: `src` in these paths becomes the
   `outDir` of your tsconfig (default `dist`), and `.ts` becomes `.js`. The same rewrite applies to string paths in
   `entities`, `migrations`, `subscribers`, `seeds` and `factories`. Pass `--preserveFilePaths` to turn it off.
-- Every export of the file is checked, the default export included. The first one that is a `DataSource`, or a promise
-  that resolves to one, is used. A plain options object or a function is not accepted.
+- Every export of the file is checked, the default export included (see [accepted export shapes](#accepted-export-shapes)).
+  If a file has none of them, the next path is tried.
 - The library only reads the `options` of that `DataSource`. `useDataSource()` creates and initializes a new
   instance from them, so the exported instance stays uninitialized.
 
@@ -65,6 +66,34 @@ export default (async () => {
     });
 })();
 ```
+
+### Accepted export shapes
+
+Within one file the first match wins, in this order:
+
+1. A `DataSource`, or a promise that resolves to one.
+2. A default export function without parameters (sync or async) that returns a `DataSource`. It is called once, with
+   no arguments. Named exports are never called, nor are classes or functions with parameters, and a result that is
+   not a `DataSource` is ignored.
+3. A `DataSourceOptions` object (an object with a string `type`), default or named. It is wrapped in
+   `new DataSource(options)`.
+
+The factory should return an uninitialized `DataSource`. The library only reads its options and creates its own
+instance, so an initialized one keeps an open connection the library never closes.
+
+```typescript
+// a factory, e.g. to read a secret first
+export default async function createDataSource() {
+    return new DataSource({ type: 'postgres', password: await readSecret('db-password') });
+}
+```
+
+```typescript
+// only the options
+export const options: DataSourceOptions = { type: 'postgres', database: 'app' };
+```
+
+A file which exports a `DataSource` next to its options or a factory keeps working as before: the `DataSource` wins.
 
 ::: tip Import types with `import type`
 When Node loads a `.ts` file itself (type stripping, on by default since Node 22.18), it removes type annotations but

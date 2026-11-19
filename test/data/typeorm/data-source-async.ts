@@ -1,19 +1,9 @@
-import type { DataSource } from 'typeorm';
-import { dataSource } from './data-source';
+import { DataSource } from 'typeorm';
+import { createDataSourceOptions } from './factory';
 
-let instance : DataSource | undefined;
-let instancePromise : Promise<DataSource> | undefined;
-
-export async function useDataSource() {
-    if (typeof instance !== 'undefined') {
-        return instance;
-    }
-
-    if (typeof instancePromise === 'undefined') {
-        instancePromise = dataSource.initialize();
-    }
-
-    instance = await instancePromise;
-
-    return instance;
+export default async function createDataSource() : Promise<DataSource> {
+    return new DataSource({
+        ...createDataSourceOptions(),
+        extra: { marker: 'async' },
+    });
 }

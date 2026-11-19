@@ -6,7 +6,9 @@ import {
     unsetDataSource,
     useDataSource,
 } from '../../../../src';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { resetEnv } from '../../../../src/env';
 import { dataSource } from '../../../data/typeorm/data-source';
 
 describe('src/data-source/options', () => {
@@ -43,5 +45,24 @@ describe('src/data-source/options', () => {
 
         expect(options).toBeDefined();
         expect(options.type).toEqual('better-sqlite3');
+    });
+
+    it('should name the accepted export shapes when nothing is found', async () => {
+        const keys = ['DB_TYPE', 'DB_URL', 'TYPEORM_CONNECTION', 'TYPEORM_URL'];
+        const saved = keys.map((key) => process.env[key]);
+
+        keys.forEach((key) => delete process.env[key]);
+        resetEnv();
+
+        try {
+            await expect(buildDataSourceOptions({ directory: path.join(import.meta.dirname, '..', '..', '..', 'data', 'entity') })).rejects.toThrow(/could not be located\/loaded.*a default export function without parameters.*DataSourceOptions/);
+        } finally {
+            keys.forEach((key, index) => {
+                if (typeof saved[index] === 'string') {
+                    process.env[key] = saved[index];
+                }
+            });
+            resetEnv();
+        }
     });
 });
