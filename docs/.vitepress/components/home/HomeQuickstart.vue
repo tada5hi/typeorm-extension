@@ -88,7 +88,7 @@ const quickstart = computed(() => frontmatter.value.quickstart as QuickstartFron
 }
 
 .home-quickstart__more:focus-visible {
-    outline: 2px solid var(--te-color-primary-500);
+    outline: 2px solid var(--te-focus);
     outline-offset: 2px;
 }
 </style>

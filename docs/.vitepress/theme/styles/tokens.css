@@ -37,6 +37,8 @@
     --te-color-success-500: #10b981;
 
     --te-color-on-primary: #ffffff;
+    /* Focus outline: 3:1 or more against the surface it sits on. */
+    --te-focus: var(--te-color-primary-700);
     --te-color-primary-text: var(--te-color-primary-700);
 
     --te-surface-dark: #0b1220;
@@ -116,6 +118,8 @@
 
 .dark,
 .te-section--dark,
-.te-code-panel {
+.te-code-panel,
+.te-footer {
     --te-text-gradient-brand: var(--te-gradient-brand);
+    --te-focus: var(--te-color-primary-400);
 }

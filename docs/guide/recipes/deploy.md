@@ -53,10 +53,13 @@ try {
   migrations and no untracked seeders. The lock is released also when the callback throws. It needs `postgres`,
   `mysql` or `mariadb`.
 - The lock belongs to the query runner's connection, while `runMigrations()` and the seeders use other connections
-  from the pool. Keep the pool at two connections or more, and release the query runner at the end.
+  from the pool. With `seedTracking` a second runner keeps its connection while the seeders run, so keep the pool at
+  three connections or more (lock, tracking, seeder writes), and release the query runner at the end.
 - `assertSchemaMatchesMetadata` throws a `SchemaDriftError` when the migrations do not produce the schema the
   entities describe, so the replica fails to start instead of running against the wrong schema. `seedTracking: true`
-  records each seeder in the `seeds` table, so it runs once per database.
+  records each seeder in the `seeds` table after it finished. A seeder that writes and then throws is not recorded
+  and runs again on the next start, so write seeders that are safe to repeat (check before insert, or one
+  transaction per seeder).
 
 ## Links
 

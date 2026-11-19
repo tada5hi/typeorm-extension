@@ -267,7 +267,7 @@ onBeforeUnmount(() => {
 }
 
 .home-hero__copy-button:focus-visible {
-    outline: 2px solid var(--te-color-primary-400);
+    outline: 2px solid var(--te-focus);
     outline-offset: 2px;
 }
 

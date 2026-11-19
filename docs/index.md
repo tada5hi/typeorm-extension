@@ -121,13 +121,15 @@ quickstart:
     active: 1
     tabs:
         - label: 'Install'
-          code: '$ npm install typeorm-extension typeorm'
+          code: |
+              $ npm install typeorm-extension typeorm
+              $ npm install --save-dev tsx
         - label: 'data-source.ts'
           code: |
               import { DataSource, DataSourceOptions } from 'typeorm';
               import { SeederOptions } from 'typeorm-extension';
 
-              const options: DataSourceOptions & SeederOptions = {
+              export const options: DataSourceOptions & SeederOptions = {
                   type: 'postgres',
                   database: 'app',
                   seeds: ['src/database/seeds/**/*{.ts,.js}'],

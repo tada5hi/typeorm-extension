@@ -157,7 +157,7 @@ a.te-card--link:hover {
 }
 
 .te-card--link:focus-visible {
-    outline: 2px solid var(--te-color-primary-500);
+    outline: 2px solid var(--te-focus);
     outline-offset: 2px;
 }
 
@@ -205,9 +205,8 @@ a.te-button {
     transform: translateY(-1px);
 }
 
-/* Sky 500 keeps 3:1 or more against white, tinted and dark surfaces. */
 .te-button:focus-visible {
-    outline: 2px solid var(--te-color-primary-500);
+    outline: 2px solid var(--te-focus);
     outline-offset: 2px;
 }
 

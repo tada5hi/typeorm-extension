@@ -216,7 +216,8 @@ await runSeeder(dataSource, 'UserSeeder');
 ```
 
 To run several seeders in a fixed order, write one seeder that calls `runSeeder` for each of them, or pass the
-classes as an array.
+classes as an array. An array keeps its order unless class names end in a timestamp (13 or more digits): those run
+after the others, sorted by that timestamp.
 
 ## Tracking
 
@@ -229,6 +230,9 @@ Tracking runs a seeder only once per database. It is off by default.
 - The **class name** is the key. Renaming a class makes it run again. Two seeders with the same class name abort the
   run with `Duplicate seeds: <name>`.
 - A selected seeder (`seedName`) that was already tracked is skipped as well.
+- Tracking is not an exactly-once guarantee. A seeder is recorded after `run()` finished, so one that throws midway
+  runs again, and two processes starting at once can both run it. Serialize concurrent runs (see
+  [Deploying with several replicas](./recipes/deploy)) and keep seeders safe to repeat.
 
 Seeds are never reverted. A seeder has no `down()` step, so the library cannot know how to undo what `run()` wrote.
 To run a tracked seeder again, delete its row from the `seeds` table.

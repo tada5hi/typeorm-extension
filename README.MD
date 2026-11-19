@@ -49,7 +49,7 @@ different schemas, and every driver reports a duplicate key in its own way. type
 | **Development and test data** | Ad-hoc scripts that insert rows and break on the second run. | Seeder classes and factories, run by `seed run`, optionally tracked so each seeder runs once. |
 | **Finding the DataSource** | Every script imports and initializes its own instance. | `data-source.ts` is discovered, and `useDataSource()` initializes it lazily, per alias. |
 
-Create the database once per deployment (`db create` in a release step, so replicas do not race to create it), then let every replica run the following. `./data-source` exports both the options and the `dataSource` instance the CLI looks for.
+Create the database once per deployment (`db create --synchronize no` in a release step, so replicas do not race to create it and the schema is only changed under the lock), then let every replica run the following. `./data-source` exports both the options and the `dataSource` instance the CLI looks for.
 
 ```typescript
 import { DataSource } from 'typeorm';
@@ -445,6 +445,13 @@ export class RepairSchema1700000000000 implements MigrationInterface {
             table: 'auth_permissions',
             from: 'FK_auth_permissions_client',
             to: 'FK_1a2b3c4d5e6f708192a3b4c5',
+            // recreates the constraint if a mysql run stopped between DROP and ADD
+            meta: {
+                columns: ['client_id'],
+                referencedTable: 'auth_clients',
+                referencedColumns: ['id'],
+                onDelete: 'CASCADE',
+            },
         });
 
         await changeColumnType(queryRunner, {
@@ -527,7 +534,8 @@ const published = await withLockedEntity(dataSource, Post, { id }, async (post, 
 
 When the helper opens the transaction (it was given a `DataSource`, or an entity manager outside a transaction), a
 throw in `fn` rolls it back. An entity manager which is already in a transaction is reused instead: a nested call locks
-a second row within the outer transaction, and a throw only rolls back if the outer caller lets it propagate.
+a second row within the outer transaction, and a throw only rolls back if the outer caller lets it propagate. On mongodb with `strict: false` there is no
+transaction at all, so a throw does not undo earlier writes in `fn`.
 
 | Option     | Type       | Default            | Description                                                                                                  |
 |------------|------------|--------------------|--------------------------------------------------------------------------------------------------------------|
@@ -1048,6 +1056,9 @@ docs site has the signatures and option types.
 - **`createDatabase` is not a lock.** On postgres and cockroachdb "only if missing" is a lookup followed by a
   `CREATE DATABASE`, so two replicas starting at the same moment can both try to create it. Create the database from one
   place (a deploy step, `db create`) or tolerate the second attempt.
+- **The deploy sample needs a pool of three connections.** The lock holds one, seed tracking holds a second while the
+  seeders run, and the seeders write through a third. Tracking records a seeder after it finished, so a seeder that
+  writes and then throws runs again on the next start: keep seeders safe to repeat.
 - **Advisory locks exist on postgres, mysql and mariadb only.** cockroachdb accepts postgres' advisory lock functions
   but they lock nothing, so `withDatabaseLock` refuses it with a `DriverError`, like every other driver. Pass
   `strict: false` to run the callback without a lock instead.

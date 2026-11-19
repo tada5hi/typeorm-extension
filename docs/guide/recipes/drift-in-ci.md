@@ -56,9 +56,11 @@ instead.
   statements when they differ, and with `2` on any other error, such as a failed connection.
 - The CLI runs on the build here, so `-d src/data-source.ts` loads `dist/data-source.js` (see
   [Running from a build](./production-build)). Without a build step, run it with `tsx` instead.
-- Add `--skipWithoutMigrations` when the same data-source file also serves a `synchronize()` driven setup without
-  migrations (for example `migrations: []` for sqlite): the check then passes there instead of reporting the whole
-  schema.
+- The check only proves that the migrations match the entities when the data source configures migrations. Without
+  any, `db create` builds the schema from the entities and the check always passes. Make sure the CI data source
+  lists its migrations.
+- `--skipWithoutMigrations` reports no drift for a data source without migrations. Use it only where that is
+  intended (a `synchronize()` driven sqlite setup sharing the file), never for the job that validates migrations.
 
 ## In a test instead
 
@@ -78,7 +80,7 @@ describe('schema', () => {
         try {
             await dataSource.runMigrations();
 
-            const drift = await getSchemaDrift(dataSource, { skipWithoutMigrations: true });
+            const drift = await getSchemaDrift(dataSource);
 
             expect(drift.up.map((statement) => statement.query)).toEqual([]);
         } finally {

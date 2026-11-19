@@ -141,9 +141,14 @@ declare const manager: EntityManager;
 declare class Post { id: number; status: string; }
 declare const id: number;
 
-const post = await manager.findOne(Post, {
-    where: { id },
-    ...(isRowLockSupported(manager) ? { lock: { mode: 'pessimistic_write' } } : {}),
+// a pessimistic lock needs an open transaction
+await manager.transaction(async (transaction) => {
+    const post = await transaction.findOne(Post, {
+        where: { id },
+        ...(isRowLockSupported(transaction) ? { lock: { mode: 'pessimistic_write' } } : {}),
+    });
+
+    // work that depends on the lock goes here
 });
 ```
 

@@ -126,6 +126,13 @@ export class RepairSchema1700000000000 implements MigrationInterface {
             table: 'auth_permissions',
             from: 'FK_auth_permissions_client',
             to: 'FK_1a2b3c4d5e6f708192a3b4c5',
+            // recreates the constraint if a mysql run stopped between DROP and ADD
+            meta: {
+                columns: ['client_id'],
+                referencedTable: 'auth_clients',
+                referencedColumns: ['id'],
+                onDelete: 'CASCADE',
+            },
         });
 
         await changeColumnType(queryRunner, {
@@ -197,6 +204,10 @@ await renameForeignKey(queryRunner, {
     },
 });
 ```
+
+Between the drop and the add, the constraint does not exist, and the add runs with the checks disabled. Another
+session can insert an orphan row in that window, and it is not caught afterwards. Stop writes to the table during a
+repair migration.
 
 On mysql it wraps the drop and re-add in `withForeignKeyChecksDisabled`, which you can also use directly. The
 constraint being recreated was already enforced, so re-validating it only costs a full table scan and can fail on
