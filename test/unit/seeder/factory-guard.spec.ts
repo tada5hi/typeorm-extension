@@ -31,8 +31,30 @@ describe('src/seeder/factory/check.ts', () => {
         expect(isSeederFactory(foreign)).toBe(true);
     });
 
+    it('should recognize an unmarked factory (older library copy) by its members', () => {
+        const unmarked = {
+            context: {},
+            setMeta() {
+                return this; 
+            },
+            make: async () => ({}),
+            save: async () => ({}),
+            saveMany: async () => [],
+        };
+
+        expect(isSeederFactory(unmarked)).toBe(true);
+        expect(isSeederFactory({ ...unmarked, context: undefined })).toBe(false);
+        expect(isSeederFactory({ ...unmarked, saveMany: [] })).toBe(false);
+    });
+
     it('should not match look-alikes or primitives', () => {
         expect(isSeederFactory({ make: () => ({}), save: () => ({}) })).toBe(false);
+        // e.g. an ActiveRecord entity: save(), but no factory members
+        expect(isSeederFactory({
+            save: () => ({}), 
+            remove: () => ({}), 
+            reload: () => ({}), 
+        })).toBe(false);
         expect(isSeederFactory(null)).toBe(false);
         expect(isSeederFactory(undefined)).toBe(false);
         expect(isSeederFactory('factory')).toBe(false);

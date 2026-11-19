@@ -284,8 +284,9 @@ Check whether a value is a seeder factory. `SeederFactory` implements the `ISeed
 interface (`setMeta`, `make`, `save`, `saveMany` and the `context`). The check reads the
 `Symbol.for('typeorm-extension/SeederFactory')` marker every instance carries (exported as
 `SEEDER_FACTORY_INSTANCE`) instead of using `instanceof`, so a factory created by another copy of
-the library, e.g. a second install in a monorepo, is still recognized. Factory property values are
-resolved with this check.
+the library, e.g. a second install in a monorepo, is still recognized. An object without the marker
+(a copy from before it existed) counts when it has a `context` object and every method above.
+Factory property values are resolved with this check.
 
 ## `resetSeederFactoryManager`
 
