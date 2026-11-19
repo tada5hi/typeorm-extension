@@ -39,6 +39,83 @@ async function readTSConfigFile(filePath: string) : Promise<TSConfig> {
     return {};
 }
 
+const READ_CACHE_KEY = /^readFileSync:(.+):utf8$/;
+
+/**
+ * get-tsconfig 4 treats an absolute path option set in a parent config as
+ * relative to that parent (outDir "/app/dist" in config/base.json becomes
+ * "config/app/dist"). The files of the extends chain are taken from the
+ * read cache of the first parse; each parent is parsed on its own (its
+ * parents read as empty objects), and if it sets an absolute value whose
+ * mangled form is the merged value, the absolute value is restored.
+ */
+function restoreInheritedAbsolutePaths(
+    compilerOptions: NonNullable<TSConfig['compilerOptions']>,
+    filePath: string,
+    cache: Map<string, any>,
+) : void {
+    const files = cache.keys().toArray()
+        .map((key) => READ_CACHE_KEY.exec(key)?.[1])
+        .filter((file): file is string => !!file);
+
+    if (files.length < 2) {
+        return;
+    }
+
+    // the path options a file sets itself, with the files it extends read as {}
+    const readOwn = (file: string) => {
+        const fileCache = new Map(cache);
+
+        for (const other of files) {
+            if (other !== file) {
+                fileCache.set(`readFileSync:${other}:utf8`, '{}');
+            }
+        }
+
+        try {
+            return (parseTsconfig(file, fileCache) as TSConfig).compilerOptions || {};
+        } catch {
+            return {};
+        }
+    };
+
+    const keys = PATH_COMPILER_OPTIONS.filter(
+        (key) => typeof compilerOptions[key] === 'string' &&
+            typeof readOwn(filePath)[key] === 'undefined',
+    );
+
+    for (const file of files) {
+        if (file === filePath || keys.length === 0) {
+            continue;
+        }
+
+        const own = readOwn(file);
+
+        for (const key of keys) {
+            const value = own[key];
+
+            if (typeof value !== 'string') {
+                continue;
+            }
+
+            const absolute = stripCurrentDirectoryPrefix(value);
+
+            if (!path.isAbsolute(absolute)) {
+                continue;
+            }
+
+            const mangled = path.relative(
+                path.dirname(filePath),
+                path.join(path.dirname(file), absolute),
+            ).split(path.sep).join('/');
+
+            if (compilerOptions[key] === mangled) {
+                compilerOptions[key] = absolute;
+            }
+        }
+    }
+}
+
 /**
  * Read a tsconfig file (or the tsconfig.json of a directory).
  *
@@ -61,11 +138,14 @@ export async function readTSConfig(input?: string) : Promise<TSConfig> {
         input;
 
     let tsConfig : TSConfig;
+    let realPath : string;
+    const cache = new Map<string, any>();
 
     try {
         // get-tsconfig resolves package parents to their real path, so the
         // file read is resolved too, keeping the relative paths short.
-        tsConfig = parseTsconfig(fs.realpathSync(filePath)) as TSConfig;
+        realPath = fs.realpathSync(filePath);
+        tsConfig = parseTsconfig(realPath, cache) as TSConfig;
     } catch {
         // e.g. a parent in the extends chain is missing (a @tsconfig/* base
         // pruned with the devDependencies) or the chain is cyclic:
@@ -87,6 +167,8 @@ export async function readTSConfig(input?: string) : Promise<TSConfig> {
                 compilerOptions[key] = stripCurrentDirectoryPrefix(value);
             }
         }
+
+        restoreInheritedAbsolutePaths(compilerOptions, realPath, cache);
 
         tsConfig.compilerOptions = compilerOptions;
     }

@@ -189,6 +189,19 @@ describe('src/utils/tsconfig.ts (extends)', () => {
         expect(await readTSConfig(tmp)).toEqual({});
     });
 
+    it('should keep an absolute outDir inherited from a parent', async () => {
+        const absolute = path.join(tmp, 'abs-out');
+
+        await write('config/base.json', { compilerOptions: { outDir: absolute, rootDir: '../src' } });
+        await write('mid.json', { extends: './config/base.json' });
+        await write('tsconfig.json', { extends: ['./mid.json'] });
+
+        const tsConfig = await readTSConfig(tmp);
+
+        expect(tsConfig.compilerOptions?.outDir).toEqual(absolute);
+        expect(tsConfig.compilerOptions?.rootDir).toEqual('src');
+    });
+
     it('should keep an absolute outDir of the file read', async () => {
         const absolute = path.join(tmp, 'abs-out');
 
