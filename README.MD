@@ -396,7 +396,7 @@ try {
 
 `withLockedEntity(source, Entity, where, fn)` reads one row with a write lock inside a transaction and hands it to
 `fn`, so concurrent callers for the same row take turns (`postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle`,
-`mssql`; `hasRowLock(source)` tells whether a driver is one of them). It resolves what `fn` returns, or `null` when
+`mssql`; `isRowLockSupported(source)` tells whether a driver is one of them). It resolves what `fn` returns, or `null` when
 no row matches:
 
 ```typescript

@@ -25,7 +25,7 @@ const DRIVERS = ['postgres', 'cockroachdb', 'mysql', 'mariadb', 'oracle', 'mssql
  * LockNotSupportedOnGivenDriverError (e.g. better-sqlite3). On mssql the lock
  * holds, but typeorm ignores `onLocked`.
  */
-export function hasRowLock(
+export function isRowLockSupported(
     source: DataSource | EntityManager | DataSourceOptions['type'],
 ) : boolean {
     let type : string;
@@ -69,7 +69,7 @@ export async function withLockedEntity<T extends ObjectLiteral, R>(
 ) : Promise<Awaited<R> | null> {
     const manager = InstanceChecker.isDataSource(source) ? source.manager : source;
     const { type } = manager.dataSource.options;
-    const locked = hasRowLock(manager);
+    const locked = isRowLockSupported(manager);
 
     if (!locked && options.strict !== false) {
         throw DriverError.lockNotSupported(type);

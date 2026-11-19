@@ -510,16 +510,16 @@ Supported are `postgres`, `cockroachdb`, `mysql`, `mariadb`, `oracle` and `mssql
 instead, e.g. for a test suite on sqlite (still within a transaction). On mongodb typeorm has no transactions, so a
 throw does not roll anything back there.
 
-For a locked read of your own, `hasRowLock(source)` tells whether the driver gets a row lock. It takes a data
+For a locked read of your own, `isRowLockSupported(source)` tells whether the driver gets a row lock. It takes a data
 source, an entity manager or a driver type and never throws, so you can leave the `lock` find option out where typeorm
 would throw `LockNotSupportedOnGivenDriverError` (e.g. better-sqlite3):
 
 ```typescript
-import { hasRowLock } from 'typeorm-extension';
+import { isRowLockSupported } from 'typeorm-extension';
 
 const post = await manager.findOne(Post, {
     where: { id },
-    ...(hasRowLock(manager) ? { lock: { mode: 'pessimistic_write' } } : {}),
+    ...(isRowLockSupported(manager) ? { lock: { mode: 'pessimistic_write' } } : {}),
 });
 ```
 

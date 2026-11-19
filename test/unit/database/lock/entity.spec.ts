@@ -11,7 +11,7 @@ import {
 import {
     DriverError,
     OptionsError,
-    hasRowLock,
+    isRowLockSupported,
     withLockedEntity,
 } from '../../../../src';
 import { Role } from '../../../data/entity/role';
@@ -140,15 +140,15 @@ describe('src/database/lock/entity', () => {
     it('should tell whether a driver gets a row lock', () => {
         const mssql = new DataSource({ type: 'mssql', host: '127.0.0.1' });
 
-        expect(hasRowLock(dataSource)).toBe(false);
-        expect(hasRowLock(dataSource.manager)).toBe(false);
-        expect(hasRowLock('better-sqlite3')).toBe(false);
-        expect(hasRowLock('mongodb')).toBe(false);
-        expect(hasRowLock(mssql)).toBe(true);
-        expect(hasRowLock(mssql.manager)).toBe(true);
+        expect(isRowLockSupported(dataSource)).toBe(false);
+        expect(isRowLockSupported(dataSource.manager)).toBe(false);
+        expect(isRowLockSupported('better-sqlite3')).toBe(false);
+        expect(isRowLockSupported('mongodb')).toBe(false);
+        expect(isRowLockSupported(mssql)).toBe(true);
+        expect(isRowLockSupported(mssql.manager)).toBe(true);
 
         for (const type of ['postgres', 'cockroachdb', 'mysql', 'mariadb', 'oracle', 'mssql'] as const) {
-            expect(hasRowLock(type)).toBe(true);
+            expect(isRowLockSupported(type)).toBe(true);
         }
     });
 });

@@ -486,10 +486,10 @@ With `onLocked: 'nowait'` a locked row fails the call at once with the driver's 
   join would lock the related rows as well. A find operator on the relation (`{ owner: Equal(id) }`, `IsNull()`)
   compares the join column and is accepted.
 
-## `hasRowLock`
+## `isRowLockSupported`
 
 ```typescript
-declare function hasRowLock(
+declare function isRowLockSupported(
     source: DataSource | EntityManager | DataSourceOptions['type'],
 ): boolean;
 ```
