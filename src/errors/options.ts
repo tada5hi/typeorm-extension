@@ -10,7 +10,12 @@ export class OptionsError extends TypeormExtensionError {
     }
 
     static notFound() {
-        return new OptionsError('The database options could not be located/loaded.');
+        return new OptionsError(
+            'The database options could not be located/loaded. ' +
+            'The data source file must export a DataSource, a promise of one, a default export function without parameters ' +
+            'returning one (or a promise of one), or DataSourceOptions; ' +
+            'otherwise the environment must name a database (DB_TYPE or DB_URL).',
+        );
     }
 
     static timezoneUnsupported(timezone: unknown) {

@@ -101,7 +101,7 @@ One of those round trips runs against `[User, Role]` rather than a single entity
 - **`test/data/seed/`** — Seeders that exercise `factoryManager` and persist to the DB.
 - **`test/data/typeorm/`**
   - `factory.ts` → `createDataSourceOptions()` + `createDataSource()`. **Always use these** instead of building a DataSource by hand in a test.
-  - `data-source.ts` / `data-source-default.ts` / `data-source-async.ts` → fixtures for `findDataSource` discovery tests (different export shapes: named, default, async).
+  - `data-source.ts` / `data-source-default.ts` / `data-source-async.ts` → fixtures for `findDataSource` discovery tests (named instance, default instance, async default factory). `find/` holds one file per accepted export shape and precedence case, each marked through `extra.marker`, so a spec asserts which export was loaded rather than only that some data source was found (a skipped file falls back to `find/data-source.ts`).
   - `FakeQueryRunner.ts` → recording stand-in for the schema-inspection/alteration surface of a `QueryRunner` (`getTable`, `query`, `changeColumn`). Its `respond(query, runner)` callback can mutate the loaded tables in reaction to a statement, which is how the mysql "backing index appears only after the constraint is dropped" flow is simulated. Pair it with `table.ts` (`createTable`, `TABLE_FOREIGN_KEYS`) for the loaded-table fixtures.
   - `integration.ts` → `useIntegrationDriver()` + `createIntegrationDataSourceOptions()` for the driver suite.
   - `ormconfig.json` → fixture for legacy config discovery paths.

@@ -5,12 +5,18 @@ see it.
 
 ## `OptionsError: The database options could not be located/loaded.`
 
-**Cause:** no data source file was found, the file has no export that is a `DataSource` (or a promise of one), and
-the environment names no driver (`DB_TYPE` or a `DB_URL` with a scheme).
+The message goes on to list the accepted export shapes.
+
+**Cause:** no data source file was found, or no file has an export in one of the
+[accepted shapes](./data-source#accepted-export-shapes) (a `DataSource`, a promise of one, a default export function
+without parameters returning one, or `DataSourceOptions`), and the environment names no driver (`DB_TYPE` or a `DB_URL` with a
+scheme).
 
 **Fix:**
 
-- Export a `DataSource` instance, not only its options: `export const dataSource = new DataSource(options)`.
+- Export a `DataSource`, e.g. `export const dataSource = new DataSource(options)`, a default export factory function
+  returning one, or the options object itself. Named functions, functions with a required parameter and classes are not
+  called.
 - Point the CLI at the file with `-d`, e.g. `-d src/config/orm.ts`. The path is relative to `--root`.
 - Outside `tsx` and `ts-node`, `src` in the path is rewritten to your tsconfig `outDir` (default `dist`). If you run
   TypeScript sources with plain Node, or there is no build yet, pass `--preserveFilePaths` or run the CLI with `tsx`.

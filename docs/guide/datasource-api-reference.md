@@ -263,6 +263,56 @@ declare async function buildDataSourceOptions(
 **References**
 - [DataSourceOptionsBuildContext](#datasourceoptionsbuildcontext)
 
+## `findDataSource`
+
+```typescript
+declare async function findDataSource(
+    context?: DataSourceFindOptions,
+) : Promise<DataSource | undefined>
+```
+
+Locates the data source file (see [Discovery](./data-source#discovery)) and returns the `DataSource` it exports. An
+export may be a `DataSource`, a promise of one, a default export function without parameters returning one (sync or
+async), or a `DataSourceOptions` object, which is wrapped in a new `DataSource`. Named exports are never called. Within one file they are tried in that order. The
+returned instance is not initialized by the library.
+
+**Parameters**
+
+| Name      | Type                    | Description                         |
+|:----------|:------------------------|:------------------------------------|
+| `context` | `DataSourceFindOptions` | Where and under which name to look. |
+
+**Returns**
+
+`Promise`<`DataSource` | `undefined`>: `undefined` when no file has an accepted export.
+
+**References**
+- [DataSourceFindOptions](#datasourcefindoptions)
+- [Accepted export shapes](./data-source#accepted-export-shapes)
+
+## `findDataSourceOptions`
+
+```typescript
+declare async function findDataSourceOptions(
+    context?: DataSourceFindOptions,
+) : Promise<DataSourceOptions | undefined>
+```
+
+Runs the same lookup as [`findDataSource`](#finddatasource), but returns only the options. An exported
+`DataSourceOptions` object is returned as it is: no `DataSource` is constructed, so the driver package is not loaded.
+`buildDataSourceOptions()` uses it, which keeps an environment that names another driver usable when the file's
+driver package is not installed.
+
+**Parameters**
+
+| Name      | Type                    | Description                         |
+|:----------|:------------------------|:------------------------------------|
+| `context` | `DataSourceFindOptions` | Where and under which name to look. |
+
+**Returns**
+
+`Promise`<`DataSourceOptions` | `undefined`>: `undefined` when no file has an accepted export.
+
 ## `hasEnvDataSourceOptions`
 
 ```typescript

@@ -1,5 +1,5 @@
 import type { DataSourceOptions } from 'typeorm';
-import { buildDataSourceOptions, findDataSource } from '../../data-source';
+import { buildDataSourceOptions, findDataSourceOptions } from '../../data-source';
 import type {
     DatabaseBaseContextInput,
     DatabaseCreateContext,
@@ -14,10 +14,10 @@ async function normalizeDataSourceOptions(context: DatabaseBaseContextInput) : P
     if (context.options) {
         options = { ...context.options };
     } else {
-        const dataSource = await findDataSource(context.findOptions);
+        const fileOptions = await findDataSourceOptions(context.findOptions);
 
-        if (dataSource) {
-            options = { ...dataSource.options };
+        if (fileOptions) {
+            options = { ...fileOptions };
         }
 
         if (!options) {
