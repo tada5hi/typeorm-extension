@@ -2,7 +2,8 @@ import { read } from 'envix';
 
 /**
  * Find the end of a glob character class starting at index (the "[").
- * A "]" directly after "[", "[!" or "[^" is a literal member.
+ * A "]" directly after "[", "[!" or "[^" is a literal member, and a
+ * POSIX class ("[:alpha:]") is skipped as a whole.
  * Returns -1 for an unclosed class, which is then a literal "[".
  */
 function findCharacterClassEnd(input: string, index: number) : number {
@@ -19,6 +20,13 @@ function findCharacterClassEnd(input: string, index: number) : number {
     for (; i < input.length; i++) {
         if (input[i] === '\\') {
             i++;
+        } else if (input[i] === '[' && input[i + 1] === ':') {
+            // a POSIX class ([:alpha:]) holds a "]" of its own
+            const end = input.indexOf(':]', i + 2);
+
+            if (end !== -1) {
+                i = end + 1;
+            }
         } else if (input[i] === ']') {
             return i;
         }

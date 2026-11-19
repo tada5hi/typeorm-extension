@@ -59,6 +59,10 @@ describe('src/env/list', () => {
             expect(splitEnvList('src/[,]*.ts,src/b.ts')).toEqual(['src/[,]*.ts', 'src/b.ts']);
         });
 
+        it('should keep a POSIX class inside its character class', () => {
+            expect(splitEnvList('src/[[:alpha:],]*.ts,src/b.ts')).toEqual(['src/[[:alpha:],]*.ts', 'src/b.ts']);
+        });
+
         it('should treat an unclosed character class as literal', () => {
             expect(splitEnvList('src/[a,src/b.ts')).toEqual(['src/[a', 'src/b.ts']);
         });

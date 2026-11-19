@@ -143,9 +143,9 @@ How the environment combines with the data source file:
   and `cache` are merged key by key. `entities`, `migrations` and `subscribers` are joined, the environment's entries
   first.
 - File and environment name different drivers: the environment's options are used and the file is ignored.
-- When the environment names a driver, its defaults apply last, only to an option that neither the environment nor the
-  file sets: `database: 'db.sqlite'` for better-sqlite3 and `timeTravelQueries: true` for cockroachdb. Options from a
-  file alone get no defaults.
+- When the environment names a driver, its defaults apply last, only to an option that the environment does not set
+  and, if the file names the same driver, the file does not set either: `database: 'db.sqlite'` for better-sqlite3 and
+  `timeTravelQueries: true` for cockroachdb. Options from a file alone get no defaults.
 - `DB_SEEDS` and `DB_FACTORIES` are the fallback: seeds or factories set in the data source options or passed in code
   win.
 
