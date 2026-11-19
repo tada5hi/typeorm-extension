@@ -43,7 +43,15 @@ export class PathResolver implements IPathResolver {
 
         const { compilerOptions } = await this.tsconfig();
 
-        const output = transformFilePath(input, compilerOptions?.outDir);
+        let outDir = compilerOptions?.outDir;
+
+        // transformFilePath swaps the src segment for outDir, so an absolute
+        // outDir is made relative to the root first.
+        if (outDir && path.isAbsolute(outDir)) {
+            outDir = path.relative(this.absolutize('.'), outDir).split(path.sep).join('/') || '.';
+        }
+
+        const output = transformFilePath(input, outDir);
 
         if (
             this.mode !== PathResolverMode.AUTO ||
@@ -115,8 +123,8 @@ export class PathResolver implements IPathResolver {
 
     /**
      * Check if a path (file, directory or glob pattern) points to something
-     * on disk. With loadable set, a typescript file only counts
-     * when the runtime can load typescript.
+     * on disk. With loadable set, a typescript file (or a glob matching
+     * one) only counts when the runtime can load typescript.
      */
     protected async matches(input: string, loadable?: boolean) : Promise<boolean> {
         const filePath = this.absolutize(input);
@@ -139,7 +147,12 @@ export class PathResolver implements IPathResolver {
                 ignore: ['**/*.d.ts'],
             });
 
-            return files.some((file) => !loadable || this.isLoadable(file.path));
+            if (files.length === 0) {
+                return false;
+            }
+
+            // a source glob only qualifies when the runtime can load every file it matches.
+            return !loadable || files.every((file) => this.isLoadable(file.path));
         } catch {
             return false;
         }

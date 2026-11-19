@@ -1,3 +1,6 @@
+import type { DataSourceOptionsBuildContext } from '../data-source';
+import type { IPathResolver } from '../utils';
+
 export const LogLevel = {
     Silent: 'silent',
     Info: 'info',
@@ -28,4 +31,16 @@ export type Logger = {
     section: (title: string) => void;
     kv: (key: string, value: string, padTo?: number) => void;
     blank: () => void;
+};
+
+export type CLIDataSourceArgs = {
+    dataSource: string,
+    root?: string,
+    tsconfig?: string,
+    preserveFilePaths?: boolean,
+};
+
+export type CLIDataSourceContext = {
+    pathResolver: IPathResolver,
+    context: DataSourceOptionsBuildContext & { directory: string, dataSourceName: string },
 };

@@ -192,6 +192,18 @@ describe('src/utils/path-resolver', () => {
             expect(await resolver.transform('src/entities.ts')).toEqual('build/entities.js');
         });
 
+        it('should use an absolute outDir relative to the root', async () => {
+            const root = path.join(path.sep, 'app');
+            const resolver = createPathResolver({
+                root,
+                tsconfig: { compilerOptions: { outDir: path.join(root, 'build') } },
+                mode: 'transform',
+            });
+
+            expect(await resolver.transform('src/entities.ts')).toEqual('build/entities.js');
+            expect(await resolver.resolve('src/entities.ts')).toEqual(path.join(root, 'build', 'entities.js'));
+        });
+
         it('should use a tsconfig object as is', async () => {
             const input = { compilerOptions: { outDir: 'out' } };
             const resolver = createPathResolver({ tsconfig: input });

@@ -43,8 +43,11 @@ The second command loads `dist/data-source.js`, and the seeders from `dist/datab
   and pruned from the image), the file is read alone: its own `outDir` still applies, one set only in the base does
   not. In that case the file is read as plain JSON, so it must not contain comments.
 - When a rewritten path matches nothing on disk but the original path does, the original is used. A `.ts` original
-  is only used when the runtime can load it (`tsx`, `ts-node`, or Node's type stripping, see
-  `process.features.typescript`); otherwise the rewritten path and its error stay. Node's type stripping does not
+  only qualifies when TypeScript support is detected (`tsx`, `ts-node`, or Node's type stripping, see
+  `process.features.typescript`; not with `--no-experimental-strip-types`), and a glob only when every file it
+  matches can be loaded; otherwise the rewritten path and its error stay. The `-d` file is checked with its
+  extensions, so an extensionless `-d src/config/orm` falls back too, and an existing but incomplete build directory
+  does not hide it. Node's type stripping does not
   support decorators, so this only helps when no decorated class is loaded from a `.ts` file: entities defined with
   `EntitySchema`, or `entities` / `migrations` that point at compiled `.js` files. A typical project with `@Entity()`
   classes in `src` still needs `tsx` (or `ts-node`) or a build.

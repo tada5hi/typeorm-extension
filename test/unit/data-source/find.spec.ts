@@ -1,4 +1,5 @@
 import { InstanceChecker } from 'typeorm';
+import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { findDataSource, findDataSourceOptions } from '../../../src';
@@ -31,6 +32,25 @@ describe('src/data-source/utils/find.ts', () => {
         dataSource = await findDataSource({ directory: 'test/data/source-only/src', tsconfig });
 
         expect(dataSource?.options.extra).toEqual({ sourceOnly: true });
+    });
+
+    it('should not let an existing but empty build directory shadow the src directory', async () => {
+        const root = path.join(import.meta.dirname, '..', '..', 'data', 'source-only');
+        const dist = path.join(root, 'dist');
+
+        await fs.promises.mkdir(path.join(dist, 'config'), { recursive: true });
+
+        try {
+            const dataSource = await findDataSource({
+                directory: path.join(root, 'src', 'config'),
+                fileName: 'orm',
+                tsconfig: { compilerOptions: { outDir: 'dist' } },
+            });
+
+            expect(dataSource?.options.extra).toEqual({ sourceOnly: 'orm' });
+        } finally {
+            await fs.promises.rm(dist, { recursive: true, force: true });
+        }
     });
 
     it('should find and load async data-source', async () => {

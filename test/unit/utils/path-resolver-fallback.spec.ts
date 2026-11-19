@@ -91,6 +91,15 @@ describe('src/utils/path-resolver (fallback on miss)', () => {
         expect(await resolver.transform('src/entities/*.{ts,js}')).toEqual('dist/entities/*.{ts,js}');
     });
 
+    it('should not fall back to a glob which also matches a file the runtime can not load', async () => {
+        await touch('src/entities/user.ts');
+        await touch('src/entities/role.js');
+
+        expect(await create({ typescript: false }).transform('src/entities/*.{ts,js}')).toEqual('dist/entities/*.{ts,js}');
+        expect(await create({ typescript: false }).transform('src/entities/*.js')).toEqual('src/entities/*.js');
+        expect(await create({ typescript: true }).transform('src/entities/*.{ts,js}')).toEqual('src/entities/*.{ts,js}');
+    });
+
     it('should fall back for absolute paths and directories', async () => {
         await touch('src/database/data-source.ts');
 

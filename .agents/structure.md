@@ -13,6 +13,7 @@ typeorm-extension/
 │   │   ├── module.ts           # createCLIEntryPointCommand — wires subCommands (db, seed) + legacy colon aliases
 │   │   ├── logger.ts           # TTY-aware logger (info/success/warn/error/debug + section/kv/blank) + CLIUserError
 │   │   ├── exit.ts             # runWithExitCode wrapper + ExitCode enum
+│   │   ├── data-source.ts      # buildCLIDataSourceContext: -d args -> buildDataSourceOptions context
 │   │   └── commands/
 │   │       ├── database/       # `db` parent + `create`/`drift`/`drop` subcommands (citty defineCommand)
 │   │       └── seed/           # `seed` parent + `create`/`run` subcommands
@@ -89,7 +90,7 @@ typeorm-extension/
 | `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager) and is the only stable one; the rest stay `@experimental` public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
-| `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). In `auto` the rewritten path wins when it exists or its glob matches; otherwise the original is used if it resolves to something the runtime can load (`.ts` only with JIT, `process.features.typescript` or the `typescript` option). `transform` never falls back. `readTSConfig` delegates to `get-tsconfig` (follows `extends`) and strips its `./` prefix from path options. |
+| `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). In `auto` the rewritten path wins when it exists or its glob matches; otherwise the original is used if it resolves to something the runtime can load (`.ts` only with JIT, `process.features.typescript` or the `typescript` option; a glob only if every match is loadable). Callers transform full, extension-bearing paths, never a bare directory: an existing (even empty) build directory would win the existence check. `transform` never falls back. `readTSConfig` delegates to `get-tsconfig` (follows `extends`), strips its `./` prefix from path options and restores an absolute path option inherited from a parent, which get-tsconfig 4 mangles. |
 
 ## Key Dependencies
 

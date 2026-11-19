@@ -3,11 +3,7 @@ import process from 'node:process';
 import { buildDataSourceOptions } from '../../../data-source';
 import type { DatabaseDropContext } from '../../../database';
 import { dropDatabase } from '../../../database';
-import {
-    PathResolverMode,
-    createPathResolver,
-    parseFilePath,
-} from '../../../utils';
+import { buildCLIDataSourceContext } from '../../data-source';
 import { runWithExitCode } from '../../exit';
 import { LOG_LEVEL_VALUES, createLogger, normalizeLogLevel } from '../../logger';
 
@@ -58,29 +54,22 @@ export function defineCLIDatabaseDropCommand() {
             await runWithExitCode(logger, async () => {
                 logger.info('Dropping database');
 
-                const pathResolver = createPathResolver({
+                const { context: dataSourceContext } = await buildCLIDataSourceContext({
+                    dataSource: args.dataSource,
                     root: args.root,
                     tsconfig: args.tsconfig,
-                    mode: args.preserveFilePaths ?
-                        PathResolverMode.PRESERVE :
-                        PathResolverMode.AUTO,
+                    preserveFilePaths: args.preserveFilePaths,
                 });
 
-                const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
 
                 const pad = 'directory'.length;
 
-                logger.kv('directory', source.directory, pad);
-                logger.kv('name', source.name, pad);
+                logger.kv('directory', dataSourceContext.directory, pad);
+                logger.kv('name', dataSourceContext.dataSourceName, pad);
 
-                const dataSourceOptions = await buildDataSourceOptions({
-                    directory: source.directory,
-                    dataSourceName: source.name,
-                    tsconfig: await pathResolver.tsconfig(),
-                    preserveFilePaths: args.preserveFilePaths,
-                });
+                const dataSourceOptions = await buildDataSourceOptions(dataSourceContext);
 
                 const context : DatabaseDropContext = {
                     ifExist: true,
