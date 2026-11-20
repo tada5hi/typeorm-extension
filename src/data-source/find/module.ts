@@ -124,20 +124,21 @@ async function findDataSourceExport(
     }
 
     const names = [...files];
-    const candidates : string[] = [];
+    const extensions = '{js,cjs,mjs,ts,cts,mts}';
+    const lookups : { pattern: string, cwd: string[] }[] = [];
 
     if (context.directory && path.isAbsolute(context.directory)) {
-        // The directory is not rewritten on its own: an existing (possibly
-        // empty) build directory would win over the source directory. Each
-        // full candidate is rewritten instead, so the build file only wins
-        // when it exists.
-        const directory = safeReplaceWindowsSeparator(context.directory);
-
+        // The absolute directory is a glob cwd, never part of a pattern, so it
+        // may contain glob characters (e.g. "Program Files (x86)"). The
+        // resolver picks the build or the source directory per file name.
         for (const name of names) {
-            candidates.push(name, path.posix.join(directory, name));
+            const pattern = `${name}.${extensions}`;
+            const directory = await pathResolver.resolveDirectory(context.directory, pattern);
+
+            lookups.push({ pattern, cwd: [process.cwd(), directory] });
         }
     } else {
-        candidates.push(...names);
+        const candidates = [...names];
 
         if (context.directory) {
             const directory = safeReplaceWindowsSeparator(context.directory);
@@ -146,22 +147,29 @@ async function findDataSourceExport(
                 candidates.push(path.posix.join(directory, name));
             }
         }
+
+        for (const candidate of candidates) {
+            lookups.push({
+                pattern: await pathResolver.transform(`${candidate}.${extensions}`),
+                cwd: [process.cwd()],
+            });
+        }
     }
 
     for (const name of names) {
-        candidates.push(
-            path.posix.join('src', name),
-            path.posix.join('src/{db,database}', name),
-        );
+        for (const candidate of [path.posix.join('src', name), path.posix.join('src/{db,database}', name)]) {
+            // the extensions are part of the pattern, so the resolver can check
+            // whether the rewritten (build) path matches a file.
+            lookups.push({
+                pattern: await pathResolver.transform(`${candidate}.${extensions}`),
+                cwd: [process.cwd()],
+            });
+        }
     }
 
-    for (const candidate of candidates) {
-        // the extensions are part of the pattern, so the resolver can check
-        // whether the rewritten (build) path matches a file.
-        const pattern = await pathResolver.transform(`${candidate}.{js,cjs,mjs,ts,cts,mts}`);
-
-        const info = await locate(pattern, {
-            cwd: process.cwd(),
+    for (const lookup of lookups) {
+        const info = await locate(lookup.pattern, {
+            cwd: lookup.cwd,
             ignore: ['**/*.d.ts'],
         });
 

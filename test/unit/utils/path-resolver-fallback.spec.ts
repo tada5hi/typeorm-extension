@@ -134,4 +134,61 @@ describe('src/utils/path-resolver (fallback on miss)', () => {
 
         expect(await create({ mode: 'preserve' }).transform('src/data-source.ts')).toEqual('src/data-source.ts');
     });
+
+    describe('resolveDirectory', () => {
+        const pattern = 'orm.{js,ts}';
+
+        it('should pick the build directory when the pattern matches there', async () => {
+            await touch('src/config/orm.ts');
+            await touch('dist/config/orm.js');
+
+            expect(await create().resolveDirectory(path.join(root, 'src', 'config'), pattern))
+                .toEqual(path.join(root, 'dist', 'config'));
+        });
+
+        it('should pick the source directory when the build directory lacks the file', async () => {
+            await touch('src/config/orm.ts');
+            await fs.promises.mkdir(path.join(root, 'dist', 'config'), { recursive: true });
+
+            expect(await create().resolveDirectory(path.join(root, 'src', 'config'), pattern))
+                .toEqual(path.join(root, 'src', 'config'));
+        });
+
+        it('should keep the build directory when the source file can not be loaded or is missing', async () => {
+            await touch('src/config/orm.ts');
+
+            const directory = path.join(root, 'src', 'config');
+
+            expect(await create({ typescript: false }).resolveDirectory(directory, pattern))
+                .toEqual(path.join(root, 'dist', 'config'));
+            expect(await create().resolveDirectory(directory, 'missing.{js,ts}'))
+                .toEqual(path.join(root, 'dist', 'config'));
+        });
+
+        it('should handle a directory containing glob characters', async () => {
+            await touch('app (x86) [old]/src/orm.ts');
+
+            const directory = path.join(root, 'app (x86) [old]', 'src');
+
+            expect(await create().resolveDirectory(directory, pattern)).toEqual(directory);
+        });
+
+        it('should follow the preserve and transform modes', async () => {
+            await touch('src/config/orm.ts');
+
+            const directory = path.join(root, 'src', 'config');
+
+            expect(await create({ mode: 'preserve' }).resolveDirectory(directory, pattern)).toEqual(directory);
+            expect(await create({ mode: 'transform' }).resolveDirectory(directory, pattern))
+                .toEqual(path.join(root, 'dist', 'config'));
+        });
+
+        it('should keep a directory without a src segment', async () => {
+            await touch('lib/orm.ts');
+
+            const directory = path.join(root, 'lib');
+
+            expect(await create().resolveDirectory(directory, pattern)).toEqual(directory);
+        });
+    });
 });

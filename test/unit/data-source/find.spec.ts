@@ -1,5 +1,6 @@
 import { InstanceChecker } from 'typeorm';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { findDataSource, findDataSourceOptions } from '../../../src';
@@ -32,6 +33,40 @@ describe('src/data-source/utils/find.ts', () => {
         dataSource = await findDataSource({ directory: 'test/data/source-only/src', tsconfig });
 
         expect(dataSource?.options.extra).toEqual({ sourceOnly: true });
+    });
+
+    it.each(['proj (x86)', 'proj [old]', 'proj {a,b}'])('should find a data source in a directory named %s', async (name) => {
+        const tmp = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'find-glob-chars-'));
+        const directory = path.join(tmp, name, 'src', 'config');
+
+        try {
+            await fs.promises.mkdir(directory, { recursive: true });
+            await fs.promises.writeFile(
+                path.join(directory, 'orm.ts'),
+                'export default { type: \'better-sqlite3\', database: \':memory:\', extra: { name: \'orm\' } };\n',
+            );
+
+            const tsconfig = { compilerOptions: { outDir: 'dist' } };
+
+            let options = await findDataSourceOptions({
+                directory, 
+                fileName: 'orm', 
+                tsconfig, 
+            });
+
+            expect(options?.extra).toEqual({ name: 'orm' });
+
+            options = await findDataSourceOptions({
+                directory,
+                fileName: 'orm',
+                tsconfig,
+                preserveFilePaths: true,
+            });
+
+            expect(options?.extra).toEqual({ name: 'orm' });
+        } finally {
+            await fs.promises.rm(tmp, { recursive: true, force: true });
+        }
     });
 
     it('should not let an existing but empty build directory shadow the src directory', async () => {

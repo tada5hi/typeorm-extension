@@ -53,6 +53,15 @@ export interface IPathResolver {
     transform(input: string) : Promise<string>;
 
     /**
+     * Pick the directory to search a (relative) file pattern in: in auto mode
+     * the rewritten (build) directory if the pattern matches a file there,
+     * else the source directory if the pattern matches only loadable files
+     * there, else the rewritten directory. Preserve mode returns the source
+     * directory, transform mode the rewritten one.
+     */
+    resolveDirectory(directory: string, pattern: string) : Promise<string>;
+
+    /**
      * Transform the (string or string-array) values of the given keys in place.
      */
     transformKeys<T extends Record<string, any>>(input: T, keys?: (keyof T)[]) : Promise<T>;

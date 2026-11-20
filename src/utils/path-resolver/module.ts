@@ -41,17 +41,7 @@ export class PathResolver implements IPathResolver {
             return input;
         }
 
-        const { compilerOptions } = await this.tsconfig();
-
-        let outDir = compilerOptions?.outDir;
-
-        // transformFilePath swaps the src segment for outDir, so an absolute
-        // outDir is made relative to the root first.
-        if (outDir && path.isAbsolute(outDir)) {
-            outDir = path.relative(this.absolutize('.'), outDir).split(path.sep).join('/') || '.';
-        }
-
-        const output = transformFilePath(input, outDir);
+        const output = await this.rewrite(input);
 
         if (
             this.mode !== PathResolverMode.AUTO ||
@@ -67,6 +57,32 @@ export class PathResolver implements IPathResolver {
 
         if (await this.matches(input, true)) {
             return input;
+        }
+
+        return output;
+    }
+
+    async resolveDirectory(directory: string, pattern: string) : Promise<string> {
+        if (!this.shouldTransform()) {
+            return directory;
+        }
+
+        // the probe file name has no extension (and no "ts"), so only the directory is rewritten.
+        const output = path.dirname(await this.rewrite(path.join(directory, 'x')));
+
+        if (
+            this.mode !== PathResolverMode.AUTO ||
+            output === directory
+        ) {
+            return output;
+        }
+
+        if (await this.matchesIn(pattern, output)) {
+            return output;
+        }
+
+        if (await this.matchesIn(pattern, directory, true)) {
+            return directory;
         }
 
         return output;
@@ -122,6 +138,23 @@ export class PathResolver implements IPathResolver {
     }
 
     /**
+     * Rewrite a path (src -> outDir, .ts -> .js), without checking the disk.
+     */
+    protected async rewrite(input: string) : Promise<string> {
+        const { compilerOptions } = await this.tsconfig();
+
+        let outDir = compilerOptions?.outDir;
+
+        // transformFilePath swaps the src segment for outDir, so an absolute
+        // outDir is made relative to the root first.
+        if (outDir && path.isAbsolute(outDir)) {
+            outDir = path.relative(this.absolutize('.'), outDir).split(path.sep).join('/') || '.';
+        }
+
+        return transformFilePath(input, outDir);
+    }
+
+    /**
      * Check if a path (file, directory or glob pattern) points to something
      * on disk. With loadable set, a typescript file (or a glob matching
      * one) only counts when the runtime can load typescript.
@@ -141,9 +174,22 @@ export class PathResolver implements IPathResolver {
             return false;
         }
 
+        return this.matchesIn(
+            safeReplaceWindowsSeparator(input),
+            this.root ? this.absolutize('.') : process.cwd(),
+            loadable,
+        );
+    }
+
+    /**
+     * Check if a glob pattern matches files below a directory. The directory
+     * is the glob cwd, never part of the pattern, so it may contain glob
+     * characters. With loadable set, every match must be loadable.
+     */
+    protected async matchesIn(pattern: string, cwd: string, loadable?: boolean) : Promise<boolean> {
         try {
-            const files = await locateMany(safeReplaceWindowsSeparator(input), {
-                cwd: this.root ? this.absolutize('.') : process.cwd(),
+            const files = await locateMany(pattern, {
+                cwd,
                 ignore: ['**/*.d.ts'],
             });
 
@@ -151,7 +197,6 @@ export class PathResolver implements IPathResolver {
                 return false;
             }
 
-            // a source glob only qualifies when the runtime can load every file it matches.
             return !loadable || files.every((file) => this.isLoadable(file.path));
         } catch {
             return false;
