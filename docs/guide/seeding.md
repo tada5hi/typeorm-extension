@@ -171,8 +171,7 @@ tsx ./node_modules/typeorm-extension/bin/cli.mjs seed create --name src/database
 ```
 
 Seeder classes passed in `seeds: [...]` run in the order of the array. The exception is a class whose name ends with
-13 or more digits (as `seed create` generates it): that number is its sort key, so it runs after the classes without
-one.
+13 or more digits (as `seed create` generates it): that number is its sort key, so it runs after the others.
 
 To run one seeder, set `seedName` (`--name` or `-n` on the CLI). It matches the class name, the file name or the
 file path:
@@ -229,12 +228,12 @@ From code, call [`runSeeders`](./seeding-api-reference#runseeders) with an initi
 win over the data-source options:
 
 ```typescript
-import type { DataSource } from 'typeorm';
 import { runSeeders } from 'typeorm-extension';
+import { dataSource } from './data-source';
 import UserFactory from './user.factory';
 import UserSeeder from './user.seeder';
 
-declare const dataSource: DataSource; // initialized
+await dataSource.initialize();
 
 const executed = await runSeeders(dataSource, {
     seeds: [UserSeeder],

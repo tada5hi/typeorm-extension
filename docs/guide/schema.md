@@ -185,8 +185,9 @@ constraint exactly: the same columns, referenced table and columns, and referent
 a different constraint than the one it dropped.
 
 On mysql and mariadb, between the drop and the add, the constraint does not exist, and the add runs with the checks
-disabled. Another session can insert an orphan row in that window, and it is not caught afterwards. Stop writes to the
-table during a repair migration.
+disabled. Another session can insert an orphan row, or delete or re-key a referenced parent row, in that window, and
+it is not caught afterwards. Stop writes to both tables until the constraint is restored, also across an interrupted
+run; if writes resumed in between, find and fix orphan rows before the retry re-adds the constraint.
 
 On mysql it wraps the drop and re-add in `withForeignKeyChecksDisabled`, which you can also use directly. The
 constraint being recreated was already enforced, so re-validating it only costs a full table scan and can fail on
