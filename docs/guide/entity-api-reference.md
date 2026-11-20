@@ -173,7 +173,8 @@ The check is therefore stricter than the constraint the database enforces.
 
 A unique group whose columns are **all** `null` is not checked, matching the
 database: an optional unique column such as an external key may be `null` on
-any number of rows.
+any number of rows. SQL Server is the exception, it admits a single `null` per
+unique constraint or index, so the check keeps reporting a second one there.
 
 The check also runs outside of any transaction, so a concurrent write between
 the check and the write can still produce a duplicate. Keep the unique

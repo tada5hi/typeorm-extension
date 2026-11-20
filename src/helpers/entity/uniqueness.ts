@@ -181,7 +181,8 @@ function resolveColumnGroupValues<T extends ObjectLiteral>(
 /**
  * Check if a given entity does not already exist.
  * Composite unique keys on a null column can only be present once,
- * a unique group whose every column is null is not checked at all.
+ * a unique group whose every column is null is not checked at all
+ * (except on mssql, which admits a single null).
  *
  * @experimental
  * @param options
@@ -222,6 +223,10 @@ export async function isEntityUnique<T extends ObjectLiteral>(
         }
     }
 
+    // mssql admits a single null per unique constraint or index,
+    // every other driver accepts any number of rows without a value.
+    const isNullDistinct = dataSource.driver.options.type !== 'mssql';
+
     for (const columnGroup of columnGroups) {
         const values = resolveColumnGroupValues(columnGroup, options.entity, options.entityExisting);
 
@@ -229,7 +234,7 @@ export async function isEntityUnique<T extends ObjectLiteral>(
         // accepts any number of them (e.g. an optional unique external key).
         const isEmpty = Object.values(values).every((value) => value === null);
 
-        if (isEmpty) {
+        if (isEmpty && isNullDistinct) {
             continue;
         }
 
