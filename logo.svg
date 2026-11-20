@@ -1,27 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="typeorm-extension">
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="te-title">
+    <title id="te-title">typeorm-extension logo: a sky-blue extension piece clicking into a slate database piece, inside a round seal</title>
     <defs>
-        <linearGradient id="mark" x1="4" y1="116" x2="116" y2="4" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#4338ca"/>
-            <stop offset="1" stop-color="#06b6d4"/>
-        </linearGradient>
-        <linearGradient id="shine" x1="60" y1="4" x2="60" y2="74" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stop-color="#ffffff" stop-opacity="0.22"/>
-            <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+        <linearGradient id="te-ring" x1="12" y1="128" x2="244" y2="128" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#7C8DA6"/>
+            <stop offset="1" stop-color="#0EA5E9"/>
         </linearGradient>
     </defs>
-    <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#mark)"/>
-    <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#shine)"/>
-    <g stroke="#ffffff" stroke-width="9" stroke-linecap="round">
-        <ellipse cx="50" cy="32" rx="25" ry="9.5"/>
-        <path d="M25 32v46"/>
-        <path d="M75 32v46"/>
-        <path d="M25 55a25 9.5 0 0 0 50 0"/>
-        <path d="M25 78a25 9.5 0 0 0 50 0"/>
+    <!-- seal -->
+    <circle cx="128" cy="128" r="116" fill="url(#te-ring)" fill-opacity="0.1"/>
+    <circle cx="128" cy="128" r="114" stroke="url(#te-ring)" stroke-width="5" stroke-opacity="0.7"/>
+    <!-- extension piece: slides in and settles into the socket.
+         The socket (r22) shares the knob's centre (134 128, r14), so the gap is 8 between
+         outline centres everywhere, the same as between the straight edges (x126 / x134). -->
+    <g>
+        <animateTransform attributeName="transform" type="translate" values="26 0;26 0;-3 0;0 0" keyTimes="0;0.3;0.85;1" dur="1.3s" repeatCount="1" fill="freeze"/>
+        <path d="M150 76 H190 A16 16 0 0 1 206 92 V164 A16 16 0 0 1 190 180 H150 A16 16 0 0 1 134 164 V150 A22 22 0 0 0 134 106 V92 A16 16 0 0 1 150 76 Z" fill="#0EA5E9" fill-opacity="0.18" stroke="#0EA5E9" stroke-width="4" stroke-linejoin="round"/>
+        <path d="M134 98 V92 A16 16 0 0 1 150 76 H190 A16 16 0 0 1 206 92 V98 Z" fill="#0EA5E9"/>
+        <g stroke="#0284C7" stroke-width="7" stroke-linecap="round">
+            <path d="M168 118 H190"/>
+            <path d="M170 138 H190"/>
+            <path d="M166 158 H190"/>
+        </g>
     </g>
-    <circle cx="88" cy="88" r="17.5" fill="url(#mark)"/>
-    <circle cx="88" cy="88" r="17.5" fill="url(#shine)"/>
-    <g stroke="#ffffff" stroke-width="9" stroke-linecap="round">
-        <path d="M78.5 88h19"/>
-        <path d="M88 78.5v19"/>
+    <!-- typeorm piece: a database -->
+    <path d="M66 76 H110 A16 16 0 0 1 126 92 V116.51 A14 14 0 1 1 126 139.49 V164 A16 16 0 0 1 110 180 H66 A16 16 0 0 1 50 164 V92 A16 16 0 0 1 66 76 Z" fill="#7C8DA6" fill-opacity="0.18" stroke="#7C8DA6" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M50 98 V92 A16 16 0 0 1 66 76 H110 A16 16 0 0 1 126 92 V98 Z" fill="#7C8DA6"/>
+    <g stroke="#64748B" stroke-width="6" stroke-linecap="round">
+        <ellipse cx="88" cy="117" rx="19" ry="6.5"/>
+        <path d="M69 117 V155 A19 6.5 0 0 0 107 155 V117"/>
+        <path d="M69 136 A19 6.5 0 0 0 107 136"/>
     </g>
 </svg>
