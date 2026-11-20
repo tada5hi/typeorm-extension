@@ -218,6 +218,21 @@ describe('src/utils/tsconfig.ts (extends)', () => {
         expect(tsConfig.compilerOptions?.outDir).toEqual(absolute);
     });
 
+    it('should keep an absolute outDir inherited through a require-only exports entry', async () => {
+        const absolute = path.join(tmp, 'require-out');
+
+        await write('node_modules/require-base/package.json', {
+            name: 'require-base',
+            exports: { './base': { require: './configs/base.json' } },
+        });
+        await write('node_modules/require-base/configs/base.json', { compilerOptions: { outDir: absolute } });
+        await write('tsconfig.json', { extends: 'require-base/base' });
+
+        const tsConfig = await readTSConfig(tmp);
+
+        expect(tsConfig.compilerOptions?.outDir).toEqual(absolute);
+    });
+
     it('should not take an absolute outDir from a parent the child overrides', async () => {
         await write('base.json', { compilerOptions: { outDir: path.join(tmp, 'abs-out') } });
         await write('tsconfig.json', { extends: './base.json', compilerOptions: { outDir: 'out' } });
