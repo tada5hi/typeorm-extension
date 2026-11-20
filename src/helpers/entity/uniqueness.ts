@@ -180,7 +180,8 @@ function resolveColumnGroupValues<T extends ObjectLiteral>(
 
 /**
  * Check if a given entity does not already exist.
- * Composite unique keys on a null column can only be present once.
+ * Composite unique keys on a null column can only be present once,
+ * a unique group whose every column is null is not checked at all.
  *
  * @experimental
  * @param options
@@ -222,15 +223,21 @@ export async function isEntityUnique<T extends ObjectLiteral>(
     }
 
     for (const columnGroup of columnGroups) {
+        const values = resolveColumnGroupValues(columnGroup, options.entity, options.entityExisting);
+
+        // A group without a single value identifies no row, and the database
+        // accepts any number of them (e.g. an optional unique external key).
+        const isEmpty = Object.values(values).every((value) => value === null);
+
+        if (isEmpty) {
+            continue;
+        }
+
         const alias = 'entity';
         const queryBuilder = repository.createQueryBuilder(alias);
 
         queryBuilder.where(new Brackets((qb) => {
-            applyMatchExpression(
-                qb,
-                alias,
-                resolveColumnGroupValues(columnGroup, options.entity, options.entityExisting),
-            );
+            applyMatchExpression(qb, alias, values);
         }));
 
         if (options.entityExisting) {

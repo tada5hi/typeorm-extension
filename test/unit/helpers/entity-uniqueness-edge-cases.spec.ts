@@ -8,6 +8,8 @@ import {
 import { describe, expect, it } from 'vitest';
 import { isEntityUnique } from '../../../src';
 import { Account } from '../../data/entity/account';
+import { IndexedKeyedRecord } from '../../data/entity/indexed-keyed-record';
+import { KeyedRecord } from '../../data/entity/keyed-record';
 import { Person } from '../../data/entity/person';
 import { Role } from '../../data/entity/role';
 import { createDataSource } from '../../data/typeorm/factory';
@@ -135,6 +137,109 @@ describe('entity-uniqueness-edge-cases', () => {
             });
 
             expect(conflicting).toBeFalsy();
+        } finally {
+            await dataSource.destroy();
+        }
+    });
+
+    it('should not report a conflict for a unique column which is null', async () => {
+        const dataSource = new DataSource({
+            type: 'better-sqlite3',
+            database: ':memory:',
+            entities: [KeyedRecord],
+            synchronize: true,
+        });
+
+        await dataSource.initialize();
+
+        try {
+            const repository = dataSource.getRepository(KeyedRecord);
+
+            await repository.save(repository.create({ externalKey: null }));
+            await repository.save(repository.create({ externalKey: 'taken' }));
+
+            // A group whose every member is null identifies no row, so the
+            // database accepts any number of them.
+            const nullKey = await isEntityUnique({
+                dataSource,
+                entityTarget: KeyedRecord,
+                entity: { externalKey: null },
+            });
+
+            expect(nullKey).toBeTruthy();
+
+            const absentKey = await isEntityUnique({
+                dataSource,
+                entityTarget: KeyedRecord,
+                entity: {},
+            });
+
+            expect(absentKey).toBeTruthy();
+
+            const takenKey = await isEntityUnique({
+                dataSource,
+                entityTarget: KeyedRecord,
+                entity: { externalKey: 'taken' },
+            });
+
+            expect(takenKey).toBeFalsy();
+        } finally {
+            await dataSource.destroy();
+        }
+    });
+
+    it('should not report a conflict for a unique index column which is null', async () => {
+        const dataSource = new DataSource({
+            type: 'better-sqlite3',
+            database: ':memory:',
+            entities: [IndexedKeyedRecord],
+            synchronize: true,
+        });
+
+        await dataSource.initialize();
+
+        try {
+            const repository = dataSource.getRepository(IndexedKeyedRecord);
+
+            await repository.save(repository.create({ externalKey: null }));
+
+            const unique = await isEntityUnique({
+                dataSource,
+                entityTarget: IndexedKeyedRecord,
+                entity: { externalKey: null },
+            });
+
+            expect(unique).toBeTruthy();
+        } finally {
+            await dataSource.destroy();
+        }
+    });
+
+    it('should keep a persisted null of a partial update out of the check', async () => {
+        const dataSource = new DataSource({
+            type: 'better-sqlite3',
+            database: ':memory:',
+            entities: [KeyedRecord],
+            synchronize: true,
+        });
+
+        await dataSource.initialize();
+
+        try {
+            const repository = dataSource.getRepository(KeyedRecord);
+
+            await repository.save(repository.create({ externalKey: null }));
+
+            const updated = await repository.save(repository.create({ externalKey: null }));
+
+            const unique = await isEntityUnique({
+                dataSource,
+                entityTarget: KeyedRecord,
+                entity: {},
+                entityExisting: updated,
+            });
+
+            expect(unique).toBeTruthy();
         } finally {
             await dataSource.destroy();
         }
