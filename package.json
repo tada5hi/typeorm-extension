@@ -72,7 +72,7 @@
         "citty": "^0.2.2",
         "envix": "^1.5.0",
         "get-tsconfig": "^4.14.3",
-        "locter": "^4.1.2",
+        "locter": "^4.2.0",
         "pascal-case": "^3.1.2",
         "reflect-metadata": "^0.2.2",
         "smob": "^1.5.0"
