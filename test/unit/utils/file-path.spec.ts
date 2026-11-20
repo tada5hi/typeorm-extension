@@ -86,6 +86,13 @@ describe('src/utils/file-path.ts', () => {
         expect(transformFilePath(srcPath)).toEqual('dist/ts/*.js');
     });
 
+    it('should replace everything up to the src segment with an absolute dist', () => {
+        expect(transformFilePath('/repo/app/src/config/x.ts', '/repo/app/build')).toEqual('/repo/app/build/config/x.js');
+        expect(transformFilePath('src/entities/*.ts', '/repo/app/build/')).toEqual('/repo/app/build/entities/*.js');
+        expect(transformFilePath('/repo/app/build/config/x.js', '/repo/app/build')).toEqual('/repo/app/build/config/x.js');
+        expect(transformFilePath('C:\\repo\\src\\x.ts', 'C:\\repo\\build')).toEqual('C:/repo/build/x.js');
+    });
+
     it('should not change ts to js path', () => {
         const srcPath = 'src/entities.ts';
 

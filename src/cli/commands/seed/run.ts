@@ -2,11 +2,7 @@ import { defineCommand } from 'citty';
 import process from 'node:process';
 import { buildDataSourceOptions, setDataSourceOptions, useDataSource } from '../../../data-source';
 import { SeederExecutor } from '../../../seeder';
-import {
-    PathResolverMode,
-    createPathResolver,
-    parseFilePath,
-} from '../../../utils';
+import { buildCLIDataSourceContext } from '../../data-source';
 import { runWithExitCode } from '../../exit';
 import { LOG_LEVEL_VALUES, createLogger, normalizeLogLevel } from '../../logger';
 
@@ -58,12 +54,11 @@ export function defineCLISeedRunCommand() {
             await runWithExitCode(logger, async () => {
                 logger.info('Running seeders');
 
-                const pathResolver = createPathResolver({
+                const { pathResolver, context: dataSourceContext } = await buildCLIDataSourceContext({
+                    dataSource: args.dataSource,
                     root: args.root,
                     tsconfig: args.tsconfig,
-                    mode: args.preserveFilePaths ?
-                        PathResolverMode.PRESERVE :
-                        PathResolverMode.AUTO,
+                    preserveFilePaths: args.preserveFilePaths,
                 });
 
                 let { name } = args;
@@ -72,21 +67,15 @@ export function defineCLISeedRunCommand() {
                     name = await pathResolver.transform(name);
                 }
 
-                const source = parseFilePath(await pathResolver.resolve(args.dataSource));
 
                 logger.section('DataSource');
 
                 const dsPad = 'directory'.length;
 
-                logger.kv('directory', source.directory, dsPad);
-                logger.kv('name', source.name, dsPad);
+                logger.kv('directory', dataSourceContext.directory, dsPad);
+                logger.kv('name', dataSourceContext.dataSourceName, dsPad);
 
-                const dataSourceOptions = await buildDataSourceOptions({
-                    dataSourceName: source.name,
-                    directory: source.directory,
-                    tsconfig: await pathResolver.tsconfig(),
-                    preserveFilePaths: args.preserveFilePaths,
-                });
+                const dataSourceOptions = await buildDataSourceOptions(dataSourceContext);
 
                 setDataSourceOptions(dataSourceOptions);
 

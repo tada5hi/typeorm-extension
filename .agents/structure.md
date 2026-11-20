@@ -13,6 +13,7 @@ typeorm-extension/
 │   │   ├── module.ts           # createCLIEntryPointCommand — wires subCommands (db, seed) + legacy colon aliases
 │   │   ├── logger.ts           # TTY-aware logger (info/success/warn/error/debug + section/kv/blank) + CLIUserError
 │   │   ├── exit.ts             # runWithExitCode wrapper + ExitCode enum
+│   │   ├── data-source.ts      # buildCLIDataSourceContext: -d args -> buildDataSourceOptions context
 │   │   └── commands/
 │   │       ├── database/       # `db` parent + `create`/`drift`/`drop` subcommands (citty defineCommand)
 │   │       └── seed/           # `seed` parent + `create`/`run` subcommands
@@ -89,7 +90,7 @@ typeorm-extension/
 | `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager) and is the only stable one; the rest stay `@experimental` public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
-| `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). |
+| `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). In `auto` the rewritten path wins when it exists or its glob matches; otherwise the original is used if it resolves to something the runtime can load (`.ts` only with JIT, `process.features.typescript` or the `typescript` option; a glob only if every match is loadable). Callers never transform a bare directory (an empty build dir would win): use `resolveDirectory(dir, pattern)`, which keeps `dir` a glob cwd (it may contain `(x86)`). `transform` never falls back. `readTSConfig` delegates to `get-tsconfig` (follows `extends`), strips its `./` prefix from path options and takes an absolute inherited value (mangled by get-tsconfig 4) from a raw walk of the chain (plain JSON + `createRequire`, public APIs only). |
 
 ## Key Dependencies
 
@@ -103,6 +104,7 @@ typeorm-extension/
 | `smob`               | Object merge utility (deep merge of data-source options).                                     |
 | `reflect-metadata`   | Imported at the top of `src/cli/index.ts` so TypeORM decorators work in CLI-loaded files.     |
 | `pascal-case`        | Used in seed/factory file generation (template stamps `PascalCaseName`).                      |
+| `get-tsconfig`       | `readTSConfig`: JSONC parsing + `extends` resolution (pinned to 4.x; tsdown pulls a 5 beta for itself). |
 
 ## Package Exports
 

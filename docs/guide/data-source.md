@@ -43,7 +43,11 @@ Without `-d`, these paths are tried in order, each with the extensions `.js`, `.
   named file is tried first, and the paths above stay the fallback.
 - Unless the process runs under `tsx` or `ts-node`, the library assumes compiled code: `src` in these paths becomes the
   `outDir` of your tsconfig (default `dist`), and `.ts` becomes `.js`. The same rewrite applies to string paths in
-  `entities`, `migrations`, `subscribers`, `seeds` and `factories`. Pass `--preserveFilePaths` to turn it off.
+  `entities`, `migrations`, `subscribers`, `seeds` and `factories`. When the rewritten path matches nothing but the
+  original one does (e.g. Node's type stripping without a build), the original is used. A `.ts` original only
+  qualifies when TypeScript support is detected (`tsx`, `ts-node`, or Node's type stripping; not with
+  `--no-experimental-strip-types`). Node's type stripping does not support decorators, so files with `@Entity()` classes still need `tsx` or a build (see the tip below). Pass
+  `--preserveFilePaths` to turn the rewrite off.
 - Every export of the file is checked, the default export included (see [accepted export shapes](#accepted-export-shapes)).
   If a file has none of them, the next path is tried.
 - The library only reads the `options` of that `DataSource`. `useDataSource()` creates and initializes a new
@@ -97,8 +101,8 @@ export const options: DataSourceOptions = { type: 'postgres', database: 'app' };
 A file which exports a `DataSource` next to its options or a factory keeps working as before: the `DataSource` wins.
 
 ::: tip Import types with `import type`
-When Node loads a `.ts` file itself (type stripping, on by default since Node 22.18), it removes type annotations but
-keeps every import. `import { DataSource, DataSourceOptions } from 'typeorm'` then fails with
+When Node loads a `.ts` file itself (type stripping, behind `--experimental-strip-types` on older Node 22 releases
+and on by default since Node 22.18), it removes type annotations but keeps every import. `import { DataSource, DataSourceOptions } from 'typeorm'` then fails with
 `does not provide an export named 'DataSourceOptions'`. Write `import type { DataSourceOptions } from 'typeorm'`.
 Node's type stripping also does not support decorators, so files with entities need `tsx` or a build.
 :::

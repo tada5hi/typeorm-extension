@@ -18,15 +18,20 @@ scheme).
   returning one, or the options object itself. Named functions, functions with a required parameter and classes are not
   called.
 - Point the CLI at the file with `-d`, e.g. `-d src/config/orm.ts`. The path is relative to `--root`.
-- Outside `tsx` and `ts-node`, `src` in the path is rewritten to your tsconfig `outDir` (default `dist`). If you run
-  TypeScript sources with plain Node, or there is no build yet, pass `--preserveFilePaths` or run the CLI with `tsx`.
+- Outside `tsx` and `ts-node`, `src` in the path is rewritten to your tsconfig `outDir` (default `dist`). The path as
+  given is used only when the rewritten one does not exist, and a `.ts` file only when TypeScript support is
+  detected (`tsx`, `ts-node`, or Node's type stripping: behind `--experimental-strip-types` on older Node 22 releases,
+  on by default since Node 22.18, and off with `--no-experimental-strip-types`). Type stripping does not support
+  decorators, so with `@Entity()` classes in `src` run the CLI with `tsx` or against a build. If a stale build in `outDir` shadows your sources, pass `--preserveFilePaths` or
+  run the CLI with `tsx`.
 
 See [Discovery](./data-source#discovery).
 
 ## `SyntaxError: The requested module 'typeorm' does not provide an export named 'DataSourceOptions'`
 
-**Cause:** Node loads your `.ts` file itself (type stripping, on by default since Node 22.18). It removes type
-annotations but keeps every import, so an import of a type fails at runtime.
+**Cause:** Node loads your `.ts` file itself (type stripping, behind `--experimental-strip-types` on older Node 22
+releases and on by default since Node 22.18). It removes type annotations but keeps every import, so an import of
+a type fails at runtime.
 
 **Fix:** import types with `import type`:
 
@@ -61,7 +66,7 @@ See [Running from a build](./recipes/production-build).
 **Cause:** outside `tsx` and `ts-node`, the library assumes compiled code. It replaces `src` in string paths
 (`entities`, `migrations`, `subscribers`, `seeds`, `factories`, `-d`) with the tsconfig `outDir` and `.ts` with `.js`.
 If your build does not mirror `src` below `outDir` (e.g. a monorepo that builds to `dist/apps/<name>`), the globs
-match nothing.
+match nothing. A glob falls back to the original `src` pattern only when every file it matches can be loaded by the runtime.
 
 **Fix:** point the globs at the build output, pass `--preserveFilePaths` with paths that are already correct, or
 pass classes instead of globs.

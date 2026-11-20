@@ -36,11 +36,26 @@ The second command loads `dist/data-source.js`, and the seeders from `dist/datab
   `outDir` of the tsconfig (`dist` when none is set) and `.ts` becomes `.js`. This covers the `-d` path, `--name`,
   and the `entities`, `migrations`, `subscribers`, `seeds` and `factories` globs. A path which already contains the
   `outDir` keeps its directories, and a `.js` extension stays.
-- The `outDir` is read from `tsconfig.json` in the root, or from the file `--tsconfig` names. Only that file is read:
-  an `outDir` inherited through `extends` is not seen, and without the file in the image the default `dist` applies.
+- The `outDir` is read from `tsconfig.json` in the root, or from the file `--tsconfig` names. Its `extends` chain is
+  followed (relative paths, package specifiers such as `@tsconfig/node22/tsconfig.json`, and arrays), so an `outDir`
+  set in a base config applies, relative to the file that sets it. Without the file in the image the default `dist`
+  applies. When a config in the `extends` chain is missing (e.g. a `@tsconfig/*` base installed as a devDependency
+  and pruned from the image), the file is read alone: its own `outDir` still applies, one set only in the base does
+  not. In that case the file is read as plain JSON, so it must not contain comments.
+- An absolute `outDir` is used as is, also when a base config sets it (then every config of the `extends` chain must
+  be plain JSON, without comments).
+- When a rewritten path matches nothing on disk but the original path does, the original is used. A `.ts` original
+  only qualifies when TypeScript support is detected (`tsx`, `ts-node`, or Node's type stripping, see
+  `process.features.typescript`; not with `--no-experimental-strip-types`), and a glob only when every file it
+  matches can be loaded; otherwise the rewritten path and its error stay. The `-d` file is checked with its
+  extensions, so an extensionless `-d src/config/orm` falls back too, and an existing but incomplete build directory
+  does not hide it. Node's type stripping does not
+  support decorators, so this only helps when no decorated class is loaded from a `.ts` file: entities defined with
+  `EntitySchema`, or `entities` / `migrations` that point at compiled `.js` files. A typical project with `@Entity()`
+  classes in `src` still needs `tsx` (or `ts-node`) or a build.
 - `--preserveFilePaths` (or `preserveFilePaths: true` in `buildDataSourceOptions`, `findDataSource` and the seeder
-  executor options) turns the rewrite off. Use it when your paths already point at the build, or when you run the
-  sources through a loader the library does not detect, such as Node's `--experimental-strip-types`.
+  executor options) turns the rewrite off. Use it when your paths already point at the build, or when a stale build
+  in `outDir` would shadow the sources.
 - The data-source file is searched in the working directory before the `-d` directory. If the image still contains a
   `data-source.ts` next to `data-source.js`, ship only the build or run from a directory without the sources.
 

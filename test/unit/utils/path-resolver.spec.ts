@@ -183,6 +183,40 @@ describe('src/utils/path-resolver', () => {
             expect(await resolver.transform('src/entities.ts')).toEqual('output/entities.js');
         });
 
+        it('should use the outDir of an extended tsconfig', async () => {
+            const resolver = createPathResolver({
+                root: 'test/data/tsconfig-extends',
+                mode: 'transform',
+            });
+
+            expect(await resolver.transform('src/entities.ts')).toEqual('build/entities.js');
+        });
+
+        it('should splice an absolute outDir in place of the src segment', async () => {
+            const root = path.join(path.sep, 'repo', 'app');
+            const resolver = createPathResolver({
+                root,
+                tsconfig: { compilerOptions: { outDir: path.join(root, 'build') } },
+                mode: 'transform',
+            });
+
+            expect(await resolver.transform('src/entities/*.ts')).toEqual(path.join(root, 'build', 'entities', '*.js'));
+            expect(await resolver.resolve('src/config/x.ts')).toEqual(path.join(root, 'build', 'config', 'x.js'));
+            expect(await resolver.transform(path.join(root, 'src', 'config', 'x.ts')))
+                .toEqual(path.join(root, 'build', 'config', 'x.js'));
+        });
+
+        it('should not depend on the root for an absolute outDir', async () => {
+            // e.g. cwd /repo, --root /repo/app, outDir /repo/app/build
+            const app = path.join(path.sep, 'repo', 'app');
+            const resolver = createPathResolver({
+                tsconfig: { compilerOptions: { outDir: path.join(app, 'build') } },
+                mode: 'transform',
+            });
+
+            expect(await resolver.transform(path.join(app, 'src', 'config', 'x'))).toEqual(path.join(app, 'build', 'config', 'x'));
+        });
+
         it('should use a tsconfig object as is', async () => {
             const input = { compilerOptions: { outDir: 'out' } };
             const resolver = createPathResolver({ tsconfig: input });

@@ -123,53 +123,76 @@ async function findDataSourceExport(
         }
     }
 
-    let { directory } = context;
-    let directoryIsPattern = false;
+    const names = [...files];
+    const extensions = '{js,cjs,mjs,ts,cts,mts}';
+    const lookups : { pattern: string, cwd: string[] }[] = [];
 
-    if (context.directory) {
-        if (path.isAbsolute(context.directory)) {
-            directory = context.directory;
-        } else {
-            directoryIsPattern = true;
-            directory = safeReplaceWindowsSeparator(context.directory);
+    if (context.directory && path.isAbsolute(context.directory)) {
+        // The absolute directory is a glob cwd, never part of a pattern, so it
+        // may contain glob characters (e.g. "Program Files (x86)"). The
+        // resolver picks the build or the source directory per file name.
+        for (const name of names) {
+            const pattern = `${name}.${extensions}`;
+            const directory = await pathResolver.resolveDirectory(context.directory, pattern);
+
+            lookups.push({ pattern, cwd: [process.cwd(), directory] });
+        }
+    } else {
+        const candidates = [...names];
+
+        if (context.directory) {
+            const directory = safeReplaceWindowsSeparator(context.directory);
+
+            for (const name of names) {
+                candidates.push(path.posix.join(directory, name));
+            }
         }
 
-        directory = await pathResolver.transform(directory);
-    }
-
-    const lookupPaths = [];
-
-    for (const file of files) {
-        if (
-            directory &&
-            directoryIsPattern
-        ) {
-            lookupPaths.push(path.posix.join(directory, file));
+        for (const candidate of candidates) {
+            lookups.push({
+                pattern: await pathResolver.transform(`${candidate}.${extensions}`),
+                cwd: [process.cwd()],
+            });
         }
-
-        lookupPaths.push(...[
-            path.posix.join('src', file),
-            path.posix.join('src/{db,database}', file),
-        ]);
     }
 
-    files.push(...lookupPaths);
+    // the conventional locations: below the working directory, then below
+    // an absolute directory (as a cwd again, so it stays glob-safe).
+    const absoluteDirectory = context.directory && path.isAbsolute(context.directory) ?
+        context.directory :
+        undefined;
 
-    for (let j = 0; j < files.length; j++) {
-        files[j] = await pathResolver.transform(files[j]);
+    for (const name of names) {
+        const pattern = `${name}.${extensions}`;
+
+        for (const folders of [['src'], ['src/db', 'src/database']]) {
+            // the extensions are part of the pattern, so the resolver can check
+            // whether the rewritten (build) path matches a file.
+            const conventional = folders.length === 1 ?
+                folders[0] :
+                'src/{db,database}';
+
+            lookups.push({
+                pattern: await pathResolver.transform(`${conventional}/${pattern}`),
+                cwd: [process.cwd()],
+            });
+
+            if (absoluteDirectory) {
+                for (const folder of folders) {
+                    lookups.push({
+                        pattern,
+                        cwd: [await pathResolver.resolveDirectory(path.join(absoluteDirectory, folder), pattern)],
+                    });
+                }
+            }
+        }
     }
 
-    for (const file of files) {
-        const info = await locate(
-            `${file}.{js,cjs,mjs,ts,cts,mts}`,
-            {
-                cwd: [
-                    process.cwd(),
-                    ...(directory && !directoryIsPattern ? [directory] : []),
-                ],
-                ignore: ['**/*.d.ts'],
-            },
-        );
+    for (const lookup of lookups) {
+        const info = await locate(lookup.pattern, {
+            cwd: lookup.cwd,
+            ignore: ['**/*.d.ts'],
+        });
 
         if (info) {
             const output = await extractDataSource(await readAsModule(info));

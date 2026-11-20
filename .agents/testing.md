@@ -91,6 +91,7 @@ One of those round trips runs against `[User, Role]` rather than a single entity
 | `test/unit/runtime/`     | `AsyncKeyedCache` semantics, `RuntimeRegistry` state + `reset()`     |
 | `test/unit/seeder/`      | Seeder execution, tracking, factory manager                          |
 | `test/unit/utils/`       | Pure helper functions                                                |
+| `test/unit/cli/`         | `buildCLIDataSourceContext`, the data source path of every CLI command |
 
 ## Test Helpers & Fixtures
 
@@ -106,6 +107,8 @@ One of those round trips runs against `[User, Role]` rather than a single entity
   - `integration.ts` → `useIntegrationDriver()` + `createIntegrationDataSourceOptions()` for the driver suite.
   - `ormconfig.json` → fixture for legacy config discovery paths.
   - `tsconfig.json` → consumed by tests that exercise `readTSConfig` + the path resolver.
+- **`test/data/source-only/`**: a project without a build, for the src fallback of the discovery.
+- **`test/data/tsconfig-extends/`**: a tsconfig whose `outDir` comes from a JSONC base config in a subdirectory (`extends` without `.json`). Package specifiers (incl. `exports`), arrays, missing parents (the file is then read alone), cycles and an inherited absolute `outDir` are built in temp directories by `test/unit/utils/tsconfig.spec.ts`, since `node_modules/` is gitignored.
 - **`test/data/database/`** — in-memory implementations of the database connection layer:
   - `MemoryDatabaseConnectionFactory` → recording connection factory (events: open/execute/close, open-connection tracking, pluggable respond callback to simulate server state). Assert `connectionFactory.statements()` and lifecycle ordering instead of touching a real server.
   - `MemoryFileSystem` → same idea for the filesystem effects (better-sqlite3). The mongo dialect uses `MemoryDatabaseConnectionFactory` too — its statements are JSON encoded command documents.

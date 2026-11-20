@@ -150,7 +150,7 @@ The following commands are available in the terminal:
 
 The legacy colon-form (`db:create`, `db:drop`, `seed:run`, `seed:create`) is still accepted for backwards compatibility.
 
-If the application has not yet been built and you want to run the CLI against TypeScript sources directly, invoke the ESM bundle with `tsx` (or `ts-node`). Other loaders, such as Node's own type stripping, are not detected: pass `--preserveFilePaths` there, or the paths are rewritten as for a build (`src` to the tsconfig `outDir`).
+If the application has not yet been built and you want to run the CLI against TypeScript sources directly, invoke the ESM bundle with `tsx` (or `ts-node`). Under other loaders, such as Node's own type stripping, the paths are rewritten as for a build (`src` to the tsconfig `outDir`), and a rewritten path that matches nothing falls back to the path as given. A `.ts` source only qualifies when TypeScript support is detected (`tsx`, `ts-node`, or Node's type stripping; not with `--no-experimental-strip-types`). Node's type stripping does not support decorators, so this only helps when no decorated class is loaded from a `.ts` file (entities defined with `EntitySchema`, or `entities` and `migrations` pointing at compiled `.js` files). A project with `@Entity()` classes in `src` still needs `tsx` (or `ts-node`) or a build. Pass `--preserveFilePaths` to skip the rewrite.
 
 ```
 "scripts": {
