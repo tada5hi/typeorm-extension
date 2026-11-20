@@ -58,7 +58,12 @@ export function transformFilePath(
         const prevCharacter = input.substring(lastIndex - 1, lastIndex);
 
         if (!prevCharacter || prevCharacter === separator) {
-            input = input.substring(0, lastIndex) +
+            // an absolute dist replaces everything up to and including the src segment.
+            const prefix = /^(?:[a-z]:)?\//i.test(dist) ?
+                '' :
+                input.substring(0, lastIndex);
+
+            input = prefix +
                 dist +
                 input.substring(lastIndex + src.length);
 

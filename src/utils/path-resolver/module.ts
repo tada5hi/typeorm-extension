@@ -143,15 +143,7 @@ export class PathResolver implements IPathResolver {
     protected async rewrite(input: string) : Promise<string> {
         const { compilerOptions } = await this.tsconfig();
 
-        let outDir = compilerOptions?.outDir;
-
-        // transformFilePath swaps the src segment for outDir, so an absolute
-        // outDir is made relative to the root first.
-        if (outDir && path.isAbsolute(outDir)) {
-            outDir = path.relative(this.absolutize('.'), outDir).split(path.sep).join('/') || '.';
-        }
-
-        return transformFilePath(input, outDir);
+        return transformFilePath(input, compilerOptions?.outDir);
     }
 
     /**
