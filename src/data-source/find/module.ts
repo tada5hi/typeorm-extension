@@ -156,14 +156,35 @@ async function findDataSourceExport(
         }
     }
 
+    // the conventional locations: below the working directory, then below
+    // an absolute directory (as a cwd again, so it stays glob-safe).
+    const absoluteDirectory = context.directory && path.isAbsolute(context.directory) ?
+        context.directory :
+        undefined;
+
     for (const name of names) {
-        for (const candidate of [path.posix.join('src', name), path.posix.join('src/{db,database}', name)]) {
+        const pattern = `${name}.${extensions}`;
+
+        for (const folders of [['src'], ['src/db', 'src/database']]) {
             // the extensions are part of the pattern, so the resolver can check
             // whether the rewritten (build) path matches a file.
+            const conventional = folders.length === 1 ?
+                folders[0] :
+                'src/{db,database}';
+
             lookups.push({
-                pattern: await pathResolver.transform(`${candidate}.${extensions}`),
+                pattern: await pathResolver.transform(`${conventional}/${pattern}`),
                 cwd: [process.cwd()],
             });
+
+            if (absoluteDirectory) {
+                for (const folder of folders) {
+                    lookups.push({
+                        pattern,
+                        cwd: [await pathResolver.resolveDirectory(path.join(absoluteDirectory, folder), pattern)],
+                    });
+                }
+            }
         }
     }
 
