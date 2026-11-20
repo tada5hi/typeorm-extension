@@ -11,9 +11,9 @@
 
 <p align="center">
   <a href="https://badge.fury.io/js/typeorm-extension"><img src="https://badge.fury.io/js/typeorm-extension.svg" alt="npm version"></a>
-  <a href="https://codecov.io/gh/Tada5hi/typeorm-extension"><img src="https://codecov.io/gh/Tada5hi/typeorm-extension/branch/master/graph/badge.svg?token=4KNSG8L13V" alt="codecov"></a>
-  <a href="https://github.com/Tada5hi/typeorm-extension"><img src="https://github.com/Tada5hi/typeorm-extension/workflows/CI/badge.svg" alt="Master Workflow"></a>
-  <a href="https://snyk.io/test/github/Tada5hi/typeorm-extension?targetFile=package.json"><img src="https://snyk.io/test/github/Tada5hi/typeorm-extension/badge.svg?targetFile=package.json" alt="Known Vulnerabilities"></a>
+  <a href="https://codecov.io/gh/tada5hi/typeorm-extension"><img src="https://codecov.io/gh/tada5hi/typeorm-extension/branch/master/graph/badge.svg?token=4KNSG8L13V" alt="codecov"></a>
+  <a href="https://github.com/tada5hi/typeorm-extension/actions/workflows/main.yml"><img src="https://github.com/tada5hi/typeorm-extension/actions/workflows/main.yml/badge.svg?branch=master" alt="CI"></a>
+  <a href="https://snyk.io/test/github/tada5hi/typeorm-extension?targetFile=package.json"><img src="https://snyk.io/test/github/tada5hi/typeorm-extension/badge.svg?targetFile=package.json" alt="Known Vulnerabilities"></a>
   <a href="https://conventionalcommits.org"><img src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white" alt="Conventional Commits"></a>
 </p>
 
