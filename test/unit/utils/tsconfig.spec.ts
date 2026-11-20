@@ -202,6 +202,29 @@ describe('src/utils/tsconfig.ts (extends)', () => {
         expect(tsConfig.compilerOptions?.rootDir).toEqual('src');
     });
 
+    it('should keep an absolute outDir inherited from a package parent', async () => {
+        const absolute = path.join(tmp, 'abs-out');
+
+        await write('node_modules/abs-base/package.json', {
+            name: 'abs-base',
+            exports: { './base': './configs/base.json' },
+        });
+        await write('node_modules/abs-base/configs/base.json', { compilerOptions: { outDir: absolute } });
+        await write('config/mid.json', { extends: 'abs-base/base' });
+        await write('tsconfig.json', { extends: ['./config/mid'] });
+
+        const tsConfig = await readTSConfig(tmp);
+
+        expect(tsConfig.compilerOptions?.outDir).toEqual(absolute);
+    });
+
+    it('should not take an absolute outDir from a parent the child overrides', async () => {
+        await write('base.json', { compilerOptions: { outDir: path.join(tmp, 'abs-out') } });
+        await write('tsconfig.json', { extends: './base.json', compilerOptions: { outDir: 'out' } });
+
+        expect((await readTSConfig(tmp)).compilerOptions?.outDir).toEqual('out');
+    });
+
     it('should keep an absolute outDir of the file read', async () => {
         const absolute = path.join(tmp, 'abs-out');
 

@@ -42,6 +42,8 @@ The second command loads `dist/data-source.js`, and the seeders from `dist/datab
   applies. When a config in the `extends` chain is missing (e.g. a `@tsconfig/*` base installed as a devDependency
   and pruned from the image), the file is read alone: its own `outDir` still applies, one set only in the base does
   not. In that case the file is read as plain JSON, so it must not contain comments.
+- An absolute `outDir` is used as is, also when a base config sets it (then every config of the `extends` chain must
+  be plain JSON, without comments).
 - When a rewritten path matches nothing on disk but the original path does, the original is used. A `.ts` original
   only qualifies when TypeScript support is detected (`tsx`, `ts-node`, or Node's type stripping, see
   `process.features.typescript`; not with `--no-experimental-strip-types`), and a glob only when every file it
