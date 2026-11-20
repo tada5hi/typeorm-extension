@@ -18,6 +18,24 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.6.0](https://github.com/tada5hi/typeorm-extension/compare/v4.5.0...v4.6.0) (2026-11-20)
+
+
+### Features
+
+* export hasRowLock driver predicate ([c63f142](https://github.com/tada5hi/typeorm-extension/commit/c63f142165d41359617426e2aa2392d8aaadb443)), closes [#1496](https://github.com/tada5hi/typeorm-extension/issues/1496)
+
+
+### Bug Fixes
+
+* accept data-source option and factory exports ([#1510](https://github.com/tada5hi/typeorm-extension/issues/1510)) ([1d8d5c9](https://github.com/tada5hi/typeorm-extension/commit/1d8d5c9967ee13f7a119cf57042acf501625e7b1))
+* apply factory params and await promises before saving ([#1509](https://github.com/tada5hi/typeorm-extension/issues/1509)) ([eeaba32](https://github.com/tada5hi/typeorm-extension/commit/eeaba3247cb3c64c2ea9edd398248a37e79bb148))
+* follow tsconfig extends and fall back to source paths ([#1511](https://github.com/tada5hi/typeorm-extension/issues/1511)) ([8c61f73](https://github.com/tada5hi/typeorm-extension/commit/8c61f73dc3f4556f318741da8620486bab9a4117))
+* keep env globs and data-source file options intact ([#1508](https://github.com/tada5hi/typeorm-extension/issues/1508)) ([aa161cd](https://github.com/tada5hi/typeorm-extension/commit/aa161cd244ccce52b94fc666e7e1abae62d5ec99))
+* rename hasRowLock to isRowLockSupported ([c584842](https://github.com/tada5hi/typeorm-extension/commit/c584842e1f32c22cb984dca089cbc352cfed4c3c))
+* resolve tsconfig extends parents with the export conditions of tsc ([#1514](https://github.com/tada5hi/typeorm-extension/issues/1514)) ([e2e93d6](https://github.com/tada5hi/typeorm-extension/commit/e2e93d6ccbc3a26148b3d189d73de6245f568176))
+* skip unique groups whose columns are all null in isEntityUnique ([#1515](https://github.com/tada5hi/typeorm-extension/issues/1515)) ([a758104](https://github.com/tada5hi/typeorm-extension/commit/a758104ab686e8e9743ff398c14c60b4eafd74a8))
+
 ## [4.5.0](https://github.com/tada5hi/typeorm-extension/compare/v4.4.0...v4.5.0) (2026-11-19)
 
 
