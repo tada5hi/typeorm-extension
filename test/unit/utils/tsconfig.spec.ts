@@ -218,6 +218,34 @@ describe('src/utils/tsconfig.ts (extends)', () => {
         expect(tsConfig.compilerOptions?.outDir).toEqual(absolute);
     });
 
+    it('should take the require entry of a package parent, as tsc does, when import is listed first', async () => {
+        await write('node_modules/dual-base/package.json', {
+            name: 'dual-base',
+            exports: { './base': { import: './import.json', require: './require.json' } },
+        });
+        await write('node_modules/dual-base/import.json', { compilerOptions: { outDir: path.join(tmp, 'import-out') } });
+        await write('node_modules/dual-base/require.json', { compilerOptions: { outDir: path.join(tmp, 'require-out') } });
+        await write('tsconfig.json', { extends: 'dual-base/base' });
+
+        const tsConfig = await readTSConfig(tmp);
+
+        expect(tsConfig.compilerOptions?.outDir).toEqual(path.join(tmp, 'require-out'));
+    });
+
+    it('should take the types entry of a package parent, as tsc does, before the default entry', async () => {
+        await write('node_modules/types-base/package.json', {
+            name: 'types-base',
+            exports: { './base': { types: './types.json', default: './default.json' } },
+        });
+        await write('node_modules/types-base/types.json', { compilerOptions: { outDir: path.join(tmp, 'types-out') } });
+        await write('node_modules/types-base/default.json', { compilerOptions: { outDir: path.join(tmp, 'default-out') } });
+        await write('tsconfig.json', { extends: 'types-base/base' });
+
+        const tsConfig = await readTSConfig(tmp);
+
+        expect(tsConfig.compilerOptions?.outDir).toEqual(path.join(tmp, 'types-out'));
+    });
+
     it('should not take an absolute outDir from a parent the child overrides', async () => {
         await write('base.json', { compilerOptions: { outDir: path.join(tmp, 'abs-out') } });
         await write('tsconfig.json', { extends: './base.json', compilerOptions: { outDir: 'out' } });

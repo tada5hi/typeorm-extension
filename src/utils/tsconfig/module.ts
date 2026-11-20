@@ -1,7 +1,6 @@
 import { parseTsconfig } from 'get-tsconfig';
-import { read } from 'locter';
+import { read, resolveModuleSync } from 'locter';
 import fs from 'node:fs';
-import { createRequire } from 'node:module';
 import path from 'node:path';
 import { isObject } from '../object';
 import type { TSConfig } from './types';
@@ -68,14 +67,20 @@ function resolveExtends(specifier: string, configPath: string) : string | undefi
         return [filePath, `${filePath}.json`].find((el) => isFile(el));
     }
 
-    const require = createRequire(configPath);
     const candidates = specifier.endsWith('.json') ?
         [specifier] :
         [`${specifier}.json`, `${specifier}/tsconfig.json`, specifier];
 
     for (const candidate of candidates) {
         try {
-            const filePath = require.resolve(candidate);
+            // tsc and get-tsconfig resolve extends like require() plus
+            // "types", never "import": with the defaults (node, import) an
+            // import entry listed first would pick another parent.
+            const filePath = resolveModuleSync(candidate, {
+                parentURL: configPath,
+                conditions: ['node', 'require', 'types'],
+                defaultConditions: false,
+            });
 
             if (filePath.endsWith('.json')) {
                 return filePath;
