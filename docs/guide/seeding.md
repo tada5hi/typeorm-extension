@@ -2,8 +2,9 @@
 
 Seeders fill a database with a fixed or generated data set; factories generate entities for them.
 
-You need three parts: one or more [entities](#entity), optionally a [factory](#factories) per entity, and one or more
-[seeders](#seeders). You then [execute](#execute) the seeders from the CLI or from code.
+You need three parts: your TypeORM entities, optionally a [factory](#factories) per entity, and one or more
+[seeders](#seeders). You then [execute](#execute) the seeders from the CLI or from code. The examples use a `User`
+entity with the columns `firstName`, `lastName` and `email`.
 
 ## Configuration
 
@@ -39,33 +40,10 @@ The library reads the options from three sources. The first source that has a va
 - An empty `seeds` or `factories` array counts as unset, so the next source applies.
 - Glob patterns use the posix separator (`/`), also on Windows. A backslash escapes glob characters.
 - The environment variables hold a comma separated list. A comma inside a brace group such as `*{.ts,.js}` does not
-  split, so `DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one pattern.
+  split (see [Environment variables](./data-source#environment-variables)).
 - The environment is read once and cached. Call `resetEnv()` after you change `process.env` at runtime.
 
 When the compiled output runs instead of the TypeScript sources, see [Running from a build](./recipes/production-build).
-
-## Entity
-
-Seeders and factories work with any TypeORM entity.
-
-```typescript
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
-
-@Entity()
-export class User {
-    @PrimaryGeneratedColumn()
-    id: number;
-
-    @Column()
-    firstName: string;
-
-    @Column()
-    lastName: string;
-
-    @Column()
-    email: string;
-}
-```
 
 ## Factories
 
@@ -193,8 +171,7 @@ tsx ./node_modules/typeorm-extension/bin/cli.mjs seed create --name src/database
 ```
 
 Seeder classes passed in `seeds: [...]` run in the order of the array. The exception is a class whose name ends with
-13 or more digits (as `seed create` generates it): that number is its sort key, so it runs after the classes without
-one.
+13 or more digits (as `seed create` generates it): that number is its sort key, so it runs after the others.
 
 To run one seeder, set `seedName` (`--name` or `-n` on the CLI). It matches the class name, the file name or the
 file path:
@@ -251,18 +228,11 @@ From code, call [`runSeeders`](./seeding-api-reference#runseeders) with an initi
 win over the data-source options:
 
 ```typescript
-import { DataSource } from 'typeorm';
 import { runSeeders } from 'typeorm-extension';
-import { User } from './user';
+import { dataSource } from './data-source';
 import UserFactory from './user.factory';
 import UserSeeder from './user.seeder';
 
-const dataSource = new DataSource({
-    type: 'better-sqlite3',
-    database: 'db.sqlite',
-    entities: [User],
-    synchronize: true,
-});
 await dataSource.initialize();
 
 const executed = await runSeeders(dataSource, {

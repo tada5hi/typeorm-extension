@@ -46,36 +46,18 @@ Without `-d`, these paths are tried in order, each with the extensions `.js`, `.
   `entities`, `migrations`, `subscribers`, `seeds` and `factories`. When the rewritten path matches nothing but the
   original one does (e.g. Node's type stripping without a build), the original is used. A `.ts` original only
   qualifies when TypeScript support is detected (`tsx`, `ts-node`, or Node's type stripping; not with
-  `--no-experimental-strip-types`). Node's type stripping does not support decorators, so files with `@Entity()` classes still need `tsx` or a build (see the tip below). Pass
-  `--preserveFilePaths` to turn the rewrite off.
+  `--no-experimental-strip-types`, and see the tip below for decorators). Pass `--preserveFilePaths` to turn the
+  rewrite off.
 - Every export of the file is checked, the default export included (see [accepted export shapes](#accepted-export-shapes)).
   If a file has none of them, the next path is tried.
 - The library only reads the `options` of that `DataSource`. `useDataSource()` creates and initializes a new
   instance from them, so the exported instance stays uninitialized.
 
-An export can be a promise, e.g. when a secret has to be loaded first:
-
-```typescript
-import { DataSource } from 'typeorm';
-
-export default (async () => {
-    const password = await readSecret('db-password');
-
-    return new DataSource({
-        type: 'postgres',
-        host: 'localhost',
-        username: 'app',
-        password,
-        database: 'app',
-    });
-})();
-```
-
 ### Accepted export shapes
 
 Within one file the first match wins, in this order:
 
-1. A `DataSource`, or a promise that resolves to one.
+1. A `DataSource`, or a promise that resolves to one (e.g. `export default (async () => new DataSource(...))()`).
 2. A default export function without parameters (sync or async) that returns a `DataSource`. It is called once, with
    no arguments. "Without parameters" means `Function.length` is `0`, so a function whose parameters all have defaults
    (`(name = 'app') => ...`) or a rest parameter is called too. Named exports are never called, nor are classes or
@@ -102,7 +84,8 @@ A file which exports a `DataSource` next to its options or a factory keeps worki
 
 ::: tip Import types with `import type`
 When Node loads a `.ts` file itself (type stripping, behind `--experimental-strip-types` on older Node 22 releases
-and on by default since Node 22.18), it removes type annotations but keeps every import. `import { DataSource, DataSourceOptions } from 'typeorm'` then fails with
+and on by default since Node 22.18), it removes type annotations but keeps every import.
+`import { DataSource, DataSourceOptions } from 'typeorm'` then fails with
 `does not provide an export named 'DataSourceOptions'`. Write `import type { DataSourceOptions } from 'typeorm'`.
 Node's type stripping also does not support decorators, so files with entities need `tsx` or a build.
 :::
@@ -164,8 +147,9 @@ DB_ENTITIES=dist/database/entities/*.js
 | `NODE_ENV`                    |                                    | `useEnv('env')` only (default `development`)            | string                                          |
 
 A list is comma separated. A comma inside a brace group or a character class (`[,]`) belongs to its glob pattern, so
-`DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one entry. An escaped brace (`\{`) is a literal character. A bool is `true`, `t` or `1`, or `false`, `f` or `0`; any other value counts as unset. A
-JSON value that does not parse throws when the environment is read.
+`DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one entry. An escaped brace (`\{`) is a literal character. A bool is
+`true`, `t` or `1`, or `false`, `f` or `0`; any other value counts as unset. A JSON value that does not parse throws
+when the environment is read.
 
 How the environment combines with the data source file:
 
@@ -174,9 +158,8 @@ How the environment combines with the data source file:
   `DB_PIN_TIMEZONE` applies in either case.
 - No file found: the options come from the environment alone. Neither a file nor a driver: `OptionsError`.
 - File and environment name the same driver: a set variable wins over the file, and the file fills the rest. An unset
-  variable (`DB_LOGGING` included) leaves the file's value alone. `extra`
-  and `cache` are merged key by key. `entities`, `migrations` and `subscribers` are joined, the environment's entries
-  first.
+  variable (`DB_LOGGING` included) leaves the file's value alone. `extra` and `cache` are merged key by key.
+  `entities`, `migrations` and `subscribers` are joined, the environment's entries first.
 - File and environment name different drivers: the environment's options are used and the file is ignored.
 - When the environment names a driver, its defaults apply last, only to an option that the environment does not set
   and, if the file names the same driver, the file does not set either: `database: 'db.sqlite'` for better-sqlite3 and
