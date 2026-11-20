@@ -57,8 +57,7 @@ Why it works:
   `src/database/factories/**/*{.ts,.js}` is loaded. The seeders run in array order (see
   [Order](../seeding#order-and-selecting-one-seeder)).
 - `setDataSource()` registers the data source for the `default` alias, so `useSeederFactory(User).save()` in a test
-  saves there. Without it, `save()` outside a seeder
-  builds a data source from the environment or a data-source file.
+  saves there. Without it, `save()` outside a seeder builds a data source from the environment or a data-source file.
 - `resetSeederFactoryManager()` drops every registered factory. A factory module registers itself only when it is
   first imported, so pass the factory items to `runSeeders` (or call `setSeederFactory` again) after a reset.
   `resetEnv()` clears the cached `process.env` values when a test changes them.
@@ -78,7 +77,7 @@ const user = await useSeederFactory(User).make({ email: 'a@example.com' });
 ```
 
 - Neither `make()` nor a nested factory inside it uses a data source. `save()` and `saveMany()` need one.
-- `setSeederFactory` re-registers the factory, which is needed after `resetSeederFactoryManager()`.
+  `setSeederFactory` re-registers the factory, which is needed after `resetSeederFactoryManager()`.
 
 ## Locks and drift checks on sqlite
 
@@ -117,8 +116,6 @@ const drift = await getSchemaDrift(dataSource, { skipWithoutMigrations: true });
 
 ## See also
 
-- [`runSeeders`](../seeding-api-reference#runseeders), [`useSeederFactory`](../seeding-api-reference#useseederfactory),
-  [`resetSeederFactoryManager`](../seeding-api-reference#resetseederfactorymanager)
-- [`withDatabaseLock`](../database-api-reference#withdatabaselock), [`withLockedEntity`](../database-api-reference#withlockedentity),
-  [`getSchemaDrift`](../database-api-reference#getschemadrift)
+- [`runSeeders`](../seeding-api-reference#runseeders), [`useSeederFactory`](../seeding-api-reference#useseederfactory), [`resetSeederFactoryManager`](../seeding-api-reference#resetseederfactorymanager)
+- [`withDatabaseLock`](../database-api-reference#withdatabaselock), [`withLockedEntity`](../database-api-reference#withlockedentity), [`getSchemaDrift`](../database-api-reference#getschemadrift)
 - [Factories with relations](./factories-with-relations)

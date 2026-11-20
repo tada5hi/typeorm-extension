@@ -59,12 +59,7 @@ try {
   `migrations: []` for an in-memory sqlite test database).
 - On mongodb there is no schema to compare: the drift is always empty.
 
-Run the check right after the migrations, for example in CI:
-
-```
-migration run  ->  revert x N  ->  run  ->  assert zero drift
-```
-
+Run the check right after the migrations, for example in CI (run, revert all, run again, assert zero drift).
 The command line equivalent is [`typeorm-extension db drift`](./cli#schema-drift). The recipe
 [Schema drift check in CI](./recipes/drift-in-ci) shows a complete job.
 
@@ -184,33 +179,14 @@ constraint. All of them are read back from the database, so the rename can not c
 
 On mysql the `DROP` and the `ADD` are separate, auto-committed statements. A run interrupted between them leaves
 neither the old nor the new constraint behind, and there is nothing left to read back. Pass `meta` to make that
-recoverable. It is only used when neither name is present, and then it creates the constraint even under `strict`.
-So `meta` must describe the original constraint exactly: the same columns, referenced table and columns, and
-referential actions, or the migration creates a different constraint than the one it dropped:
-
-```typescript
-import type { QueryRunner } from 'typeorm';
-import { renameForeignKey } from 'typeorm-extension';
-
-declare const queryRunner: QueryRunner;
-
-await renameForeignKey(queryRunner, {
-    table: 'auth_permissions',
-    from: 'FK_auth_permissions_client',
-    to: 'FK_1a2b3c4d5e6f708192a3b4c5',
-    meta: {
-        columns: ['client_id'],
-        referencedTable: 'auth_clients',
-        referencedColumns: ['id'],
-        onDelete: 'CASCADE',
-    },
-});
-```
+recoverable (see the `renameForeignKey` call in the [example above](#repair-migrations)). It is only used when
+neither name is present, and then it creates the constraint even under `strict`. So `meta` must describe the original
+constraint exactly: the same columns, referenced table and columns, and referential actions, or the migration creates
+a different constraint than the one it dropped.
 
 On mysql and mariadb, between the drop and the add, the constraint does not exist, and the add runs with the checks
-disabled. Another
-session can insert an orphan row in that window, and it is not caught afterwards. Stop writes to the table during a
-repair migration.
+disabled. Another session can insert an orphan row in that window, and it is not caught afterwards. Stop writes to the
+table during a repair migration.
 
 On mysql it wraps the drop and re-add in `withForeignKeyChecksDisabled`, which you can also use directly. The
 constraint being recreated was already enforced, so re-validating it only costs a full table scan and can fail on

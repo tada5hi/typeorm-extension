@@ -378,6 +378,9 @@ in a different zone than one the database stamps.
 
 ```typescript
 // data-source.ts
+import { DataSource } from 'typeorm';
+import { pinTimezone } from 'typeorm-extension';
+
 export const dataSource = new DataSource(pinTimezone({
     type: 'postgres',
     // ...
