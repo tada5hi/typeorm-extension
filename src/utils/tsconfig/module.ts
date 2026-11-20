@@ -73,12 +73,13 @@ function resolveExtends(specifier: string, configPath: string) : string | undefi
 
     for (const candidate of candidates) {
         try {
-            // 'require' joins the default conditions (node, import), so an
-            // exports entry meant for require() still matches, as it did
-            // for require.resolve().
+            // tsc and get-tsconfig resolve extends like require() plus
+            // "types", never "import": with the defaults (node, import) an
+            // import entry listed first would pick another parent.
             const filePath = resolveModuleSync(candidate, {
                 parentURL: configPath,
-                conditions: ['require'],
+                conditions: ['node', 'require', 'types'],
+                defaultConditions: false,
             });
 
             if (filePath.endsWith('.json')) {
