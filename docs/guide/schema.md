@@ -95,8 +95,8 @@ await generateMigration({
   writes some statements, such as `DROP INDEX "public"."IDX_..."`, with the schema it reads back from the database,
   while `CREATE TABLE` stays unqualified. Without the qualifier, `up` and `down` both resolve through the search path,
   so the migration also runs in another schema (postgres: `-c search_path=<schema>` in `extra.options`). Every
-  `"<schema>".` in a statement is removed, also one written by hand, e.g. in a view definition. Applies to postgres,
-  cockroachdb and mssql.
+  `"<schema>".` outside a string literal is removed, also one written by hand, e.g. in a view definition. Applies to
+  postgres, cockroachdb and mssql.
 
 For every option, see [generateMigration](./database-api-reference#generatemigration).
 
