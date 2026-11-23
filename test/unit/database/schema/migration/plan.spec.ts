@@ -3,17 +3,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DataSource } from 'typeorm';
 import {
-    afterEach, 
-    describe, 
-    expect, 
+    afterEach,
+    describe,
+    expect,
     it,
 } from 'vitest';
 import type { MigrationsInput } from '../../../../../src';
-import { 
-    MigrationBaseline, 
-    MigrationPlanError, 
-    isMigrationPlanEmpty, 
-    planDatabaseMigrations, 
+import {
+    MigrationBaseline,
+    MigrationPlanError,
+    isMigrationPlanEmpty,
+    planDatabaseMigrations,
+    runDatabaseMigrations,
+    undoDatabaseMigration,
 } from '../../../../../src';
 import { AddWidgetSize1700000000004 } from '../../../../data/typeorm/migration-baseline/add-widget-size';
 import { Baseline1700000000003 } from '../../../../data/typeorm/migration-baseline/baseline';
@@ -295,5 +297,37 @@ describe('src/database/schema/migration/plan', () => {
 
         expect(isMigrationPlanEmpty(await planDatabaseMigrations(dataSourceOf(file, CURRENT)))).toBe(true);
     });
-});
 
+    it('refuses an uninitialized data source which would migrate on initialize', async () => {
+        const calls = [planDatabaseMigrations, runDatabaseMigrations, undoDatabaseMigration];
+
+        for (const flag of ['migrationsRun', 'synchronize', 'dropSchema']) {
+            for (const call of calls) {
+                const file = databaseFile();
+                const dataSource = new DataSource({
+                    type: 'better-sqlite3',
+                    database: file,
+                    migrations: CURRENT,
+                    [flag]: true,
+                });
+
+                created.push(dataSource);
+
+                const error = await call(dataSource).catch((e) => e);
+
+                expect(error).toBeInstanceOf(MigrationPlanError);
+                expect(error.message).toEqual(MigrationPlanError.dataSourceInitializeRuns([flag]).message);
+                expect(dataSource.isInitialized).toBe(false);
+                expect(fs.existsSync(file)).toBe(false);
+            }
+        }
+    });
+
+    it('initializes an uninitialized data source without those flags', async () => {
+        const dataSource = dataSourceOf(databaseFile(), CURRENT);
+
+        await planDatabaseMigrations(dataSource);
+
+        expect(dataSource.isInitialized).toBe(true);
+    });
+});

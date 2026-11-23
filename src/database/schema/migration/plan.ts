@@ -1,8 +1,8 @@
 import type { DataSource, Migration, QueryRunner } from 'typeorm';
 import { MigrationExecutor } from 'typeorm';
 import { MigrationPlanError } from '../../../errors';
-import { useInitializedDataSource } from '../utils';
 import { isMigrationBaselineClass } from './baseline';
+import { useMigrationDataSource } from './execution';
 import { scanMigrationSource } from './source';
 import { listUserTableNames } from './tables';
 import type { MigrationPlan, MigrationPlanOptions } from './types';
@@ -33,7 +33,7 @@ export async function planDatabaseMigrations(
     dataSource: DataSource,
     options: MigrationPlanOptions = {},
 ): Promise<MigrationPlan> {
-    await useInitializedDataSource(dataSource);
+    await useMigrationDataSource(dataSource);
 
     const source = await scanMigrationSource(dataSource, options);
 

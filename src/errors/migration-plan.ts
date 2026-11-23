@@ -105,6 +105,14 @@ export class MigrationPlanError extends TypeormExtensionError {
         );
     }
 
+    static dataSourceInitializeRuns(flags: string[]) {
+        return new MigrationPlanError(
+            `The data source is not initialized and would run ${flags.join(', ')} on initialize, ` +
+            'which bypasses the migration runner. Initialize it first or unset the options.',
+            flags,
+        );
+    }
+
     static driverNotSupported(type: string) {
         return new MigrationPlanError(
             `The migration runner does not support the ${type} driver.`,

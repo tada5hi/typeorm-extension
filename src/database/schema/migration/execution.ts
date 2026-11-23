@@ -1,5 +1,6 @@
 import type { DataSource, QueryRunner } from 'typeorm';
 import { MigrationExecutor } from 'typeorm';
+import { MigrationPlanError } from '../../../errors';
 import { withDatabaseLock } from '../../lock';
 import { useInitializedDataSource } from '../utils';
 import { MIGRATION_LOCK_NAME } from './constants';
@@ -49,6 +50,27 @@ export async function withTransaction(
     await queryRunner.afterMigration();
 }
 
+const INITIALIZE_FLAGS = ['migrationsRun', 'synchronize', 'dropSchema'] as const;
+
+/**
+ * Initialize the data source unless initializing it would run typeorm's own
+ * migrations or schema sync, which the runner must not be bypassed by.
+ *
+ * @throws MigrationPlanError
+ */
+export async function useMigrationDataSource(dataSource: DataSource): Promise<void> {
+    if (!dataSource.isInitialized) {
+        const options = dataSource.options as Partial<Record<typeof INITIALIZE_FLAGS[number], unknown>>;
+        const flags = INITIALIZE_FLAGS.filter((flag) => !!options[flag]);
+
+        if (flags.length > 0) {
+            throw MigrationPlanError.dataSourceInitializeRuns(flags);
+        }
+    }
+
+    await useInitializedDataSource(dataSource);
+}
+
 /**
  * Runs fn on the given query runner, or on one created here which is locked
  * (unless lock is false) and released afterwards. A given query runner gets no
@@ -59,7 +81,7 @@ export async function withMigrationRunner<T>(
     options: Pick<MigrationRunOptions, 'queryRunner' | 'lock'>,
     fn: (queryRunner: QueryRunner) => Promise<T>,
 ): Promise<T> {
-    await useInitializedDataSource(dataSource);
+    await useMigrationDataSource(dataSource);
 
     if (options.queryRunner) {
         return fn(options.queryRunner);
