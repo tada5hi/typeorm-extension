@@ -88,11 +88,11 @@ export function supportsDatabaseLock(driver?: IntegrationDriver) : boolean {
 }
 
 /**
- * Whether the migration runner (and its baselines) can run on the driver:
- * everything with a relational schema.
+ * Whether the baseline spec runs on the driver: the drivers it was verified
+ * against (its catalogue snapshot speaks postgres and mysql).
  */
 export function supportsMigrationBaseline(driver?: IntegrationDriver) : boolean {
-    return !!driver && driver !== 'mongodb';
+    return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb';
 }
 
 /**

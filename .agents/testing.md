@@ -30,19 +30,20 @@ Covers what sqlite and the fakes structurally can not: dialect-asymmetric DDL, t
 
 Not every driver can do everything, so `test/data/typeorm/integration.ts` exposes capability predicates instead of hard-coding driver names in the specs — extend those rather than adding `if (driver === …)` to a spec:
 
-| Predicate                        | False for                | Because                                                                                  |
-|----------------------------------|--------------------------|------------------------------------------------------------------------------------------|
-| `supportsSchemaAlter`            | mssql, oracle, mongodb   | the rename helpers have no statements for them (they assert a `DriverError` instead)       |
-| `supportsForeignKeyChecks`       | everything but mysql/mariadb | no session-level switch                                                                |
-| `supportsForeignKeyColumnAlter`  | everything but mysql     | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
-| `supportsSchemaMetadata`         | mongodb                  | no relational schema to compare, and the fixtures use relations                            |
-| `supportsDatabaseDrop`           | oracle                   | `OracleDialect.drop` is a documented no-op                                                 |
-| `supportsDatabaseExistenceCheck` | mongodb                  | mongodb creates a database lazily, so `checkDatabase` does not report a dropped one as missing |
-| `supportsDatabaseCharset`        | everything but mysql/mariadb | only the mysql dialect turns `charset` into a `CHARACTER SET` (and `COLLATE`) clause |
-| `supportsDatabaseLock`           | everything but postgres/mysql/mariadb | `withDatabaseLock` refuses them with a `DriverError` (cockroachdb's advisory locks are no-ops) |
-| `supportsRowLock`                | mongodb                  | `withLockedEntity` refuses it with a `DriverError` (typeorm emits no row lock there)        |
+| Predicate | False for | Because |
+|---|---|---|
+| `supportsSchemaAlter` | mssql, oracle, mongodb | the rename helpers have no statements for them (they assert a `DriverError` instead) |
+| `supportsForeignKeyChecks` | everything but mysql/mariadb | no session-level switch |
+| `supportsForeignKeyColumnAlter` | everything but mysql | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
+| `supportsSchemaMetadata` | mongodb | no relational schema to compare, and the fixtures use relations |
+| `supportsDatabaseDrop` | oracle | `OracleDialect.drop` is a documented no-op |
+| `supportsDatabaseExistenceCheck` | mongodb | mongodb creates a database lazily, so `checkDatabase` does not report a dropped one as missing |
+| `supportsDatabaseCharset` | everything but mysql/mariadb | only the mysql dialect turns `charset` into a `CHARACTER SET` (and `COLLATE`) clause |
+| `supportsDatabaseLock` | everything but postgres/mysql/mariadb | `withDatabaseLock` refuses them with a `DriverError` (cockroachdb's advisory locks are no-ops) |
+| `supportsRowLock` | mongodb | `withLockedEntity` refuses it with a `DriverError` (typeorm emits no row lock there) |
 | `supportsSearchSchema` | all but postgres/cockroachdb/mssql | no `driver.searchSchema` |
 | `supportsSearchPathOption` | all but postgres | no `search_path` option |
+| `supportsMigrationBaseline` | all but postgres/mysql/mariadb | the spec's table snapshot is verified there only |
 
 ```bash
 docker run -d --name tex-pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=test -p 55432:5432 postgres:18-alpine
