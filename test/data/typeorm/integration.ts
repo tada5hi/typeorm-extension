@@ -128,6 +128,22 @@ export function supportsDatabaseExistenceCheck(driver?: IntegrationDriver) : boo
 }
 
 /**
+ * Whether typeorm reads a default schema back from the server
+ * (driver.searchSchema), which generateMigration can leave unqualified.
+ */
+export function supportsSearchSchema(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres' || driver === 'cockroachdb' || driver === 'mssql';
+}
+
+/**
+ * Whether a data source can point unqualified names at another schema
+ * through a connection option (postgres: -c search_path=...).
+ */
+export function supportsSearchPathOption(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres';
+}
+
+/**
  * Whether pinTimezone pins the driver: the session which stamps
  * a zone-less column, and the driver which writes and reads it.
  */

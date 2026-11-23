@@ -48,5 +48,15 @@ export type MigrationGenerateCommandContext = {
     /**
      * Only return up- & down-statements instead of backing up the migration to the file system.
      */
-    preview?: boolean
+    preview?: boolean,
+
+    /**
+     * Qualify objects in the default schema (postgres: the current schema, e.g. public)
+     * with its name. false leaves them unqualified, so up and down both resolve
+     * through the search path, and the migration also runs in another schema.
+     * Applies to drivers with a default schema (postgres, cockroachdb, mssql).
+     *
+     * @default true
+     */
+    schemaQualified?: boolean,
 };

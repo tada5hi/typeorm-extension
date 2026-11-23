@@ -896,7 +896,16 @@ export type MigrationGenerateCommandContext = {
      *
      * Default: false
      */
-    preview?: boolean
+    preview?: boolean,
+
+    /**
+     * Qualify objects in the default schema (postgres: the current schema, e.g. public)
+     * with its name. false leaves them unqualified, so up and down both resolve
+     * through the search path. Applies to postgres, cockroachdb and mssql.
+     *
+     * Default: true
+     */
+    schemaQualified?: boolean
 };
 ```
 

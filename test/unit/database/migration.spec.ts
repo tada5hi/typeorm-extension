@@ -165,6 +165,21 @@ describe('src/database/migration', () => {
         expect(output.content).toContain('export class AddRole0 implements MigrationInterface {');
     });
 
+    it('should generate the same statements without schema qualifiers on a driver without schemas', async () => {
+        const qualified = await withDataSource([Role], (dataSource) => generateMigration({
+            dataSource,
+            preview: true,
+        }));
+        const unqualified = await withDataSource([Role], (dataSource) => generateMigration({
+            dataSource,
+            preview: true,
+            schemaQualified: false,
+        }));
+
+        expect(unqualified.up).toEqual(qualified.up);
+        expect(unqualified.down).toEqual(qualified.down);
+    });
+
     it('should write an executable typescript migration file', async () => {
         await withDataSource([Role], (dataSource) => generateMigration({
             dataSource,

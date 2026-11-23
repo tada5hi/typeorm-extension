@@ -91,6 +91,11 @@ await generateMigration({
   `const { up, down, content } = await generateMigration({ dataSource, preview: true })`.
 - When there is nothing to generate, `up` and `down` are empty, `content` is undefined and no file is written.
 - `prettify: true` formats the SQL statements.
+- `schemaQualified: false` leaves objects in the default schema (postgres: `public`) unqualified. typeorm otherwise
+  writes some statements, such as `DROP INDEX "public"."IDX_..."`, with the schema it reads back from the database,
+  while `CREATE TABLE` stays unqualified. Without the qualifier, `up` and `down` both resolve through the search path,
+  so the migration also runs in another schema (postgres: `-c search_path=<schema>` in `extra.options`). Applies to
+  postgres, cockroachdb and mssql.
 
 For every option, see [generateMigration](./database-api-reference#generatemigration).
 

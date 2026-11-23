@@ -420,7 +420,8 @@ import { generateMigration } from 'typeorm-extension';
 
 The file is written as `<timestamp>-<name>.<language>`, by default into `migrations/`. Set `language: 'js'` (plus
 `esm: true` for `export class` syntax) for a JavaScript migration, or `preview: true` to receive the statements without
-writing a file.
+writing a file. `schemaQualified: false` drops the default schema qualifier (`"public".`), so a postgres migration also
+runs in another schema.
 
 #### Repair Migrations
 

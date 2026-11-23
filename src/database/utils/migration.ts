@@ -2,6 +2,7 @@ import path from 'node:path';
 import { CommandUtils } from 'typeorm/commands/CommandUtils';
 import { MigrationGenerateCommand } from 'typeorm/commands/MigrationGenerateCommand';
 import { resolveFilePath } from '../../utils';
+import { readSearchSchema, removeSchemaQualifier } from './schema-qualifier';
 import type { MigrationGenerateCommandContext, MigrationGenerateResult } from './types';
 
 /**
@@ -54,14 +55,20 @@ export async function generateMigration(
 
     const sqlInMemory = await context.dataSource.driver.createSchemaBuilder().log();
 
-    const up = sqlInMemory.upQueries.map(
-        (query) => GenerateCommand.buildStatement(query.query, query.parameters, context.prettify),
+    const schema = context.schemaQualified === false ?
+        readSearchSchema(context.dataSource) :
+        undefined;
+
+    const build = (query: { query: string, parameters?: any[] }) => GenerateCommand.buildStatement(
+        schema ? removeSchemaQualifier(query.query, schema) : query.query,
+        query.parameters,
+        context.prettify,
     );
 
+    const up = sqlInMemory.upQueries.map(build);
+
     // the down statements undo the up statements and therefore run in reverse order.
-    const down = sqlInMemory.downQueries.map(
-        (query) => GenerateCommand.buildStatement(query.query, query.parameters, context.prettify),
-    ).reverse();
+    const down = sqlInMemory.downQueries.map(build).reverse();
 
     if (
         up.length === 0 &&
