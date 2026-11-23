@@ -20,6 +20,7 @@ import type { MigrationsInput } from '../../../../../src';
 import {
     MIGRATION_LOCK_NAME,
     MigrationBaseline,
+    planDatabaseMigrations,
     runDatabaseMigrations,
 } from '../../../../../src';
 import { withDatabaseLock } from '../../../../../src/database/lock/module';
@@ -525,5 +526,47 @@ describe('src/database/schema/migration/run', () => {
         expect(queryRunner.isReleased).toBe(false);
 
         await queryRunner.release();
+    });
+
+    it('mongodb without a baseline: plans and runs without hasTable', async () => {
+        const dataSource = dataSourceOf(databaseFile(), LEGACY);
+
+        await dataSource.initialize();
+
+        const queryRunner = dataSource.createQueryRunner();
+        const inserted: Record<string, unknown>[] = [];
+        const stored = [{ timestamp: 1700000000001, name: 'CreateWidget1700000000001' }];
+        const collection = {
+            insertOne: async (values: Record<string, unknown>) => {
+                inserted.push(values);
+            },
+        };
+
+        // the shape of typeorm's MongoQueryRunner, as far as the migration executor reaches
+        Object.assign(queryRunner, {
+            hasTable: async () => {
+                throw new Error('Check schema queries are not supported by MongoDB driver.');
+            },
+            cursor: () => ({ sort: () => ({ toArray: async () => stored }) }),
+            databaseConnection: { db: () => ({ collection: () => collection }) },
+        });
+        (dataSource.driver.options as { type: string }).type = 'mongodb';
+        vi.spyOn(dataSource.driver, 'createSchemaBuilder').mockReturnValue({} as never);
+
+        try {
+            const plan = await planDatabaseMigrations(dataSource, { queryRunner });
+
+            expect(names(plan.pending)).toEqual(['AddWidgetColor1700000000002']);
+
+            vi.spyOn(queryRunner, 'addColumn').mockResolvedValue(undefined);
+
+            const executed = await runDatabaseMigrations(dataSource, { queryRunner });
+
+            expect(names(executed)).toEqual(['AddWidgetColor1700000000002']);
+            expect(inserted).toEqual([{ timestamp: 1700000000002, name: 'AddWidgetColor1700000000002' }]);
+        } finally {
+            (dataSource.driver.options as { type: string }).type = 'better-sqlite3';
+            await queryRunner.release();
+        }
     });
 });

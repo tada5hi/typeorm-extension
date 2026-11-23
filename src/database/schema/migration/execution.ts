@@ -1,4 +1,4 @@
-import type { DataSource, Migration, QueryRunner } from 'typeorm';
+import type { DataSource, QueryRunner } from 'typeorm';
 import { MigrationExecutor } from 'typeorm';
 import { withDatabaseLock } from '../../lock';
 import { useInitializedDataSource } from '../utils';
@@ -12,24 +12,6 @@ import type { MigrationRunOptions } from './types';
 export class RunMigrationExecutor extends MigrationExecutor {
     async createMigrationsTable(queryRunner: QueryRunner): Promise<void> {
         await this.createMigrationsTableIfNotExist(queryRunner);
-    }
-
-    /**
-     * The executed rows, newest first. An absent table reads as empty and is not created.
-     */
-    async readExecuted(queryRunner: QueryRunner): Promise<Migration[]> {
-        const { driver, options } = queryRunner.connection;
-        const table = driver.buildTableName(
-            options.migrationsTableName ?? 'migrations',
-            (driver.options as { schema?: string }).schema,
-            driver.database,
-        );
-
-        if (!await queryRunner.hasTable(table)) {
-            return [];
-        }
-
-        return this.getExecutedMigrations();
     }
 }
 

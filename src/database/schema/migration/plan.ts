@@ -6,19 +6,6 @@ import { scanMigrationSource } from './source';
 import { listUserTableNames } from './tables';
 import type { MigrationPlan, MigrationPlanOptions } from './types';
 
-async function readExecuted(
-    dataSource: DataSource,
-    queryRunner: QueryRunner,
-    tableName: string,
-): Promise<Migration[]> {
-    // A missing migrations table reads as no rows.
-    if (!await queryRunner.hasTable(tableName)) {
-        return [];
-    }
-
-    return new MigrationExecutor(dataSource, queryRunner).getExecutedMigrations();
-}
-
 async function readUserTables(
     dataSource: DataSource,
     queryRunner: QueryRunner,
@@ -52,14 +39,8 @@ export async function planDatabaseMigrations(
     const queryRunner = options.queryRunner ?? dataSource.createQueryRunner();
 
     try {
-        const { driver } = dataSource;
-        const migrationsTable = driver.buildTableName(
-            dataSource.options.migrationsTableName ?? 'migrations',
-            (driver.options as { schema?: string }).schema,
-            driver.database,
-        );
-
-        const executed = await readExecuted(dataSource, queryRunner, migrationsTable);
+        // A missing migrations table reads as no rows (mongodb skips the check), nothing is created.
+        const executed = await new MigrationExecutor(dataSource, queryRunner).getExecutedMigrations();
         const executedNames = new Set(executed.map((row) => row.name));
         const withoutRow = (items: Migration[]) => items.filter((item) => !executedNames.has(item.name));
 

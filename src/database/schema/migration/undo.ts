@@ -13,8 +13,8 @@ async function execute(
     const source = await scanMigrationSource(dataSource, options);
     const executor = new RunMigrationExecutor(dataSource, queryRunner);
 
-    // newest first, by id
-    const [last] = await executor.readExecuted(queryRunner);
+    // newest first, by id; a missing table reads as empty and is not created
+    const [last] = await executor.getExecutedMigrations();
 
     if (!last) {
         return undefined;
