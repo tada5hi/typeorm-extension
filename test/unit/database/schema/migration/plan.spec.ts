@@ -1,3 +1,4 @@
+/* eslint-disable max-classes-per-file */
 import fs from 'node:fs';
 import path from 'node:path';
 import { DataSource } from 'typeorm';
@@ -8,7 +9,12 @@ import {
     it,
 } from 'vitest';
 import type { MigrationsInput } from '../../../../../src';
-import { MigrationPlanError, isMigrationPlanEmpty, planDatabaseMigrations } from '../../../../../src';
+import { 
+    MigrationBaseline, 
+    MigrationPlanError, 
+    isMigrationPlanEmpty, 
+    planDatabaseMigrations, 
+} from '../../../../../src';
 import { AddWidgetSize1700000000004 } from '../../../../data/typeorm/migration-baseline/add-widget-size';
 import { Baseline1700000000003 } from '../../../../data/typeorm/migration-baseline/baseline';
 import { AddWidgetColor1700000000002 } from '../../../../data/typeorm/migration-baseline/legacy/add-widget-color';
@@ -135,13 +141,49 @@ describe('src/database/schema/migration/plan', () => {
 
         await runWith(file, LEGACY);
 
+        class NoLegacyBaseline1700000000003 extends MigrationBaseline {
+            static override upgradeHint = 'Upgrade through the previous release first.';
+
+            async up(): Promise<void> {
+                // noop
+            }
+        }
+
+        const error = await planDatabaseMigrations(dataSourceOf(file, [NoLegacyBaseline1700000000003])).catch((e) => e);
+
+        expect(error).toBeInstanceOf(MigrationPlanError);
+        expect(error.message).toEqual(MigrationPlanError.legacyMissing(
+            'NoLegacyBaseline1700000000003',
+            'Upgrade through the previous release first.',
+        ).message);
+        expect(error.message).toContain('Upgrade through the previous release first.');
+    });
+
+    it('plans a fresh database with a baseline without legacy', async () => {
+        class NoLegacyBaseline1700000000003 extends MigrationBaseline {
+            async up(): Promise<void> {
+                // noop
+            }
+        }
+
+        const plan = await planDatabaseMigrations(
+            dataSourceOf(databaseFile(), [NoLegacyBaseline1700000000003, AddWidgetSize1700000000004]),
+        );
+
+        expect(names(plan.pending)).toEqual(['NoLegacyBaseline1700000000003', 'AddWidgetSize1700000000004']);
+    });
+
+    it('refuses legacy rows outside the declared chain', async () => {
+        const file = databaseFile();
+
+        await runWith(file, LEGACY);
+
         class OtherBaseline1700000000003 extends Baseline1700000000003 {
             static override legacy = ['test/data/typeorm/migration-baseline/legacy/create-widget.ts'];
         }
 
         const error = await planDatabaseMigrations(dataSourceOf(file, [OtherBaseline1700000000003])).catch((e) => e);
 
-        expect(error).toBeInstanceOf(MigrationPlanError);
         expect(error.message).toContain('AddWidgetColor1700000000002');
         expect(error.message).toContain('Upgrade through the previous release first.');
     });

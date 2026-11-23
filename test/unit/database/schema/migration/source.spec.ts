@@ -124,6 +124,17 @@ describe('src/database/schema/migration/source', () => {
         )).rejects.toMatchObject({ names: ['CreateWidget1700000000001'], message: /must not be part/ });
     });
 
+    it('a baseline without legacy scans with legacy undefined', async () => {
+        const Plain = namedBaseline('Plain1700000000003');
+        const source = await scanMigrationSource(dataSourceOf([Plain, AddWidgetSize1700000000004]));
+
+        expect(source.baseline?.name).toEqual('Plain1700000000003');
+        expect(source.legacy).toBeUndefined();
+
+        await expect(scanMigrationSource(dataSourceOf([named('Old1600000000000'), Plain])))
+            .rejects.toMatchObject({ message: MigrationPlanError.currentOlderThanBaseline(['Old1600000000000']).message });
+    });
+
     it('should refuse a legacy glob matching nothing', async () => {
         const Empty = namedBaseline('Empty1700000000003', ['test/data/typeorm/nothing/*.ts']);
 

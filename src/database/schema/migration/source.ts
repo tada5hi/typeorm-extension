@@ -125,36 +125,40 @@ export async function scanMigrationSource(
 
     const baseline = baselineMigration;
 
-    const legacyInstances = await buildInstances(
-        dataSource,
-        baselineClass.legacy,
-        options.pathResolver ?? createPathResolver({ mode: PathResolverMode.AUTO }),
-    );
+    let legacy: Migration[] | undefined;
 
-    if (legacyInstances.length === 0) {
-        throw MigrationPlanError.legacyEmpty(baseline.name);
+    if (baselineClass.legacy !== undefined) {
+        const legacyInstances = await buildInstances(
+            dataSource,
+            baselineClass.legacy,
+            options.pathResolver ?? createPathResolver({ mode: PathResolverMode.AUTO }),
+        );
+
+        if (legacyInstances.length === 0) {
+            throw MigrationPlanError.legacyEmpty(baseline.name);
+        }
+
+        legacy = sortMigrations(legacyInstances.map(toMigration));
+
+        const inList = legacy.filter((item) => current.some(
+            (migration) => migration.instance?.constructor === item.instance?.constructor,
+        ));
+
+        if (inList.length > 0) {
+            throw MigrationPlanError.legacyInList(inList.map((item) => item.name));
+        }
+
+        const notOlder = legacy.filter((item) => item.timestamp >= baseline.timestamp);
+
+        if (notOlder.length > 0) {
+            throw MigrationPlanError.legacyNotOlder(notOlder.map((item) => item.name));
+        }
     }
 
-    const legacy = sortMigrations(legacyInstances.map(toMigration));
-
-    const inList = legacy.filter((item) => current.some(
-        (migration) => migration.instance?.constructor === item.instance?.constructor,
-    ));
-
-    if (inList.length > 0) {
-        throw MigrationPlanError.legacyInList(inList.map((item) => item.name));
-    }
-
-    const duplicates = findDuplicates([...current, ...legacy].map((migration) => migration.name));
+    const duplicates = findDuplicates([...current, ...(legacy ?? [])].map((migration) => migration.name));
 
     if (duplicates.length > 0) {
         throw MigrationPlanError.duplicateNames(duplicates);
-    }
-
-    const notOlder = legacy.filter((item) => item.timestamp >= baseline.timestamp);
-
-    if (notOlder.length > 0) {
-        throw MigrationPlanError.legacyNotOlder(notOlder.map((item) => item.name));
     }
 
     const older = current.filter((item) => item !== baseline && item.timestamp < baseline.timestamp);

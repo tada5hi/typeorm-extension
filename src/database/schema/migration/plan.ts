@@ -106,7 +106,11 @@ export async function planDatabaseMigrations(
             };
         }
 
-        const legacy = source.legacy ?? [];
+        if (!source.legacy) {
+            throw MigrationPlanError.legacyMissing(baseline.name, source.upgradeHint);
+        }
+
+        const { legacy } = source;
         const legacyNames = new Set(legacy.map((item) => item.name));
         const unknown = executed.filter((row) => !legacyNames.has(row.name));
 
