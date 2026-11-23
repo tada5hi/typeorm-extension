@@ -3,6 +3,7 @@ import { MigrationExecutor } from 'typeorm';
 import { MigrationPlanError } from '../../../errors';
 import { useInitializedDataSource } from '../utils';
 import { scanMigrationSource } from './source';
+import { listUserTableNames } from './tables';
 import type { MigrationPlan, MigrationPlanOptions } from './types';
 
 async function readExecuted(
@@ -10,7 +11,7 @@ async function readExecuted(
     queryRunner: QueryRunner,
     tableName: string,
 ): Promise<Migration[]> {
-    // getExecutedMigrations() creates the table, so only ask when it exists.
+    // A missing migrations table reads as no rows.
     if (!await queryRunner.hasTable(tableName)) {
         return [];
     }
@@ -21,25 +22,19 @@ async function readExecuted(
 async function readUserTables(
     dataSource: DataSource,
     queryRunner: QueryRunner,
-    migrationsTable: string,
     ignoreTables: string[],
 ): Promise<string[]> {
-    const { driver, options } = dataSource;
-    const { schema } = (driver.options as { schema?: string });
+    const { options } = dataSource;
 
-    const metadataName = (options as { metadataTableName?: string }).metadataTableName ?? 'typeorm_metadata';
-    const skip = new Set<string>(ignoreTables);
+    const skip = new Set<string>([
+        ...ignoreTables,
+        options.migrationsTableName ?? 'migrations',
+        (options as { metadataTableName?: string }).metadataTableName ?? 'typeorm_metadata',
+    ]);
 
-    for (const name of [migrationsTable, metadataName]) {
-        skip.add(name);
-        skip.add(driver.buildTableName(name, schema, driver.database));
-    }
+    const names = await listUserTableNames(queryRunner);
 
-    const tables = await queryRunner.getTables();
-
-    return tables
-        .map((table) => table.name)
-        .filter((name) => !skip.has(name));
+    return names.filter((name) => !skip.has(name));
 }
 
 /**
@@ -81,7 +76,7 @@ export async function planDatabaseMigrations(
         }
 
         if (executed.length === 0) {
-            const tables = await readUserTables(dataSource, queryRunner, migrationsTable, options.ignoreTables ?? []);
+            const tables = await readUserTables(dataSource, queryRunner, options.ignoreTables ?? []);
 
             if (tables.length > 0) {
                 throw MigrationPlanError.populatedSchemaWithoutHistory(tables, source.upgradeHint);

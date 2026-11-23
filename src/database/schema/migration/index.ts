@@ -5,3 +5,4 @@ export * from './source';
 export * from './plan';
 export * from './run';
 export * from './undo';
+export * from './tables';

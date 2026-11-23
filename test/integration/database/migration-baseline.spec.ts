@@ -11,6 +11,7 @@ import {
 } from 'vitest';
 import {
     MigrationPlanError,
+    listUserTableNames,
     runDatabaseMigrations,
     undoDatabaseMigration,
 } from '../../../src';
@@ -40,6 +41,21 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
         created.push(dataSource);
 
         return dataSource;
+    }
+
+    // other specs leave their tables in the shared database
+    async function run(dataSource: DataSource) {
+        const queryRunner = dataSource.createQueryRunner();
+        let foreign: string[];
+
+        try {
+            foreign = (await listUserTableNames(queryRunner))
+                .filter((name) => name !== 'widget' && name !== 'migrations');
+        } finally {
+            await queryRunner.release();
+        }
+
+        return runDatabaseMigrations(dataSource, { ignoreTables: foreign });
     }
 
     async function drop() {
@@ -95,14 +111,14 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
     it('fresh install then later migration', async () => {
         const first = await open([Baseline1700000000003]);
 
-        await runDatabaseMigrations(first);
+        await run(first);
 
         expect(await names(first)).toEqual(['Baseline1700000000003']);
         expect(await columns(first)).toEqual(['color', 'id']);
 
         const second = await open(CURRENT);
 
-        await runDatabaseMigrations(second);
+        await run(second);
 
         expect(await names(second)).toEqual(['Baseline1700000000003', 'AddWidgetSize1700000000004']);
         expect(await columns(second)).toEqual(['color', 'id', 'size']);
@@ -115,7 +131,7 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
 
         const dataSource = await open(CURRENT);
 
-        await runDatabaseMigrations(dataSource);
+        await run(dataSource);
 
         expect(await names(dataSource)).toEqual([
             'CreateWidget1700000000001',
@@ -131,7 +147,7 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
 
         await legacy.runMigrations();
 
-        await runDatabaseMigrations(await open(CURRENT));
+        await run(await open(CURRENT));
 
         const before = await columns(await open([]));
 
@@ -149,7 +165,7 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
         const a = await open(CURRENT);
         const b = await open(CURRENT);
 
-        await Promise.all([runDatabaseMigrations(a), runDatabaseMigrations(b)]);
+        await Promise.all([run(a), run(b)]);
 
         const rows = await names(a);
 
@@ -164,14 +180,14 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
 
         await dataSource.query('CREATE TABLE widget (id INTEGER PRIMARY KEY)');
 
-        await expect(runDatabaseMigrations(dataSource)).rejects.toBeInstanceOf(MigrationPlanError);
-        await expect(runDatabaseMigrations(dataSource)).rejects.toThrow(/widget/);
+        await expect(run(dataSource)).rejects.toBeInstanceOf(MigrationPlanError);
+        await expect(run(dataSource)).rejects.toThrow(/widget/);
     });
 
     it('undo stops at the baseline', async () => {
         const dataSource = await open(CURRENT);
 
-        await runDatabaseMigrations(dataSource);
+        await run(dataSource);
 
         const reverted = await undoDatabaseMigration(dataSource);
 
