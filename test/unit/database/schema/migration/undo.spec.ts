@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { DataSource } from 'typeorm';
 import {
     afterEach,
@@ -74,6 +75,10 @@ async function readColumns(database: string, table: string): Promise<string[]> {
     return columns.map((column) => column.name);
 }
 
+class OptOut1700000000004 extends AddWidgetSize1700000000004 implements MigrationInterface {
+    transaction = false;
+}
+
 const LEGACY = [CreateWidget1700000000001, AddWidgetColor1700000000002];
 const CURRENT = [Baseline1700000000003, AddWidgetSize1700000000004];
 
@@ -135,7 +140,7 @@ describe('undoDatabaseMigration', () => {
         expect(await readNames(file)).toEqual(['CreateWidget1700000000001', 'AddWidgetColor1700000000002']);
     });
 
-    it('no baseline: same as dataSource.undoLastMigration', async () => {
+    it.each(['all', 'each', 'none'] as const)('no baseline: same as dataSource.undoLastMigration (%s)', async (transaction) => {
         const migrations = [CreateWidget1700000000001, AddWidgetColor1700000000002];
         const expected = databaseFile();
         const actual = databaseFile();
@@ -146,9 +151,9 @@ describe('undoDatabaseMigration', () => {
         const reference = dataSourceOf(expected, migrations);
 
         await reference.initialize();
-        await reference.undoLastMigration();
+        await reference.undoLastMigration({ transaction });
 
-        const reverted = await undoDatabaseMigration(dataSourceOf(actual, migrations));
+        const reverted = await undoDatabaseMigration(dataSourceOf(actual, migrations), { transaction });
 
         expect(reverted?.name).toEqual('AddWidgetColor1700000000002');
         expect(await readNames(actual)).toEqual(await readNames(expected));
@@ -163,5 +168,69 @@ describe('undoDatabaseMigration', () => {
         const tables = await query<{ name: string }>(file, 'SELECT name FROM sqlite_master WHERE type = \'table\'');
 
         expect(tables).toEqual([]);
+    });
+
+    it('runs the hooks around down() under none', async () => {
+        const file = databaseFile();
+
+        await runDatabaseMigrations(dataSourceOf(file, CURRENT));
+
+        const dataSource = dataSourceOf(file, CURRENT);
+
+        await dataSource.initialize();
+
+        const queryRunner = dataSource.createQueryRunner();
+        const before = vi.spyOn(queryRunner, 'beforeMigration');
+        const after = vi.spyOn(queryRunner, 'afterMigration');
+
+        await undoDatabaseMigration(dataSource, { queryRunner, transaction: 'none' });
+
+        expect(before).toHaveBeenCalledTimes(1);
+        expect(after).toHaveBeenCalledTimes(1);
+
+        await queryRunner.release();
+    });
+
+    it('reverts inside a transaction under all even when the migration opts out', async () => {
+        const file = databaseFile();
+        const migrations = [Baseline1700000000003, OptOut1700000000004];
+
+        await runDatabaseMigrations(dataSourceOf(file, migrations), { transaction: 'each' });
+
+        const dataSource = dataSourceOf(file, migrations);
+
+        await dataSource.initialize();
+
+        const queryRunner = dataSource.createQueryRunner();
+        const start = vi.spyOn(queryRunner, 'startTransaction');
+
+        const reverted = await undoDatabaseMigration(dataSource, { queryRunner, transaction: 'all' });
+
+        expect(reverted?.name).toEqual('OptOut1700000000004');
+        expect(start).toHaveBeenCalledTimes(1);
+
+        await queryRunner.release();
+    });
+
+    it('uses a given query runner without releasing it or taking the lock', async () => {
+        const file = databaseFile();
+
+        await runDatabaseMigrations(dataSourceOf(file, CURRENT));
+
+        const dataSource = dataSourceOf(file, CURRENT);
+
+        await dataSource.initialize();
+
+        const queryRunner = dataSource.createQueryRunner();
+        const release = vi.spyOn(queryRunner, 'release');
+        const create = vi.spyOn(dataSource, 'createQueryRunner');
+
+        await undoDatabaseMigration(dataSource, { queryRunner });
+
+        expect(release).not.toHaveBeenCalled();
+        expect(create).not.toHaveBeenCalled();
+        expect(queryRunner.isReleased).toBe(false);
+
+        await queryRunner.release();
     });
 });

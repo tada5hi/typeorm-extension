@@ -1,7 +1,7 @@
 import type { DataSource, Migration, QueryRunner } from 'typeorm';
 import { TypeORMError } from 'typeorm';
 import { MigrationPlanError } from '../../../errors';
-import { RunMigrationExecutor, withMigrationRunner, withTransaction } from './execution';
+import { RunMigrationExecutor, withMigrationRunner } from './execution';
 import { scanMigrationSource } from './source';
 import type { MigrationUndoOptions } from './types';
 
@@ -34,14 +34,35 @@ async function execute(
         );
     }
 
-    const mode = options.transaction ?? dataSource.options.migrationsTransactionMode ?? 'all';
+    // Mirrors typeorm's undoLastMigration: the mode is the option or 'all', never the data source's.
+    const mode = options.transaction ?? 'all';
+    let started = false;
 
-    await executor.createMigrationsTable(queryRunner);
+    if (mode !== 'none' && !queryRunner.isTransactionActive) {
+        await queryRunner.startTransaction();
+        started = true;
+    }
 
-    await withTransaction(queryRunner, target.instance?.transaction ?? mode !== 'none', async () => {
+    try {
+        await queryRunner.beforeMigration();
         await target.instance?.down(queryRunner);
+        await queryRunner.afterMigration();
         await executor.deleteMigration(last);
-    });
+
+        if (started) {
+            await queryRunner.commitTransaction();
+        }
+    } catch (e) {
+        if (started) {
+            try {
+                await queryRunner.rollbackTransaction();
+            } catch {
+                // the original error matters more
+            }
+        }
+
+        throw e;
+    }
 
     return target;
 }
