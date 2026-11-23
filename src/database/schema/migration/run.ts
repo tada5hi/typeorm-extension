@@ -10,10 +10,28 @@ async function execute(
     options: MigrationRunOptions,
 ): Promise<Migration[]> {
     const plan = await planDatabaseMigrations(dataSource, { ...options, queryRunner });
+    const { logger } = dataSource;
 
+    // The messages mirror typeorm's executePendingMigrations.
     if (isMigrationPlanEmpty(plan)) {
+        logger.logSchemaBuild('No migrations are pending');
+
         return [];
     }
+
+    const last = plan.executed.reduce<Migration | undefined>(
+        (latest, row) => (!latest || row.timestamp > latest.timestamp ? row : latest),
+        undefined,
+    );
+
+    logger.logSchemaBuild(`${plan.executed.length} migrations are already loaded in the database.`);
+    logger.logSchemaBuild(`${plan.source.current.length} migrations were found in the source code.`);
+
+    if (last) {
+        logger.logSchemaBuild(`${last.name} is the last executed migration. It was executed on ${new Date(last.timestamp).toString()}.`);
+    }
+
+    logger.logSchemaBuild(`${plan.legacy.length + plan.pending.length} migrations are new migrations must be executed.`);
 
     const mode = options.transaction ?? dataSource.options.migrationsTransactionMode ?? 'all';
 
@@ -22,7 +40,11 @@ async function execute(
             .filter((migration) => migration.instance?.transaction !== undefined);
 
         if (overriding.length > 0) {
-            throw new ForbiddenTransactionModeOverrideError(overriding);
+            const error = new ForbiddenTransactionModeOverrideError(overriding);
+
+            logger.logMigration(`Migrations failed, error: ${error.message}`);
+
+            throw error;
         }
     }
 
@@ -42,10 +64,24 @@ async function execute(
 
     // beforeMigration / afterMigration run only around a transaction started here, as in typeorm.
     const run = async (migration: Migration) => {
-        await migration.instance?.up(queryRunner);
-        await executor.insertMigration(migration);
+        try {
+            await migration.instance?.up(queryRunner);
+            await executor.insertMigration(migration);
+        } catch (e) {
+            logger.logMigration(`Migration "${migration.name}" failed, error: ${(e as Error | undefined)?.message}`);
+
+            throw e;
+        }
 
         executed.push(migration);
+
+        logger.logSchemaBuild(`Migration ${migration.name} has been executed successfully.`);
+    };
+
+    const adopt = async (baseline: Migration) => {
+        await executor.insertMigration(baseline);
+
+        logger.logSchemaBuild(`Baseline ${baseline.name} has been recorded as executed, adopting the legacy migrations.`);
     };
 
     if (mode === 'all') {
@@ -56,7 +92,7 @@ async function execute(
                 }
 
                 if (marker) {
-                    await executor.insertMigration(marker);
+                    await adopt(marker);
                 }
             });
         }
@@ -79,7 +115,7 @@ async function execute(
     }
 
     if (marker) {
-        await withTransaction(queryRunner, fallback, () => executor.insertMigration(marker));
+        await withTransaction(queryRunner, fallback, () => adopt(marker));
     }
 
     for (const migration of plan.pending) {

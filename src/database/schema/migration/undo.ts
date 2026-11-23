@@ -14,9 +14,14 @@ async function execute(
     const executor = new RunMigrationExecutor(dataSource, queryRunner);
 
     // newest first, by id; a missing table reads as empty and is not created
-    const [last] = await executor.getExecutedMigrations();
+    const executed = await executor.getExecutedMigrations();
+    const [last] = executed;
+    const { logger } = dataSource;
 
+    // The messages mirror typeorm's undoLastMigration.
     if (!last) {
+        logger.logSchemaBuild('No migrations were found in the database. Nothing to revert!');
+
         return undefined;
     }
 
@@ -34,6 +39,10 @@ async function execute(
         );
     }
 
+    logger.logSchemaBuild(`${executed.length} migrations are already loaded in the database.`);
+    logger.logSchemaBuild(`${last.name} is the last executed migration. It was executed on ${new Date(last.timestamp).toString()}.`);
+    logger.logSchemaBuild('Now reverting it...');
+
     // Mirrors typeorm's undoLastMigration: the mode is the option or 'all', never the data source's.
     const mode = options.transaction ?? 'all';
     let started = false;
@@ -48,6 +57,8 @@ async function execute(
         await target.instance?.down(queryRunner);
         await queryRunner.afterMigration();
         await executor.deleteMigration(last);
+
+        logger.logSchemaBuild(`Migration ${target.name} has been reverted successfully.`);
 
         if (started) {
             await queryRunner.commitTransaction();

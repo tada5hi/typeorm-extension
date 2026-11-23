@@ -23,6 +23,7 @@ import {
     MigrationPlanError,
     planDatabaseMigrations,
     runDatabaseMigrations,
+    undoDatabaseMigration,
 } from '../../../../../src';
 import { withDatabaseLock } from '../../../../../src/database/lock/module';
 import type * as LockModule from '../../../../../src/database/lock/module';
@@ -684,5 +685,84 @@ describe('src/database/schema/migration/run with a second baseline', () => {
         expect(names(executed)).toEqual(['SecondBaseline1700000000005']);
         expect(names(await readRows(file))).toEqual(['SecondBaseline1700000000005']);
         expect(await readColumns(file, 'widget')).toEqual(['id', 'color', 'size']);
+    });
+});
+
+describe('src/database/schema/migration/run logging', () => {
+    type Line = [string, string];
+
+    function recordingDataSource(database: string, migrations: MigrationsInput, lines: Line[]): DataSource {
+        const record = (kind: string) => (message: string) => {
+            lines.push([kind, message]);
+        };
+
+        const dataSource = new DataSource({
+            type: 'better-sqlite3',
+            database,
+            migrations,
+            logger: {
+                logQuery: () => undefined,
+                logQueryError: () => undefined,
+                logQuerySlow: () => undefined,
+                logSchemaBuild: record('schema'),
+                logMigration: record('migration'),
+                log: () => undefined,
+            },
+        });
+
+        created.push(dataSource);
+
+        return dataSource;
+    }
+
+    it('logs what typeorm logs, plus the lock wait and the adoption', async () => {
+        const file = databaseFile();
+
+        await runWith(file, LEGACY);
+
+        const lines: Line[] = [];
+
+        await runDatabaseMigrations(recordingDataSource(file, CURRENT, lines));
+
+        expect(lines).toContainEqual(['schema', `Waiting for the database lock ${MIGRATION_LOCK_NAME}.`]);
+        expect(lines).toContainEqual(['schema', '2 migrations are already loaded in the database.']);
+        expect(lines).toContainEqual(['schema', '1 migrations are new migrations must be executed.']);
+        expect(lines).toContainEqual(['schema', 'Baseline Baseline1700000000003 has been recorded as executed, adopting the legacy migrations.']);
+        expect(lines).toContainEqual(['schema', 'Migration AddWidgetSize1700000000004 has been executed successfully.']);
+
+        lines.length = 0;
+
+        await runDatabaseMigrations(recordingDataSource(file, CURRENT, lines), { lock: false });
+
+        expect(lines).toEqual([['schema', 'No migrations are pending']]);
+    });
+
+    it('logs a failing migration', async () => {
+        const lines: Line[] = [];
+
+        await expect(runDatabaseMigrations(
+            recordingDataSource(databaseFile(), [Baseline1700000000003, FailingPending1700000000004], lines),
+            { lock: false },
+        )).rejects.toThrow('failing pending migration');
+
+        expect(lines).toContainEqual(['migration', 'Migration "FailingPending1700000000004" failed, error: failing pending migration']);
+    });
+
+    it('logs a revert', async () => {
+        const file = databaseFile();
+        const lines: Line[] = [];
+
+        await undoDatabaseMigration(recordingDataSource(file, CURRENT, lines), { lock: false });
+
+        expect(lines).toEqual([['schema', 'No migrations were found in the database. Nothing to revert!']]);
+
+        await runDatabaseMigrations(dataSourceOf(file, CURRENT));
+
+        lines.length = 0;
+
+        await undoDatabaseMigration(recordingDataSource(file, CURRENT, lines), { lock: false });
+
+        expect(lines).toContainEqual(['schema', 'Now reverting it...']);
+        expect(lines).toContainEqual(['schema', 'Migration AddWidgetSize1700000000004 has been reverted successfully.']);
     });
 });

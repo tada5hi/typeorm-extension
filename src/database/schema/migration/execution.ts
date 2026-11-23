@@ -96,7 +96,11 @@ export async function withMigrationRunner<T>(
             return await run();
         }
 
-        return await withDatabaseLock(queryRunner, options.lock ?? MIGRATION_LOCK_NAME, run, { strict: false });
+        const name = options.lock ?? MIGRATION_LOCK_NAME;
+
+        dataSource.logger.logSchemaBuild(`Waiting for the database lock ${name}.`);
+
+        return await withDatabaseLock(queryRunner, name, run, { strict: false });
     } finally {
         await queryRunner.release();
     }
