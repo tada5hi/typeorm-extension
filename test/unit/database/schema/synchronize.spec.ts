@@ -66,19 +66,51 @@ describe('src/database/schema/synchronize with baselines', () => {
 
         await dataSource.initialize();
 
-        const rows = await dataSource.query('SELECT name FROM migrations ORDER BY id');
+        try {
+            const rows = await dataSource.query('SELECT name FROM migrations ORDER BY id');
 
-        await dataSource.destroy();
+            return rows.map((row: { name: string }) => row.name);
+        } finally {
+            await dataSource.destroy();
+        }
+    }
 
-        return rows.map((row: { name: string }) => row.name);
+    async function readTables(database: string): Promise<string[]> {
+        const dataSource = new DataSource(optionsOf(database, []));
+
+        await dataSource.initialize();
+
+        try {
+            const rows = await dataSource.query('SELECT name FROM sqlite_master WHERE type = \'table\' ORDER BY name');
+
+            return rows.map((row: { name: string }) => row.name);
+        } finally {
+            await dataSource.destroy();
+        }
     }
 
     async function seedLegacy(database: string) {
         const dataSource = new DataSource(optionsOf(database, [CreateWidget1700000000001, AddWidgetColor1700000000002]));
 
         await dataSource.initialize();
-        await dataSource.runMigrations();
-        await dataSource.destroy();
+
+        try {
+            await dataSource.runMigrations();
+        } finally {
+            await dataSource.destroy();
+        }
+    }
+
+    async function seedForeignTable(database: string) {
+        const seed = new DataSource(optionsOf(database, []));
+
+        await seed.initialize();
+
+        try {
+            await seed.query('CREATE TABLE foreign_table (id integer)');
+        } finally {
+            await seed.destroy();
+        }
     }
 
     afterEach(() => {
@@ -139,13 +171,46 @@ describe('src/database/schema/synchronize with baselines', () => {
         ]);
     });
 
+    it.each(['synchronize', 'dropSchema'] as const)('refuses %s on a baseline project before initializing (options)', async (flag) => {
+        const file = databaseFile();
+
+        await seedForeignTable(file);
+
+        const error = await synchronizeDatabaseSchema({ ...optionsOf(file, CURRENT), [flag]: true }).catch((e) => e);
+
+        expect(error).toBeInstanceOf(MigrationPlanError);
+        expect(error.names).toEqual([flag]);
+        expect(await readTables(file)).toEqual(['foreign_table']);
+    });
+
+    it.each(['synchronize', 'dropSchema'] as const)('refuses %s on a baseline project before initializing (instance)', async (flag) => {
+        const file = databaseFile();
+
+        await seedForeignTable(file);
+
+        const dataSource = new DataSource({ ...optionsOf(file, CURRENT), [flag]: true });
+        const error = await synchronizeDatabaseSchema(dataSource).catch((e) => e);
+
+        expect(error).toBeInstanceOf(MigrationPlanError);
+        expect(dataSource.isInitialized).toBe(false);
+        expect(await readTables(file)).toEqual(['foreign_table']);
+    });
+
+    it('still initializes with synchronize on a project without a baseline', async () => {
+        const file = databaseFile();
+
+        const executed = await synchronizeDatabaseSchema({
+            ...optionsOf(file, [CreateWidget1700000000001]),
+            synchronize: true,
+        });
+
+        expect(executed.map((item) => item.name)).toEqual(['CreateWidget1700000000001']);
+    });
+
     it('destroys its own data source when the runner refuses', async () => {
         const file = databaseFile();
-        const seed = new DataSource(optionsOf(file, []));
 
-        await seed.initialize();
-        await seed.query('CREATE TABLE foreign_table (id integer)');
-        await seed.destroy();
+        await seedForeignTable(file);
 
         const initialize = vi.spyOn(DataSource.prototype, 'initialize');
         const destroy = vi.spyOn(DataSource.prototype, 'destroy');
@@ -167,11 +232,8 @@ describe('src/database/schema/synchronize with baselines', () => {
 
     it('passes ignoreTables to the runner', async () => {
         const file = databaseFile();
-        const seed = new DataSource(optionsOf(file, []));
 
-        await seed.initialize();
-        await seed.query('CREATE TABLE foreign_table (id integer)');
-        await seed.destroy();
+        await seedForeignTable(file);
 
         const executed = await synchronizeDatabaseSchema(optionsOf(file, CURRENT), { ignoreTables: ['foreign_table'] });
 
