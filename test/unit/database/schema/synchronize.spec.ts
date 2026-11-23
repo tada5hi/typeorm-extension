@@ -3,14 +3,15 @@ import path from 'node:path';
 import type { DataSourceOptions } from 'typeorm';
 import { DataSource } from 'typeorm';
 import {
-    afterEach, 
-    describe, 
-    expect, 
+    afterEach,
+    describe,
+    expect,
     it,
+    vi,
 } from 'vitest';
 import type { MigrationsInput } from '../../../../src';
 import * as lib from '../../../../src';
-import { createDatabase, synchronizeDatabaseSchema } from '../../../../src';
+import { MigrationPlanError, createDatabase, synchronizeDatabaseSchema } from '../../../../src';
 import { AddWidgetSize1700000000004 } from '../../../data/typeorm/migration-baseline/add-widget-size';
 import { Baseline1700000000003 } from '../../../data/typeorm/migration-baseline/baseline';
 import { AddWidgetColor1700000000002 } from '../../../data/typeorm/migration-baseline/legacy/add-widget-color';
@@ -111,6 +112,70 @@ describe('src/database/schema/synchronize with baselines', () => {
             'Baseline1700000000003',
             'AddWidgetSize1700000000004',
         ]);
+    });
+
+    it('adopts through an uninitialized instance with migrationsRun, bypassing typeorm\'s runner', async () => {
+        const file = databaseFile();
+
+        await seedLegacy(file);
+
+        const dataSource = new DataSource({ ...optionsOf(file, CURRENT), migrationsRun: true });
+
+        try {
+            const executed = await synchronizeDatabaseSchema(dataSource, { lock: false });
+
+            expect(executed.map((item) => item.name)).toEqual(['AddWidgetSize1700000000004']);
+        } finally {
+            if (dataSource.isInitialized) {
+                await dataSource.destroy();
+            }
+        }
+
+        expect(await readNames(file)).toEqual([
+            'CreateWidget1700000000001',
+            'AddWidgetColor1700000000002',
+            'Baseline1700000000003',
+            'AddWidgetSize1700000000004',
+        ]);
+    });
+
+    it('destroys its own data source when the runner refuses', async () => {
+        const file = databaseFile();
+        const seed = new DataSource(optionsOf(file, []));
+
+        await seed.initialize();
+        await seed.query('CREATE TABLE foreign_table (id integer)');
+        await seed.destroy();
+
+        const initialize = vi.spyOn(DataSource.prototype, 'initialize');
+        const destroy = vi.spyOn(DataSource.prototype, 'destroy');
+
+        try {
+            const error = await synchronizeDatabaseSchema(optionsOf(file, CURRENT)).catch((e) => e);
+
+            expect(error).toBeInstanceOf(MigrationPlanError);
+
+            const owned = initialize.mock.contexts[0] as DataSource;
+
+            expect(owned.isInitialized).toBe(false);
+            expect(destroy.mock.contexts).toContain(owned);
+        } finally {
+            initialize.mockRestore();
+            destroy.mockRestore();
+        }
+    });
+
+    it('passes ignoreTables to the runner', async () => {
+        const file = databaseFile();
+        const seed = new DataSource(optionsOf(file, []));
+
+        await seed.initialize();
+        await seed.query('CREATE TABLE foreign_table (id integer)');
+        await seed.destroy();
+
+        const executed = await synchronizeDatabaseSchema(optionsOf(file, CURRENT), { ignoreTables: ['foreign_table'] });
+
+        expect(executed.map((item) => item.name)).toEqual(['Baseline1700000000003', 'AddWidgetSize1700000000004']);
     });
 
     it('createDatabase({ synchronize: true }) adopts', async () => {

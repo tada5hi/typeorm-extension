@@ -5,33 +5,36 @@ import { useInitializedDataSource } from './utils';
 
 export async function synchronizeDatabaseSchema(
     input: DataSource | DataSourceOptions,
-    options: Pick<MigrationRunOptions, 'transaction' | 'lock'> = {},
+    options: Pick<MigrationRunOptions, 'transaction' | 'lock' | 'ignoreTables'> = {},
 ) : Promise<Migration[]> {
-    const { dataSource, owned } = await useInitializedDataSource(input);
-    const { options: dataSourceOptions } = dataSource;
+    // typeorm's own runner in initialize() knows no baselines and takes no lock.
+    const { dataSource, owned } = await useInitializedDataSource(input, { migrationsRun: false });
 
-    let migrationsCount = 0;
+    try {
+        const { options: dataSourceOptions } = dataSource;
 
-    if (dataSourceOptions.migrations) {
-        migrationsCount = Array.isArray(dataSourceOptions.migrations) ?
-            dataSourceOptions.migrations.length :
-            Object.keys(dataSourceOptions.migrations).length;
-    }
+        let migrationsCount = 0;
 
-    let migrations : Migration[] = [];
+        if (dataSourceOptions.migrations) {
+            migrationsCount = Array.isArray(dataSourceOptions.migrations) ?
+                dataSourceOptions.migrations.length :
+                Object.keys(dataSourceOptions.migrations).length;
+        }
 
-    if (migrationsCount > 0) {
-        migrations = await runDatabaseMigrations(dataSource, {
-            transaction: options.transaction,
-            lock: options.lock,
-        });
-    } else {
+        if (migrationsCount > 0) {
+            return await runDatabaseMigrations(dataSource, {
+                transaction: options.transaction,
+                lock: options.lock,
+                ignoreTables: options.ignoreTables,
+            });
+        }
+
         await dataSource.synchronize(false);
-    }
 
-    if (owned) {
-        await dataSource.destroy();
+        return [];
+    } finally {
+        if (owned) {
+            await dataSource.destroy();
+        }
     }
-
-    return migrations;
 }
