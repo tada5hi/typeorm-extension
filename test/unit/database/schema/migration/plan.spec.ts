@@ -98,7 +98,7 @@ describe('src/database/schema/migration/plan', () => {
 
         expect(error).toBeInstanceOf(MigrationPlanError);
         expect(error.message).toContain('foreign_table');
-        expect(error.message).toContain('Upgrade through the previous release first.');
+        expect(error.message).not.toContain('Upgrade through the previous release first.');
     });
 
     it('baseline row: pending only later ones', async () => {
@@ -159,6 +159,7 @@ describe('src/database/schema/migration/plan', () => {
             'Upgrade through the previous release first.',
         ).message);
         expect(error.message).toContain('Upgrade through the previous release first.');
+        expect(error.message).toContain('no longer carries the legacy migrations');
     });
 
     it('plans a fresh database with a baseline without legacy', async () => {

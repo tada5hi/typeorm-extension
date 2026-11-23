@@ -31,7 +31,8 @@ async function execute(
         throw MigrationPlanError.baselineIrreversible(baseline.name);
     }
 
-    const target = [...source.current, ...(source.legacy ?? [])].find((item) => item.name === last.name);
+    // a row of the legacy chain is older than the baseline and refused above
+    const target = source.current.find((item) => item.name === last.name);
 
     if (!target) {
         throw new TypeORMError(

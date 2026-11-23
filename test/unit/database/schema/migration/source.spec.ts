@@ -2,13 +2,14 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { describe, expect, it } from 'vitest';
 import type { MigrationsInput } from '../../../../../src';
+import { TypeORMError } from 'typeorm';
 import {
     MigrationBaseline,
     MigrationPlanError,
     PathResolverMode,
     createPathResolver,
-    scanMigrationSource,
 } from '../../../../../src';
+import { scanMigrationSource } from '../../../../../src/database/schema/migration/source';
 import { createDataSource } from '../../../../data/typeorm/factory';
 import { AddWidgetSize1700000000004 } from '../../../../data/typeorm/migration-baseline/add-widget-size';
 import { Baseline1700000000003 } from '../../../../data/typeorm/migration-baseline/baseline';
@@ -86,9 +87,7 @@ describe('src/database/schema/migration/source', () => {
     });
 
     it('should refuse a migration declaring baseline properties without being a baseline', async () => {
-        class WithLegacy1700000000005 implements MigrationInterface {
-            static legacy = [CreateWidget1700000000001];
-
+        class Plain1700000000005 implements MigrationInterface {
             async up(): Promise<void> {
                 // noop
             }
@@ -98,15 +97,15 @@ describe('src/database/schema/migration/source', () => {
             }
         }
 
-        class WithHint1700000000005 extends WithLegacy1700000000005 {
-            static override legacy = undefined;
+        class WithLegacy1700000000005 extends Plain1700000000005 {
+            static legacy = [CreateWidget1700000000001];
+        }
 
+        class WithHint1700000000005 extends Plain1700000000005 {
             static upgradeHint = 'Upgrade first.';
         }
 
-        class WithFlag1700000000005 extends WithLegacy1700000000005 {
-            static override legacy = undefined;
-
+        class WithFlag1700000000005 extends Plain1700000000005 {
             static baseline = 'yes';
         }
 
@@ -114,6 +113,13 @@ describe('src/database/schema/migration/source', () => {
             await expect(scanMigrationSource(dataSourceOf([AddWidgetSize1700000000004, Class])))
                 .rejects.toMatchObject({ message: MigrationPlanError.baselineMalformed(Class.name).message });
         }
+    });
+
+    it('should refuse a migration name without a timestamp like typeorm', async () => {
+        const error = await scanMigrationSource(dataSourceOf([named('NoTimestamp')])).catch((e) => e);
+
+        expect(error).toBeInstanceOf(TypeORMError);
+        expect(error.message).toContain('NoTimestamp migration name is wrong');
     });
 
     it('should return current only without a baseline', async () => {
@@ -196,6 +202,9 @@ describe('src/database/schema/migration/source', () => {
         await expect(scanMigrationSource(
             dataSourceOf([Baseline1700000000003], 'mongodb'),
         )).rejects.toMatchObject({ message: MigrationPlanError.driverNotSupported('mongodb').message });
+
+        expect(MigrationPlanError.driverNotSupported('mongodb').message)
+            .toContain('needs the empty-schema check, which is not available for the mongodb driver');
     });
 
     it('should resolve the legacy globs through the path resolver', async () => {

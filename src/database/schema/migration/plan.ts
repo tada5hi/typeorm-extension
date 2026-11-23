@@ -61,7 +61,7 @@ export async function planDatabaseMigrations(
             const tables = await readUserTables(dataSource, queryRunner, options.ignoreTables ?? []);
 
             if (tables.length > 0) {
-                throw MigrationPlanError.populatedSchemaWithoutHistory(tables, source.upgradeHint);
+                throw MigrationPlanError.populatedSchemaWithoutHistory(tables);
             }
 
             return {

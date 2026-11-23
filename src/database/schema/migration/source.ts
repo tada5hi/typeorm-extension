@@ -1,4 +1,4 @@
-import { Migration } from 'typeorm';
+import { Migration, TypeORMError } from 'typeorm';
 import type { DataSource, MigrationInterface } from 'typeorm';
 import { importClassesFromDirectories } from 'typeorm/util/DirectoryExportedClassesLoader';
 import { MigrationPlanError } from '../../../errors';
@@ -56,7 +56,7 @@ function toMigration(instance: MigrationInterface): Migration {
     const timestamp = parseInt(name.slice(-13), 10);
 
     if (!timestamp || Number.isNaN(timestamp)) {
-        throw new Error(`${name} migration name is wrong. Migration class name should have a JavaScript timestamp appended.`);
+        throw new TypeORMError(`${name} migration name is wrong. Migration class name should have a JavaScript timestamp appended.`);
     }
 
     return new Migration(undefined, timestamp, name, instance);

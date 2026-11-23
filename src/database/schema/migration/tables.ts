@@ -1,6 +1,5 @@
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
 import { MigrationPlanError } from '../../../errors';
-import type { UserTablesStatement } from './types';
 
 /**
  * The statement listing the base tables of the current schema (database for mysql),
@@ -9,7 +8,7 @@ import type { UserTablesStatement } from './types';
 export function buildUserTablesStatement(
     type: DataSourceOptions['type'],
     schema?: string,
-): UserTablesStatement | undefined {
+): { sql: string, parameters: string[] } | undefined {
     switch (type) {
         case 'postgres':
         case 'cockroachdb': {

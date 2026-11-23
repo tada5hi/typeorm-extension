@@ -218,5 +218,7 @@ describe('export surface', () => {
         expect(lib).not.toHaveProperty('withTransaction');
         expect(lib).not.toHaveProperty('listUserTableNames');
         expect(lib).not.toHaveProperty('buildUserTablesStatement');
+        expect(lib).not.toHaveProperty('scanMigrationSource');
+        expect(lib).not.toHaveProperty('useMigrationDataSource');
     });
 });

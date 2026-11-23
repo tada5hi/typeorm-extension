@@ -85,8 +85,3 @@ export type MigrationRunOptions = MigrationPlanOptions & {
 };
 
 export type MigrationUndoOptions = Omit<MigrationRunOptions, 'baseline' | 'ignoreTables'>;
-
-export type UserTablesStatement = {
-    sql: string,
-    parameters: string[]
-};

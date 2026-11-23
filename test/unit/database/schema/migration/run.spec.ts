@@ -661,7 +661,7 @@ describe('src/database/schema/migration/run with a second baseline', () => {
         const file = databaseFile();
 
         await runWith(file, [AddWidgetSize1700000000004].map((Class) => class AddWidgetSize1700000000004 extends Class {
-            async up(): Promise<void> {
+            override async up(): Promise<void> {
                 // the table is not there, only the row matters
             }
         }));

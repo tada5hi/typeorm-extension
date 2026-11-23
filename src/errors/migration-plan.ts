@@ -68,12 +68,9 @@ export class MigrationPlanError extends TypeormExtensionError {
         );
     }
 
-    static populatedSchemaWithoutHistory(tables: string[], hint?: string) {
+    static populatedSchemaWithoutHistory(tables: string[]) {
         return new MigrationPlanError(
-            withHint(
-                `The schema holds tables but no migration history: ${tables.join(', ')}.`,
-                hint,
-            ),
+            `The schema holds tables but no migration history: ${tables.join(', ')}.`,
             tables,
         );
     }
@@ -91,7 +88,8 @@ export class MigrationPlanError extends TypeormExtensionError {
     static legacyMissing(name: string, hint?: string) {
         return new MigrationPlanError(
             withHint(
-                `The legacy migrations of the baseline migration ${name} have not all been executed.`,
+                `The database needs the legacy migrations of the baseline migration ${name}, ` +
+                'but this release no longer carries the legacy migrations.',
                 hint,
             ),
             [name],
@@ -115,7 +113,7 @@ export class MigrationPlanError extends TypeormExtensionError {
 
     static driverNotSupported(type: string) {
         return new MigrationPlanError(
-            `The migration runner does not support the ${type} driver.`,
+            `A baseline migration needs the empty-schema check, which is not available for the ${type} driver.`,
             [type],
         );
     }
