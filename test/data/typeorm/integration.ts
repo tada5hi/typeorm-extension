@@ -88,6 +88,14 @@ export function supportsDatabaseLock(driver?: IntegrationDriver) : boolean {
 }
 
 /**
+ * Whether the migration runner (and its baselines) can run on the driver:
+ * everything with a relational schema.
+ */
+export function supportsMigrationBaseline(driver?: IntegrationDriver) : boolean {
+    return !!driver && driver !== 'mongodb';
+}
+
+/**
  * Whether withLockedEntity can lock a row on the driver
  * (typeorm emits FOR UPDATE, or an UPDLOCK hint on mssql).
  */
