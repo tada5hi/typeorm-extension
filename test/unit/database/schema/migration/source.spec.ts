@@ -3,10 +3,10 @@ import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { describe, expect, it } from 'vitest';
 import type { MigrationsInput } from '../../../../../src';
 import {
-    MigrationBaseline, 
-    MigrationPlanError, 
-    PathResolverMode, 
-    createPathResolver, 
+    MigrationBaseline,
+    MigrationPlanError,
+    PathResolverMode,
+    createPathResolver,
     scanMigrationSource,
 } from '../../../../../src';
 import { createDataSource } from '../../../../data/typeorm/factory';
@@ -17,9 +17,9 @@ import { CreateWidget1700000000001 } from '../../../../data/typeorm/migration-ba
 
 function dataSourceOf(migrations: MigrationsInput, type: string = 'better-sqlite3') {
     const dataSource = createDataSource({
-        type: 'better-sqlite3', 
-        database: ':memory:', 
-        migrations, 
+        type: 'better-sqlite3',
+        database: ':memory:',
+        migrations,
     } as any);
 
     (dataSource.options as any).type = type;
@@ -66,15 +66,54 @@ describe('src/database/schema/migration/source', () => {
         expect(source.current[0].id).toBeUndefined();
     });
 
-    it('should prefer an explicit baseline over discovery', async () => {
-        const Other = namedBaseline('Other1700000000006', []);
+    it('should accept an explicit baseline', async () => {
         const source = await scanMigrationSource(
-            dataSourceOf([Other, Baseline1700000000003]),
+            dataSourceOf([AddWidgetSize1700000000004, Baseline1700000000003]),
             { baseline: Baseline1700000000003 },
         );
 
         expect(source.baseline?.name).toEqual('Baseline1700000000003');
         expect(source.legacy).toHaveLength(2);
+    });
+
+    it('should refuse two baselines even with an explicit one', async () => {
+        const Other = namedBaseline('Other1700000000006', []);
+
+        await expect(scanMigrationSource(
+            dataSourceOf([Other, Baseline1700000000003]),
+            { baseline: Baseline1700000000003 },
+        )).rejects.toMatchObject({ message: MigrationPlanError.multipleBaselines(['Baseline1700000000003', 'Other1700000000006']).message });
+    });
+
+    it('should refuse a migration declaring baseline properties without being a baseline', async () => {
+        class WithLegacy1700000000005 implements MigrationInterface {
+            static legacy = [CreateWidget1700000000001];
+
+            async up(): Promise<void> {
+                // noop
+            }
+
+            async down(): Promise<void> {
+                // noop
+            }
+        }
+
+        class WithHint1700000000005 extends WithLegacy1700000000005 {
+            static override legacy = undefined;
+
+            static upgradeHint = 'Upgrade first.';
+        }
+
+        class WithFlag1700000000005 extends WithLegacy1700000000005 {
+            static override legacy = undefined;
+
+            static baseline = 'yes';
+        }
+
+        for (const Class of [WithLegacy1700000000005, WithHint1700000000005, WithFlag1700000000005]) {
+            await expect(scanMigrationSource(dataSourceOf([AddWidgetSize1700000000004, Class])))
+                .rejects.toMatchObject({ message: MigrationPlanError.baselineMalformed(Class.name).message });
+        }
     });
 
     it('should return current only without a baseline', async () => {
@@ -170,10 +209,10 @@ describe('src/database/schema/migration/source', () => {
         // the source glob is rewritten to the compiled location, which holds nothing.
         await expect(scanMigrationSource(dataSourceOf([Baseline1700000000003]), {
             pathResolver: createPathResolver({
-                mode: PathResolverMode.TRANSFORM, 
-                tsconfig, 
-                typescript: true, 
-            }), 
+                mode: PathResolverMode.TRANSFORM,
+                tsconfig,
+                typescript: true,
+            }),
         })).rejects.toMatchObject({ message: MigrationPlanError.legacyEmpty('Baseline1700000000003').message });
     });
 });

@@ -5,11 +5,11 @@ import { MigrationPlanError } from '../../../errors';
 import type { IPathResolver } from '../../../utils';
 import { PathResolverMode, createPathResolver } from '../../../utils';
 import { isMigrationBaselineClass } from './baseline';
-import type { 
-    MigrationBaselineClass, 
-    MigrationSource, 
-    MigrationSourceScanOptions, 
-    MigrationsInput, 
+import type {
+    MigrationBaselineClass,
+    MigrationSource,
+    MigrationSourceScanOptions,
+    MigrationsInput,
 } from './types';
 
 type MigrationClass = new () => MigrationInterface;
@@ -62,6 +62,26 @@ function toMigration(instance: MigrationInterface): Migration {
     return new Migration(undefined, timestamp, name, instance);
 }
 
+/**
+ * A class carrying any baseline property without being a baseline would
+ * otherwise run as an ordinary migration.
+ */
+function declaresBaselineProperties(Class: unknown): boolean {
+    if (typeof Class !== 'function') {
+        return false;
+    }
+
+    const record = Class as {
+        baseline?: unknown,
+        legacy?: unknown,
+        upgradeHint?: unknown
+    };
+
+    return record.baseline !== undefined ||
+        record.legacy !== undefined ||
+        record.upgradeHint !== undefined;
+}
+
 function sortMigrations(items: Migration[]): Migration[] {
     return items.sort((a, b) => a.timestamp - b.timestamp);
 }
@@ -85,9 +105,19 @@ export async function scanMigrationSource(
 
     const current = sortMigrations(instances.map(toMigration));
 
+    const malformed = current.find((migration) => {
+        const Class = migration.instance?.constructor;
+
+        return !isMigrationBaselineClass(Class) && declaresBaselineProperties(Class);
+    });
+
+    if (malformed) {
+        throw MigrationPlanError.baselineMalformed(malformed.name);
+    }
+
     const baselines = current.filter((migration) => isMigrationBaselineClass(migration.instance?.constructor));
 
-    if (baselines.length > 1 && !options.baseline) {
+    if (baselines.length > 1) {
         throw MigrationPlanError.multipleBaselines(baselines.map((migration) => migration.name));
     }
 

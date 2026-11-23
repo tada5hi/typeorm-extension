@@ -26,6 +26,13 @@ export class MigrationPlanError extends TypeormExtensionError {
         );
     }
 
+    static baselineMalformed(name: string) {
+        return new MigrationPlanError(
+            `The migration ${name} declares baseline properties but is not a baseline, extend MigrationBaseline.`,
+            [name],
+        );
+    }
+
     static baselineNotInList(name: string) {
         return new MigrationPlanError(
             `The baseline migration ${name} is not part of the migrations list.`,
