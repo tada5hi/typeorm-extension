@@ -23,8 +23,10 @@ export function readSearchSchema(dataSource: DataSource) : string | undefined {
  */
 export function removeSchemaQualifier(statement: string, schema: string) : string {
     // RegExp.escape needs node 24, the package supports node 22
-    // eslint-disable-next-line unicorn/prefer-regexp-escape
-    const escaped = schema.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const escaped = typeof RegExp.escape === 'function' ?
+        RegExp.escape(schema) :
+        // eslint-disable-next-line unicorn/prefer-regexp-escape
+        schema.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
     return statement.replace(new RegExp(`(?<![.\\w"])"${escaped}"\\.(?=")`, 'g'), '');
 }

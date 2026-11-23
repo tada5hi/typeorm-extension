@@ -1,4 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import {
+    afterEach,
+    beforeEach,
+    describe,
+    expect,
+    it,
+} from 'vitest';
 import { removeSchemaQualifier } from '../../../src/database/utils/schema-qualifier';
 
 describe('src/database/utils/schema-qualifier', () => {
@@ -36,5 +42,33 @@ describe('src/database/utils/schema-qualifier', () => {
     it('should escape regular expression characters of the schema', () => {
         expect(removeSchemaQualifier('DROP INDEX "a.b"."IDX"; DROP INDEX "axb"."IDX"', 'a.b'))
             .toEqual('DROP INDEX "IDX"; DROP INDEX "axb"."IDX"');
+    });
+
+    describe('without RegExp.escape (node 22)', () => {
+        const { escape } = RegExp;
+
+        beforeEach(() => {
+            Object.defineProperty(RegExp, 'escape', {
+                value: undefined, 
+                configurable: true, 
+                writable: true, 
+            });
+        });
+
+        afterEach(() => {
+            Object.defineProperty(RegExp, 'escape', {
+                value: escape, 
+                configurable: true, 
+                writable: true, 
+            });
+        });
+
+        it('should escape regular expression characters of the schema', () => {
+            expect(RegExp.escape).toBeUndefined();
+            expect(removeSchemaQualifier('DROP INDEX "a.b"."IDX"; DROP INDEX "axb"."IDX"', 'a.b'))
+                .toEqual('DROP INDEX "IDX"; DROP INDEX "axb"."IDX"');
+            expect(removeSchemaQualifier('DROP INDEX "a+b"."IDX"; DROP INDEX "aab"."IDX"', 'a+b'))
+                .toEqual('DROP INDEX "IDX"; DROP INDEX "aab"."IDX"');
+        });
     });
 });
