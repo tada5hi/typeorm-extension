@@ -100,7 +100,7 @@ typeorm-extension/
 | `typeorm` (peer)     | The ORM being extended. Requires `^1.1.3` (TypeORM 0.3 is unsupported).                |
 | `locter`             | File discovery/loading (data-source, seed, factory files) + `resolveModuleSync` (tsconfig `extends`). |
 | `@ebec/core`         | `markInstanceof` / `hasInstanceof`: `Symbol.for` class markers behind `isSeederFactory`, so the check works across duplicate library copies. |
-| `envix`              | Typed env var reader (`read`, `readArray`, `readBool`, `readInt`, `oneOf`).                   |
+| `envix`              | Typed env var reader; `read([DB_X, TYPEORM_X])` per variable + alias. |
 | `citty`              | CLI argument parser. Each command is a `defineCommand` factory; subcommands compose via `subCommands`. |
 | `smob`               | Object merge utility (deep merge of data-source options).                                     |
 | `reflect-metadata`   | Imported at the top of `src/cli/index.ts` so TypeORM decorators work in CLI-loaded files.     |

@@ -1,3 +1,4 @@
+import type { EnvixKey } from 'envix';
 import { read } from 'envix';
 
 /**
@@ -78,9 +79,10 @@ export function splitEnvList(input: string) : string[] {
 
 /**
  * Read a comma separated list of glob patterns, see splitEnvList().
- * Undefined when the variable is unset.
+ * With a list of keys, the first set key wins.
+ * Undefined when no key is set.
  */
-export function readEnvList(key: string) : string[] | undefined {
+export function readEnvList(key: EnvixKey) : string[] | undefined {
     const value = read(key);
 
     if (typeof value === 'undefined') {

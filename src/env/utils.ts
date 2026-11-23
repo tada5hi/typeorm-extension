@@ -1,5 +1,4 @@
 import {
-    oneOf,
     read,
     readBool,
     readInt,
@@ -41,9 +40,9 @@ export function transformCache(input?: string) : DataSourceCacheOption | undefin
         input === 'ioredis/cluster'
     ) {
         let options : Record<string, any> | undefined;
-        const envCacheOptions = oneOf([
-            read(EnvironmentVariableName.CACHE_OPTIONS),
-            read(EnvironmentVariableName.CACHE_OPTIONS_ALT),
+        const envCacheOptions = read([
+            EnvironmentVariableName.CACHE_OPTIONS,
+            EnvironmentVariableName.CACHE_OPTIONS_ALT,
         ]);
 
         if (envCacheOptions) {
@@ -53,14 +52,14 @@ export function transformCache(input?: string) : DataSourceCacheOption | undefin
         return {
             type: input,
             options,
-            alwaysEnabled: oneOf([
-                readBool(EnvironmentVariableName.CACHE_ALWAYS_ENABLED),
-                readBool(EnvironmentVariableName.CACHE_ALWAYS_ENABLED_ALT),
+            alwaysEnabled: readBool([
+                EnvironmentVariableName.CACHE_ALWAYS_ENABLED,
+                EnvironmentVariableName.CACHE_ALWAYS_ENABLED_ALT,
             ]),
-            duration: oneOf([
-                readInt(EnvironmentVariableName.CACHE_DURATION),
-                readInt(EnvironmentVariableName.CACHE_DURATION_ALT),
-            ]),
+            duration: readInt([
+                EnvironmentVariableName.CACHE_DURATION,
+                EnvironmentVariableName.CACHE_DURATION_ALT,
+            ], { strict: true }),
         };
     }
 
