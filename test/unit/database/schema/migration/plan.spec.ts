@@ -331,4 +331,36 @@ describe('src/database/schema/migration/plan', () => {
 
         expect(dataSource.isInitialized).toBe(true);
     });
+
+    it('refuses a migration with the timestamp of the baseline on a fresh and an adopted database', async () => {
+        class Same1700000000003 {
+            name = 'Same1700000000003';
+
+            async up(): Promise<void> {
+                // noop
+            }
+
+            async down(): Promise<void> {
+                // noop
+            }
+        }
+
+        const current = [Baseline1700000000003, Same1700000000003];
+
+        const fresh = dataSourceOf(databaseFile(), current);
+
+        await fresh.initialize();
+
+        await expect(planDatabaseMigrations(fresh)).rejects.toBeInstanceOf(MigrationPlanError);
+
+        const adopted = databaseFile();
+
+        await runWith(adopted, LEGACY);
+
+        const dataSource = dataSourceOf(adopted, current);
+
+        await dataSource.initialize();
+
+        await expect(planDatabaseMigrations(dataSource)).rejects.toMatchObject({ names: ['Same1700000000003'] });
+    });
 });

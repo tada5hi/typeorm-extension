@@ -63,7 +63,7 @@ export class MigrationPlanError extends TypeormExtensionError {
 
     static currentOlderThanBaseline(names: string[]) {
         return new MigrationPlanError(
-            `The migrations must not be older than the baseline migration: ${names.join(', ')}.`,
+            `These migrations are not newer than the baseline migration: ${names.join(', ')}.`,
             names,
         );
     }

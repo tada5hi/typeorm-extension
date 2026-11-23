@@ -191,7 +191,7 @@ export async function scanMigrationSource(
         throw MigrationPlanError.duplicateNames(duplicates);
     }
 
-    const older = current.filter((item) => item !== baseline && item.timestamp < baseline.timestamp);
+    const older = current.filter((item) => item !== baseline && item.timestamp <= baseline.timestamp);
 
     if (older.length > 0) {
         throw MigrationPlanError.currentOlderThanBaseline(older.map((item) => item.name));

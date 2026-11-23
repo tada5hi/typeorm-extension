@@ -192,6 +192,16 @@ describe('src/database/schema/migration/source', () => {
         await expect(scanMigrationSource(dataSourceOf([Early]))).rejects.toMatchObject({ message: MigrationPlanError.legacyNotOlder(['AddWidgetColor1700000000002']).message });
     });
 
+    it('should refuse a current migration with the timestamp of the baseline', async () => {
+        const Same = named('Same1700000000003');
+
+        await expect(scanMigrationSource(dataSourceOf([Baseline1700000000003, Same])))
+            .rejects.toMatchObject({
+                names: ['Same1700000000003'],
+                message: MigrationPlanError.currentOlderThanBaseline(['Same1700000000003']).message,
+            });
+    });
+
     it('should refuse a current migration older than the baseline', async () => {
         const Old = named('Old1600000000000');
 
