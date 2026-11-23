@@ -117,3 +117,9 @@ console.warn('write failed', { code: readDatabaseErrorCode(error) });
   may quote stored values, is never returned.
 
 See [readDatabaseErrorCode](./database-api-reference#readdatabaseerrorcode).
+
+## Migration plan errors
+
+The [migration runner](./migrations) refuses an inconsistent state with a `MigrationPlanError` before it runs a
+statement. Its `names` property lists the tables or migrations the refusal is about, and the message carries the
+`upgradeHint` of the baseline where an upgrade path is the fix.
