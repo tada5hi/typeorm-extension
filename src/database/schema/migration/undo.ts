@@ -83,6 +83,8 @@ async function execute(
  * Revert the newest executed migration, never one the baseline replaces or the baseline itself.
  *
  * @returns the reverted migration, or undefined when nothing is executed.
+ *
+ * @experimental The migration runner API may change in a minor release.
  */
 export async function undoDatabaseMigration(
     dataSource: DataSource,

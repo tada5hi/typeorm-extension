@@ -2,7 +2,7 @@ import type { DataSourceOptions, Migration } from 'typeorm';
 import { DataSource } from 'typeorm';
 import { MigrationPlanError } from '../../errors';
 import type { MigrationRunOptions } from './migration';
-import { runDatabaseMigrations } from './migration';
+import { MIGRATION_LOCK_NAME, runDatabaseMigrations } from './migration';
 import { scanMigrationSource } from './migration/source';
 import { useInitializedDataSource } from './utils';
 
@@ -27,7 +27,14 @@ async function refuseInitializeFlagsOnBaseline(input: DataSource | DataSourceOpt
 
 export async function synchronizeDatabaseSchema(
     input: DataSource | DataSourceOptions,
-    options: Pick<MigrationRunOptions, 'transaction' | 'lock' | 'ignoreTables'> = {},
+    options: Pick<MigrationRunOptions, 'transaction' | 'ignoreTables'> & {
+        /**
+         * true takes MIGRATION_LOCK_NAME, a string takes that name.
+         *
+         * Default: no lock
+         */
+        lock?: boolean | string
+    } = {},
 ) : Promise<Migration[]> {
     // initialize() would synchronize or drop before the baseline checks run.
     await refuseInitializeFlagsOnBaseline(input);
@@ -49,7 +56,7 @@ export async function synchronizeDatabaseSchema(
         if (migrationsCount > 0) {
             return await runDatabaseMigrations(dataSource, {
                 transaction: options.transaction,
-                lock: options.lock,
+                lock: options.lock === true ? MIGRATION_LOCK_NAME : (options.lock || false),
                 ignoreTables: options.ignoreTables,
             });
         }

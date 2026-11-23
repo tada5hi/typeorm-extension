@@ -1,5 +1,13 @@
 # Migrations
 
+::: warning Experimental
+
+The migration runner and the baselines API (`MigrationBaseline`, `planDatabaseMigrations`, `runDatabaseMigrations`,
+`undoDatabaseMigration` and their types) may change in a minor release. `synchronizeDatabaseSchema` without a baseline
+behaves like typeorm's `runMigrations`.
+
+:::
+
 This page covers running migrations through the library: a runner which plans before it executes, and baselines,
 which replace a long migration chain with one migration that creates the schema in a single step.
 
@@ -34,8 +42,9 @@ console.log(executed.map((migration) => migration.name));
 - The runner logs through the logger of the data source, with typeorm's messages.
 
 `synchronizeDatabaseSchema` and `createDatabase({ synchronize: true })` run through this runner, so a baseline is
-honoured there without further configuration. `synchronizeDatabaseSchema` takes the lock by default (pass
-`{ lock: false }` to opt out), accepts `transaction` and `ignoreTables`, and initializes a data source passed in with
+honoured there without further configuration. `synchronizeDatabaseSchema` runs unlocked unless `lock` is set
+(`true` takes `MIGRATION_LOCK_NAME`, a string takes that name), so a project running baselines through it on several
+replicas must pass `lock: true`. It accepts `transaction` and `ignoreTables`, and initializes a data source passed in with
 `migrationsRun` turned off. On a project with a baseline it refuses `synchronize` and `dropSchema` (options or an
 uninitialized data source) with a `MigrationPlanError` before initializing, since `initialize()` would apply them
 before the baseline checks run. Without a baseline they behave as before.

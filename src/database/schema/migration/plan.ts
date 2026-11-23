@@ -28,6 +28,8 @@ async function readUserTables(
 /**
  * Read the database state and decide what a run has to do. Nothing is written and
  * the migrations table is not created.
+ *
+ * @experimental The migration runner API may change in a minor release.
  */
 export async function planDatabaseMigrations(
     dataSource: DataSource,
@@ -128,6 +130,9 @@ export async function planDatabaseMigrations(
     }
 }
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export function isMigrationPlanEmpty(plan: MigrationPlan): boolean {
     return plan.legacy.length === 0 && !plan.adopt && plan.pending.length === 0;
 }

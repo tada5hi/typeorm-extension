@@ -1,8 +1,14 @@
 import type { DataSourceOptions, Migration, QueryRunner } from 'typeorm';
 import type { IPathResolver } from '../../../utils';
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationsInput = DataSourceOptions['migrations'];
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationBaselineClass = {
     baseline: true,
     legacy?: MigrationsInput,
@@ -10,6 +16,9 @@ export type MigrationBaselineClass = {
     name: string
 };
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationSource = {
     current: Migration[],
     baseline?: Migration,
@@ -17,6 +26,9 @@ export type MigrationSource = {
     upgradeHint?: string
 };
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationSourceScanOptions = {
     /**
      * Resolves the legacy globs like the `migrations` key of the data source options
@@ -29,6 +41,9 @@ export type MigrationSourceScanOptions = {
     baseline?: MigrationBaselineClass
 };
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationPlanOptions = MigrationSourceScanOptions & {
     /**
      * Query runner to read the database state with. It is used as is and never released.
@@ -44,6 +59,9 @@ export type MigrationPlanOptions = MigrationSourceScanOptions & {
     ignoreTables?: string[]
 };
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationPlan = {
     source: MigrationSource,
     /**
@@ -64,6 +82,9 @@ export type MigrationPlan = {
     pending: Migration[]
 };
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationRunOptions = MigrationPlanOptions & {
     /**
      * all: the legacy migrations and the baseline marker in one transaction,
@@ -84,4 +105,7 @@ export type MigrationRunOptions = MigrationPlanOptions & {
     lock?: string | false
 };
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export type MigrationUndoOptions = Omit<MigrationRunOptions, 'baseline' | 'ignoreTables'>;

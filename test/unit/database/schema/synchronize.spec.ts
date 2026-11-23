@@ -17,6 +17,18 @@ import { Baseline1700000000003 } from '../../../data/typeorm/migration-baseline/
 import { AddWidgetColor1700000000002 } from '../../../data/typeorm/migration-baseline/legacy/add-widget-color';
 import { CreateWidget1700000000001 } from '../../../data/typeorm/migration-baseline/legacy/create-widget';
 import { createDataSource, createDataSourceOptions } from '../../../data/typeorm/factory';
+import { MIGRATION_LOCK_NAME } from '../../../../src/database/schema/migration';
+import type * as LockModule from '../../../../src/database/lock/module';
+import { withDatabaseLock } from '../../../../src/database/lock/module';
+
+vi.mock('../../../../src/database/lock/module', async (importOriginal) => {
+    const original = await importOriginal<typeof LockModule>();
+
+    return {
+        ...original,
+        withDatabaseLock: vi.fn(original.withDatabaseLock),
+    };
+});
 
 describe('src/database/schema/synchronize', () => {
     it('should synchronize the schema of a data source instance', async () => {
@@ -114,12 +126,34 @@ describe('src/database/schema/synchronize with baselines', () => {
     }
 
     afterEach(() => {
+        vi.mocked(withDatabaseLock).mockClear();
+
         for (const file of files.splice(0)) {
             fs.rmSync(file, { force: true });
         }
     });
 
     const CURRENT = [Baseline1700000000003, AddWidgetSize1700000000004];
+
+    it('takes no lock by default', async () => {
+        await synchronizeDatabaseSchema(optionsOf(databaseFile(), CURRENT));
+
+        expect(withDatabaseLock).not.toHaveBeenCalled();
+    });
+
+    it('takes MIGRATION_LOCK_NAME with lock: true', async () => {
+        await synchronizeDatabaseSchema(optionsOf(databaseFile(), CURRENT), { lock: true });
+
+        expect(withDatabaseLock).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(withDatabaseLock).mock.calls[0]![1]).toEqual(MIGRATION_LOCK_NAME);
+    });
+
+    it('takes the named lock with lock: string', async () => {
+        await synchronizeDatabaseSchema(optionsOf(databaseFile(), CURRENT), { lock: 'custom' });
+
+        expect(withDatabaseLock).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(withDatabaseLock).mock.calls[0]![1]).toEqual('custom');
+    });
 
     it('synchronizes with a discovered baseline (fresh)', async () => {
         const file = databaseFile();

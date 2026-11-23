@@ -132,6 +132,8 @@ async function execute(
  * runner is given, one database lock.
  *
  * @returns the executed legacy and pending migrations, in order (the marker is not listed).
+ *
+ * @experimental The migration runner API may change in a minor release.
  */
 export async function runDatabaseMigrations(
     dataSource: DataSource,

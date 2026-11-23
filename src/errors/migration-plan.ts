@@ -4,6 +4,9 @@ function withHint(message: string, hint?: string): string {
     return hint ? `${message} ${hint}` : message;
 }
 
+/**
+ * @experimental The migration runner API may change in a minor release.
+ */
 export class MigrationPlanError extends TypeormExtensionError {
     readonly names: string[];
 
