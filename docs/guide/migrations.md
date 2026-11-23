@@ -24,14 +24,19 @@ console.log(executed.map((migration) => migration.name));
   as typeorm refuses it.
 - `transaction` defaults to the `migrationsTransactionMode` of the data source, else `'all'`.
 - The lock is `MIGRATION_LOCK_NAME` (`typeorm-extension:migrations`). Pass `lock: 'name'` for another one or
-  `lock: false` to run unlocked. On a driver without a lock (sqlite) the run proceeds unlocked.
-- Keep `migrationsRun` off in the data source options, since `initialize()` would run the migrations before the lock
-  is taken.
+  `lock: false` to run unlocked.
+- The lock exists for postgres, mysql and mariadb. On every other driver (sqlite, cockroachdb, mssql, oracle, ...)
+  the run proceeds unlocked, so two processes adopting a baseline at the same time can insert two baseline rows
+  there. Run the migrations from one process on those drivers.
+- An uninitialized data source with `migrationsRun`, `synchronize` or `dropSchema` set is refused with a
+  `MigrationPlanError`, since `initialize()` would run them before the lock is taken and without the runner. Initialize
+  it first or unset them.
+- The runner logs through the logger of the data source, with typeorm's messages.
 
 `synchronizeDatabaseSchema` and `createDatabase({ synchronize: true })` run through this runner, so a baseline is
-honoured there without further configuration. `synchronizeDatabaseSchema` takes the lock by default now. Pass
-`{ lock: false }` to opt out. An uninitialized data source passed in is initialized outside the lock, so its own
-`migrationsRun` or `synchronize` would run unlocked.
+honoured there without further configuration. `synchronizeDatabaseSchema` takes the lock by default (pass
+`{ lock: false }` to opt out), accepts `transaction` and `ignoreTables`, and initializes a data source passed in with
+`migrationsRun` turned off.
 
 ### With a query runner
 
@@ -120,10 +125,12 @@ export class Baseline1795000000000 extends MigrationBaseline {
   library. Classes work too. The legacy migrations must not be in the `migrations` list of the data source.
 - Remove `legacy` when the project drops the chain (its next major). The class stays a baseline, and a database
   which never adopted it is refused with `upgradeHint`.
-- Only one baseline is allowed. Every legacy migration must be older than the baseline, and no other migration may be
-  older than it.
+- Only one baseline is allowed in the migration list, also when one is passed explicitly. Every legacy migration must
+  be older than the baseline, and no other migration may be older than it.
+- A migration with a static `baseline`, `legacy` or `upgradeHint` which does not extend `MigrationBaseline` is
+  refused, rather than run as an ordinary migration.
 - Baselines need the empty-schema check, which exists for postgres, cockroachdb, mysql, mariadb, better-sqlite3,
-  mssql and oracle. MongoDB is refused with a `MigrationPlanError`.
+  mssql and oracle. MongoDB is refused with a `MigrationPlanError`; without a baseline it runs as before.
 
 ### Generating a baseline
 
@@ -174,10 +181,16 @@ declare it as above.
 
 Every step is resumable: after a failure, a new plan from the rows which exist leads to the same end state.
 
+One case needs a hand: the baseline of a fresh install failing where DDL is not transactional (mysql and mariadb, or
+`transaction: 'none'`). The tables it created stay, without a row, and the next run refuses the populated schema,
+naming them. Drop the listed tables and run again.
+
 ### Rollback
 
 Adoption only inserts a row and never deletes the legacy ones. An older release of the project still sees every
-legacy row it knows and ignores the baseline row, so rolling the image back after an upgrade keeps working.
+legacy row it knows and ignores the baseline row, so rolling the image back after an upgrade keeps working. Its
+`migration:revert` (typeorm's `undoLastMigration`) fails after the adoption, though: the newest row is the baseline,
+which that release does not know.
 
 A database created fresh from the baseline has no legacy rows. Rolling it back to a release from before the baseline
 is not supported: that release sees the whole legacy chain as pending.
@@ -200,9 +213,11 @@ round-trip in CI therefore reverts down to the baseline and runs again.
 
 ### A second squash
 
-A later baseline lists the previous baseline and the migrations after it as its `legacy` chain. A database still on
-the first chain has rows outside that set and is refused with the `upgradeHint` of the newer baseline. Each baseline
-is a required upgrade stop: name the release line which carries the previous adoption in the hint.
+A later baseline lists the previous baseline and the migrations after it as its `legacy` chain. A database which
+adopted the previous baseline adopts the newer one: the rows older than the previous baseline are its history and are
+kept. The previous baseline itself is never run. A database still on the first chain, without the previous baseline's
+row, is refused with the `upgradeHint` of the newer baseline. Each baseline is a required upgrade stop: name the
+release line which carries the previous adoption in the hint.
 
 ### The typeorm CLI
 
