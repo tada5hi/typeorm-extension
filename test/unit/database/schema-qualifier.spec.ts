@@ -39,6 +39,18 @@ describe('src/database/utils/schema-qualifier', () => {
             .toEqual('ALTER TABLE "user" ADD "public" boolean');
     });
 
+    it('should keep string literals', () => {
+        expect(removeSchemaQualifier('ALTER TABLE "public"."t" ALTER COLUMN "c" SET DEFAULT \'"public"."value"\'', 'public'))
+            .toEqual('ALTER TABLE "t" ALTER COLUMN "c" SET DEFAULT \'"public"."value"\'');
+        expect(removeSchemaQualifier('CREATE TYPE "public"."t_e_enum" AS ENUM(\'it\'\'s "public"."x"\')', 'public'))
+            .toEqual('CREATE TYPE "t_e_enum" AS ENUM(\'it\'\'s "public"."x"\')');
+    });
+
+    it('should keep a quoted identifier holding a quote', () => {
+        expect(removeSchemaQualifier('ALTER TABLE "it\'s" ADD "a""b" int; DROP INDEX "public"."IDX"', 'public'))
+            .toEqual('ALTER TABLE "it\'s" ADD "a""b" int; DROP INDEX "IDX"');
+    });
+
     it('should escape regular expression characters of the schema', () => {
         expect(removeSchemaQualifier('DROP INDEX "a.b"."IDX"; DROP INDEX "axb"."IDX"', 'a.b'))
             .toEqual('DROP INDEX "IDX"; DROP INDEX "axb"."IDX"');
