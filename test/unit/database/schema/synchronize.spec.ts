@@ -151,5 +151,7 @@ describe('export surface', () => {
         expect(lib).not.toHaveProperty('RunMigrationExecutor');
         expect(lib).not.toHaveProperty('withMigrationRunner');
         expect(lib).not.toHaveProperty('withTransaction');
+        expect(lib).not.toHaveProperty('listUserTableNames');
+        expect(lib).not.toHaveProperty('buildUserTablesStatement');
     });
 });

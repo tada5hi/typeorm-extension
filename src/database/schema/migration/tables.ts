@@ -14,12 +14,14 @@ export function buildUserTablesStatement(
         case 'postgres':
         case 'cockroachdb': {
             return {
-                sql: `SELECT table_name AS name FROM information_schema.tables WHERE table_schema = ${schema ? '$1' : 'current_schema()'} AND table_type = 'BASE TABLE'`,
+                // pg_tables, not information_schema: the latter hides tables the role has no privilege on
+                sql: `SELECT tablename AS name FROM pg_catalog.pg_tables WHERE schemaname = ${schema ? '$1' : 'current_schema()'}`,
                 parameters: schema ? [schema] : [],
             };
         }
         case 'mysql':
         case 'mariadb': {
+            // information_schema only shows tables the user holds a privilege on
             return {
                 sql: 'SELECT table_name AS name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = \'BASE TABLE\'',
                 parameters: [],

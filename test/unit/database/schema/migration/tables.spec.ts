@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { buildUserTablesStatement } from '../../../../../src';
+import { buildUserTablesStatement } from '../../../../../src/database/schema/migration/tables';
 
 describe('src/database/schema/migration/tables', () => {
     it('should scope postgres to the current or configured schema', () => {
         expect(buildUserTablesStatement('postgres')).toEqual({
-            sql: expect.stringContaining('table_schema = current_schema() AND table_type = \'BASE TABLE\''),
+            sql: expect.stringContaining('pg_catalog.pg_tables WHERE schemaname = current_schema()'),
             parameters: [],
         });
         expect(buildUserTablesStatement('cockroachdb', 'app')).toEqual({
-            sql: expect.stringContaining('table_schema = $1'),
+            sql: expect.stringContaining('schemaname = $1'),
             parameters: ['app'],
         });
     });

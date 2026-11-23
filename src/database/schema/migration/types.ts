@@ -39,6 +39,7 @@ export type MigrationPlanOptions = MigrationSourceScanOptions & {
 
     /**
      * Tables which do not count as user tables (e.g. owned by another data source sharing the database).
+     * Names are unqualified and refer to the current schema.
      */
     ignoreTables?: string[]
 };

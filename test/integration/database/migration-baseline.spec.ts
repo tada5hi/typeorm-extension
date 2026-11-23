@@ -1,5 +1,5 @@
 import type { DataSource } from 'typeorm';
-import { DataSource as TypeORMDataSource } from 'typeorm';
+import { EntitySchema, DataSource as TypeORMDataSource } from 'typeorm';
 import {
     afterAll,
     afterEach,
@@ -11,10 +11,10 @@ import {
 } from 'vitest';
 import {
     MigrationPlanError,
-    listUserTableNames,
     runDatabaseMigrations,
     undoDatabaseMigration,
 } from '../../../src';
+import { listUserTableNames } from '../../../src/database/schema/migration/tables';
 import { AddWidgetSize1700000000004 } from '../../data/typeorm/migration-baseline/add-widget-size';
 import { Baseline1700000000003 } from '../../data/typeorm/migration-baseline/baseline';
 import { AddWidgetColor1700000000002 } from '../../data/typeorm/migration-baseline/legacy/add-widget-color';
@@ -23,10 +23,13 @@ import {
     createIntegrationDataSourceOptions,
     supportsDatabaseLock,
     supportsMigrationBaseline,
+    supportsSearchSchema,
     useIntegrationDriver,
 } from '../../data/typeorm/integration';
 
 const driver = useIntegrationDriver();
+
+const OTHER_SCHEMA = 'migration_baseline_other';
 
 const LEGACY = [CreateWidget1700000000001, AddWidgetColor1700000000002];
 const CURRENT = [Baseline1700000000003, AddWidgetSize1700000000004];
@@ -43,19 +46,24 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
         return dataSource;
     }
 
+    // A catalogue query of its own, independent of listUserTableNames.
+    async function snapshot(dataSource: DataSource) : Promise<string[]> {
+        const sql = driver === 'mysql' || driver === 'mariadb' ?
+            'SELECT table_name AS name FROM information_schema.tables WHERE table_schema = DATABASE()' :
+            'SELECT tablename AS name FROM pg_catalog.pg_tables WHERE schemaname = current_schema()';
+        const rows = await dataSource.query(sql);
+
+        return rows.map((row: { name?: string, NAME?: string }) => (row.name ?? row.NAME) as string);
+    }
+
     // other specs leave their tables in the shared database
+    async function foreignTables(dataSource: DataSource) : Promise<string[]> {
+        return (await snapshot(dataSource))
+            .filter((name) => name !== 'widget' && name !== 'migrations');
+    }
+
     async function run(dataSource: DataSource) {
-        const queryRunner = dataSource.createQueryRunner();
-        let foreign: string[];
-
-        try {
-            foreign = (await listUserTableNames(queryRunner))
-                .filter((name) => name !== 'widget' && name !== 'migrations');
-        } finally {
-            await queryRunner.release();
-        }
-
-        return runDatabaseMigrations(dataSource, { ignoreTables: foreign });
+        return runDatabaseMigrations(dataSource, { ignoreTables: await foreignTables(dataSource) });
     }
 
     async function drop() {
@@ -65,6 +73,10 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
         try {
             await queryRunner.dropTable('widget', true);
             await queryRunner.dropTable('migrations', true);
+
+            if (supportsSearchSchema(driver) && driver !== 'mssql') {
+                await queryRunner.query(`DROP SCHEMA IF EXISTS ${OTHER_SCHEMA} CASCADE`);
+            }
         } finally {
             await queryRunner.release();
         }
@@ -77,9 +89,15 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
     }
 
     async function columns(dataSource: DataSource) : Promise<string[]> {
-        const table = await dataSource.createQueryRunner().getTable('widget');
+        const queryRunner = dataSource.createQueryRunner();
 
-        return (table?.columns ?? []).map((column) => column.name).sort();
+        try {
+            const table = await queryRunner.getTable('widget');
+
+            return (table?.columns ?? []).map((column) => column.name).sort();
+        } finally {
+            await queryRunner.release();
+        }
     }
 
     beforeAll(() => {
@@ -182,6 +200,72 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/migration
 
         await expect(run(dataSource)).rejects.toBeInstanceOf(MigrationPlanError);
         await expect(run(dataSource)).rejects.toThrow(/widget/);
+    });
+
+    it('refuses a schema built by synchronize', async () => {
+        const Widget = new EntitySchema({
+            name: 'widget',
+            tableName: 'widget',
+            columns: { id: { type: Number, primary: true } },
+        });
+        const built = new TypeORMDataSource(createIntegrationDataSourceOptions([Widget]));
+
+        await built.initialize();
+        created.push(built);
+        await built.synchronize();
+
+        const dataSource = await open(CURRENT);
+
+        await expect(run(dataSource)).rejects.toBeInstanceOf(MigrationPlanError);
+        await expect(run(dataSource)).rejects.toThrow(/widget/);
+    });
+
+    it.runIf(supportsDatabaseLock(driver))('concurrent fresh installs run the baseline once', async () => {
+        const a = await open(CURRENT);
+        const b = await open(CURRENT);
+        const ignoreTables = await foreignTables(a);
+
+        await Promise.all([
+            runDatabaseMigrations(a, { ignoreTables }),
+            runDatabaseMigrations(b, { ignoreTables }),
+        ]);
+
+        expect(await names(a)).toEqual(['Baseline1700000000003', 'AddWidgetSize1700000000004']);
+        expect(await columns(a)).toEqual(['color', 'id', 'size']);
+    });
+
+    it('lists only user tables of the current schema', async () => {
+        const dataSource = await open([]);
+
+        await dataSource.query('CREATE TABLE widget (id INTEGER PRIMARY KEY)');
+
+        const queryRunner = dataSource.createQueryRunner();
+        let listed: string[];
+
+        try {
+            listed = await listUserTableNames(queryRunner);
+        } finally {
+            await queryRunner.release();
+        }
+
+        expect(listed).toContain('widget');
+        expect(listed.filter((name) => /^(pg_|sqlite_)|information_schema/.test(name))).toEqual([]);
+        expect(listed.filter((name) => name.includes('.'))).toEqual([]);
+
+        if (!supportsSearchSchema(driver) || driver === 'mssql') {
+            return;
+        }
+
+        await dataSource.query(`CREATE SCHEMA ${OTHER_SCHEMA}`);
+        await dataSource.query(`CREATE TABLE ${OTHER_SCHEMA}.migration_baseline_foreign (id INTEGER PRIMARY KEY)`);
+
+        const runner = dataSource.createQueryRunner();
+
+        try {
+            expect(await listUserTableNames(runner)).not.toContain('migration_baseline_foreign');
+        } finally {
+            await runner.release();
+        }
     });
 
     it('undo stops at the baseline', async () => {
