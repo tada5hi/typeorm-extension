@@ -28,7 +28,7 @@ export function buildUserTablesStatement(
         }
         case 'better-sqlite3': {
             return {
-                sql: 'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT LIKE \'sqlite_%\'',
+                sql: 'SELECT name FROM sqlite_master WHERE type = \'table\' AND name NOT GLOB \'sqlite_*\'',
                 parameters: [],
             };
         }

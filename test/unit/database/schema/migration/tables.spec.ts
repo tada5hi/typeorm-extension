@@ -1,5 +1,6 @@
+import { DataSource } from 'typeorm';
 import { describe, expect, it } from 'vitest';
-import { buildUserTablesStatement } from '../../../../../src/database/schema/migration/tables';
+import { buildUserTablesStatement, listUserTableNames } from '../../../../../src/database/schema/migration/tables';
 
 describe('src/database/schema/migration/tables', () => {
     it('should scope postgres to the current or configured schema', () => {
@@ -19,7 +20,7 @@ describe('src/database/schema/migration/tables', () => {
     });
 
     it('should skip internal sqlite tables', () => {
-        expect(buildUserTablesStatement('better-sqlite3')?.sql).toContain('NOT LIKE \'sqlite_%\'');
+        expect(buildUserTablesStatement('better-sqlite3')?.sql).toContain('NOT GLOB \'sqlite_*\'');
     });
 
     it('should scope mssql and oracle', () => {
@@ -30,5 +31,26 @@ describe('src/database/schema/migration/tables', () => {
 
     it('should have no statement for other drivers', () => {
         expect(buildUserTablesStatement('mongodb')).toBeUndefined();
+    });
+
+    it('should keep a user table named like an internal one and hide the internal ones', async () => {
+        const dataSource = new DataSource({ type: 'better-sqlite3', database: ':memory:' });
+
+        await dataSource.initialize();
+
+        const queryRunner = dataSource.createQueryRunner();
+
+        try {
+            await queryRunner.query('CREATE TABLE sqlitecache (id integer)');
+            await queryRunner.query('CREATE TABLE counted (id integer PRIMARY KEY AUTOINCREMENT)');
+
+            const rows = await queryRunner.query('SELECT name FROM sqlite_master WHERE name = \'sqlite_sequence\'');
+
+            expect(rows).toHaveLength(1);
+            expect((await listUserTableNames(queryRunner)).sort()).toEqual(['counted', 'sqlitecache']);
+        } finally {
+            await queryRunner.release();
+            await dataSource.destroy();
+        }
     });
 });
