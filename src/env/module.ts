@@ -28,7 +28,7 @@ export function useEnv(key?: string) : any {
     }
 
     const output: Environment = {
-        env: read(EnvironmentVariableName.ENV, EnvironmentName.DEVELOPMENT) as `${EnvironmentName}`,
+        env: read(EnvironmentVariableName.ENV, { default: EnvironmentName.DEVELOPMENT }) as `${EnvironmentName}`,
 
         // Seeder
         seeds: oneOf([

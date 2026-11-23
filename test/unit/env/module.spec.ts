@@ -60,4 +60,24 @@ describe('src/env/**', () => {
 
         resetEnv();
     });
+
+    it('should read boolean words case-insensitively and trimmed', () => {
+        resetEnv();
+
+        process.env[EnvironmentVariableName.SYNCHRONIZE] = 'TRUE';
+        process.env[EnvironmentVariableName.MIGRATIONS_RUN] = ' False ';
+        process.env[EnvironmentVariableName.LOGGING] = ' true';
+
+        try {
+            expect(useEnv('synchronize')).toBe(true);
+            expect(useEnv('migrationsRun')).toBe(false);
+            expect(useEnv('logging')).toBe(true);
+        } finally {
+            delete process.env[EnvironmentVariableName.SYNCHRONIZE];
+            delete process.env[EnvironmentVariableName.MIGRATIONS_RUN];
+            delete process.env[EnvironmentVariableName.LOGGING];
+
+            resetEnv();
+        }
+    });
 });
