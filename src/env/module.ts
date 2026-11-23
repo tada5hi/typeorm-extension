@@ -1,5 +1,4 @@
 import {
-    oneOf,
     read,
     readBool,
     readInt,
@@ -31,115 +30,115 @@ export function useEnv(key?: string) : any {
         env: read(EnvironmentVariableName.ENV, { default: EnvironmentName.DEVELOPMENT }) as `${EnvironmentName}`,
 
         // Seeder
-        seeds: oneOf([
-            readEnvList(EnvironmentVariableName.SEEDS),
-            readEnvList(EnvironmentVariableName.SEEDS_ALT),
+        seeds: readEnvList([
+            EnvironmentVariableName.SEEDS,
+            EnvironmentVariableName.SEEDS_ALT,
         ]) ?? [],
-        factories: oneOf([
-            readEnvList(EnvironmentVariableName.FACTORIES),
-            readEnvList(EnvironmentVariableName.FACTORIES_ALT),
+        factories: readEnvList([
+            EnvironmentVariableName.FACTORIES,
+            EnvironmentVariableName.FACTORIES_ALT,
         ]) ?? [],
 
         // Database
-        url: oneOf([
-            read(EnvironmentVariableName.URL),
-            read(EnvironmentVariableName.URL_ALT),
+        url: read([
+            EnvironmentVariableName.URL,
+            EnvironmentVariableName.URL_ALT,
         ]),
-        host: oneOf([
-            read(EnvironmentVariableName.HOST),
-            read(EnvironmentVariableName.HOST_ALT),
+        host: read([
+            EnvironmentVariableName.HOST,
+            EnvironmentVariableName.HOST_ALT,
         ]),
-        port: oneOf([
-            readInt(EnvironmentVariableName.PORT),
-            readInt(EnvironmentVariableName.PORT_ALT),
+        port: readInt([
+            EnvironmentVariableName.PORT,
+            EnvironmentVariableName.PORT_ALT,
         ]),
-        username: oneOf([
-            read(EnvironmentVariableName.USERNAME),
-            read(EnvironmentVariableName.USERNAME_ALT),
+        username: read([
+            EnvironmentVariableName.USERNAME,
+            EnvironmentVariableName.USERNAME_ALT,
         ]),
-        password: oneOf([
-            read(EnvironmentVariableName.PASSWORD),
-            read(EnvironmentVariableName.PASSWORD_ALT),
+        password: read([
+            EnvironmentVariableName.PASSWORD,
+            EnvironmentVariableName.PASSWORD_ALT,
         ]),
-        database: oneOf([
-            read(EnvironmentVariableName.DATABASE),
-            read(EnvironmentVariableName.DATABASE_ALT),
+        database: read([
+            EnvironmentVariableName.DATABASE,
+            EnvironmentVariableName.DATABASE_ALT,
         ]),
-        sid: oneOf([
-            read(EnvironmentVariableName.SID),
-            read(EnvironmentVariableName.SID_ALT),
+        sid: read([
+            EnvironmentVariableName.SID,
+            EnvironmentVariableName.SID_ALT,
         ]),
-        schema: oneOf([
-            read(EnvironmentVariableName.SCHEMA),
-            read(EnvironmentVariableName.SCHEMA_ALT),
+        schema: read([
+            EnvironmentVariableName.SCHEMA,
+            EnvironmentVariableName.SCHEMA_ALT,
         ]),
-        extra: oneOf([
-            read(EnvironmentVariableName.DRIVER_EXTRA),
-            read(EnvironmentVariableName.DRIVER_EXTRA_ALT),
+        extra: read([
+            EnvironmentVariableName.DRIVER_EXTRA,
+            EnvironmentVariableName.DRIVER_EXTRA_ALT,
         ]),
-        synchronize: oneOf([
-            readBool(EnvironmentVariableName.SYNCHRONIZE),
-            readBool(EnvironmentVariableName.SYNCHRONIZE_ALT),
+        synchronize: readBool([
+            EnvironmentVariableName.SYNCHRONIZE,
+            EnvironmentVariableName.SYNCHRONIZE_ALT,
         ]),
-        schemaDrop: oneOf([
-            readBool(EnvironmentVariableName.SCHEMA_DROP),
-            readBool(EnvironmentVariableName.SCHEMA_DROP_ALT),
+        schemaDrop: readBool([
+            EnvironmentVariableName.SCHEMA_DROP,
+            EnvironmentVariableName.SCHEMA_DROP_ALT,
         ]),
-        migrationsRun: oneOf([
-            readBool(EnvironmentVariableName.MIGRATIONS_RUN),
-            readBool(EnvironmentVariableName.MIGRATIONS_RUN_ALT),
+        migrationsRun: readBool([
+            EnvironmentVariableName.MIGRATIONS_RUN,
+            EnvironmentVariableName.MIGRATIONS_RUN_ALT,
         ]),
-        entities: oneOf([
-            readEnvList(EnvironmentVariableName.ENTITIES),
-            readEnvList(EnvironmentVariableName.ENTITIES_ALT),
+        entities: readEnvList([
+            EnvironmentVariableName.ENTITIES,
+            EnvironmentVariableName.ENTITIES_ALT,
         ]) ?? [],
-        migrations: oneOf([
-            readEnvList(EnvironmentVariableName.MIGRATIONS),
-            readEnvList(EnvironmentVariableName.MIGRATIONS_ALT),
+        migrations: readEnvList([
+            EnvironmentVariableName.MIGRATIONS,
+            EnvironmentVariableName.MIGRATIONS_ALT,
         ]) ?? [],
-        migrationsTableName: oneOf([
-            read(EnvironmentVariableName.MIGRATIONS_TABLE_NAME),
-            read(EnvironmentVariableName.MIGRATIONS_TABLE_NAME_ALT),
+        migrationsTableName: read([
+            EnvironmentVariableName.MIGRATIONS_TABLE_NAME,
+            EnvironmentVariableName.MIGRATIONS_TABLE_NAME_ALT,
         ]),
-        metadataTableName: oneOf([
-            read(EnvironmentVariableName.METADATA_TABLE_NAME),
-            read(EnvironmentVariableName.METADATA_TABLE_NAME_ALT),
+        metadataTableName: read([
+            EnvironmentVariableName.METADATA_TABLE_NAME,
+            EnvironmentVariableName.METADATA_TABLE_NAME_ALT,
         ]),
-        subscribers: oneOf([
-            readEnvList(EnvironmentVariableName.SUBSCRIBERS),
-            readEnvList(EnvironmentVariableName.SUBSCRIBERS_ALT),
+        subscribers: readEnvList([
+            EnvironmentVariableName.SUBSCRIBERS,
+            EnvironmentVariableName.SUBSCRIBERS_ALT,
         ]) ?? [],
-        logging: transformLogging(oneOf([
-            read(EnvironmentVariableName.LOGGING),
-            read(EnvironmentVariableName.LOGGING_ALT),
+        logging: transformLogging(read([
+            EnvironmentVariableName.LOGGING,
+            EnvironmentVariableName.LOGGING_ALT,
         ])),
-        logger: oneOf([
-            read(EnvironmentVariableName.LOGGER),
-            read(EnvironmentVariableName.LOGGER_ALT),
+        logger: read([
+            EnvironmentVariableName.LOGGER,
+            EnvironmentVariableName.LOGGER_ALT,
         ]),
-        entityPrefix: oneOf([
-            read(EnvironmentVariableName.ENTITY_PREFIX),
-            read(EnvironmentVariableName.ENTITY_PREFIX_ALT),
+        entityPrefix: read([
+            EnvironmentVariableName.ENTITY_PREFIX,
+            EnvironmentVariableName.ENTITY_PREFIX_ALT,
         ]),
-        maxQueryExecutionTime: oneOf([
-            readInt(EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME),
-            readInt(EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME_ALT),
+        maxQueryExecutionTime: readInt([
+            EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME,
+            EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME_ALT,
         ]),
-        debug: oneOf([
-            read(EnvironmentVariableName.DEBUG),
-            read(EnvironmentVariableName.DEBUG_ALT),
+        debug: read([
+            EnvironmentVariableName.DEBUG,
+            EnvironmentVariableName.DEBUG_ALT,
         ]),
-        cache: transformCache(oneOf([
-            read(EnvironmentVariableName.CACHE),
-            read(EnvironmentVariableName.CACHE_ALT),
+        cache: transformCache(read([
+            EnvironmentVariableName.CACHE,
+            EnvironmentVariableName.CACHE_ALT,
         ])),
-        uuidExtension: oneOf([
-            read(EnvironmentVariableName.UUID_EXTENSION),
-            read(EnvironmentVariableName.UUID_EXTENSION_ALT),
+        uuidExtension: read([
+            EnvironmentVariableName.UUID_EXTENSION,
+            EnvironmentVariableName.UUID_EXTENSION_ALT,
         ]),
-        pinTimezone: oneOf([
-            read(EnvironmentVariableName.PIN_TIMEZONE),
-            read(EnvironmentVariableName.PIN_TIMEZONE_ALT),
+        pinTimezone: read([
+            EnvironmentVariableName.PIN_TIMEZONE,
+            EnvironmentVariableName.PIN_TIMEZONE_ALT,
         ]),
 
     };
@@ -149,17 +148,17 @@ export function useEnv(key?: string) : any {
     }
 
     let type : string | undefined;
-    const envType = oneOf([
-        read(EnvironmentVariableName.TYPE),
-        read(EnvironmentVariableName.TYPE_ALT),
+    const envType = read([
+        EnvironmentVariableName.TYPE,
+        EnvironmentVariableName.TYPE_ALT,
     ]);
 
     if (envType) {
         type = envType;
     } else {
-        const envURL = oneOf([
-            read(EnvironmentVariableName.URL),
-            read(EnvironmentVariableName.URL_ALT),
+        const envURL = read([
+            EnvironmentVariableName.URL,
+            EnvironmentVariableName.URL_ALT,
         ]);
 
         // Only a scheme names the driver: without one, the whole url would

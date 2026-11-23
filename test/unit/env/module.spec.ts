@@ -80,4 +80,29 @@ describe('src/env/**', () => {
             resetEnv();
         }
     });
+
+    it('should prefer a variable over its alias', () => {
+        resetEnv();
+
+        process.env[EnvironmentVariableName.HOST] = 'primary';
+        process.env[EnvironmentVariableName.HOST_ALT] = 'alias';
+        process.env[EnvironmentVariableName.ENTITIES_ALT] = 'src/entities/*.ts';
+        process.env[EnvironmentVariableName.PORT] = 'abc';
+        process.env[EnvironmentVariableName.PORT_ALT] = '5432';
+
+        try {
+            expect(useEnv('host')).toEqual('primary');
+            expect(useEnv('entities')).toEqual(['src/entities/*.ts']);
+            // a set value that does not parse does not fall back to the alias
+            expect(useEnv('port')).toBeUndefined();
+        } finally {
+            delete process.env[EnvironmentVariableName.HOST];
+            delete process.env[EnvironmentVariableName.HOST_ALT];
+            delete process.env[EnvironmentVariableName.ENTITIES_ALT];
+            delete process.env[EnvironmentVariableName.PORT];
+            delete process.env[EnvironmentVariableName.PORT_ALT];
+
+            resetEnv();
+        }
+    });
 });
