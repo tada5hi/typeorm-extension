@@ -20,6 +20,7 @@ import type { MigrationsInput } from '../../../../../src';
 import {
     MIGRATION_LOCK_NAME,
     MigrationBaseline,
+    MigrationPlanError,
     planDatabaseMigrations,
     runDatabaseMigrations,
 } from '../../../../../src';
@@ -29,6 +30,7 @@ import { AddWidgetSize1700000000004 } from '../../../../data/typeorm/migration-b
 import { Baseline1700000000003 } from '../../../../data/typeorm/migration-baseline/baseline';
 import { AddWidgetColor1700000000002 } from '../../../../data/typeorm/migration-baseline/legacy/add-widget-color';
 import { CreateWidget1700000000001 } from '../../../../data/typeorm/migration-baseline/legacy/create-widget';
+import { SecondBaseline1700000000005 } from '../../../../data/typeorm/migration-baseline/second/baseline';
 
 vi.mock('../../../../../src/database/lock/module', async (importOriginal) => {
     const original = await importOriginal<typeof LockModule>();
@@ -568,5 +570,119 @@ describe('src/database/schema/migration/run', () => {
             (dataSource.driver.options as { type: string }).type = 'better-sqlite3';
             await queryRunner.release();
         }
+    });
+});
+
+describe('src/database/schema/migration/run with a second baseline', () => {
+    const SECOND = [SecondBaseline1700000000005];
+    const SECOND_HINT = 'Upgrade through the release carrying Baseline1700000000003 first.';
+
+    function spyOnUps() {
+        return [
+            vi.spyOn(Baseline1700000000003.prototype, 'up'),
+            vi.spyOn(AddWidgetSize1700000000004.prototype, 'up'),
+            vi.spyOn(SecondBaseline1700000000005.prototype, 'up'),
+            vi.spyOn(CreateWidget1700000000001.prototype, 'up'),
+            vi.spyOn(AddWidgetColor1700000000002.prototype, 'up'),
+        ];
+    }
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('adopts the second baseline on a database which adopted the first', async () => {
+        const file = databaseFile();
+
+        await runWith(file, LEGACY);
+        await runDatabaseMigrations(dataSourceOf(file, CURRENT));
+
+        const plan = await planDatabaseMigrations(dataSourceOf(file, SECOND));
+
+        expect(plan.adopt).toBe(true);
+        expect(plan.legacy).toEqual([]);
+        expect(plan.pending).toEqual([]);
+
+        const ups = spyOnUps();
+        const executed = await runDatabaseMigrations(dataSourceOf(file, SECOND));
+
+        expect(executed).toEqual([]);
+
+        for (const up of ups) {
+            expect(up).not.toHaveBeenCalled();
+        }
+
+        expect(names(await readRows(file))).toEqual([
+            'CreateWidget1700000000001',
+            'AddWidgetColor1700000000002',
+            'Baseline1700000000003',
+            'AddWidgetSize1700000000004',
+            'SecondBaseline1700000000005',
+        ]);
+    });
+
+    it('runs a missing ordinary legacy migration, never the first baseline', async () => {
+        const file = databaseFile();
+
+        await runWith(file, LEGACY);
+        await runDatabaseMigrations(dataSourceOf(file, [Baseline1700000000003]));
+
+        const plan = await planDatabaseMigrations(dataSourceOf(file, SECOND));
+
+        expect(names(plan.legacy)).toEqual(['AddWidgetSize1700000000004']);
+
+        const executed = await runDatabaseMigrations(dataSourceOf(file, SECOND));
+
+        expect(names(executed)).toEqual(['AddWidgetSize1700000000004']);
+        expect(await readColumns(file, 'widget')).toEqual(['id', 'color', 'size']);
+    });
+
+    it('refuses a database still on the first baseline\'s legacy chain', async () => {
+        const file = databaseFile();
+
+        await runWith(file, LEGACY);
+
+        const ups = spyOnUps();
+        const error = await runDatabaseMigrations(dataSourceOf(file, SECOND)).catch((e) => e);
+
+        expect(error).toBeInstanceOf(MigrationPlanError);
+        expect(error.names).toEqual(['AddWidgetColor1700000000002', 'CreateWidget1700000000001']);
+        expect(error.message).toContain(SECOND_HINT);
+
+        for (const up of ups) {
+            expect(up).not.toHaveBeenCalled();
+        }
+
+        expect(names(await readRows(file))).toEqual(['CreateWidget1700000000001', 'AddWidgetColor1700000000002']);
+    });
+
+    it('refuses rows of the second legacy set without the first baseline\'s row', async () => {
+        const file = databaseFile();
+
+        await runWith(file, [AddWidgetSize1700000000004].map((Class) => class AddWidgetSize1700000000004 extends Class {
+            async up(): Promise<void> {
+                // the table is not there, only the row matters
+            }
+        }));
+
+        const ups = spyOnUps();
+        const error = await runDatabaseMigrations(dataSourceOf(file, SECOND)).catch((e) => e);
+
+        expect(error).toBeInstanceOf(MigrationPlanError);
+        expect(error.message).toEqual(MigrationPlanError.legacyMissing('Baseline1700000000003', SECOND_HINT).message);
+
+        for (const up of ups) {
+            expect(up).not.toHaveBeenCalled();
+        }
+    });
+
+    it('fresh: runs the second baseline only', async () => {
+        const file = databaseFile();
+
+        const executed = await runDatabaseMigrations(dataSourceOf(file, SECOND));
+
+        expect(names(executed)).toEqual(['SecondBaseline1700000000005']);
+        expect(names(await readRows(file))).toEqual(['SecondBaseline1700000000005']);
+        expect(await readColumns(file, 'widget')).toEqual(['id', 'color', 'size']);
     });
 });

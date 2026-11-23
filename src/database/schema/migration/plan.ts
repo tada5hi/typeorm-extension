@@ -2,6 +2,7 @@ import type { DataSource, Migration, QueryRunner } from 'typeorm';
 import { MigrationExecutor } from 'typeorm';
 import { MigrationPlanError } from '../../../errors';
 import { useInitializedDataSource } from '../utils';
+import { isMigrationBaselineClass } from './baseline';
 import { scanMigrationSource } from './source';
 import { listUserTableNames } from './tables';
 import type { MigrationPlan, MigrationPlanOptions } from './types';
@@ -48,11 +49,11 @@ export async function planDatabaseMigrations(
 
         if (!baseline) {
             return {
-                source, 
-                executed, 
-                legacy: [], 
-                adopt: false, 
-                pending: withoutRow(source.current), 
+                source,
+                executed,
+                legacy: [],
+                adopt: false,
+                pending: withoutRow(source.current),
             };
         }
 
@@ -64,21 +65,21 @@ export async function planDatabaseMigrations(
             }
 
             return {
-                source, 
-                executed, 
-                legacy: [], 
-                adopt: false, 
-                pending: [...source.current], 
+                source,
+                executed,
+                legacy: [],
+                adopt: false,
+                pending: [...source.current],
             };
         }
 
         if (executedNames.has(baseline.name)) {
             return {
-                source, 
-                executed, 
-                legacy: [], 
-                adopt: false, 
-                pending: withoutRow(source.current), 
+                source,
+                executed,
+                legacy: [],
+                adopt: false,
+                pending: withoutRow(source.current),
             };
         }
 
@@ -88,16 +89,35 @@ export async function planDatabaseMigrations(
 
         const { legacy } = source;
         const legacyNames = new Set(legacy.map((item) => item.name));
-        const unknown = executed.filter((row) => !legacyNames.has(row.name));
+
+        // A baseline in the legacy set (a second squash) is never executed: its row
+        // must exist, and the rows older than it are its own history.
+        const legacyBaselines = legacy.filter((item) => isMigrationBaselineClass(item.instance?.constructor));
+        const missingBaselines = legacyBaselines.filter((item) => !executedNames.has(item.name));
+        const history = new Set<string>();
+
+        for (const item of legacyBaselines) {
+            if (executedNames.has(item.name)) {
+                executed
+                    .filter((row) => row.timestamp < item.timestamp)
+                    .forEach((row) => history.add(row.name));
+            }
+        }
+
+        const unknown = executed.filter((row) => !legacyNames.has(row.name) && !history.has(row.name));
 
         if (unknown.length > 0) {
             throw MigrationPlanError.unknownExecuted(unknown.map((row) => row.name), source.upgradeHint);
         }
 
+        if (missingBaselines.length > 0) {
+            throw MigrationPlanError.legacyMissing(missingBaselines[0]!.name, source.upgradeHint);
+        }
+
         return {
             source,
             executed,
-            legacy: withoutRow(legacy),
+            legacy: withoutRow(legacy).filter((item) => !legacyBaselines.includes(item)),
             adopt: true,
             pending: withoutRow(source.current).filter((item) => item.timestamp > baseline.timestamp),
         };
