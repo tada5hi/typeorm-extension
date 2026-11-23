@@ -88,6 +88,14 @@ export function supportsDatabaseLock(driver?: IntegrationDriver) : boolean {
 }
 
 /**
+ * Whether the baseline spec runs on the driver: the drivers it was verified
+ * against (its catalogue snapshot speaks postgres and mysql).
+ */
+export function supportsMigrationBaseline(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb';
+}
+
+/**
  * Whether withLockedEntity can lock a row on the driver
  * (typeorm emits FOR UPDATE, or an UPDLOCK hint on mssql).
  */
