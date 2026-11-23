@@ -4,9 +4,9 @@ import { TableColumn } from 'typeorm';
 export class AddWidgetSize1700000000004 implements MigrationInterface {
     async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.addColumn('widget', new TableColumn({
-            name: 'size', 
-            type: 'integer', 
-            isNullable: true, 
+            name: 'size',
+            type: 'integer',
+            isNullable: true,
         }));
     }
 

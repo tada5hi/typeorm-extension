@@ -6,9 +6,9 @@ export class CreateWidget1700000000001 implements MigrationInterface {
         await queryRunner.createTable(new Table({
             name: 'widget',
             columns: [{
-                name: 'id', 
-                type: 'integer', 
-                isPrimary: true, 
+                name: 'id',
+                type: 'integer',
+                isPrimary: true,
             }],
         }));
     }

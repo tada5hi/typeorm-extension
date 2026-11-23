@@ -12,14 +12,14 @@ export class Baseline1700000000003 extends MigrationBaseline {
             name: 'widget',
             columns: [
                 {
-                    name: 'id', 
-                    type: 'integer', 
-                    isPrimary: true, 
+                    name: 'id',
+                    type: 'integer',
+                    isPrimary: true,
                 },
                 {
-                    name: 'color', 
-                    type: 'varchar', 
-                    isNullable: true, 
+                    name: 'color',
+                    type: 'varchar',
+                    isNullable: true,
                 },
             ],
         }));
