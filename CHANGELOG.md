@@ -18,6 +18,20 @@
 * add create database  template support for postgres ([#1244](https://github.com/tada5hi/typeorm-extension/issues/1244)) ([d4d66d3](https://github.com/tada5hi/typeorm-extension/commit/d4d66d3eeb4477dcc15eacf2bbf4549f36906c01)), closes [#1226](https://github.com/tada5hi/typeorm-extension/issues/1226)
 * **postgres:** allow schema creation for postgres ([#1247](https://github.com/tada5hi/typeorm-extension/issues/1247)) ([986ff58](https://github.com/tada5hi/typeorm-extension/commit/986ff5883865a01c3a57ad742197e08aae80fbc7))
 
+## [4.7.0](https://github.com/tada5hi/typeorm-extension/compare/v4.6.0...v4.7.0) (2026-11-23)
+
+
+### Features
+
+* generate migrations without the default schema qualifier (schemaQualified option) ([8b204df](https://github.com/tada5hi/typeorm-extension/commit/8b204df7c5f5eee111829621074ec9b62a2cabb2))
+
+
+### Bug Fixes
+
+* a set env variable that does not parse no longer falls back to its alias ([8b204df](https://github.com/tada5hi/typeorm-extension/commit/8b204df7c5f5eee111829621074ec9b62a2cabb2))
+* **deps:** bump envix to v2, boolean env variables are read case-insensitively and trimmed ([8b204df](https://github.com/tada5hi/typeorm-extension/commit/8b204df7c5f5eee111829621074ec9b62a2cabb2))
+* read int env variables strictly (5432abc, 0x10 or 1e3 count as unset) ([8b204df](https://github.com/tada5hi/typeorm-extension/commit/8b204df7c5f5eee111829621074ec9b62a2cabb2))
+
 ## [4.6.0](https://github.com/tada5hi/typeorm-extension/compare/v4.5.0...v4.6.0) (2026-11-20)
 
 
