@@ -149,8 +149,8 @@ DB_ENTITIES=dist/database/entities/*.js
 A list is comma separated. A comma inside a brace group or a character class (`[,]`) belongs to its glob pattern, so
 `DB_SEEDS=src/database/seeds/**/*{.ts,.js}` is one entry. An escaped brace (`\{`) is a literal character. A bool is
 `true`, `t` or `1`, or `false`, `f` or `0`, in any case and with surrounding spaces ignored (`TRUE`, ` true`); any other
-value counts as unset. A JSON value that does not parse throws when the
-environment is read.
+value counts as unset. An int is plain decimal notation (`5432`); `5432abc`, `0x10` or `1e3` count as unset. A JSON
+value that does not parse throws when the environment is read.
 
 When both a variable and its alias are set, the variable wins, even when its value does not parse: `DB_PORT=abc`
 leaves `port` unset rather than falling back to `TYPEORM_PORT`.

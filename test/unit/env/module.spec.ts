@@ -81,6 +81,23 @@ describe('src/env/**', () => {
         }
     });
 
+    it('should read ints strictly', () => {
+        resetEnv();
+
+        process.env[EnvironmentVariableName.PORT] = '5432abc';
+        process.env[EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME] = ' 250 ';
+
+        try {
+            expect(useEnv('port')).toBeUndefined();
+            expect(useEnv('maxQueryExecutionTime')).toBe(250);
+        } finally {
+            delete process.env[EnvironmentVariableName.PORT];
+            delete process.env[EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME];
+
+            resetEnv();
+        }
+    });
+
     it('should prefer a variable over its alias', () => {
         resetEnv();
 

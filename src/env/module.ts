@@ -51,7 +51,7 @@ export function useEnv(key?: string) : any {
         port: readInt([
             EnvironmentVariableName.PORT,
             EnvironmentVariableName.PORT_ALT,
-        ]),
+        ], { strict: true }),
         username: read([
             EnvironmentVariableName.USERNAME,
             EnvironmentVariableName.USERNAME_ALT,
@@ -123,7 +123,7 @@ export function useEnv(key?: string) : any {
         maxQueryExecutionTime: readInt([
             EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME,
             EnvironmentVariableName.MAX_QUERY_EXECUTION_TIME_ALT,
-        ]),
+        ], { strict: true }),
         debug: read([
             EnvironmentVariableName.DEBUG,
             EnvironmentVariableName.DEBUG_ALT,

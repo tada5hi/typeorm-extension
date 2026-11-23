@@ -59,7 +59,7 @@ export function transformCache(input?: string) : DataSourceCacheOption | undefin
             duration: readInt([
                 EnvironmentVariableName.CACHE_DURATION,
                 EnvironmentVariableName.CACHE_DURATION_ALT,
-            ]),
+            ], { strict: true }),
         };
     }
 
