@@ -1,24 +1,30 @@
 import type { DataSource, DataSourceOptions, Migration } from 'typeorm';
+import type { MigrationRunOptions } from './migration';
+import { runDatabaseMigrations } from './migration';
 import { useInitializedDataSource } from './utils';
 
 export async function synchronizeDatabaseSchema(
     input: DataSource | DataSourceOptions,
+    options: Pick<MigrationRunOptions, 'transaction' | 'lock'> = {},
 ) : Promise<Migration[]> {
     const { dataSource, owned } = await useInitializedDataSource(input);
-    const { options } = dataSource;
+    const { options: dataSourceOptions } = dataSource;
 
     let migrationsCount = 0;
 
-    if (options.migrations) {
-        migrationsCount = Array.isArray(options.migrations) ?
-            options.migrations.length :
-            Object.keys(options.migrations).length;
+    if (dataSourceOptions.migrations) {
+        migrationsCount = Array.isArray(dataSourceOptions.migrations) ?
+            dataSourceOptions.migrations.length :
+            Object.keys(dataSourceOptions.migrations).length;
     }
 
     let migrations : Migration[] = [];
 
     if (migrationsCount > 0) {
-        migrations = await dataSource.runMigrations({ transaction: options.migrationsTransactionMode });
+        migrations = await runDatabaseMigrations(dataSource, {
+            transaction: options.transaction,
+            lock: options.lock,
+        });
     } else {
         await dataSource.synchronize(false);
     }
