@@ -36,7 +36,9 @@ console.log(executed.map((migration) => migration.name));
 `synchronizeDatabaseSchema` and `createDatabase({ synchronize: true })` run through this runner, so a baseline is
 honoured there without further configuration. `synchronizeDatabaseSchema` takes the lock by default (pass
 `{ lock: false }` to opt out), accepts `transaction` and `ignoreTables`, and initializes a data source passed in with
-`migrationsRun` turned off.
+`migrationsRun` turned off. On a project with a baseline it refuses `synchronize` and `dropSchema` (options or an
+uninitialized data source) with a `MigrationPlanError` before initializing, since `initialize()` would apply them
+before the baseline checks run. Without a baseline they behave as before.
 
 ### With a query runner
 
@@ -126,7 +128,7 @@ export class Baseline1795000000000 extends MigrationBaseline {
 - Remove `legacy` when the project drops the chain (its next major). The class stays a baseline, and a database
   which never adopted it is refused with `upgradeHint`.
 - Only one baseline is allowed in the migration list, also when one is passed explicitly. Every legacy migration must
-  be older than the baseline, and no other migration may be older than it.
+  be older than the baseline, and every other migration must be strictly newer than it (the same timestamp is refused).
 - A migration with a static `baseline`, `legacy` or `upgradeHint` which does not extend `MigrationBaseline` is
   refused, rather than run as an ordinary migration.
 - Baselines need the empty-schema check, which exists for postgres, cockroachdb, mysql, mariadb, better-sqlite3,
