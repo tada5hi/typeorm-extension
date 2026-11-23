@@ -82,3 +82,5 @@ export type MigrationRunOptions = MigrationPlanOptions & {
      */
     lock?: string | false
 };
+
+export type MigrationUndoOptions = Omit<MigrationRunOptions, 'baseline' | 'ignoreTables'>;

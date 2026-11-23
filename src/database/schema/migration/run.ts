@@ -1,54 +1,8 @@
 import type { DataSource, Migration, QueryRunner } from 'typeorm';
-import { ForbiddenTransactionModeOverrideError, InstanceChecker, MigrationExecutor } from 'typeorm';
-import { withDatabaseLock } from '../../lock';
-import { useInitializedDataSource } from '../utils';
-import { MIGRATION_LOCK_NAME } from './constants';
+import { ForbiddenTransactionModeOverrideError, InstanceChecker } from 'typeorm';
+import { RunMigrationExecutor, withMigrationRunner, withTransaction } from './execution';
 import { isMigrationPlanEmpty, planDatabaseMigrations } from './plan';
 import type { MigrationRunOptions } from './types';
-
-/**
- * typeorm keeps createMigrationsTableIfNotExist protected, and no public method
- * creates the table without doing more.
- */
-class RunMigrationExecutor extends MigrationExecutor {
-    async createMigrationsTable(queryRunner: QueryRunner): Promise<void> {
-        await this.createMigrationsTableIfNotExist(queryRunner);
-    }
-}
-
-/**
- * Mirrors typeorm's executePendingMigrations: a transaction already open on the
- * query runner is joined, one started here is rolled back on failure.
- */
-async function withTransaction(
-    queryRunner: QueryRunner,
-    enabled: boolean,
-    fn: () => Promise<void>,
-): Promise<void> {
-    if (!enabled || queryRunner.isTransactionActive) {
-        await fn();
-
-        return;
-    }
-
-    await queryRunner.beforeMigration();
-    await queryRunner.startTransaction();
-
-    try {
-        await fn();
-        await queryRunner.commitTransaction();
-    } catch (e) {
-        try {
-            await queryRunner.rollbackTransaction();
-        } catch {
-            // the original error matters more
-        }
-
-        throw e;
-    }
-
-    await queryRunner.afterMigration();
-}
 
 async function execute(
     dataSource: DataSource,
@@ -147,23 +101,5 @@ export async function runDatabaseMigrations(
     dataSource: DataSource,
     options: MigrationRunOptions = {},
 ): Promise<Migration[]> {
-    await useInitializedDataSource(dataSource);
-
-    if (options.queryRunner) {
-        return execute(dataSource, options.queryRunner, options);
-    }
-
-    const queryRunner = dataSource.createQueryRunner();
-
-    try {
-        const run = () => execute(dataSource, queryRunner, options);
-
-        if (options.lock === false) {
-            return await run();
-        }
-
-        return await withDatabaseLock(queryRunner, options.lock ?? MIGRATION_LOCK_NAME, run, { strict: false });
-    } finally {
-        await queryRunner.release();
-    }
+    return withMigrationRunner(dataSource, options, (queryRunner) => execute(dataSource, queryRunner, options));
 }

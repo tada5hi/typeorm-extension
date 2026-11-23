@@ -1,0 +1,59 @@
+import type { DataSource, Migration, QueryRunner } from 'typeorm';
+import { TypeORMError } from 'typeorm';
+import { MigrationPlanError } from '../../../errors';
+import { RunMigrationExecutor, withMigrationRunner, withTransaction } from './execution';
+import { scanMigrationSource } from './source';
+import type { MigrationUndoOptions } from './types';
+
+async function execute(
+    dataSource: DataSource,
+    queryRunner: QueryRunner,
+    options: MigrationUndoOptions,
+): Promise<Migration | undefined> {
+    const source = await scanMigrationSource(dataSource, options);
+    const executor = new RunMigrationExecutor(dataSource, queryRunner);
+
+    // newest first, by id
+    const [last] = await executor.readExecuted(queryRunner);
+
+    if (!last) {
+        return undefined;
+    }
+
+    const { baseline } = source;
+
+    if (baseline && (last.name === baseline.name || last.timestamp <= baseline.timestamp)) {
+        throw MigrationPlanError.baselineIrreversible(baseline.name);
+    }
+
+    const target = [...source.current, ...(source.legacy ?? [])].find((item) => item.name === last.name);
+
+    if (!target) {
+        throw new TypeORMError(
+            `No migration ${last.name} was found in the source code. Make sure you have this migration in your codebase and its included in the connection options.`,
+        );
+    }
+
+    const mode = options.transaction ?? dataSource.options.migrationsTransactionMode ?? 'all';
+
+    await executor.createMigrationsTable(queryRunner);
+
+    await withTransaction(queryRunner, target.instance?.transaction ?? mode !== 'none', async () => {
+        await target.instance?.down(queryRunner);
+        await executor.deleteMigration(last);
+    });
+
+    return target;
+}
+
+/**
+ * Revert the newest executed migration, never one the baseline replaces or the baseline itself.
+ *
+ * @returns the reverted migration, or undefined when nothing is executed.
+ */
+export async function undoDatabaseMigration(
+    dataSource: DataSource,
+    options: MigrationUndoOptions = {},
+): Promise<Migration | undefined> {
+    return withMigrationRunner(dataSource, options, (queryRunner) => execute(dataSource, queryRunner, options));
+}
