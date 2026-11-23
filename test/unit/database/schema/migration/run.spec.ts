@@ -2,7 +2,13 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { MigrationInterface, QueryRunner } from 'typeorm';
-import { DataSource, ForbiddenTransactionModeOverrideError, TableColumn } from 'typeorm';
+import {
+    DataSource,
+    ForbiddenTransactionModeOverrideError,
+    MigrationExecutor,
+    Table,
+    TableColumn,
+} from 'typeorm';
 import {
     afterEach,
     describe,
@@ -68,9 +74,9 @@ async function runWith(database: string, migrations: MigrationsInput) {
 }
 
 type Row = {
-    id: number, 
-    timestamp: number, 
-    name: string 
+    id: number,
+    timestamp: number,
+    name: string
 };
 
 async function readRows(database: string): Promise<Row[]> {
@@ -83,9 +89,9 @@ async function readRows(database: string): Promise<Row[]> {
     await dataSource.destroy();
 
     return rows.map((row: Row) => ({
-        id: Number(row.id), 
-        timestamp: Number(row.timestamp), 
-        name: row.name, 
+        id: Number(row.id),
+        timestamp: Number(row.timestamp),
+        name: row.name,
     }));
 }
 
@@ -150,6 +156,110 @@ class FailingPending1700000000004 implements MigrationInterface {
 
 class OverridingPending1700000000004 extends AddWidgetSize1700000000004 {
     transaction = false;
+}
+
+class TransactionalPending1700000000004 extends AddWidgetSize1700000000004 {
+    transaction = true;
+}
+
+/**
+ * The child row survives the parent's delete only when sqlite enforces no foreign keys.
+ */
+class CascadeData1700000000005 implements MigrationInterface {
+    async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.createTable(new Table({
+            name: 'parent',
+            columns: [{
+                name: 'id',
+                type: 'integer',
+                isPrimary: true,
+            }],
+        }));
+        await queryRunner.createTable(new Table({
+            name: 'child',
+            columns: [
+                {
+                    name: 'id',
+                    type: 'integer',
+                    isPrimary: true,
+                },
+                {
+                    name: 'parent_id',
+                    type: 'integer',
+                },
+            ],
+            foreignKeys: [{
+                columnNames: ['parent_id'],
+                referencedTableName: 'parent',
+                referencedColumnNames: ['id'],
+                onDelete: 'CASCADE',
+            }],
+        }));
+
+        await queryRunner.query('INSERT INTO parent (id) VALUES (1)');
+        await queryRunner.query('INSERT INTO child (id, parent_id) VALUES (1, 1)');
+        await queryRunner.query('DELETE FROM parent WHERE id = 1');
+    }
+
+    async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.dropTable('child');
+        await queryRunner.dropTable('parent');
+    }
+}
+
+async function countChildren(database: string): Promise<number> {
+    const dataSource = dataSourceOf(database, []);
+
+    await dataSource.initialize();
+
+    const rows = await dataSource.query('SELECT COUNT(*) AS count FROM child');
+
+    await dataSource.destroy();
+
+    return Number(rows[0].count);
+}
+
+type TransactionMode = 'all' | 'each' | 'none';
+
+/**
+ * Run on a caller's query runner and record transaction boundaries and row inserts in order.
+ */
+async function traceRun(database: string, migrations: MigrationsInput, transaction: TransactionMode): Promise<string[]> {
+    const dataSource = dataSourceOf(database, migrations);
+
+    await dataSource.initialize();
+
+    const queryRunner = dataSource.createQueryRunner();
+    const trace: string[] = [];
+
+    const start = queryRunner.startTransaction.bind(queryRunner);
+    const commit = queryRunner.commitTransaction.bind(queryRunner);
+
+    queryRunner.startTransaction = async (level) => {
+        trace.push('start');
+        await start(level);
+    };
+    queryRunner.commitTransaction = async () => {
+        trace.push('commit');
+        await commit();
+    };
+
+    const original = MigrationExecutor.prototype.insertMigration;
+
+    MigrationExecutor.prototype.insertMigration = async function (this: MigrationExecutor, migration) {
+        trace.push(`insert:${migration.name}`);
+        await original.call(this, migration);
+    };
+
+    try {
+        await runDatabaseMigrations(dataSource, { queryRunner, transaction });
+    } finally {
+        MigrationExecutor.prototype.insertMigration = original;
+
+        await queryRunner.release();
+    }
+
+    return trace;
 }
 
 afterEach(async () => {
@@ -275,28 +385,110 @@ describe('src/database/schema/migration/run', () => {
         ]);
     });
 
-    it('no baseline: same result and rows as dataSource.runMigrations', async () => {
+    it.each(['all', 'each', 'none'] as const)('no baseline: same result and rows as dataSource.runMigrations (%s)', async (transaction) => {
         const ours = databaseFile();
         const theirs = databaseFile();
-        const migrations = [...LEGACY, AddWidgetSize1700000000004];
+        const migrations = [...LEGACY, AddWidgetSize1700000000004, CascadeData1700000000005];
 
         await runWith(ours, [CreateWidget1700000000001]);
         await runWith(theirs, [CreateWidget1700000000001]);
 
-        const executed = await runDatabaseMigrations(dataSourceOf(ours, migrations));
+        const executed = await runDatabaseMigrations(dataSourceOf(ours, migrations), { transaction });
 
         const reference = dataSourceOf(theirs, migrations);
 
         await reference.initialize();
 
-        const expected = await reference.runMigrations();
+        const expected = await reference.runMigrations({ transaction });
 
         await reference.destroy();
 
         expect(names(executed)).toEqual(names(expected));
-        expect(names(executed)).toEqual(['AddWidgetColor1700000000002', 'AddWidgetSize1700000000004']);
+        expect(names(executed)).toEqual([
+            'AddWidgetColor1700000000002',
+            'AddWidgetSize1700000000004',
+            'CascadeData1700000000005',
+        ]);
         expect(await readRows(ours)).toEqual(await readRows(theirs));
         expect(await readColumns(ours, 'widget')).toEqual(await readColumns(theirs, 'widget'));
+        expect(await countChildren(ours)).toEqual(await countChildren(theirs));
+
+        if (transaction === 'none') {
+            // typeorm runs without a transaction with foreign keys enforced.
+            expect(await countChildren(ours)).toEqual(0);
+        }
+    });
+
+    it('all: legacy and marker in one transaction, pending in a second', async () => {
+        const file = databaseFile();
+
+        await runWith(file, [CreateWidget1700000000001]);
+
+        expect(await traceRun(file, CURRENT, 'all')).toEqual([
+            'start',
+            'insert:AddWidgetColor1700000000002',
+            'insert:Baseline1700000000003',
+            'commit',
+            'start',
+            'insert:AddWidgetSize1700000000004',
+            'commit',
+        ]);
+    });
+
+    it('each: the marker gets its own transaction', async () => {
+        const file = databaseFile();
+
+        await runWith(file, [CreateWidget1700000000001]);
+
+        expect(await traceRun(file, CURRENT, 'each')).toEqual([
+            'start',
+            'insert:AddWidgetColor1700000000002',
+            'commit',
+            'start',
+            'insert:Baseline1700000000003',
+            'commit',
+            'start',
+            'insert:AddWidgetSize1700000000004',
+            'commit',
+        ]);
+    });
+
+    it('none: inserts the marker without a transaction', async () => {
+        const file = databaseFile();
+
+        await runWith(file, [CreateWidget1700000000001]);
+
+        expect(await traceRun(file, CURRENT, 'none')).toEqual([
+            'insert:AddWidgetColor1700000000002',
+            'insert:Baseline1700000000003',
+            'insert:AddWidgetSize1700000000004',
+        ]);
+    });
+
+    it('each: honours a per-migration override', async () => {
+        const file = databaseFile();
+
+        await runWith(file, LEGACY);
+
+        expect(await traceRun(file, [Baseline1700000000003, OverridingPending1700000000004], 'each')).toEqual([
+            'start',
+            'insert:Baseline1700000000003',
+            'commit',
+            'insert:OverridingPending1700000000004',
+        ]);
+    });
+
+    it('none: honours a per-migration override', async () => {
+        const file = databaseFile();
+
+        await runWith(file, LEGACY);
+
+        expect(await traceRun(file, [Baseline1700000000003, TransactionalPending1700000000004], 'none')).toEqual([
+            'insert:Baseline1700000000003',
+            'start',
+            'insert:TransactionalPending1700000000004',
+            'commit',
+        ]);
     });
 
     it('lock false runs without a lock', async () => {
@@ -306,6 +498,7 @@ describe('src/database/schema/migration/run', () => {
 
         expect(withDatabaseLock).toHaveBeenCalledTimes(1);
         expect(vi.mocked(withDatabaseLock).mock.calls[0]![1]).toEqual(MIGRATION_LOCK_NAME);
+        expect(vi.mocked(withDatabaseLock).mock.calls[0]![3]).toEqual({ strict: false });
 
         vi.mocked(withDatabaseLock).mockClear();
 

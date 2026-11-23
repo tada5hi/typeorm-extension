@@ -1,10 +1,20 @@
 import type { DataSource, Migration, QueryRunner } from 'typeorm';
-import { ForbiddenTransactionModeOverrideError, MigrationExecutor } from 'typeorm';
+import { ForbiddenTransactionModeOverrideError, InstanceChecker, MigrationExecutor } from 'typeorm';
 import { withDatabaseLock } from '../../lock';
 import { useInitializedDataSource } from '../utils';
 import { MIGRATION_LOCK_NAME } from './constants';
 import { isMigrationPlanEmpty, planDatabaseMigrations } from './plan';
 import type { MigrationRunOptions } from './types';
+
+/**
+ * typeorm keeps createMigrationsTableIfNotExist protected, and no public method
+ * creates the table without doing more.
+ */
+class RunMigrationExecutor extends MigrationExecutor {
+    async createMigrationsTable(queryRunner: QueryRunner): Promise<void> {
+        await this.createMigrationsTableIfNotExist(queryRunner);
+    }
+}
 
 /**
  * Mirrors typeorm's executePendingMigrations: a transaction already open on the
@@ -62,12 +72,26 @@ async function execute(
         }
     }
 
-    const executor = new MigrationExecutor(dataSource, queryRunner);
+    const executor = new RunMigrationExecutor(dataSource, queryRunner);
+
+    // Like executePendingMigrations: both tables exist before any transaction starts.
+    await executor.createMigrationsTable(queryRunner);
+
+    const schemaBuilder = dataSource.driver.createSchemaBuilder();
+
+    if (InstanceChecker.isRdbmsSchemaBuilder(schemaBuilder)) {
+        await schemaBuilder.createMetadataTableIfNecessary(queryRunner);
+    }
+
     const marker = plan.adopt ? plan.source.baseline : undefined;
     const executed: Migration[] = [];
 
+    // beforeMigration / afterMigration run only around a transaction started here, as in typeorm.
     const run = async (migration: Migration) => {
-        executed.push(await executor.executeMigration(migration));
+        await migration.instance?.up(queryRunner);
+        await executor.insertMigration(migration);
+
+        executed.push(migration);
     };
 
     if (mode === 'all') {
