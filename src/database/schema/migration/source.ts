@@ -2,6 +2,8 @@ import { Migration } from 'typeorm';
 import type { DataSource, MigrationInterface } from 'typeorm';
 import { importClassesFromDirectories } from 'typeorm/util/DirectoryExportedClassesLoader';
 import { MigrationPlanError } from '../../../errors';
+import type { IPathResolver } from '../../../utils';
+import { PathResolverMode, createPathResolver } from '../../../utils';
 import { isMigrationBaselineClass } from './baseline';
 import type { 
     MigrationBaselineClass, 
@@ -24,13 +26,17 @@ function toList(input: MigrationsInput): (string | MigrationClass)[] {
     return Object.values(input) as (string | MigrationClass)[];
 }
 
-async function buildInstances(dataSource: DataSource, input: MigrationsInput): Promise<MigrationInterface[]> {
+async function buildInstances(
+    dataSource: DataSource,
+    input: MigrationsInput,
+    pathResolver?: IPathResolver,
+): Promise<MigrationInterface[]> {
     const classes: MigrationClass[] = [];
     const directories: string[] = [];
 
     for (const item of toList(input)) {
         if (typeof item === 'string') {
-            directories.push(item);
+            directories.push(pathResolver ? await pathResolver.transform(item) : item);
         } else {
             classes.push(item);
         }
@@ -119,7 +125,11 @@ export async function scanMigrationSource(
 
     const baseline = baselineMigration;
 
-    const legacyInstances = await buildInstances(dataSource, baselineClass.legacy);
+    const legacyInstances = await buildInstances(
+        dataSource,
+        baselineClass.legacy,
+        options.pathResolver ?? createPathResolver({ mode: PathResolverMode.AUTO }),
+    );
 
     if (legacyInstances.length === 0) {
         throw MigrationPlanError.legacyEmpty(baseline.name);

@@ -2,7 +2,13 @@
 import type { MigrationInterface, QueryRunner } from 'typeorm';
 import { describe, expect, it } from 'vitest';
 import type { MigrationsInput } from '../../../../../src';
-import { MigrationBaseline, MigrationPlanError, scanMigrationSource } from '../../../../../src';
+import {
+    MigrationBaseline, 
+    MigrationPlanError, 
+    PathResolverMode, 
+    createPathResolver, 
+    scanMigrationSource,
+} from '../../../../../src';
 import { createDataSource } from '../../../../data/typeorm/factory';
 import { AddWidgetSize1700000000004 } from '../../../../data/typeorm/migration-baseline/add-widget-size';
 import { Baseline1700000000003 } from '../../../../data/typeorm/migration-baseline/baseline';
@@ -140,5 +146,23 @@ describe('src/database/schema/migration/source', () => {
         await expect(scanMigrationSource(
             dataSourceOf([Baseline1700000000003], 'mongodb'),
         )).rejects.toMatchObject({ message: MigrationPlanError.driverNotSupported('mongodb').message });
+    });
+
+    it('should resolve the legacy globs through the path resolver', async () => {
+        const tsconfig = { compilerOptions: { rootDir: 'test', outDir: 'test-compiled' } };
+
+        const pathResolver = createPathResolver({ mode: PathResolverMode.PRESERVE, tsconfig });
+        const preserved = await scanMigrationSource(dataSourceOf([Baseline1700000000003]), { pathResolver });
+
+        expect(preserved.legacy).toHaveLength(2);
+
+        // the source glob is rewritten to the compiled location, which holds nothing.
+        await expect(scanMigrationSource(dataSourceOf([Baseline1700000000003]), {
+            pathResolver: createPathResolver({
+                mode: PathResolverMode.TRANSFORM, 
+                tsconfig, 
+                typescript: true, 
+            }), 
+        })).rejects.toMatchObject({ message: MigrationPlanError.legacyEmpty('Baseline1700000000003').message });
     });
 });

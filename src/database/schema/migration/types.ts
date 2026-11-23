@@ -1,4 +1,5 @@
 import type { DataSourceOptions, Migration } from 'typeorm';
+import type { IPathResolver } from '../../../utils';
 
 export type MigrationsInput = DataSourceOptions['migrations'];
 
@@ -17,5 +18,13 @@ export type MigrationSource = {
 };
 
 export type MigrationSourceScanOptions = {
+    /**
+     * Resolves the legacy globs like the `migrations` key of the data source options
+     * (src -> outDir, .ts -> .js).
+     *
+     * Default: createPathResolver({ mode: 'auto' })
+     */
+    pathResolver?: IPathResolver,
+
     baseline?: MigrationBaselineClass
 };
