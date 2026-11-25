@@ -14,7 +14,17 @@ type IndexRow = {
     length?: number | string | null,
     unique?: number | string | boolean,
     type?: string | null,
+    collation?: string | null,
+    invisible?: number | string | null,
 };
+
+/**
+ * The columns of `information_schema.statistics` a mysql or mariadb server is assumed to have
+ * when the caller does not list them: mysql 8 adds `expression` and `is_visible`, mariadb 10.6 `ignored`.
+ */
+function defaultStatisticsColumns(type: DataSourceOptions['type']): Set<string> {
+    return new Set(type === 'mysql' ? ['EXPRESSION', 'IS_VISIBLE'] : ['IGNORED']);
+}
 
 /**
  * The statement listing the indexes of the current schema (database for mysql), or
@@ -24,13 +34,13 @@ type IndexRow = {
  * with `contype` p, u or x; a foreign key also points at the unique index it references, which must stay
  * listed), so the primary key and unique constraints stay with typeorm's `primaryKey` and `uniques`, as typeorm reports them.
  * Mysql has no such split: a unique constraint is a unique index, and typeorm reports it as one too,
- * so every index but `PRIMARY` is listed.
- *
- * @experimental The schema snapshot API may change in a minor release.
+ * so every index but `PRIMARY` is listed. `statistics` names the (upper-case) columns of
+ * `information_schema.statistics` the server has; a column it lacks is selected as NULL.
  */
 export function buildIndexStatement(
     type: DataSourceOptions['type'],
     schema?: string,
+    statistics: Set<string> = defaultStatisticsColumns(type),
 ): { sql: string, parameters: string[] } | undefined {
     switch (type) {
         case 'postgres':
@@ -46,12 +56,21 @@ export function buildIndexStatement(
         }
         case 'mysql':
         case 'mariadb': {
+            let invisible = 'NULL';
+
+            if (statistics.has('IS_VISIBLE')) {
+                invisible = '(is_visible = \'NO\')';
+            } else if (statistics.has('IGNORED')) {
+                invisible = '(ignored = \'YES\')';
+            }
+
             return {
                 // aliased: mysql 8 returns upper-case column names otherwise; mariadb has no functional indexes
                 sql: [
                     'SELECT table_name AS `table`, index_name AS `name`, column_name AS `column`,',
-                    `${type === 'mysql' ? 'expression' : 'NULL'} AS \`expression\`,`,
-                    'sub_part AS `length`, non_unique AS `unique`, index_type AS `type`, seq_in_index AS `seq`',
+                    `${statistics.has('EXPRESSION') ? 'expression' : 'NULL'} AS \`expression\`,`,
+                    'sub_part AS `length`, non_unique AS `unique`, index_type AS `type`, seq_in_index AS `seq`,',
+                    `collation AS \`collation\`, ${invisible} AS \`invisible\``,
                     'FROM information_schema.statistics',
                     'WHERE table_schema = DATABASE() AND index_name <> \'PRIMARY\'',
                     'ORDER BY table_name, index_name, seq_in_index',
@@ -109,9 +128,8 @@ function readPostgresColumns(definition: string): string[] {
 /**
  * Normalize the rows of a native index statement into snapshot indexes per table.
  * A postgres definition loses its `ON <schema>.` qualifier and `isUnique` / `where` come from it;
- * mysql parts are folded per index in `seq_in_index` order (row order), a prefix part keeps its length (`a(10)`).
- *
- * @experimental The schema snapshot API may change in a minor release.
+ * mysql parts are folded per index in `seq_in_index` order (row order), a prefix part keeps its length (`a(10)`),
+ * a descending part gets `DESC`, and the index type and an invisible (mysql) or ignored (mariadb) index follow.
  */
 export function normalizeIndexRows(
     type: DataSourceOptions['type'],
@@ -163,12 +181,18 @@ export function normalizeIndexRows(
             where: null,
             kind,
             definition: parts.map((part) => {
+                let value: string;
+
                 if (!part.column) {
-                    return `(${part.expression})`;
+                    value = `(${part.expression})`;
+                } else {
+                    value = part.length ? `${part.column}(${part.length})` : part.column;
                 }
 
-                return part.length ? `${part.column}(${part.length})` : part.column;
-            }).join(', '),
+                return part.collation === 'D' ? `${value} DESC` : value;
+            }).join(', ') +
+                (first.type ? ` USING ${first.type}` : '') +
+                (Number(first.invisible) === 1 ? ` ${type === 'mariadb' ? 'IGNORED' : 'INVISIBLE'}` : ''),
         });
     }
 
@@ -178,15 +202,25 @@ export function normalizeIndexRows(
 /**
  * Read the indexes of the given tables from the catalogue, or undefined when the driver has
  * no native reader (typeorm's own indices stay then).
- *
- * @experimental The schema snapshot API may change in a minor release.
  */
 export async function readNativeIndices(
     queryRunner: QueryRunner,
     tables: string[],
 ): Promise<Map<string, SchemaSnapshotIndex[]> | undefined> {
     const { options } = queryRunner.connection;
-    const statement = buildIndexStatement(options.type, (options as { schema?: string }).schema);
+    let statistics: Set<string> | undefined;
+
+    if (options.type === 'mysql' || options.type === 'mariadb') {
+        // the optional columns differ by server and version
+        const columns = await queryRunner.query(
+            'SELECT column_name AS `name` FROM information_schema.columns ' +
+            'WHERE table_schema = \'information_schema\' AND table_name = \'STATISTICS\'',
+        ) as { name: string }[];
+
+        statistics = new Set(columns.map((column) => String(column.name).toUpperCase()));
+    }
+
+    const statement = buildIndexStatement(options.type, (options as { schema?: string }).schema, statistics);
 
     if (!statement) {
         return undefined;

@@ -38,6 +38,28 @@ describe('database/schema/snapshot/indices', () => {
         expect(buildIndexStatement('mariadb')?.sql).toContain('sub_part AS `length`');
     });
 
+    it('reads the direction, visibility and type of mysql and mariadb index parts', () => {
+        const mysql = buildIndexStatement('mysql')?.sql;
+        const mariadb = buildIndexStatement('mariadb')?.sql;
+
+        expect(mysql).toContain('collation AS `collation`');
+        expect(mysql).toContain('(is_visible = \'NO\') AS `invisible`');
+        expect(mysql).toContain('index_type AS `type`');
+        expect(mariadb).toContain('collation AS `collation`');
+        expect(mariadb).toContain('(ignored = \'YES\') AS `invisible`');
+    });
+
+    it('selects NULL for a statistics column the server lacks', () => {
+        const mysql = buildIndexStatement('mysql', undefined, new Set(['COLLATION']))?.sql;
+        const mariadb = buildIndexStatement('mariadb', undefined, new Set(['COLLATION']))?.sql;
+
+        expect(mysql).toContain('NULL AS `expression`');
+        expect(mysql).toContain('NULL AS `invisible`');
+        expect(mariadb).toContain('NULL AS `invisible`');
+        expect(buildIndexStatement('mysql', undefined, new Set(['EXPRESSION', 'IS_VISIBLE']))?.sql)
+            .toContain('expression AS `expression`');
+    });
+
     it('returns undefined for a driver without a reader', async () => {
         expect(buildIndexStatement('better-sqlite3')).toBeUndefined();
 
@@ -174,7 +196,7 @@ describe('database/schema/snapshot/indices', () => {
                 isUnique: true,
                 where: null,
                 kind: null,
-                definition: 'a, b',
+                definition: 'a, b USING BTREE',
             },
             {
                 name: 'e',
@@ -182,7 +204,7 @@ describe('database/schema/snapshot/indices', () => {
                 isUnique: false,
                 where: null,
                 kind: null,
-                definition: '(coalesce(`a`,\'\'))',
+                definition: '(coalesce(`a`,\'\')) USING BTREE',
             },
             {
                 name: 'f',
@@ -190,10 +212,42 @@ describe('database/schema/snapshot/indices', () => {
                 isUnique: false,
                 where: null,
                 kind: 'fulltext',
-                definition: 'body',
+                definition: 'body USING FULLTEXT',
             },
         ]);
         expect(result.get('o')?.[0].kind).toBe('spatial');
+    });
+
+    it('appends the direction, the type and the visibility to a mysql definition', () => {
+        const rows = (collation: string | null, type: string, invisible: number | null) => [
+            {
+                table: 't',
+                name: 'd',
+                column: 'a',
+                collation,
+                unique: 1,
+                type,
+                invisible,
+            },
+            {
+                table: 't',
+                name: 'd',
+                column: 'b',
+                collation: 'A',
+                unique: 1,
+                type,
+                invisible,
+            },
+        ];
+
+        const plain = normalizeIndexRows('mysql', rows('A', 'BTREE', 0)).get('t')?.[0].definition;
+
+        expect(plain).toBe('a, b USING BTREE');
+        expect(normalizeIndexRows('mysql', rows('D', 'BTREE', 0)).get('t')?.[0].definition).toBe('a DESC, b USING BTREE');
+        expect(normalizeIndexRows('mysql', rows('A', 'HASH', 0)).get('t')?.[0].definition).toBe('a, b USING HASH');
+        expect(normalizeIndexRows('mysql', rows('A', 'BTREE', 1)).get('t')?.[0].definition).toBe('a, b USING BTREE INVISIBLE');
+        expect(normalizeIndexRows('mariadb', rows('A', 'BTREE', '1' as any)).get('t')?.[0].definition).toBe('a, b USING BTREE IGNORED');
+        expect(normalizeIndexRows('mysql', rows(null, 'BTREE', null)).get('t')?.[0].definition).toBe(plain);
     });
 
     it('keeps the prefix length of a mysql index part', () => {
@@ -219,7 +273,7 @@ describe('database/schema/snapshot/indices', () => {
         const prefixed = normalizeIndexRows('mariadb', rows(10)).get('t')?.[0];
         const shorter = normalizeIndexRows('mariadb', rows(5)).get('t')?.[0];
 
-        expect(prefixed?.definition).toBe('a(10), b');
+        expect(prefixed?.definition).toBe('a(10), b USING BTREE');
         expect(prefixed?.columns).toEqual(['a', 'b']);
         expect(shorter?.definition).not.toEqual(prefixed?.definition);
     });
