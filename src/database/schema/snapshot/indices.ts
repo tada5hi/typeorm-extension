@@ -19,8 +19,9 @@ type IndexRow = {
  * The statement listing the indexes of the current schema (database for mysql), or
  * undefined for a driver without a native reader.
  *
- * Postgres lists only indexes that back no constraint (`pg_constraint.conindid`), so the primary
- * key and unique constraints stay with typeorm's `primaryKey` and `uniques`, as typeorm reports them.
+ * Postgres lists only indexes that back no primary key, unique or exclusion constraint (`pg_constraint.conindid`
+ * with `contype` p, u or x; a foreign key also points at the unique index it references, which must stay
+ * listed), so the primary key and unique constraints stay with typeorm's `primaryKey` and `uniques`, as typeorm reports them.
  * Mysql has no such split: a unique constraint is a unique index, and typeorm reports it as one too,
  * so every index but `PRIMARY` is listed.
  *
@@ -38,7 +39,7 @@ export function buildIndexStatement(
                     'FROM pg_catalog.pg_indexes i ' +
                     `WHERE i.schemaname = ${schema ? '$1' : 'current_schema()'} ` +
                     'AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c ' +
-                    'WHERE c.conindid = (quote_ident(i.schemaname) || \'.\' || quote_ident(i.indexname))::regclass)',
+                    'WHERE c.contype IN (\'p\', \'u\', \'x\') AND c.conindid = (quote_ident(i.schemaname) || \'.\' || quote_ident(i.indexname))::regclass)',
                 parameters: schema ? [schema] : [],
             };
         }
@@ -125,7 +126,7 @@ export function normalizeIndexRows(
 
     if (type === 'postgres' || type === 'cockroachdb') {
         for (const row of rows) {
-            const definition = (row.definition as string).replace(/ ON (?:ONLY )?(?:"[^"]+"|[\w$]+)\./, ' ON ');
+            const definition = (row.definition as string).replace(/^(CREATE (?:UNIQUE )?INDEX (?:"[^"]*"|\S+) ON )(?:ONLY )?(?:"[^"]+"|[\w$]+)\./, '$1');
             const where = /\sWHERE\s(.*)$/s.exec(definition);
 
             push(row.table, {

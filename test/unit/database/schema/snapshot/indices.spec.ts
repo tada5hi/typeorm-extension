@@ -21,7 +21,11 @@ describe('database/schema/snapshot/indices', () => {
     });
 
     it('excludes constraint-backed indexes on postgres', () => {
-        expect(buildIndexStatement('postgres')?.sql).toContain('pg_constraint');
+        const { sql } = buildIndexStatement('postgres') as { sql: string };
+
+        expect(sql).toContain('pg_constraint');
+        // a foreign key also sets conindid (to the index it references): that index must stay listed
+        expect(sql).toContain('c.contype IN (\'p\', \'u\', \'x\')');
     });
 
     it('reads the expression column on mysql only', () => {
@@ -108,6 +112,18 @@ describe('database/schema/snapshot/indices', () => {
                 definition: 'CREATE INDEX part ON t USING btree (b DESC) WHERE (a IS NOT NULL)',
             },
         ]);
+    });
+
+    it('strips only the qualifier after the index name', () => {
+        const result = normalizeIndexRows('postgres', [
+            {
+                table: 't',
+                name: 'q x',
+                definition: 'CREATE INDEX "q x" ON public.t USING btree (a) WHERE (a = \'ON public.x\'::text)',
+            },
+        ]);
+
+        expect(result.get('t')?.[0].definition).toBe('CREATE INDEX "q x" ON t USING btree (a) WHERE (a = \'ON public.x\'::text)');
     });
 
     it('folds mysql index parts in order and reads uniqueness and kind', () => {
