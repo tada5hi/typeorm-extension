@@ -123,3 +123,9 @@ See [readDatabaseErrorCode](./database-api-reference#readdatabaseerrorcode).
 The [migration runner](./migrations) refuses an inconsistent state with a `MigrationPlanError` before it runs a
 statement. Its `names` property lists the tables or migrations the refusal is about, and the message carries the
 `upgradeHint` of the baseline where an upgrade path is the fix.
+
+## Schema snapshot errors
+
+`assertSchemaSnapshotsEqual` throws a `SchemaSnapshotError` when two [schema snapshots](./migrations#proving-a-baseline)
+differ. Its `differences` property holds the list `compareSchemaSnapshots` returns (`path`, `kind` and, for a change,
+`expected` and `actual`), and the message lists one line per difference. The class is experimental.

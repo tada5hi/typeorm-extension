@@ -32,13 +32,14 @@ typeorm-extension/
 │   │   ├── schema/             # schema level ops against an initialized DataSource / QueryRunner
 │   │   │   ├── synchronize.ts  # synchronizeDatabaseSchema — run migrations or synchronize()
 │   │   │   ├── drift.ts        # getSchemaDrift / assertSchemaMatchesMetadata
+│   │   │   ├── snapshot/       # getSchemaSnapshot / compareSchemaSnapshots (prove a baseline)
 │   │   │   ├── alter/          # guarded renameIndex / renameForeignKey / changeColumnType / withForeignKeyChecksDisabled
 │   │   │   └── alter/statements.ts # PURE per-dialect DDL builders (+ dialect.ts — find/resolveSchemaDialect)
 │   │   ├── error/              # isDatabaseUniqueViolationError / isDatabaseForeignKeyViolationError / isDatabaseLockConflictError / readDatabaseErrorCode
 │   │   ├── lock/               # withDatabaseLock: named advisory lock over a QueryRunner (postgres, mysql, mariadb); entity.ts: withLockedEntity row lock + isRowLockSupported
 │   │   └── utils/              # context builders, migration helpers
 │   ├── env/                    # `useEnv()` — read TYPEORM_* / DB_* env vars (via envix)
-│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError + DatabaseLockError + EntityMetadataError + EntityRelationLookupError (one class per file)
+│   ├── errors/                 # TypeormExtensionError + DriverError + OptionsError + SchemaDriftError + SchemaAlterationError + SchemaSnapshotError + DatabaseLockError + EntityMetadataError + EntityRelationLookupError (one class per file)
 │   ├── helpers/                # Entity runtime helpers
 │   │   └── entity/             # name, metadata, property-names, join-column validation, uniqueness
 │   ├── runtime/                # Process-global state registry (internal, not in the public barrel)
@@ -81,14 +82,14 @@ typeorm-extension/
 | Module           | Purpose                                                                                                |
 |------------------|--------------------------------------------------------------------------------------------------------|
 | `cli/`           | Process entry for the `typeorm-extension` binary. Thin wrapper over the public API.                   |
-| `data-source/`   | Locate, build, and cache `DataSource` instances by alias. Backbone for every other feature.            |
+| `data-source/`   | Locate, build, and cache `DataSource` instances by alias. Backbone for every feature.   |
 | `database/`      | Driver-specific `create` / `drop` / `check` operations that do not require an initialized DataSource.  |
-| `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, guarded rename/alter helpers for repair migrations. |
+| `database/schema/` | Schema-level operations which *do* need an initialized DataSource / QueryRunner: synchronize, drift detection, schema snapshots, guarded rename/alter helpers for repair migrations. |
 | `database/error/` | Classify a failed write (unique violation, foreign key violation, lock conflict) from the vendor code, wherever the driver reports it. Pure, no driver imports. |
 | `database/lock/` | `withDatabaseLock`: a named, session-scoped advisory lock over a `QueryRunner` (e.g. to serialize migrations across replicas). `withLockedEntity` (`entity.ts`): one row read with a write lock inside a transaction, handed to a callback; `isRowLockSupported` is its public driver check. |
 | `env/`           | Read `TYPEORM_*` and `DB_*` environment variables into a strongly-typed `Environment` record.          |
-| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError` / `DatabaseLockError` / `EntityMetadataError` / `EntityRelationLookupError`). One class per file; every error a consumer may catch lives here, not next to its thrower. |
-| `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager) and is the only stable one; the rest stay `@experimental` public API for downstream CRUD layers (authup, PrivateAIM hub). Documented in `docs/guide/entity-api-reference.md`. |
+| `errors/`        | Error class hierarchy (`TypeormExtensionError` → `DriverError` / `OptionsError` / `SchemaDriftError` / `SchemaAlterationError` / `SchemaSnapshotError` / `DatabaseLockError` / `EntityMetadataError` / `EntityRelationLookupError`). One class per file; every error a consumer may catch lives here, not next to its thrower. |
+| `helpers/`       | Entity runtime helpers (`getEntityName`, `getEntityMetadata`, `getEntityPropertyNames`, `validateEntityJoinColumns`, `isEntityUnique`). Only `getEntityName` is used internally (seeder factory manager) and is the only stable one; the rest stay `@experimental` public API for downstream CRUD layers (see `docs/guide/entity-api-reference.md`). |
 | `runtime/`       | Internal registry for process-global state (data sources, options, env, factory manager) with a uniform `reset()`. |
 | `seeder/`        | Discover and execute seeders, manage factories, track executed seeds in a `seeds` table.               |
 | `utils/`         | Generic, framework-free helpers (tsconfig reading, object/promise/slash utils) + `createPathResolver`, the single owner of path absolutization and the JIT-vs-compiled rewrite (`mode: auto \| preserve \| transform`; `preserveFilePaths` maps to `preserve`). In `auto` the rewritten path wins when it exists or its glob matches; otherwise the original is used if it resolves to something the runtime can load (`.ts` only with JIT, `process.features.typescript` or the `typescript` option; a glob only if every match is loadable). Callers never transform a bare directory (an empty build dir would win): use `resolveDirectory(dir, pattern)`, which keeps `dir` a glob cwd. `transform` never falls back. `readTSConfig` delegates to `get-tsconfig` (follows `extends`), strips its `./` prefix from path options and takes an absolute inherited value (mangled by get-tsconfig 4) from a raw walk of the chain (plain JSON + locter `resolveModuleSync`). |
@@ -142,6 +143,6 @@ CLI command factories are **not** part of the public barrel — they are interna
 
 - **CLI parsing** → `src/cli/` (citty only).
 - **Public, programmatic API** → everything else under `src/`, re-exported from `src/index.ts`.
-- **Driver-specific SQL** → `src/database/core/<dialect>/statements.ts` (pure builders), orchestrated by `src/database/core/<dialect>/module.ts` over the connections; native clients live only in `src/database/adapters/`. Adding a new TypeORM driver means one dialect folder in `core/`, one adapter, and one row in `src/database/registry.ts`.
+- **Driver-specific SQL** → `src/database/core/<dialect>/statements.ts` (pure builders), orchestrated by `src/database/core/<dialect>/module.ts` over the connections; native clients live only in `src/database/adapters/`. A new TypeORM driver means a `core/` dialect folder, an adapter and a `registry.ts` row.
 - **Schema-level DDL** → `src/database/schema/alter/statements.ts` (pure per-dialect builders, driven by `resolveSchemaDialect` in `alter/dialect.ts`), orchestrated over a typeorm `QueryRunner` by one file per concern (`alter/indices.ts`, `alter/foreign-keys.ts`, `alter/columns.ts`, `alter/checks.ts`). Only `postgres`/`cockroachdb` and `mysql`/`mariadb` are known to the dialect table: the renames raise `DriverError.schemaAlterationNotSupported` for every other driver, `changeColumnType` falls back to `queryRunner.changeColumn()` instead (`findSchemaDialect` vs. `resolveSchemaDialect`). `alter/index.ts` deliberately re-exports **only** the four helpers and their input types — the statement builders, the escapers and `resolveSchemaDialect` stay internal, and their specs import them by path. Don't widen that barrel to `export *`: every symbol in it is a compatibility promise.
 - **Side-effectful state** (DataSource registry, options cache, env cache, factory manager) → one `RuntimeRegistry` in `src/runtime/module.ts`; the public accessors (`setDataSource`/`useDataSource`, `useEnv`/`resetEnv`, `useSeederFactoryManager`/`resetSeederFactoryManager`, …) are thin delegates in their own domains.

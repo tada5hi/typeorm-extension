@@ -164,6 +164,99 @@ await generateMigration({
 Make the generated class extend `MigrationBaseline`, move the chain it replaces into the `legacy` location and
 declare it as above.
 
+### Proving a baseline
+
+A baseline replaces the chain, so a test should show that both create the same schema. Build the schema three ways and
+compare the snapshots:
+
+- A: a fresh database, the legacy chain run by typeorm's own runner.
+- B: a fresh database, the baseline run by `runDatabaseMigrations`.
+- C: a database which ran the chain, then adopts the baseline.
+
+```typescript
+import { DataSource } from 'typeorm';
+import type { DataSourceOptions } from 'typeorm';
+import { describe, expect, it } from 'vitest';
+import {
+    assertSchemaSnapshotsEqual,
+    compareSchemaSnapshots,
+    getSchemaSnapshot,
+    runDatabaseMigrations,
+} from 'typeorm-extension';
+import { Baseline1795000000000 } from '../src/migrations/baseline';
+
+// One empty database per call, with the migrations of the project for the given run.
+declare function createOptions(migrations: DataSourceOptions['migrations']): DataSourceOptions;
+declare const legacyMigrations: NonNullable<DataSourceOptions['migrations']>;
+
+describe('baseline', () => {
+    it('creates the schema of the legacy chain', async () => {
+        const chain = new DataSource(createOptions(legacyMigrations));
+        await chain.initialize();
+        await chain.runMigrations();
+        const expected = await getSchemaSnapshot(chain);
+        await chain.destroy();
+
+        const fresh = new DataSource(createOptions([Baseline1795000000000]));
+        await fresh.initialize();
+        await runDatabaseMigrations(fresh);
+        const actual = await getSchemaSnapshot(fresh);
+        await fresh.destroy();
+
+        expect(compareSchemaSnapshots(expected, actual)).toEqual([]);
+
+        // ... or throw a SchemaSnapshotError listing the differences
+        assertSchemaSnapshotsEqual(expected, actual);
+    });
+});
+```
+
+For C, run the chain on a third database, initialize a data source with the baseline in its `migrations` list, call
+`runDatabaseMigrations` and compare its snapshot with A. Adoption only inserts the baseline row, so the schema must
+stay as the chain left it.
+
+`getSchemaSnapshot(dataSourceOrOptions, { queryRunner?, ignoreTables? })` reads a normalized, sorted description and
+writes nothing. `compareSchemaSnapshots(expected, actual)` returns the differences, sorted by path. Each has a `kind`:
+
+- `missing`: the element is in the expected snapshot only.
+- `extra`: the element is in the actual snapshot only.
+- `changed`: both have it and `expected` and `actual` hold the two values.
+
+| Path                                                        | Names                                           |
+|-------------------------------------------------------------|-------------------------------------------------|
+| `tables.<table>`                                            | a table                                         |
+| `tables.<table>.columns.<column>[.<property>]`              | a column, or one property of it                 |
+| `tables.<table>.primaryKey`                                 | the primary key                                 |
+| `tables.<table>.indices\|uniques\|foreignKeys.<key>`        | the name, or the columns joined by `,` if unnamed |
+| `tables.<table>.checks.<key>`                               | the name, or the expression if unnamed          |
+| `views.<view>`                                              | a view                                          |
+
+Keys which occur more than once (unnamed duplicates) get a `#<n>` suffix, such as `tables.gadget.indices.a,b#1`.
+
+What a snapshot covers:
+
+- The current schema only. The migrations and metadata tables are left out, and `ignoreTables` lists further ones
+  (unqualified names), for a database other projects share.
+- No schema or database qualifier is recorded, so two schemas compare equal.
+- Constraint and index names are compared. A readable name against a hashed one is a difference.
+- Views are the typeorm view entities, which typeorm records in its metadata table.
+- Indexes of postgres and cockroachdb come from `pg_indexes`, without the ones which own a primary key, unique or
+  exclusion constraint (typeorm reports those as the primary key or as uniques). Indexes of mysql and mariadb come from
+  `information_schema.statistics`, prefix lengths included. Expression and partial indexes are compared by their
+  definition. Other drivers use the indices typeorm reads.
+
+What it does not compare: column order, comments typeorm does not read, table options (engine, row format,
+collation), sequences and enum types beyond the enum of a column, the direction (`ASC` or `DESC`) of the parts of a
+mysql or mariadb index, and anything typeorm does not model (triggers, hand-made views, extensions).
+
+Limits:
+
+- Verified on postgres, mysql and mariadb (integration suite) and better-sqlite3 (unit suite). cockroachdb, mssql and
+  oracle run unverified.
+- On mysql and mariadb a generated column created by raw DDL, with no `typeorm_metadata` table, makes typeorm's table
+  reader throw, so the snapshot throws too.
+- The snapshot API is experimental and may change in a minor release.
+
 ### States
 
 | State of the database                                    | The runner                                                              |
