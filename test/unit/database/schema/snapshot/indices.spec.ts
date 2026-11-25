@@ -35,6 +35,7 @@ describe('database/schema/snapshot/indices', () => {
         expect(mysql?.sql).toContain('index_name <> \'PRIMARY\'');
         expect(mysql?.sql).toContain('expression AS `expression`');
         expect(buildIndexStatement('mariadb')?.sql).toContain('NULL AS `expression`');
+        expect(buildIndexStatement('mariadb')?.sql).toContain('sub_part AS `length`');
     });
 
     it('returns undefined for a driver without a reader', async () => {
@@ -193,5 +194,33 @@ describe('database/schema/snapshot/indices', () => {
             },
         ]);
         expect(result.get('o')?.[0].kind).toBe('spatial');
+    });
+
+    it('keeps the prefix length of a mysql index part', () => {
+        const rows = (length: number | null) => [
+            {
+                table: 't',
+                name: 'p',
+                column: 'a',
+                length,
+                unique: 0,
+                type: 'BTREE',
+            },
+            {
+                table: 't',
+                name: 'p',
+                column: 'b',
+                length: null,
+                unique: 0,
+                type: 'BTREE',
+            },
+        ];
+
+        const prefixed = normalizeIndexRows('mariadb', rows(10)).get('t')?.[0];
+        const shorter = normalizeIndexRows('mariadb', rows(5)).get('t')?.[0];
+
+        expect(prefixed?.definition).toBe('a(10), b');
+        expect(prefixed?.columns).toEqual(['a', 'b']);
+        expect(shorter?.definition).not.toEqual(prefixed?.definition);
     });
 });

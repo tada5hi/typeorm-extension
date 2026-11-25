@@ -11,6 +11,7 @@ type IndexRow = {
     definition?: string | null,
     column?: string | null,
     expression?: string | null,
+    length?: number | string | null,
     unique?: number | string | boolean,
     type?: string | null,
 };
@@ -50,7 +51,7 @@ export function buildIndexStatement(
                 sql: [
                     'SELECT table_name AS `table`, index_name AS `name`, column_name AS `column`,',
                     `${type === 'mysql' ? 'expression' : 'NULL'} AS \`expression\`,`,
-                    'non_unique AS `unique`, index_type AS `type`, seq_in_index AS `seq`',
+                    'sub_part AS `length`, non_unique AS `unique`, index_type AS `type`, seq_in_index AS `seq`',
                     'FROM information_schema.statistics',
                     'WHERE table_schema = DATABASE() AND index_name <> \'PRIMARY\'',
                     'ORDER BY table_name, index_name, seq_in_index',
@@ -108,7 +109,7 @@ function readPostgresColumns(definition: string): string[] {
 /**
  * Normalize the rows of a native index statement into snapshot indexes per table.
  * A postgres definition loses its `ON <schema>.` qualifier and `isUnique` / `where` come from it;
- * mysql parts are folded per index in `seq_in_index` order (row order).
+ * mysql parts are folded per index in `seq_in_index` order (row order), a prefix part keeps its length (`a(10)`).
  *
  * @experimental The schema snapshot API may change in a minor release.
  */
@@ -161,7 +162,13 @@ export function normalizeIndexRows(
             isUnique: Number(first.unique) === 0,
             where: null,
             kind,
-            definition: parts.map((part) => part.column ?? `(${part.expression})`).join(', '),
+            definition: parts.map((part) => {
+                if (!part.column) {
+                    return `(${part.expression})`;
+                }
+
+                return part.length ? `${part.column}(${part.length})` : part.column;
+            }).join(', '),
         });
     }
 
