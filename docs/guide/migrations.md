@@ -266,6 +266,9 @@ Limits:
 
 - `getSchemaSnapshot` supports postgres, cockroachdb, mysql, mariadb, better-sqlite3, mssql and oracle, and throws a
   `DriverError` for any other driver.
+- typeorm reads a table name with a dot (`a.b`) as a qualified name, so such a table would be read wrong. The snapshot
+  throws a `SchemaSnapshotError` naming it instead; list it in `ignoreTables` to snapshot the rest. A foreign key may
+  still reference it, and keeps the full name.
 - Verified on postgres, mysql and mariadb (integration suite) and better-sqlite3 (unit suite). cockroachdb, mssql and
   oracle run unverified.
 - On mysql and mariadb a generated column created by raw DDL, with no `typeorm_metadata` table, makes typeorm's table

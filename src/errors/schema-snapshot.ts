@@ -34,4 +34,12 @@ export class SchemaSnapshotError extends TypeormExtensionError {
     static differs(differences: SchemaSnapshotDifference[]) {
         return new SchemaSnapshotError(differences);
     }
+
+    static tableNamesNotSupported(names: string[]) {
+        return new SchemaSnapshotError(
+            [],
+            `The table name(s) ${names.join(', ')} contain a dot, which typeorm reads as a qualifier. ` +
+            'List them in ignoreTables to snapshot the other tables.',
+        );
+    }
 }

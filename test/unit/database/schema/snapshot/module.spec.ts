@@ -9,7 +9,7 @@ import {
     it,
     vi,
 } from 'vitest';
-import { DriverError, getSchemaSnapshot } from '../../../../../src';
+import { DriverError, SchemaSnapshotError, getSchemaSnapshot } from '../../../../../src';
 import { CreateWidget1700000000001 } from '../../../../data/typeorm/migration-baseline/legacy/create-widget';
 
 const directory = path.join(import.meta.dirname, '..', '..', '..', '..', '..', 'writable', 'schema-snapshot');
@@ -147,6 +147,24 @@ describe('database/schema/snapshot', () => {
             .rejects.toThrow(DriverError);
         await expect(getSchemaSnapshot({ type: 'mongodb' } as DataSourceOptions))
             .rejects.toThrow('The driver mongodb is not supported yet.');
+    });
+
+    it('refuses a table name with a dot and keeps it whole as a referenced table', async () => {
+        const database = databaseFile();
+
+        await exec(database, [
+            'CREATE TABLE "a.item" ("id" integer PRIMARY KEY NOT NULL)',
+            'CREATE TABLE "item" ("id" integer PRIMARY KEY NOT NULL, "r" integer, ' +
+            'CONSTRAINT "FK_item" FOREIGN KEY ("r") REFERENCES "a.item" ("id"))',
+        ]);
+
+        await expect(getSchemaSnapshot(optionsOf(database))).rejects.toThrow(SchemaSnapshotError);
+        await expect(getSchemaSnapshot(optionsOf(database))).rejects.toThrow('a.item');
+
+        const snapshot = await getSchemaSnapshot(optionsOf(database), { ignoreTables: ['a.item'] });
+
+        expect(snapshot.tables.map((table) => table.name)).toEqual(['item']);
+        expect(snapshot.tables[0].foreignKeys[0].referencedTable).toBe('a.item');
     });
 
     it('omits schema and database qualifiers', async () => {

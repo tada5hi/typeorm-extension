@@ -7,6 +7,7 @@ import type {
 } from 'typeorm';
 import { InstanceChecker } from 'typeorm';
 import { DriverError } from '../../../errors/driver';
+import { SchemaSnapshotError } from '../../../errors/schema-snapshot';
 import { useInitializedDataSource } from '../utils';
 import { buildUserTablesStatement, readUserTableNames } from '../migration/tables';
 import { readNativeIndices } from './indices';
@@ -25,6 +26,26 @@ function unqualify(name: string): string {
     const index = name.lastIndexOf('.');
 
     return index === -1 ? name : name.slice(index + 1);
+}
+
+/**
+ * The catalogue name a typeorm table name stands for: the name itself when listed, else the longest
+ * listed name it ends in after a qualifier (`app.item` -> `item`), else the part after the last dot.
+ */
+function resolveName(name: string, listed: string[]): string {
+    if (listed.includes(name)) {
+        return name;
+    }
+
+    let match: string | undefined;
+
+    for (const candidate of listed) {
+        if (name.endsWith(`.${candidate}`) && (!match || candidate.length > match.length)) {
+            match = candidate;
+        }
+    }
+
+    return match ?? unqualify(name);
 }
 
 function compare(a: string | undefined, b: string | undefined): number {
@@ -96,6 +117,7 @@ function keyColumns(columns: string[], native?: { columns: string[] }): string[]
 
 function toTable(
     table: Table,
+    listed: string[],
     native?: SchemaSnapshotIndex[],
     keys?: TableKeys,
 ): SchemaSnapshotTable {
@@ -104,7 +126,7 @@ function toTable(
     const definition = (name?: string) => (name ? keys?.definitions.get(name) ?? null : null);
 
     return {
-        name: unqualify(table.name),
+        name: resolveName(table.name, listed),
         comment: table.comment || null,
         columns: table.columns.map(toColumn).sort((a, b) => compare(a.name, b.name)),
         primaryKey: primary.length > 0 ?
@@ -138,7 +160,7 @@ function toTable(
             .sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression)),
         foreignKeys: table.foreignKeys.map((foreignKey) => named(foreignKey.name, {
             columns: [...foreignKey.columnNames],
-            referencedTable: unqualify(foreignKey.referencedTableName),
+            referencedTable: resolveName(foreignKey.referencedTableName, listed),
             referencedColumns: [...foreignKey.referencedColumnNames],
             onDelete: foreignKey.onDelete ?? null,
             onUpdate: foreignKey.onUpdate ?? null,
@@ -159,6 +181,13 @@ async function readSnapshot(
         metadataTable,
     } = await readUserTableNames(dataSource, queryRunner, ignoreTables);
 
+    // typeorm reads `a.b` as table b of schema (sqlite: database) a, which is another table or none
+    const dotted = names.filter((name) => name.includes('.'));
+
+    if (dotted.length > 0) {
+        throw SchemaSnapshotError.tableNamesNotSupported(dotted);
+    }
+
     const tables = names.length > 0 ? await queryRunner.getTables(names) : [];
 
     // typeorm does not read expression and partial indexes reliably: a native reader replaces its indices
@@ -173,10 +202,11 @@ async function readSnapshot(
     return {
         tables: tables
             .map((table) => {
-                const name = unqualify(table.name);
+                const name = resolveName(table.name, listed);
 
                 return toTable(
                     table,
+                    listed,
                     native ? native.get(name) ?? [] : undefined,
                     keys ? keys.get(name) ?? { uniques: new Map(), definitions: new Map() } : undefined,
                 );
