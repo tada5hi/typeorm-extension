@@ -11,6 +11,7 @@ import { useInitializedDataSource } from '../utils';
 import { buildUserTablesStatement, readUserTableNames } from '../migration/tables';
 import { readNativeIndices } from './indices';
 import { readNativeKeys } from './keys';
+import { withSchemaSearchPath } from './search-path';
 import type {
     SchemaSnapshot,
     SchemaSnapshotColumn,
@@ -210,7 +211,10 @@ export async function getSchemaSnapshot(
     try {
         queryRunner = options.queryRunner ?? dataSource.createQueryRunner();
 
-        return await readSnapshot(dataSource, queryRunner, options.ignoreTables ?? []);
+        const runner = queryRunner;
+
+        // postgres prints objects outside the search path qualified: pin it to the target schema
+        return await withSchemaSearchPath(runner, () => readSnapshot(dataSource, runner, options.ignoreTables ?? []));
     } finally {
         if (!options.queryRunner && queryRunner) {
             await queryRunner.release();

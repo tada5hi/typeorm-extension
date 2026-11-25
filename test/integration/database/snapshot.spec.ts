@@ -22,6 +22,7 @@ import { GADGET_LABEL_INDEX, GADGET_TABLE } from '../../data/typeorm/migration-b
 import {
     createIntegrationDataSourceOptions,
     supportsMigrationBaseline,
+    supportsSnapshotSchemas,
     useIntegrationDriver,
 } from '../../data/typeorm/integration';
 
@@ -257,5 +258,69 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
                 [`CREATE TABLE ${PROBE} (a integer, INDEX ix_probe (a))`],
             )).toEqual([expect.objectContaining({ path: `tables.${PROBE}.indices.ix_probe`, kind: 'changed' })]);
         });
+    });
+});
+
+describe.runIf(supportsSnapshotSchemas(driver))(`src/database/schema/snapshot schemas (${driver})`, () => {
+    const SCHEMAS = ['snapshot_a', 'snapshot_b'];
+
+    // the same DDL per schema: a schema-local enum type and function, which postgres prints qualified
+    // outside the search path, in a check, an expression index, a partial index and a foreign key
+    const ddl = (schema: string) => [
+        `DROP SCHEMA IF EXISTS ${schema} CASCADE`,
+        `CREATE SCHEMA ${schema}`,
+        `CREATE TYPE ${schema}.status AS ENUM ('a', 'b')`,
+        `CREATE FUNCTION ${schema}.norm(t text) RETURNS text AS $$ SELECT lower(t) $$ LANGUAGE sql IMMUTABLE`,
+        `CREATE TABLE ${schema}."Item" ("id" serial PRIMARY KEY, "Name" text NOT NULL, ` +
+        `"status" ${schema}.status NOT NULL DEFAULT 'a', "parent" integer REFERENCES ${schema}."Item"("id"), ` +
+        'CONSTRAINT "CHK_status" CHECK ("status" <> \'b\'))',
+        `CREATE UNIQUE INDEX "IDX_norm" ON ${schema}."Item" (${schema}.norm("Name"))`,
+        `CREATE INDEX "IDX_partial" ON ${schema}."Item" ("Name") WHERE "status" = 'a'::${schema}.status`,
+    ];
+
+    async function run(statements: string[]) {
+        const dataSource = new TypeORMDataSource(createIntegrationDataSourceOptions());
+
+        await dataSource.initialize();
+
+        try {
+            for (const statement of statements) {
+                await dataSource.query(statement);
+            }
+        } finally {
+            await dataSource.destroy();
+        }
+    }
+
+    afterEach(async () => {
+        await run(SCHEMAS.map((schema) => `DROP SCHEMA IF EXISTS ${schema} CASCADE`));
+    });
+
+    it('reads the same DDL in two schemas as equal and restores the search path', async () => {
+        await run([...ddl(SCHEMAS[0]), ...ddl(SCHEMAS[1])]);
+
+        const [a, b] = await Promise.all(SCHEMAS.map((schema) => getSchemaSnapshot(
+            createIntegrationDataSourceOptions([], { schema }),
+        )));
+
+        expect(a.tables.map((table) => table.name)).toEqual(['Item']);
+        expect(a.tables[0].indices.map((index) => index.name)).toEqual(['IDX_norm', 'IDX_partial']);
+        expect(compareSchemaSnapshots(a, b)).toEqual([]);
+
+        const dataSource = new TypeORMDataSource(createIntegrationDataSourceOptions([], { schema: SCHEMAS[0] }));
+
+        await dataSource.initialize();
+
+        try {
+            const queryRunner = dataSource.createQueryRunner();
+            const [before] = await queryRunner.query('SHOW search_path');
+
+            await getSchemaSnapshot(dataSource, { queryRunner });
+
+            expect(await queryRunner.query('SHOW search_path')).toEqual([before]);
+            await queryRunner.release();
+        } finally {
+            await dataSource.destroy();
+        }
     });
 });

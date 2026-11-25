@@ -238,7 +238,9 @@ What a snapshot covers:
 
 - The current schema only. The migrations and metadata tables are left out, and `ignoreTables` lists further ones
   (unqualified names), for a database other projects share.
-- No schema or database qualifier is recorded, so two schemas compare equal.
+- No schema or database qualifier is recorded, so two schemas compare equal. On postgres and cockroachdb the read
+  sets `search_path` to the target schema alone, so a type or function of that schema prints unqualified, and puts
+  the previous value back afterwards.
 - Constraint and index names are compared. A readable name against a hashed one is a difference.
 - Views are the typeorm view entities, which typeorm records in its metadata table.
 - Column properties compared: type, length, precision, scale, nullability, default, generation (strategy, type,

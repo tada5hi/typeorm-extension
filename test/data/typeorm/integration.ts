@@ -152,6 +152,14 @@ export function supportsSearchPathOption(driver?: IntegrationDriver) : boolean {
 }
 
 /**
+ * Whether getSchemaSnapshot is verified to read the same DDL in two schemas of one database
+ * as equal (schema-local types and functions included).
+ */
+export function supportsSnapshotSchemas(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres';
+}
+
+/**
  * Whether pinTimezone pins the driver: the session which stamps
  * a zone-less column, and the driver which writes and reads it.
  */
