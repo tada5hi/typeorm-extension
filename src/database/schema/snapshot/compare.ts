@@ -29,8 +29,26 @@ function isEqual(a: unknown, b: unknown): boolean {
     return false;
 }
 
+function groupByKey<T>(items: T[], keyOf: (item: T) => string): Map<string, T[]> {
+    const groups = new Map<string, T[]>();
+
+    for (const item of items) {
+        const key = keyOf(item);
+        const group = groups.get(key);
+
+        if (group) {
+            group.push(item);
+        } else {
+            groups.set(key, [item]);
+        }
+    }
+
+    return groups;
+}
+
 /**
- * Compare two keyed lists. `onChanged` handles an element present on both sides.
+ * Compare two keyed lists. Elements sharing a key are paired by equality first,
+ * what is left over is reported. `onChanged` handles a lone pair on both sides.
  */
 function compareKeyed<T>(
     path: string,
@@ -40,42 +58,50 @@ function compareKeyed<T>(
     out: SchemaSnapshotDifference[],
     onChanged?: (path: string, expected: T, actual: T) => void,
 ) {
-    const actualByKey = new Map(actual.map((item) => [keyOf(item), item]));
-    const expectedKeys = new Set<string>();
+    const expectedGroups = groupByKey(expected, keyOf);
+    const actualGroups = groupByKey(actual, keyOf);
+    const keys = new Set([...expectedGroups.keys(), ...actualGroups.keys()]);
 
-    for (const item of expected) {
-        const key = keyOf(item);
+    for (const key of keys) {
+        const left = [...(expectedGroups.get(key) ?? [])];
+        const right = [...(actualGroups.get(key) ?? [])];
+        const itemPath = `${path}.${key}`;
+        const duplicated = left.length > 1 || right.length > 1;
 
-        expectedKeys.add(key);
+        for (let i = left.length - 1; i >= 0; i--) {
+            const match = right.findIndex((item) => isEqual(left[i], item));
 
-        const other = actualByKey.get(key);
-
-        if (!other) {
-            out.push({
-                path: `${path}.${key}`,
-                kind: 'missing',
-                expected: item,
-            });
-        } else if (onChanged) {
-            onChanged(`${path}.${key}`, item, other);
-        } else if (!isEqual(item, other)) {
-            out.push({
-                path: `${path}.${key}`,
-                kind: 'changed',
-                expected: item,
-                actual: other,
-            });
+            if (match !== -1) {
+                left.splice(i, 1);
+                right.splice(match, 1);
+            }
         }
-    }
 
-    for (const item of actual) {
-        const key = keyOf(item);
-
-        if (!expectedKeys.has(key)) {
-            out.push({
-                path: `${path}.${key}`,
-                kind: 'extra',
-                actual: item,
+        if (left.length === 1 && right.length === 1) {
+            if (onChanged) {
+                onChanged(itemPath, left[0], right[0]);
+            } else {
+                out.push({
+                    path: itemPath,
+                    kind: 'changed',
+                    expected: left[0],
+                    actual: right[0],
+                });
+            }
+        } else {
+            left.forEach((item, i) => {
+                out.push({
+                    path: duplicated ? `${itemPath}#${i}` : itemPath,
+                    kind: 'missing',
+                    expected: item,
+                });
+            });
+            right.forEach((item, i) => {
+                out.push({
+                    path: duplicated ? `${itemPath}#${i}` : itemPath,
+                    kind: 'extra',
+                    actual: item,
+                });
             });
         }
     }

@@ -231,6 +231,53 @@ describe('database/schema/snapshot/compare', () => {
         expect(compareSchemaSnapshots(snapshot([one]), snapshot([two]))).toEqual([]);
     });
 
+    describe('duplicate keys', () => {
+        const index = (isUnique: boolean) => ({
+            columns: ['a', 'b'],
+            isUnique,
+            where: null,
+            kind: null,
+            definition: null,
+        });
+
+        it('reports a missing unique index sharing columns with another index', () => {
+            const differences = compareSchemaSnapshots(
+                snapshot([table('user', { indices: [index(false), index(true)] })]),
+                snapshot([table('user', { indices: [index(false)] })]),
+            );
+
+            expect(differences).toEqual([
+                {
+                    path: 'tables.user.indices.a,b#0',
+                    kind: 'missing',
+                    expected: index(true),
+                },
+            ]);
+        });
+
+        it('ignores the order of duplicates', () => {
+            expect(compareSchemaSnapshots(
+                snapshot([table('user', { indices: [index(false), index(true)] })]),
+                snapshot([table('user', { indices: [index(true), index(false)] })]),
+            )).toEqual([]);
+        });
+
+        it('reports an extra duplicate', () => {
+            const differences = compareSchemaSnapshots(
+                snapshot([table('user', { checks: [{ expression: 'x > 0' }] })]),
+                snapshot([table('user', { checks: [{ expression: 'x > 0' }, { expression: 'x > 0' }] })]),
+            );
+
+            expect(differences).toEqual([
+                {
+                    path: 'tables.user.checks.x > 0#0',
+                    kind: 'extra',
+                    actual: { expression: 'x > 0' },
+                },
+            ]);
+        });
+    });
+
     it('assertSchemaSnapshotsEqual throws SchemaSnapshotError listing every difference', () => {
         const expected = snapshot([table('a'), table('b')]);
         const actual = snapshot([table('b', { columns: [column('id')] })]);
