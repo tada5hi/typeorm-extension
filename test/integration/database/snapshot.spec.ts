@@ -29,6 +29,11 @@ const driver = useIntegrationDriver();
 
 const LEGACY = [CreateGadget1710000000001, AddGadgetLabelIndex1710000000002];
 
+const PROBE = 'snapshot_probe';
+
+// the DDL of the probe cases differs by dialect family, the assertions do not
+const FAMILY = driver === 'postgres' ? 'postgres' : 'mysql';
+
 // A, B and C run one after the other in the one configured database, with a full drop in between.
 describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot (${driver})`, () => {
     const created : DataSource[] = [];
@@ -51,7 +56,7 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
 
         return rows
             .map((row) => (row.name ?? row.NAME) as string)
-            .filter((name) => name !== GADGET_TABLE && name !== 'migrations');
+            .filter((name) => name !== GADGET_TABLE && name !== PROBE && name !== 'migrations');
     }
 
     async function snapshot(dataSource: DataSource) : Promise<SchemaSnapshot> {
@@ -63,6 +68,7 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
         const queryRunner = dataSource.createQueryRunner();
 
         try {
+            await queryRunner.dropTable(PROBE, true);
             await queryRunner.dropTable(GADGET_TABLE, true);
             await queryRunner.dropTable('migrations', true);
         } finally {
@@ -160,5 +166,76 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
             'AddGadgetLabelIndex1710000000002',
             'GadgetBaseline1710000000003',
         ]);
+    });
+
+    describe('reads what the probe DDL sets', () => {
+        // the snapshot of a fresh probe table built by the statements
+        async function probe(statements: string[]) : Promise<SchemaSnapshot> {
+            await drop();
+
+            const dataSource = await open([]);
+
+            for (const statement of statements) {
+                await dataSource.query(statement);
+            }
+
+            return snapshot(dataSource);
+        }
+
+        async function differences(expected: string[], actual: string[]) {
+            return compareSchemaSnapshots(await probe(expected), await probe(actual));
+        }
+
+        it('reports a different primary key order and ignores the table column order', async () => {
+            const table = (columns: string, key: string) => [
+                `CREATE TABLE ${PROBE} (${columns}, CONSTRAINT pk_probe PRIMARY KEY (${key}))`,
+            ];
+
+            expect(await differences(table('a integer NOT NULL, b integer NOT NULL', 'a, b'), table('a integer NOT NULL, b integer NOT NULL', 'b, a')))
+                .toEqual([expect.objectContaining({ path: `tables.${PROBE}.primaryKey`, kind: 'changed' })]);
+            expect(await differences(table('a integer NOT NULL, b integer NOT NULL', 'a, b'), table('b integer NOT NULL, a integer NOT NULL', 'a, b')))
+                .toEqual([]);
+        });
+
+        it('reports a column and a table comment', async () => {
+            const commented = FAMILY === 'postgres' ?
+                [
+                    `CREATE TABLE ${PROBE} (a integer)`,
+                    `COMMENT ON COLUMN ${PROBE}.a IS 'the a'`,
+                    `COMMENT ON TABLE ${PROBE} IS 'the probe'`,
+                ] :
+                [`CREATE TABLE ${PROBE} (a integer COMMENT 'the a') COMMENT = 'the probe'`];
+
+            expect((await differences(commented, [`CREATE TABLE ${PROBE} (a integer)`])).map((d) => d.path)).toEqual([
+                `tables.${PROBE}.columns.a.comment`,
+                `tables.${PROBE}.comment`,
+            ]);
+        });
+
+        it.runIf(FAMILY === 'postgres')('reports an array column', async () => {
+            expect(await differences([`CREATE TABLE ${PROBE} (a integer[])`], [`CREATE TABLE ${PROBE} (a integer)`]))
+                .toEqual([expect.objectContaining({ path: `tables.${PROBE}.columns.a.isArray`, kind: 'changed' })]);
+        });
+
+        it.runIf(FAMILY === 'postgres')('reports an exclusion constraint', async () => {
+            expect(await differences(
+                [`CREATE TABLE ${PROBE} (r int4range, CONSTRAINT xcl_probe EXCLUDE USING gist (r WITH &&))`],
+                [`CREATE TABLE ${PROBE} (r int4range)`],
+            )).toEqual([expect.objectContaining({ path: `tables.${PROBE}.exclusions.xcl_probe`, kind: 'missing' })]);
+        });
+
+        it.runIf(FAMILY === 'mysql')('reports ON UPDATE of a column', async () => {
+            expect(await differences(
+                [`CREATE TABLE ${PROBE} (a datetime(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6))`],
+                [`CREATE TABLE ${PROBE} (a datetime(6) DEFAULT CURRENT_TIMESTAMP(6))`],
+            )).toEqual([expect.objectContaining({ path: `tables.${PROBE}.columns.a.onUpdate`, kind: 'changed' })]);
+        });
+
+        it.runIf(FAMILY === 'mysql')('reports a descending index part', async () => {
+            expect(await differences(
+                [`CREATE TABLE ${PROBE} (a integer, INDEX ix_probe (a DESC))`],
+                [`CREATE TABLE ${PROBE} (a integer, INDEX ix_probe (a))`],
+            )).toEqual([expect.objectContaining({ path: `tables.${PROBE}.indices.ix_probe`, kind: 'changed' })]);
+        });
     });
 });
