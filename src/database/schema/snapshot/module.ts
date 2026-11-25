@@ -7,9 +7,11 @@ import type {
 } from 'typeorm';
 import { useInitializedDataSource } from '../utils';
 import { readUserTableNames } from '../migration/tables';
+import { readNativeIndices } from './indices';
 import type {
     SchemaSnapshot,
     SchemaSnapshotColumn,
+    SchemaSnapshotIndex,
     SchemaSnapshotOptions,
     SchemaSnapshotTable,
     SchemaSnapshotView,
@@ -60,7 +62,7 @@ function toColumn(column: TableColumn): SchemaSnapshotColumn {
     };
 }
 
-function toTable(table: Table): SchemaSnapshotTable {
+function toTable(table: Table, native?: SchemaSnapshotIndex[]): SchemaSnapshotTable {
     const primary = table.columns.filter((column) => column.isPrimary);
     const primaryName = primary.find((column) => column.primaryKeyConstraintName)?.primaryKeyConstraintName;
 
@@ -70,7 +72,7 @@ function toTable(table: Table): SchemaSnapshotTable {
         primaryKey: primary.length > 0 ?
             named(primaryName, { columns: primary.map((column) => column.name) }) :
             null,
-        indices: table.indices.map((index) => named(index.name, {
+        indices: native ? [...native].sort(byNameThenColumns) : table.indices.map((index) => named(index.name, {
             columns: [...index.columnNames],
             isUnique: !!index.isUnique,
             where: index.where || null,
@@ -104,11 +106,16 @@ async function readSnapshot(
 
     const tables = names.length > 0 ? await queryRunner.getTables(names) : [];
 
+    // typeorm does not read expression and partial indexes reliably: a native reader replaces its indices
+    const native = await readNativeIndices(queryRunner, names);
+
     // typeorm records views in the metadata table only, and may fail reading a missing one (mysql).
     const views = listed.includes(metadataTable) ? await queryRunner.getViews() : [];
 
     return {
-        tables: tables.map(toTable).sort((a, b) => compare(a.name, b.name)),
+        tables: tables
+            .map((table) => toTable(table, native ? native.get(unqualify(table.name)) ?? [] : undefined))
+            .sort((a, b) => compare(a.name, b.name)),
         views: views.map((view) : SchemaSnapshotView => ({
             name: unqualify(view.name),
             expression: typeof view.expression === 'string' ? view.expression : '',
