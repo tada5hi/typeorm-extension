@@ -74,9 +74,17 @@ function toColumn(column: TableColumn): SchemaSnapshotColumn {
     };
 }
 
-type TableKey = { columns: string[], deferrable: string | null };
+type TableKey = {
+    name: string,
+    columns: string[],
+    deferrable: string | null
+};
 
-type TableKeys = { primary?: TableKey, uniques: Map<string, TableKey> };
+type TableKeys = {
+    primary?: TableKey,
+    uniques: Map<string, TableKey>,
+    definitions: Map<string, string>
+};
 
 /**
  * Key columns in key order where the driver has a native key reader, sorted otherwise:
@@ -93,6 +101,7 @@ function toTable(
 ): SchemaSnapshotTable {
     const primary = table.columns.filter((column) => column.isPrimary);
     const primaryName = primary.find((column) => column.primaryKeyConstraintName)?.primaryKeyConstraintName;
+    const definition = (name?: string) => (name ? keys?.definitions.get(name) ?? null : null);
 
     return {
         name: unqualify(table.name),
@@ -102,6 +111,7 @@ function toTable(
             named(primaryName, {
                 columns: keyColumns(primary.map((column) => column.name), keys?.primary),
                 deferrable: keys?.primary?.deferrable ?? null,
+                definition: definition(primaryName ?? keys?.primary?.name),
             }) :
             null,
         indices: native ? [...native].sort(byNameThenColumns) : table.indices.map((index) => named(index.name, {
@@ -117,13 +127,14 @@ function toTable(
             return named(unique.name, {
                 columns: keyColumns(unique.columnNames, key),
                 deferrable: key?.deferrable ?? unique.deferrable ?? null,
+                definition: definition(unique.name),
             });
         }).sort(byNameThenColumns),
         checks: table.checks
-            .map((check) => named(check.name, { expression: check.expression as string }))
+            .map((check) => named(check.name, { expression: check.expression as string, definition: definition(check.name) }))
             .sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression)),
         exclusions: (table.exclusions ?? [])
-            .map((exclusion) => named(exclusion.name, { expression: exclusion.expression ?? '' }))
+            .map((exclusion) => named(exclusion.name, { expression: exclusion.expression ?? '', definition: definition(exclusion.name) }))
             .sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression)),
         foreignKeys: table.foreignKeys.map((foreignKey) => named(foreignKey.name, {
             columns: [...foreignKey.columnNames],
@@ -132,6 +143,7 @@ function toTable(
             onDelete: foreignKey.onDelete ?? null,
             onUpdate: foreignKey.onUpdate ?? null,
             deferrable: foreignKey.deferrable || null,
+            definition: definition(foreignKey.name),
         })).sort(byNameThenColumns),
     };
 }
@@ -166,7 +178,7 @@ async function readSnapshot(
                 return toTable(
                     table,
                     native ? native.get(name) ?? [] : undefined,
-                    keys ? keys.get(name) ?? { uniques: new Map() } : undefined,
+                    keys ? keys.get(name) ?? { uniques: new Map(), definitions: new Map() } : undefined,
                 );
             })
             .sort((a, b) => compare(a.name, b.name)),

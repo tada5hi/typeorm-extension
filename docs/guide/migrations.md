@@ -247,6 +247,9 @@ What a snapshot covers:
   expression, identity `ALWAYS` or `BY DEFAULT`), charset, collation, unsigned, enum values and enum type name, array,
   comment, `ON UPDATE`, spatial type and SRID. Also compared: table comments, postgres exclusion constraints, and
   deferrable primary keys, unique constraints and foreign keys (postgres).
+- On postgres every primary key, unique, foreign key, check and exclusion constraint also carries its catalogue
+  `definition` (`pg_get_constraintdef`), so options typeorm does not model differ too: `NULLS NOT DISTINCT`,
+  `INCLUDE`, `NOT VALID`, `MATCH FULL`, `NO INHERIT`, index parameters. Other drivers record `null`.
 - Indexes of postgres and cockroachdb come from `pg_indexes`, without the ones which own a primary key, unique or
   exclusion constraint (those appear as the primary key, as uniques or as exclusions). Indexes of mysql and mariadb
   come from `information_schema.statistics`, with prefix length and direction per part, the index type and whether

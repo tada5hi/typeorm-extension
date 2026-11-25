@@ -39,7 +39,11 @@ function table(name: string, overrides: Partial<SchemaSnapshotTable> = {}): Sche
         name,
         comment: null,
         columns: [column('id'), column('name', { type: 'varchar' })],
-        primaryKey: { columns: ['id'], deferrable: null },
+        primaryKey: {
+            columns: ['id'],
+            deferrable: null,
+            definition: null,
+        },
         indices: [],
         uniques: [],
         checks: [],
@@ -132,9 +136,17 @@ describe('database/schema/snapshot/compare', () => {
     it('keys unnamed constraints by columns or expression and reports changes', () => {
         const differences = compareSchemaSnapshots(
             snapshot([table('user', {
-                uniques: [{ columns: ['a', 'b'], deferrable: null }],
-                checks: [{ expression: 'x > 0' }],
-                primaryKey: { columns: ['id'], deferrable: null },
+                uniques: [{
+                    columns: ['a', 'b'],
+                    deferrable: null,
+                    definition: null,
+                }],
+                checks: [{ expression: 'x > 0', definition: null }],
+                primaryKey: {
+                    columns: ['id'],
+                    deferrable: null,
+                    definition: null,
+                },
                 foreignKeys: [{
                     columns: ['r'],
                     referencedTable: 'role',
@@ -142,6 +154,7 @@ describe('database/schema/snapshot/compare', () => {
                     onDelete: null,
                     onUpdate: null,
                     deferrable: null,
+                    definition: null,
                 }],
             })]),
             snapshot([table('user', {
@@ -149,9 +162,14 @@ describe('database/schema/snapshot/compare', () => {
                     columns: ['a', 'b'],
                     name: 'x',
                     deferrable: null,
+                    definition: null,
                 }],
-                checks: [{ expression: 'x > 1' }],
-                primaryKey: { columns: ['id', 'name'], deferrable: null },
+                checks: [{ expression: 'x > 1', definition: null }],
+                primaryKey: {
+                    columns: ['id', 'name'],
+                    deferrable: null,
+                    definition: null,
+                },
                 foreignKeys: [{
                     columns: ['r'],
                     referencedTable: 'role',
@@ -159,6 +177,7 @@ describe('database/schema/snapshot/compare', () => {
                     onDelete: 'CASCADE',
                     onUpdate: null,
                     deferrable: null,
+                    definition: null,
                 }],
             })]),
         );
@@ -174,8 +193,16 @@ describe('database/schema/snapshot/compare', () => {
         expect(differences[3]).toEqual({
             path: 'tables.user.primaryKey',
             kind: 'changed',
-            expected: { columns: ['id'], deferrable: null },
-            actual: { columns: ['id', 'name'], deferrable: null },
+            expected: {
+                columns: ['id'],
+                deferrable: null,
+                definition: null,
+            },
+            actual: {
+                columns: ['id', 'name'],
+                deferrable: null,
+                definition: null,
+            },
         });
     });
 
@@ -221,11 +248,21 @@ describe('database/schema/snapshot/compare', () => {
         const differences = compareSchemaSnapshots(
             snapshot([table('user', {
                 exclusions: [
-                    { name: 'XCL_a', expression: 'USING gist (range WITH &&)' },
-                    { expression: 'USING gist (other WITH &&)' },
+                    {
+                        name: 'XCL_a',
+                        expression: 'USING gist (range WITH &&)',
+                        definition: null,
+                    },
+                    { expression: 'USING gist (other WITH &&)', definition: null },
                 ],
             })]),
-            snapshot([table('user', { exclusions: [{ name: 'XCL_a', expression: 'USING gist (range WITH =)' }] })]),
+            snapshot([table('user', {
+                exclusions: [{
+                    name: 'XCL_a',
+                    expression: 'USING gist (range WITH =)',
+                    definition: null,
+                }],
+            })]),
         );
 
         expect(differences.map((d) => [d.path, d.kind])).toEqual([
@@ -243,11 +280,13 @@ describe('database/schema/snapshot/compare', () => {
             onDelete: null,
             onUpdate: null,
             deferrable,
+            definition: null,
         });
         const unique = (deferrable: string | null) => ({
             name: 'UQ_a',
             columns: ['name'],
             deferrable,
+            definition: null,
         });
 
         const differences = compareSchemaSnapshots(
@@ -264,13 +303,42 @@ describe('database/schema/snapshot/compare', () => {
         ]);
     });
 
+    it('reports a changed constraint definition', () => {
+        const keyed = (definition: string | null) => table('user', {
+            uniques: [{
+                name: 'UQ_a',
+                columns: ['name'],
+                deferrable: null,
+                definition,
+            }],
+            checks: [{
+                name: 'CHK_a',
+                expression: 'id > 0',
+                definition,
+            }],
+        });
+
+        expect(compareSchemaSnapshots(
+            snapshot([keyed('UNIQUE (name)')]),
+            snapshot([keyed('UNIQUE NULLS NOT DISTINCT (name)')]),
+        ).map((d) => [d.path, d.kind])).toEqual([
+            ['tables.user.checks.CHK_a', 'changed'],
+            ['tables.user.uniques.UQ_a', 'changed'],
+        ]);
+    });
+
     it('reports a different key column order', () => {
         const keyed = (columns: string[]) => table('user', {
-            primaryKey: { columns, deferrable: null },
+            primaryKey: {
+                columns,
+                deferrable: null,
+                definition: null,
+            },
             uniques: [{
                 name: 'UQ_a',
                 columns,
                 deferrable: null,
+                definition: null,
             }],
         });
         const differences = compareSchemaSnapshots(
@@ -336,6 +404,7 @@ describe('database/schema/snapshot/compare', () => {
             onDelete: null,
             onUpdate: null,
             deferrable: null,
+            definition: null,
         });
 
         const one = table('user', {
@@ -385,15 +454,15 @@ describe('database/schema/snapshot/compare', () => {
 
         it('reports an extra duplicate', () => {
             const differences = compareSchemaSnapshots(
-                snapshot([table('user', { checks: [{ expression: 'x > 0' }] })]),
-                snapshot([table('user', { checks: [{ expression: 'x > 0' }, { expression: 'x > 0' }] })]),
+                snapshot([table('user', { checks: [{ expression: 'x > 0', definition: null }] })]),
+                snapshot([table('user', { checks: [{ expression: 'x > 0', definition: null }, { expression: 'x > 0', definition: null }] })]),
             );
 
             expect(differences).toEqual([
                 {
                     path: 'tables.user.checks.x > 0#0',
                     kind: 'extra',
-                    actual: { expression: 'x > 0' },
+                    actual: { expression: 'x > 0', definition: null },
                 },
             ]);
         });

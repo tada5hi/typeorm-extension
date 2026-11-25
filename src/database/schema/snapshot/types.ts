@@ -60,6 +60,10 @@ export type SchemaSnapshotForeignKey = {
      * `INITIALLY DEFERRED` or `INITIALLY IMMEDIATE` for a deferrable key, null otherwise.
      */
     deferrable: string | null,
+    /**
+     * The catalogue definition (`pg_get_constraintdef`, postgres only), null elsewhere.
+     */
+    definition: string | null,
 };
 
 /**
@@ -76,6 +80,10 @@ export type SchemaSnapshotUnique = {
      * (read on postgres only).
      */
     deferrable: string | null,
+    /**
+     * The catalogue definition (`pg_get_constraintdef`, postgres only), null elsewhere.
+     */
+    definition: string | null,
 };
 
 /**
@@ -84,6 +92,22 @@ export type SchemaSnapshotUnique = {
 export type SchemaSnapshotExclusion = {
     name?: string,
     expression: string,
+    /**
+     * The catalogue definition (`pg_get_constraintdef`, postgres only), null elsewhere.
+     */
+    definition: string | null,
+};
+
+/**
+ * @experimental The schema snapshot API may change in a minor release.
+ */
+export type SchemaSnapshotCheck = {
+    name?: string,
+    expression: string,
+    /**
+     * The catalogue definition (`pg_get_constraintdef`, postgres only), null elsewhere.
+     */
+    definition: string | null,
 };
 
 /**
@@ -100,11 +124,12 @@ export type SchemaSnapshotTable = {
     primaryKey: {
         name?: string,
         columns: string[],
-        deferrable: string | null
+        deferrable: string | null,
+        definition: string | null,
     } | null,
     indices: SchemaSnapshotIndex[],
     uniques: SchemaSnapshotUnique[],
-    checks: { name?: string, expression: string }[],
+    checks: SchemaSnapshotCheck[],
     exclusions: SchemaSnapshotExclusion[],
     foreignKeys: SchemaSnapshotForeignKey[],
 };

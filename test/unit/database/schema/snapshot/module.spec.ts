@@ -99,6 +99,7 @@ describe('database/schema/snapshot', () => {
             onDelete: 'CASCADE',
             onUpdate: 'NO ACTION',
             deferrable: null,
+            definition: null,
         }]);
         expect(member.indices).toEqual(expect.arrayContaining([
             {
@@ -133,7 +134,11 @@ describe('database/schema/snapshot', () => {
 
         const [pair] = (await getSchemaSnapshot(optionsOf(database))).tables;
 
-        expect(pair.primaryKey).toEqual({ columns: ['a', 'b'], deferrable: null });
+        expect(pair.primaryKey).toEqual({
+            columns: ['a', 'b'],
+            deferrable: null,
+            definition: null,
+        });
         expect(pair.uniques.find((unique) => unique.columns.length === 2)?.columns).toEqual(['c', 'd']);
     });
 

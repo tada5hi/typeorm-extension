@@ -11,8 +11,9 @@ describe('database/schema/snapshot/keys', () => {
         const bound = buildKeyStatement('postgres', 'app');
 
         expect(bound?.sql).toContain('unnest(c.conkey) WITH ORDINALITY');
-        expect(bound?.sql).toContain('ORDER BY cl.relname, c.conname, k.ord');
-        expect(bound?.sql).toContain('c.contype IN (\'p\', \'u\')');
+        expect(bound?.sql).toContain('ORDER BY k.ord');
+        expect(bound?.sql).toContain('pg_get_constraintdef(c.oid) AS "definition"');
+        expect(bound?.sql).toContain('c.contype IN (\'p\', \'u\', \'f\', \'c\', \'x\')');
         expect(bound?.sql).toContain('n.nspname = $1');
         expect(bound?.parameters).toEqual(['app']);
         expect(buildKeyStatement('postgres')?.sql).toContain('current_schema()');
@@ -43,6 +44,65 @@ describe('database/schema/snapshot/keys', () => {
             await queryRunner.release();
             await dataSource.destroy();
         }
+    });
+
+    it('reads postgres constraint rows with column lists and definitions', () => {
+        const keys = normalizeKeyRows([
+            {
+                table: 't',
+                name: 'PK_t',
+                kind: 'p',
+                columns: ['b', 'a'],
+                definition: 'PRIMARY KEY (b, a)',
+                deferrable: null,
+            },
+            {
+                table: 't',
+                name: 'UQ_t',
+                kind: 'u',
+                columns: ['c'],
+                definition: 'UNIQUE NULLS NOT DISTINCT (c)',
+                deferrable: null,
+            },
+            {
+                table: 't',
+                name: 'FK_t',
+                kind: 'f',
+                columns: ['r'],
+                definition: 'FOREIGN KEY (r) REFERENCES role(id) MATCH FULL',
+                deferrable: null,
+            },
+            {
+                table: 't',
+                name: 'CHK_t',
+                kind: 'c',
+                columns: [],
+                definition: 'CHECK ((c > 0)) NOT VALID',
+                deferrable: null,
+            },
+        ]);
+        const t = keys.get('t');
+
+        expect(t?.primary?.columns).toEqual(['b', 'a']);
+        expect(t?.uniques.get('UQ_t')?.columns).toEqual(['c']);
+        expect([...(t?.uniques.keys() ?? [])]).toEqual(['UQ_t']);
+        expect(Object.fromEntries(t?.definitions ?? [])).toEqual({
+            PK_t: 'PRIMARY KEY (b, a)',
+            UQ_t: 'UNIQUE NULLS NOT DISTINCT (c)',
+            FK_t: 'FOREIGN KEY (r) REFERENCES role(id) MATCH FULL',
+            CHK_t: 'CHECK ((c > 0)) NOT VALID',
+        });
+    });
+
+    it('records no definition for mysql primary key rows', () => {
+        const keys = normalizeKeyRows([{
+            table: 't',
+            name: 'PRIMARY',
+            kind: 'p',
+            column: 'id',
+        }]);
+
+        expect(keys.get('t')?.definitions.size).toBe(0);
     });
 
     it('keeps the row order of the key columns', () => {

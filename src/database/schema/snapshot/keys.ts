@@ -1,13 +1,16 @@
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
 
 /**
- * One catalogue row: a column of a primary key or unique constraint, in key order.
+ * One catalogue row: a constraint with its key columns in key order (postgres), or one
+ * column of the primary key (mysql, mariadb: one row per column, in key order).
  */
 type KeyRow = {
     table: string,
     name: string,
     kind: string,
-    column: string,
+    columns?: string[] | null,
+    column?: string | null,
+    definition?: string | null,
     deferrable?: string | null,
 };
 
@@ -20,14 +23,21 @@ type NativeKey = {
 type NativeKeys = {
     primary?: NativeKey,
     uniques: Map<string, NativeKey>,
+    /**
+     * The catalogue definition of each constraint by name (postgres only).
+     */
+    definitions: Map<string, string>,
 };
 
 /**
- * The statement listing the primary key and unique constraint columns of the current schema
- * (database for mysql) in key order, or undefined for a driver without a native reader.
+ * The statement listing the constraints of the current schema (database for mysql), with the
+ * primary key and unique constraint columns in key order, or undefined for a driver without a
+ * native reader.
  *
- * Postgres follows `pg_constraint.conkey`. Mysql and mariadb follow `seq_in_index` of the
- * `PRIMARY` index: a unique constraint there is a unique index, which the index reader keeps in order.
+ * Postgres lists every primary key, unique, foreign key, check and exclusion constraint with its
+ * `pg_get_constraintdef` text and its columns in `pg_constraint.conkey` order. Mysql and mariadb
+ * list the `PRIMARY` index in `seq_in_index` order: a unique constraint there is a unique index,
+ * which the index reader keeps in order.
  */
 export function buildKeyStatement(
     type: DataSourceOptions['type'],
@@ -37,15 +47,16 @@ export function buildKeyStatement(
         case 'postgres': {
             return {
                 sql: [
-                    'SELECT cl.relname AS "table", c.conname AS "name", c.contype::text AS "kind", a.attname AS "column",',
+                    'SELECT cl.relname AS "table", c.conname AS "name", c.contype::text AS "kind",',
+                    'ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)',
+                    'JOIN pg_catalog.pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum ORDER BY k.ord) AS "columns",',
+                    'pg_catalog.pg_get_constraintdef(c.oid) AS "definition",',
                     'CASE WHEN NOT c.condeferrable THEN NULL WHEN c.condeferred THEN \'INITIALLY DEFERRED\' ELSE \'INITIALLY IMMEDIATE\' END AS "deferrable"',
                     'FROM pg_catalog.pg_constraint c',
                     'JOIN pg_catalog.pg_class cl ON cl.oid = c.conrelid',
                     'JOIN pg_catalog.pg_namespace n ON n.oid = cl.relnamespace',
-                    'CROSS JOIN LATERAL unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)',
-                    'JOIN pg_catalog.pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum',
-                    `WHERE c.contype IN ('p', 'u') AND n.nspname = ${schema ? '$1' : 'current_schema()'}`,
-                    'ORDER BY cl.relname, c.conname, k.ord',
+                    `WHERE c.contype IN ('p', 'u', 'f', 'c', 'x') AND n.nspname = ${schema ? '$1' : 'current_schema()'}`,
+                    'ORDER BY cl.relname, c.conname',
                 ].join(' '),
                 parameters: schema ? [schema] : [],
             };
@@ -54,7 +65,7 @@ export function buildKeyStatement(
         case 'mariadb': {
             return {
                 sql: [
-                    'SELECT table_name AS `table`, index_name AS `name`, \'p\' AS `kind`, column_name AS `column`, NULL AS `deferrable`',
+                    'SELECT table_name AS `table`, index_name AS `name`, \'p\' AS `kind`, column_name AS `column`',
                     'FROM information_schema.statistics',
                     'WHERE table_schema = DATABASE() AND index_name = \'PRIMARY\'',
                     'ORDER BY table_name, seq_in_index',
@@ -69,15 +80,24 @@ export function buildKeyStatement(
 }
 
 /**
- * Fold key rows (in key order) into the primary key and the unique constraints per table.
+ * Fold constraint rows into the primary key, the unique constraints (columns in row order)
+ * and the constraint definitions per table.
  */
 export function normalizeKeyRows(rows: KeyRow[]): Map<string, NativeKeys> {
     const result = new Map<string, NativeKeys>();
 
     for (const row of rows) {
-        const keys = result.get(row.table) ?? { uniques: new Map<string, NativeKey>() };
+        const keys = result.get(row.table) ?? { uniques: new Map<string, NativeKey>(), definitions: new Map<string, string>() };
 
         result.set(row.table, keys);
+
+        if (typeof row.definition === 'string') {
+            keys.definitions.set(row.name, row.definition);
+        }
+
+        if (row.kind !== 'p' && row.kind !== 'u') {
+            continue;
+        }
 
         let key = row.kind === 'p' ? keys.primary : keys.uniques.get(row.name);
 
@@ -95,15 +115,19 @@ export function normalizeKeyRows(rows: KeyRow[]): Map<string, NativeKeys> {
             }
         }
 
-        key.columns.push(row.column);
+        if (row.columns) {
+            key.columns.push(...row.columns);
+        } else if (row.column) {
+            key.columns.push(row.column);
+        }
     }
 
     return result;
 }
 
 /**
- * Read the primary keys and unique constraints of the given tables in key order, or undefined
- * when the driver has no native reader (the key columns are sorted then).
+ * Read the constraints of the given tables (key order, definitions), or undefined when the
+ * driver has no native reader (the key columns are sorted then, and no definition is read).
  */
 export async function readNativeKeys(
     queryRunner: QueryRunner,

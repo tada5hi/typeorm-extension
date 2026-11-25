@@ -238,6 +238,20 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
             }
         });
 
+        it.runIf(FAMILY === 'postgres')('reports constraint options typeorm does not model', async () => {
+            const table = `CREATE TABLE ${PROBE} (a integer)`;
+
+            expect(await differences(
+                [table, `ALTER TABLE ${PROBE} ADD CONSTRAINT uq_probe UNIQUE NULLS NOT DISTINCT (a)`],
+                [table, `ALTER TABLE ${PROBE} ADD CONSTRAINT uq_probe UNIQUE (a)`],
+            )).toEqual([expect.objectContaining({ path: `tables.${PROBE}.uniques.uq_probe`, kind: 'changed' })]);
+
+            expect(await differences(
+                [table, `ALTER TABLE ${PROBE} ADD CONSTRAINT chk_probe CHECK (a > 0) NOT VALID`],
+                [table, `ALTER TABLE ${PROBE} ADD CONSTRAINT chk_probe CHECK (a > 0)`],
+            )).toEqual([expect.objectContaining({ path: `tables.${PROBE}.checks.chk_probe`, kind: 'changed' })]);
+        });
+
         it.runIf(FAMILY === 'postgres')('reports an exclusion constraint', async () => {
             expect(await differences(
                 [`CREATE TABLE ${PROBE} (r int4range, CONSTRAINT xcl_probe EXCLUDE USING gist (r WITH &&))`],
@@ -306,6 +320,8 @@ describe.runIf(supportsSnapshotSchemas(driver))(`src/database/schema/snapshot sc
         expect(a.tables.map((table) => table.name)).toEqual(['Item']);
         expect(a.tables[0].indices.map((index) => index.name)).toEqual(['IDX_norm', 'IDX_partial']);
         expect(compareSchemaSnapshots(a, b)).toEqual([]);
+        expect(a.tables[0].foreignKeys[0].definition).toBe('FOREIGN KEY (parent) REFERENCES "Item"(id)');
+        expect(a.tables[0].checks[0].definition).toBe('CHECK ((status <> \'b\'::status))');
 
         const dataSource = new TypeORMDataSource(createIntegrationDataSourceOptions([], { schema: SCHEMAS[0] }));
 
