@@ -78,7 +78,9 @@ function toTable(table: Table): SchemaSnapshotTable {
             definition: null,
         })).sort(byNameThenColumns),
         uniques: table.uniques.map((unique) => named(unique.name, { columns: [...unique.columnNames] })).sort(byNameThenColumns),
-        checks: table.checks.map((check) => named(check.name, { expression: check.expression as string })).sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression)),
+        checks: table.checks
+            .map((check) => named(check.name, { expression: check.expression as string }))
+            .sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression)),
         foreignKeys: table.foreignKeys.map((foreignKey) => named(foreignKey.name, {
             columns: [...foreignKey.columnNames],
             referencedTable: unqualify(foreignKey.referencedTableName),
