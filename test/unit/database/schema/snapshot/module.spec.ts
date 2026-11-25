@@ -79,6 +79,7 @@ describe('database/schema/snapshot', () => {
             length: null,
             default: null,
             enum: null,
+            enumName: null,
             isArray: false,
             generatedIdentity: null,
             comment: null,

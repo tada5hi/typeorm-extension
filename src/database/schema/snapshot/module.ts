@@ -62,6 +62,7 @@ function toColumn(column: TableColumn): SchemaSnapshotColumn {
         collation: column.collation ?? null,
         isUnsigned: !!column.unsigned,
         enum: column.enum ? [...column.enum].sort() : null,
+        enumName: column.enumName ?? null,
         isArray: !!column.isArray,
         generatedIdentity: column.generatedIdentity ?? null,
         // sqlite reports '' and mysql may: no comment either way

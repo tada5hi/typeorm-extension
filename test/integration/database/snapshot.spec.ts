@@ -217,6 +217,26 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
                 .toEqual([expect.objectContaining({ path: `tables.${PROBE}.columns.a.isArray`, kind: 'changed' })]);
         });
 
+        it.runIf(FAMILY === 'postgres')('reports a column of another enum type', async () => {
+            const typed = (name: string) => [
+                `DROP TYPE IF EXISTS ${name}`,
+                `CREATE TYPE ${name} AS ENUM ('x')`,
+                `CREATE TABLE ${PROBE} (a ${name})`,
+            ];
+
+            try {
+                expect(await differences(typed('probe_enum_a'), typed('probe_enum_b')))
+                    .toEqual([expect.objectContaining({ path: `tables.${PROBE}.columns.a.enumName`, kind: 'changed' })]);
+            } finally {
+                await drop();
+
+                const dataSource = await open([]);
+
+                await dataSource.query('DROP TYPE IF EXISTS probe_enum_a');
+                await dataSource.query('DROP TYPE IF EXISTS probe_enum_b');
+            }
+        });
+
         it.runIf(FAMILY === 'postgres')('reports an exclusion constraint', async () => {
             expect(await differences(
                 [`CREATE TABLE ${PROBE} (r int4range, CONSTRAINT xcl_probe EXCLUDE USING gist (r WITH &&))`],

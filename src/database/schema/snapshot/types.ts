@@ -19,6 +19,10 @@ export type SchemaSnapshotColumn = {
     collation: string | null,
     isUnsigned: boolean,
     enum: string[] | null,
+    /**
+     * The enum type name, when typeorm reads one other than the name it would build (postgres).
+     */
+    enumName: string | null,
     isArray: boolean,
     generatedIdentity: string | null,
     comment: string | null,

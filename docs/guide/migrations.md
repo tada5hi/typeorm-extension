@@ -241,9 +241,10 @@ What a snapshot covers:
 - No schema or database qualifier is recorded, so two schemas compare equal.
 - Constraint and index names are compared. A readable name against a hashed one is a difference.
 - Views are the typeorm view entities, which typeorm records in its metadata table.
-- Every column property typeorm reads is compared, among them array, identity (`ALWAYS` or `BY DEFAULT`), comment,
-  `ON UPDATE`, spatial type and SRID. So are table comments, postgres exclusion constraints, and deferrable primary
-  keys, unique constraints and foreign keys (postgres).
+- Column properties compared: type, length, precision, scale, nullability, default, generation (strategy, type,
+  expression, identity `ALWAYS` or `BY DEFAULT`), charset, collation, unsigned, enum values and enum type name, array,
+  comment, `ON UPDATE`, spatial type and SRID. Also compared: table comments, postgres exclusion constraints, and
+  deferrable primary keys, unique constraints and foreign keys (postgres).
 - Indexes of postgres and cockroachdb come from `pg_indexes`, without the ones which own a primary key, unique or
   exclusion constraint (those appear as the primary key, as uniques or as exclusions). Indexes of mysql and mariadb
   come from `information_schema.statistics`, with prefix length and direction per part, the index type and whether
@@ -252,8 +253,9 @@ What a snapshot covers:
 - The column order of a primary key or unique constraint is compared on postgres, mysql and mariadb, read from the
   catalogue. On other drivers the key columns are sorted, so `(a, b)` and `(b, a)` compare equal there.
 
-What it does not compare: the column order of a table, table options (engine, row format, collation), sequences and
-enum types beyond the enum of a column, and anything typeorm does not model (triggers, hand-made views, extensions).
+What it does not compare: the column order of a table, mysql `zerofill` and display width, table options (engine,
+row format, collation), the `parser` and `isNullFiltered` of an index, sequences, the values of an enum type beyond
+the enum of a column, and anything typeorm does not model (triggers, hand-made views, extensions).
 
 Limits:
 

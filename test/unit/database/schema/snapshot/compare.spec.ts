@@ -23,6 +23,7 @@ function column(name: string, overrides: Partial<SchemaSnapshotColumn> = {}): Sc
         collation: null,
         isUnsigned: false,
         enum: null,
+        enumName: null,
         isArray: false,
         generatedIdentity: null,
         comment: null,
@@ -179,6 +180,7 @@ describe('database/schema/snapshot/compare', () => {
     });
 
     it.each([
+        ['enumName', 'status_enum'],
         ['isArray', true],
         ['generatedIdentity', 'ALWAYS'],
         ['comment', 'the id'],
