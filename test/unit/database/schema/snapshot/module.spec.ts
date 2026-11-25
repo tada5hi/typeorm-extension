@@ -7,6 +7,7 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from 'vitest';
 import { getSchemaSnapshot } from '../../../../../src';
 import { CreateWidget1700000000001 } from '../../../../data/typeorm/migration-baseline/legacy/create-widget';
@@ -27,9 +28,9 @@ function databaseFile(): string {
 
 function optionsOf(database: string, extra: Partial<DataSourceOptions> = {}): DataSourceOptions {
     return {
-        type: 'better-sqlite3', 
-        database, 
-        ...extra, 
+        type: 'better-sqlite3',
+        database,
+        ...extra,
     } as DataSourceOptions;
 }
 
@@ -212,5 +213,54 @@ describe('database/schema/snapshot', () => {
 
         await queryRunner.release();
         await dataSource.destroy();
+    });
+
+    it('does not read views without a metadata table', async () => {
+        const database = databaseFile();
+
+        await exec(database, FIXTURE);
+
+        const dataSource = new DataSource(optionsOf(database));
+
+        await dataSource.initialize();
+
+        const queryRunner = dataSource.createQueryRunner();
+        const getViews = vi.spyOn(queryRunner, 'getViews');
+
+        const snapshot = await getSchemaSnapshot(dataSource, { queryRunner });
+
+        expect(getViews).not.toHaveBeenCalled();
+        expect(snapshot.views).toEqual([]);
+
+        await queryRunner.release();
+        await dataSource.destroy();
+    });
+
+    it('reads views recorded in the metadata table and leaves the metadata table out', async () => {
+        const database = databaseFile();
+        const Gadget = new EntitySchema({
+            name: 'gadget',
+            columns: { id: { type: Number, primary: true }, label: { type: String } },
+        });
+        const GadgetView = new EntitySchema({
+            name: 'gadget_view',
+            expression: 'SELECT "id", "label" FROM "gadget"',
+            columns: { id: { type: Number, primary: true } },
+            type: 'view',
+        } as any);
+
+        const source = new DataSource(optionsOf(database, { entities: [Gadget, GadgetView], synchronize: true }));
+
+        await source.initialize();
+        await source.destroy();
+
+        const snapshot = await getSchemaSnapshot(optionsOf(database));
+
+        expect(snapshot.tables.map((table) => table.name)).toEqual(['gadget']);
+        expect(snapshot.views).toEqual([{
+            name: 'gadget_view',
+            expression: 'SELECT "id", "label" FROM "gadget"',
+            materialized: false,
+        }]);
     });
 });

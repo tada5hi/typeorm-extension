@@ -1,4 +1,4 @@
-import type { DataSourceOptions, QueryRunner } from 'typeorm';
+import type { DataSource, DataSourceOptions, QueryRunner } from 'typeorm';
 import { MigrationPlanError } from '../../../errors';
 
 /**
@@ -70,4 +70,37 @@ export async function listUserTableNames(queryRunner: QueryRunner): Promise<stri
     const rows = await queryRunner.query(statement.sql, statement.parameters) as { name?: string, NAME?: string }[];
 
     return rows.map((row) => (row.name ?? row.NAME) as string);
+}
+
+/**
+ * The tables of the current schema: `listed` is the full catalogue listing, `names` leaves out
+ * `ignoreTables` and the migrations and metadata tables.
+ *
+ * @throws MigrationPlanError
+ */
+export async function readUserTableNames(
+    dataSource: DataSource,
+    queryRunner: QueryRunner,
+    ignoreTables: string[] = [],
+): Promise<{
+    listed: string[],
+    names: string[],
+    metadataTable: string
+}> {
+    const { options } = dataSource;
+    const metadataTable = (options as { metadataTableName?: string }).metadataTableName ?? 'typeorm_metadata';
+
+    const skip = new Set<string>([
+        ...ignoreTables,
+        options.migrationsTableName ?? 'migrations',
+        metadataTable,
+    ]);
+
+    const listed = await listUserTableNames(queryRunner);
+
+    return {
+        listed,
+        names: listed.filter((name) => !skip.has(name)),
+        metadataTable,
+    };
 }

@@ -4,26 +4,8 @@ import { MigrationPlanError } from '../../../errors';
 import { isMigrationBaselineClass } from './baseline';
 import { useMigrationDataSource } from './execution';
 import { scanMigrationSource } from './source';
-import { listUserTableNames } from './tables';
+import { readUserTableNames } from './tables';
 import type { MigrationPlan, MigrationPlanOptions } from './types';
-
-async function readUserTables(
-    dataSource: DataSource,
-    queryRunner: QueryRunner,
-    ignoreTables: string[],
-): Promise<string[]> {
-    const { options } = dataSource;
-
-    const skip = new Set<string>([
-        ...ignoreTables,
-        options.migrationsTableName ?? 'migrations',
-        (options as { metadataTableName?: string }).metadataTableName ?? 'typeorm_metadata',
-    ]);
-
-    const names = await listUserTableNames(queryRunner);
-
-    return names.filter((name) => !skip.has(name));
-}
 
 /**
  * Read the database state and decide what a run has to do. Nothing is written and
@@ -60,7 +42,7 @@ export async function planDatabaseMigrations(
         }
 
         if (executed.length === 0) {
-            const tables = await readUserTables(dataSource, queryRunner, options.ignoreTables ?? []);
+            const { names: tables } = await readUserTableNames(dataSource, queryRunner, options.ignoreTables ?? []);
 
             if (tables.length > 0) {
                 throw MigrationPlanError.populatedSchemaWithoutHistory(tables);

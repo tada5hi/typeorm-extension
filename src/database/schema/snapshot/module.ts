@@ -6,7 +6,7 @@ import type {
     TableColumn,
 } from 'typeorm';
 import { useInitializedDataSource } from '../utils';
-import { listUserTableNames } from '../migration/tables';
+import { readUserTableNames } from '../migration/tables';
 import type {
     SchemaSnapshot,
     SchemaSnapshotColumn,
@@ -96,17 +96,11 @@ async function readSnapshot(
     queryRunner: QueryRunner,
     ignoreTables: string[],
 ): Promise<SchemaSnapshot> {
-    const { options } = dataSource;
-    const metadataTable = (options as { metadataTableName?: string }).metadataTableName ?? 'typeorm_metadata';
-
-    const skip = new Set<string>([
-        ...ignoreTables,
-        options.migrationsTableName ?? 'migrations',
+    const {
+        listed,
+        names,
         metadataTable,
-    ]);
-
-    const listed = await listUserTableNames(queryRunner);
-    const names = listed.filter((name) => !skip.has(name));
+    } = await readUserTableNames(dataSource, queryRunner, ignoreTables);
 
     const tables = names.length > 0 ? await queryRunner.getTables(names) : [];
 
