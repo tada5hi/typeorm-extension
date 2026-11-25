@@ -129,3 +129,6 @@ statement. Its `names` property lists the tables or migrations the refusal is ab
 `assertSchemaSnapshotsEqual` throws a `SchemaSnapshotError` when two [schema snapshots](./migrations#proving-a-baseline)
 differ. Its `differences` property holds the list `compareSchemaSnapshots` returns (`path`, `kind` and, for a change,
 `expected` and `actual`), and the message lists one line per difference. The class is experimental.
+
+`getSchemaSnapshot` throws a `DriverError` for a driver it has no catalogue reader for (mongodb, for instance), before
+it connects.

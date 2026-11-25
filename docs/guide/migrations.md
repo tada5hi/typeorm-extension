@@ -226,9 +226,10 @@ writes nothing. `compareSchemaSnapshots(expected, actual)` returns the differenc
 |-------------------------------------------------------------|-------------------------------------------------|
 | `tables.<table>`                                            | a table                                         |
 | `tables.<table>.columns.<column>[.<property>]`              | a column, or one property of it                 |
+| `tables.<table>.comment`                                    | the table comment                               |
 | `tables.<table>.primaryKey`                                 | the primary key                                 |
 | `tables.<table>.indices\|uniques\|foreignKeys.<key>`        | the name, or the columns joined by `,` if unnamed |
-| `tables.<table>.checks.<key>`                               | the name, or the expression if unnamed          |
+| `tables.<table>.checks\|exclusions.<key>`                   | the name, or the expression if unnamed          |
 | `views.<view>`                                              | a view                                          |
 
 Keys which occur more than once (unnamed duplicates) get a `#<n>` suffix, such as `tables.gadget.indices.a,b#1`.
@@ -240,17 +241,24 @@ What a snapshot covers:
 - No schema or database qualifier is recorded, so two schemas compare equal.
 - Constraint and index names are compared. A readable name against a hashed one is a difference.
 - Views are the typeorm view entities, which typeorm records in its metadata table.
+- Every column property typeorm reads is compared, among them array, identity (`ALWAYS` or `BY DEFAULT`), comment,
+  `ON UPDATE`, spatial type and SRID. So are table comments, postgres exclusion constraints, and deferrable primary
+  keys, unique constraints and foreign keys (postgres).
 - Indexes of postgres and cockroachdb come from `pg_indexes`, without the ones which own a primary key, unique or
-  exclusion constraint (typeorm reports those as the primary key or as uniques). Indexes of mysql and mariadb come from
-  `information_schema.statistics`, prefix lengths included. Expression and partial indexes are compared by their
+  exclusion constraint (those appear as the primary key, as uniques or as exclusions). Indexes of mysql and mariadb
+  come from `information_schema.statistics`, with prefix length and direction per part, the index type and whether
+  the index is invisible (mysql) or ignored (mariadb). Expression and partial indexes are compared by their
   definition. Other drivers use the indices typeorm reads.
+- The column order of a primary key or unique constraint is compared on postgres, mysql and mariadb, read from the
+  catalogue. On other drivers the key columns are sorted, so `(a, b)` and `(b, a)` compare equal there.
 
-What it does not compare: column order, comments typeorm does not read, table options (engine, row format,
-collation), sequences and enum types beyond the enum of a column, the direction (`ASC` or `DESC`) of the parts of a
-mysql or mariadb index, and anything typeorm does not model (triggers, hand-made views, extensions).
+What it does not compare: the column order of a table, table options (engine, row format, collation), sequences and
+enum types beyond the enum of a column, and anything typeorm does not model (triggers, hand-made views, extensions).
 
 Limits:
 
+- `getSchemaSnapshot` supports postgres, cockroachdb, mysql, mariadb, better-sqlite3, mssql and oracle, and throws a
+  `DriverError` for any other driver.
 - Verified on postgres, mysql and mariadb (integration suite) and better-sqlite3 (unit suite). cockroachdb, mssql and
   oracle run unverified.
 - On mysql and mariadb a generated column created by raw DDL, with no `typeorm_metadata` table, makes typeorm's table
