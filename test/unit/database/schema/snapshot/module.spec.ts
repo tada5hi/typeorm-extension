@@ -79,7 +79,15 @@ describe('database/schema/snapshot', () => {
             length: null,
             default: null,
             enum: null,
+            isArray: false,
+            generatedIdentity: null,
+            comment: null,
+            onUpdate: null,
+            spatialFeatureType: null,
+            srid: null,
         });
+        expect(member.comment).toBeNull();
+        expect(member.exclusions).toEqual([]);
         expect(member.checks).toEqual([expect.objectContaining({ name: 'CK_member_age' })]);
         expect(member.checks[0].expression).toContain('age');
         expect(member.foreignKeys).toEqual([{
@@ -89,6 +97,7 @@ describe('database/schema/snapshot', () => {
             referencedColumns: ['id'],
             onDelete: 'CASCADE',
             onUpdate: 'NO ACTION',
+            deferrable: null,
         }]);
         expect(member.indices).toEqual(expect.arrayContaining([
             {
@@ -111,6 +120,20 @@ describe('database/schema/snapshot', () => {
             isNullable: false,
         });
         expect(team.uniques.some((unique) => unique.columns.join() === 'name')).toBe(true);
+    });
+
+    it('sorts key columns where no native key reader exists', async () => {
+        const database = databaseFile();
+
+        await exec(database, [
+            'CREATE TABLE "pair" ("b" integer NOT NULL, "a" integer NOT NULL, "d" integer, "c" integer, ' +
+            'CONSTRAINT "PK_pair" PRIMARY KEY ("b", "a"), CONSTRAINT "UQ_pair" UNIQUE ("d", "c"))',
+        ]);
+
+        const [pair] = (await getSchemaSnapshot(optionsOf(database))).tables;
+
+        expect(pair.primaryKey).toEqual({ columns: ['a', 'b'], deferrable: null });
+        expect(pair.uniques.find((unique) => unique.columns.length === 2)?.columns).toEqual(['c', 'd']);
     });
 
     it('omits schema and database qualifiers', async () => {

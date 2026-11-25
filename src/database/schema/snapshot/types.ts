@@ -19,6 +19,12 @@ export type SchemaSnapshotColumn = {
     collation: string | null,
     isUnsigned: boolean,
     enum: string[] | null,
+    isArray: boolean,
+    generatedIdentity: string | null,
+    comment: string | null,
+    onUpdate: string | null,
+    spatialFeatureType: string | null,
+    srid: number | null,
 };
 
 /**
@@ -46,6 +52,34 @@ export type SchemaSnapshotForeignKey = {
     referencedColumns: string[],
     onDelete: string | null,
     onUpdate: string | null,
+    /**
+     * `INITIALLY DEFERRED` or `INITIALLY IMMEDIATE` for a deferrable key, null otherwise.
+     */
+    deferrable: string | null,
+};
+
+/**
+ * @experimental The schema snapshot API may change in a minor release.
+ */
+export type SchemaSnapshotUnique = {
+    name?: string,
+    /**
+     * In key order where a native reader exists (postgres, mysql, mariadb), sorted elsewhere.
+     */
+    columns: string[],
+    /**
+     * `INITIALLY DEFERRED` or `INITIALLY IMMEDIATE` for a deferrable constraint, null otherwise
+     * (read on postgres only).
+     */
+    deferrable: string | null,
+};
+
+/**
+ * @experimental The schema snapshot API may change in a minor release.
+ */
+export type SchemaSnapshotExclusion = {
+    name?: string,
+    expression: string,
 };
 
 /**
@@ -53,11 +87,21 @@ export type SchemaSnapshotForeignKey = {
  */
 export type SchemaSnapshotTable = {
     name: string,
+    comment: string | null,
     columns: SchemaSnapshotColumn[],
-    primaryKey: { name?: string, columns: string[] } | null,
+    /**
+     * The key columns are in key order where a native reader exists (postgres, mysql, mariadb),
+     * sorted elsewhere. `deferrable` is read on postgres only.
+     */
+    primaryKey: {
+        name?: string,
+        columns: string[],
+        deferrable: string | null
+    } | null,
     indices: SchemaSnapshotIndex[],
-    uniques: { name?: string, columns: string[] }[],
+    uniques: SchemaSnapshotUnique[],
     checks: { name?: string, expression: string }[],
+    exclusions: SchemaSnapshotExclusion[],
     foreignKeys: SchemaSnapshotForeignKey[],
 };
 

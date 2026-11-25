@@ -113,6 +113,15 @@ function compareTable(
     actual: SchemaSnapshotTable,
     out: SchemaSnapshotDifference[],
 ) {
+    if (!isEqual(expected.comment, actual.comment)) {
+        out.push({
+            path: `${path}.comment`,
+            kind: 'changed',
+            expected: expected.comment,
+            actual: actual.comment,
+        });
+    }
+
     compareKeyed(
         `${path}.columns`,
         expected.columns,
@@ -157,6 +166,13 @@ function compareTable(
         expected.checks,
         actual.checks,
         (check) => check.name ?? check.expression,
+        out,
+    );
+    compareKeyed(
+        `${path}.exclusions`,
+        expected.exclusions,
+        actual.exclusions,
+        (exclusion) => exclusion.name ?? exclusion.expression,
         out,
     );
 }

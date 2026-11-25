@@ -23,6 +23,12 @@ function column(name: string, overrides: Partial<SchemaSnapshotColumn> = {}): Sc
         collation: null,
         isUnsigned: false,
         enum: null,
+        isArray: false,
+        generatedIdentity: null,
+        comment: null,
+        onUpdate: null,
+        spatialFeatureType: null,
+        srid: null,
         ...overrides,
     };
 }
@@ -30,11 +36,13 @@ function column(name: string, overrides: Partial<SchemaSnapshotColumn> = {}): Sc
 function table(name: string, overrides: Partial<SchemaSnapshotTable> = {}): SchemaSnapshotTable {
     return {
         name,
+        comment: null,
         columns: [column('id'), column('name', { type: 'varchar' })],
-        primaryKey: { columns: ['id'] },
+        primaryKey: { columns: ['id'], deferrable: null },
         indices: [],
         uniques: [],
         checks: [],
+        exclusions: [],
         foreignKeys: [],
         ...overrides,
     };
@@ -123,27 +131,33 @@ describe('database/schema/snapshot/compare', () => {
     it('keys unnamed constraints by columns or expression and reports changes', () => {
         const differences = compareSchemaSnapshots(
             snapshot([table('user', {
-                uniques: [{ columns: ['a', 'b'] }],
+                uniques: [{ columns: ['a', 'b'], deferrable: null }],
                 checks: [{ expression: 'x > 0' }],
-                primaryKey: { columns: ['id'] },
+                primaryKey: { columns: ['id'], deferrable: null },
                 foreignKeys: [{
                     columns: ['r'],
                     referencedTable: 'role',
                     referencedColumns: ['id'],
                     onDelete: null,
                     onUpdate: null,
+                    deferrable: null,
                 }],
             })]),
             snapshot([table('user', {
-                uniques: [{ columns: ['a', 'b'], name: 'x' }],
+                uniques: [{
+                    columns: ['a', 'b'],
+                    name: 'x',
+                    deferrable: null,
+                }],
                 checks: [{ expression: 'x > 1' }],
-                primaryKey: { columns: ['id', 'name'] },
+                primaryKey: { columns: ['id', 'name'], deferrable: null },
                 foreignKeys: [{
                     columns: ['r'],
                     referencedTable: 'role',
                     referencedColumns: ['id'],
                     onDelete: 'CASCADE',
                     onUpdate: null,
+                    deferrable: null,
                 }],
             })]),
         );
@@ -159,9 +173,113 @@ describe('database/schema/snapshot/compare', () => {
         expect(differences[3]).toEqual({
             path: 'tables.user.primaryKey',
             kind: 'changed',
-            expected: { columns: ['id'] },
-            actual: { columns: ['id', 'name'] },
+            expected: { columns: ['id'], deferrable: null },
+            actual: { columns: ['id', 'name'], deferrable: null },
         });
+    });
+
+    it.each([
+        ['isArray', true],
+        ['generatedIdentity', 'ALWAYS'],
+        ['comment', 'the id'],
+        ['onUpdate', 'CURRENT_TIMESTAMP(6)'],
+        ['spatialFeatureType', 'Point'],
+        ['srid', 4326],
+    ] as [keyof SchemaSnapshotColumn, unknown][])('reports a changed column %s', (property, value) => {
+        const differences = compareSchemaSnapshots(
+            snapshot([table('user')]),
+            snapshot([table('user', { columns: [column('id', { [property]: value }), column('name', { type: 'varchar' })] })]),
+        );
+
+        expect(differences).toEqual([
+            {
+                path: `tables.user.columns.id.${property}`,
+                kind: 'changed',
+                expected: column('id')[property],
+                actual: value,
+            },
+        ]);
+    });
+
+    it('reports a changed table comment', () => {
+        expect(compareSchemaSnapshots(
+            snapshot([table('user')]),
+            snapshot([table('user', { comment: 'users' })]),
+        )).toEqual([
+            {
+                path: 'tables.user.comment',
+                kind: 'changed',
+                expected: null,
+                actual: 'users',
+            },
+        ]);
+    });
+
+    it('reports exclusions keyed by name or expression', () => {
+        const differences = compareSchemaSnapshots(
+            snapshot([table('user', {
+                exclusions: [
+                    { name: 'XCL_a', expression: 'USING gist (range WITH &&)' },
+                    { expression: 'USING gist (other WITH &&)' },
+                ],
+            })]),
+            snapshot([table('user', { exclusions: [{ name: 'XCL_a', expression: 'USING gist (range WITH =)' }] })]),
+        );
+
+        expect(differences.map((d) => [d.path, d.kind])).toEqual([
+            ['tables.user.exclusions.USING gist (other WITH &&)', 'missing'],
+            ['tables.user.exclusions.XCL_a', 'changed'],
+        ]);
+    });
+
+    it('reports a changed deferrable foreign key and unique', () => {
+        const foreignKey = (deferrable: string | null) => ({
+            name: 'FK_a',
+            columns: ['r'],
+            referencedTable: 'role',
+            referencedColumns: ['id'],
+            onDelete: null,
+            onUpdate: null,
+            deferrable,
+        });
+        const unique = (deferrable: string | null) => ({
+            name: 'UQ_a',
+            columns: ['name'],
+            deferrable,
+        });
+
+        const differences = compareSchemaSnapshots(
+            snapshot([table('user', { foreignKeys: [foreignKey(null)], uniques: [unique(null)] })]),
+            snapshot([table('user', {
+                foreignKeys: [foreignKey('INITIALLY DEFERRED')],
+                uniques: [unique('INITIALLY IMMEDIATE')],
+            })]),
+        );
+
+        expect(differences.map((d) => [d.path, d.kind])).toEqual([
+            ['tables.user.foreignKeys.FK_a', 'changed'],
+            ['tables.user.uniques.UQ_a', 'changed'],
+        ]);
+    });
+
+    it('reports a different key column order', () => {
+        const keyed = (columns: string[]) => table('user', {
+            primaryKey: { columns, deferrable: null },
+            uniques: [{
+                name: 'UQ_a',
+                columns,
+                deferrable: null,
+            }],
+        });
+        const differences = compareSchemaSnapshots(
+            snapshot([keyed(['id', 'name'])]),
+            snapshot([keyed(['name', 'id'])]),
+        );
+
+        expect(differences.map((d) => [d.path, d.kind])).toEqual([
+            ['tables.user.primaryKey', 'changed'],
+            ['tables.user.uniques.UQ_a', 'changed'],
+        ]);
     });
 
     it('reports views', () => {
@@ -215,6 +333,7 @@ describe('database/schema/snapshot/compare', () => {
             referencedColumns: ['id'],
             onDelete: null,
             onUpdate: null,
+            deferrable: null,
         });
 
         const one = table('user', {

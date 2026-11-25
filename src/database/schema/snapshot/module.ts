@@ -8,6 +8,7 @@ import type {
 import { useInitializedDataSource } from '../utils';
 import { readUserTableNames } from '../migration/tables';
 import { readNativeIndices } from './indices';
+import { readNativeKeys } from './keys';
 import type {
     SchemaSnapshot,
     SchemaSnapshotColumn,
@@ -59,18 +60,45 @@ function toColumn(column: TableColumn): SchemaSnapshotColumn {
         collation: column.collation ?? null,
         isUnsigned: !!column.unsigned,
         enum: column.enum ? [...column.enum].sort() : null,
+        isArray: !!column.isArray,
+        generatedIdentity: column.generatedIdentity ?? null,
+        // sqlite reports '' and mysql may: no comment either way
+        comment: column.comment || null,
+        onUpdate: column.onUpdate || null,
+        spatialFeatureType: column.spatialFeatureType || null,
+        srid: column.srid ?? null,
     };
 }
 
-function toTable(table: Table, native?: SchemaSnapshotIndex[]): SchemaSnapshotTable {
+type TableKey = { columns: string[], deferrable: string | null };
+
+type TableKeys = { primary?: TableKey, uniques: Map<string, TableKey> };
+
+/**
+ * Key columns in key order where the driver has a native key reader, sorted otherwise:
+ * typeorm reports them in table column order, which says nothing about the key.
+ */
+function keyColumns(columns: string[], native?: { columns: string[] }): string[] {
+    return native ? [...native.columns] : [...columns].sort();
+}
+
+function toTable(
+    table: Table,
+    native?: SchemaSnapshotIndex[],
+    keys?: TableKeys,
+): SchemaSnapshotTable {
     const primary = table.columns.filter((column) => column.isPrimary);
     const primaryName = primary.find((column) => column.primaryKeyConstraintName)?.primaryKeyConstraintName;
 
     return {
         name: unqualify(table.name),
+        comment: table.comment || null,
         columns: table.columns.map(toColumn).sort((a, b) => compare(a.name, b.name)),
         primaryKey: primary.length > 0 ?
-            named(primaryName, { columns: primary.map((column) => column.name) }) :
+            named(primaryName, {
+                columns: keyColumns(primary.map((column) => column.name), keys?.primary),
+                deferrable: keys?.primary?.deferrable ?? null,
+            }) :
             null,
         indices: native ? [...native].sort(byNameThenColumns) : table.indices.map((index) => named(index.name, {
             columns: [...index.columnNames],
@@ -79,9 +107,19 @@ function toTable(table: Table, native?: SchemaSnapshotIndex[]): SchemaSnapshotTa
             kind: (index.isSpatial && 'spatial' as const) || (index.isFulltext && 'fulltext' as const) || null,
             definition: null,
         })).sort(byNameThenColumns),
-        uniques: table.uniques.map((unique) => named(unique.name, { columns: [...unique.columnNames] })).sort(byNameThenColumns),
+        uniques: table.uniques.map((unique) => {
+            const key = unique.name ? keys?.uniques.get(unique.name) : undefined;
+
+            return named(unique.name, {
+                columns: keyColumns(unique.columnNames, key),
+                deferrable: key?.deferrable ?? unique.deferrable ?? null,
+            });
+        }).sort(byNameThenColumns),
         checks: table.checks
             .map((check) => named(check.name, { expression: check.expression as string }))
+            .sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression)),
+        exclusions: (table.exclusions ?? [])
+            .map((exclusion) => named(exclusion.name, { expression: exclusion.expression ?? '' }))
             .sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression)),
         foreignKeys: table.foreignKeys.map((foreignKey) => named(foreignKey.name, {
             columns: [...foreignKey.columnNames],
@@ -89,6 +127,7 @@ function toTable(table: Table, native?: SchemaSnapshotIndex[]): SchemaSnapshotTa
             referencedColumns: [...foreignKey.referencedColumnNames],
             onDelete: foreignKey.onDelete ?? null,
             onUpdate: foreignKey.onUpdate ?? null,
+            deferrable: foreignKey.deferrable || null,
         })).sort(byNameThenColumns),
     };
 }
@@ -109,12 +148,23 @@ async function readSnapshot(
     // typeorm does not read expression and partial indexes reliably: a native reader replaces its indices
     const native = await readNativeIndices(queryRunner, names);
 
+    // typeorm reports key columns in table column order: a native reader keeps the key order
+    const keys = await readNativeKeys(queryRunner, names);
+
     // typeorm records views in the metadata table only, and may fail reading a missing one (mysql).
     const views = listed.includes(metadataTable) ? await queryRunner.getViews() : [];
 
     return {
         tables: tables
-            .map((table) => toTable(table, native ? native.get(unqualify(table.name)) ?? [] : undefined))
+            .map((table) => {
+                const name = unqualify(table.name);
+
+                return toTable(
+                    table,
+                    native ? native.get(name) ?? [] : undefined,
+                    keys ? keys.get(name) ?? { uniques: new Map() } : undefined,
+                );
+            })
             .sort((a, b) => compare(a.name, b.name)),
         views: views.map((view) : SchemaSnapshotView => ({
             name: unqualify(view.name),
