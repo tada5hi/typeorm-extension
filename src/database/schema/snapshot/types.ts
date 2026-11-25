@@ -94,3 +94,16 @@ export type SchemaSnapshotOptions = {
      */
     ignoreTables?: string[],
 };
+
+/**
+ * One difference between two schema snapshots. `missing` means the element
+ * exists in the expected snapshot only, `extra` in the actual one only.
+ *
+ * @experimental The schema snapshot API may change in a minor release.
+ */
+export type SchemaSnapshotDifference = {
+    path: string,
+    kind: 'missing' | 'extra' | 'changed',
+    expected?: unknown,
+    actual?: unknown,
+};

@@ -1,0 +1,37 @@
+import type { SchemaSnapshotDifference } from '../database/schema/snapshot/types';
+import { TypeormExtensionError } from './base';
+
+function buildMessage(differences: SchemaSnapshotDifference[]): string {
+    const lines = differences.map((difference) => {
+        if (difference.kind === 'changed') {
+            return `${difference.path}: changed, expected ${JSON.stringify(difference.expected)}, actual ${JSON.stringify(difference.actual)}`;
+        }
+
+        return `${difference.path}: ${difference.kind}`;
+    });
+
+    return [
+        `The schema snapshots differ (${differences.length} difference(s)):`,
+        ...lines,
+    ].join('\n');
+}
+
+/**
+ * @experimental The schema snapshot API may change in a minor release.
+ */
+export class SchemaSnapshotError extends TypeormExtensionError {
+    /**
+     * The differences between the expected and the actual snapshot.
+     */
+    readonly differences: SchemaSnapshotDifference[];
+
+    constructor(differences: SchemaSnapshotDifference[] = [], message?: string) {
+        super(message || buildMessage(differences));
+
+        this.differences = differences;
+    }
+
+    static differs(differences: SchemaSnapshotDifference[]) {
+        return new SchemaSnapshotError(differences);
+    }
+}

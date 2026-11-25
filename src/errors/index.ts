@@ -7,3 +7,4 @@ export * from './options';
 export * from './schema';
 export * from './schema-alteration';
 export * from './migration-plan';
+export * from './schema-snapshot';
