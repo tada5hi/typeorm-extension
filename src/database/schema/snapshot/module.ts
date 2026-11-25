@@ -5,8 +5,10 @@ import type {
     Table,
     TableColumn,
 } from 'typeorm';
+import { InstanceChecker } from 'typeorm';
+import { DriverError } from '../../../errors/driver';
 import { useInitializedDataSource } from '../utils';
-import { readUserTableNames } from '../migration/tables';
+import { buildUserTablesStatement, readUserTableNames } from '../migration/tables';
 import { readNativeIndices } from './indices';
 import { readNativeKeys } from './keys';
 import type {
@@ -181,24 +183,35 @@ async function readSnapshot(
  * through an own instance (see `getSchemaDrift`). The migrations and metadata tables
  * are left out.
  *
+ * @throws DriverError for a driver without a catalogue reader (supported: postgres, cockroachdb,
+ * mysql, mariadb, better-sqlite3, mssql, oracle).
+ *
  * @experimental The schema snapshot API may change in a minor release.
  */
 export async function getSchemaSnapshot(
     input: DataSource | DataSourceOptions,
     options: SchemaSnapshotOptions = {},
 ): Promise<SchemaSnapshot> {
+    const { type } = InstanceChecker.isDataSource(input) ? input.options : input;
+
+    if (!buildUserTablesStatement(type)) {
+        throw DriverError.notSupported(type);
+    }
+
     const { dataSource, owned } = await useInitializedDataSource(input, {
         synchronize: false,
         migrationsRun: false,
         dropSchema: false,
     });
 
-    const queryRunner = options.queryRunner ?? dataSource.createQueryRunner();
+    let queryRunner: QueryRunner | undefined;
 
     try {
+        queryRunner = options.queryRunner ?? dataSource.createQueryRunner();
+
         return await readSnapshot(dataSource, queryRunner, options.ignoreTables ?? []);
     } finally {
-        if (!options.queryRunner) {
+        if (!options.queryRunner && queryRunner) {
             await queryRunner.release();
         }
 

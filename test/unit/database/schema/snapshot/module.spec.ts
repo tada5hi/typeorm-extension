@@ -9,7 +9,7 @@ import {
     it,
     vi,
 } from 'vitest';
-import { getSchemaSnapshot } from '../../../../../src';
+import { DriverError, getSchemaSnapshot } from '../../../../../src';
 import { CreateWidget1700000000001 } from '../../../../data/typeorm/migration-baseline/legacy/create-widget';
 
 const directory = path.join(import.meta.dirname, '..', '..', '..', '..', '..', 'writable', 'schema-snapshot');
@@ -134,6 +134,13 @@ describe('database/schema/snapshot', () => {
 
         expect(pair.primaryKey).toEqual({ columns: ['a', 'b'], deferrable: null });
         expect(pair.uniques.find((unique) => unique.columns.length === 2)?.columns).toEqual(['c', 'd']);
+    });
+
+    it('throws a DriverError for a driver without a catalogue reader', async () => {
+        await expect(getSchemaSnapshot({ type: 'mongodb' } as DataSourceOptions))
+            .rejects.toThrow(DriverError);
+        await expect(getSchemaSnapshot({ type: 'mongodb' } as DataSourceOptions))
+            .rejects.toThrow('The driver mongodb is not supported yet.');
     });
 
     it('omits schema and database qualifiers', async () => {
