@@ -88,11 +88,17 @@ export function supportsDatabaseLock(driver?: IntegrationDriver) : boolean {
 }
 
 /**
- * Whether the baseline spec runs on the driver: the drivers it was verified
- * against (its catalogue snapshot speaks postgres and mysql).
+ * Whether the baseline spec runs on the driver: the drivers its runner was verified against.
  */
 export function supportsMigrationBaseline(driver?: IntegrationDriver) : boolean {
     return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb';
+}
+
+/**
+ * Whether getSchemaSnapshot reads the driver: every relational driver of the suite.
+ */
+export function supportsSchemaSnapshot(driver?: IntegrationDriver) : boolean {
+    return !!driver && driver !== 'mongodb';
 }
 
 /**

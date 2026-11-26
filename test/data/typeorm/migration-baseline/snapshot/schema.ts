@@ -26,9 +26,10 @@ export async function createGadgetTable(queryRunner: QueryRunner): Promise<void>
 
 /**
  * A unique expression index over COALESCE(label, ''), created by raw DDL: typeorm does not model it.
- * mariadb has no functional key parts and typeorm fails reading a generated column it did not create
- * (it looks the expression up in typeorm_metadata), so mariadb gets a prefix index, which typeorm
- * does not model either.
+ * Where the driver has no such index, it gets another one typeorm does not model: mariadb (no
+ * functional key parts, and typeorm fails reading a generated column it did not create) a prefix
+ * index, mssql a filtered index, oracle a function-based index over NVL. Cockroachdb reports every
+ * unique index as a unique constraint, so it gets a plain expression index.
  */
 export async function createGadgetLabelIndex(queryRunner: QueryRunner): Promise<void> {
     switch (queryRunner.connection.options.type) {
@@ -39,6 +40,21 @@ export async function createGadgetLabelIndex(queryRunner: QueryRunner): Promise<
         }
         case 'mysql': {
             await queryRunner.query(`CREATE UNIQUE INDEX \`${GADGET_LABEL_INDEX}\` ON \`${GADGET_TABLE}\` ((COALESCE(\`label\`, '')))`);
+
+            break;
+        }
+        case 'mssql': {
+            await queryRunner.query(`CREATE UNIQUE INDEX "${GADGET_LABEL_INDEX}" ON "${GADGET_TABLE}" ("label") WHERE "label" IS NOT NULL`);
+
+            break;
+        }
+        case 'oracle': {
+            await queryRunner.query(`CREATE UNIQUE INDEX "${GADGET_LABEL_INDEX}" ON "${GADGET_TABLE}" (NVL("label", '-'))`);
+
+            break;
+        }
+        case 'cockroachdb': {
+            await queryRunner.query(`CREATE INDEX "${GADGET_LABEL_INDEX}" ON "${GADGET_TABLE}" (COALESCE("label", ''))`);
 
             break;
         }

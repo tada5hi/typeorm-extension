@@ -1,5 +1,6 @@
 import type { DataSource } from 'typeorm';
 import { DataSource as TypeORMDataSource } from 'typeorm';
+import { RdbmsSchemaBuilder } from 'typeorm/schema-builder/RdbmsSchemaBuilder';
 import {
     afterEach,
     beforeEach,
@@ -14,6 +15,7 @@ import {
     getSchemaSnapshot,
     runDatabaseMigrations,
 } from '../../../src';
+import { listUserTableNames } from '../../../src/database/schema/migration/tables';
 import { GadgetBaseline1710000000003 } from '../../data/typeorm/migration-baseline/snapshot/baseline';
 import { GadgetBaselineWithoutIndex1710000000003 } from '../../data/typeorm/migration-baseline/snapshot/baseline-without-index';
 import { AddGadgetLabelIndex1710000000002 } from '../../data/typeorm/migration-baseline/snapshot/legacy/add-gadget-label-index';
@@ -22,6 +24,7 @@ import { GADGET_LABEL_INDEX, GADGET_TABLE } from '../../data/typeorm/migration-b
 import {
     createIntegrationDataSourceOptions,
     supportsMigrationBaseline,
+    supportsSchemaSnapshot,
     supportsSnapshotSchemas,
     useIntegrationDriver,
 } from '../../data/typeorm/integration';
@@ -33,10 +36,21 @@ const LEGACY = [CreateGadget1710000000001, AddGadgetLabelIndex1710000000002];
 const PROBE = 'snapshot_probe';
 
 // the DDL of the probe cases differs by dialect family, the assertions do not
-const FAMILY = driver === 'postgres' ? 'postgres' : 'mysql';
+let FAMILY : 'postgres' | 'mysql' | 'mssql' | 'other' = 'other';
+
+if (driver === 'postgres') {
+    FAMILY = 'postgres';
+} else if (driver === 'mysql' || driver === 'mariadb') {
+    FAMILY = 'mysql';
+} else if (driver === 'mssql') {
+    FAMILY = 'mssql';
+}
+
+// the probe table is created by unquoted DDL, which oracle folds to upper case
+const probePath = (suffix: string) => expect.stringMatching(new RegExp(`^tables\\.${PROBE}\\.${suffix.replace(/\./g, '\\.')}$`, 'i'));
 
 // A, B and C run one after the other in the one configured database, with a full drop in between.
-describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot (${driver})`, () => {
+describe.runIf(supportsSchemaSnapshot(driver))(`src/database/schema/snapshot (${driver})`, () => {
     const created : DataSource[] = [];
 
     async function open(migrations: any[]) : Promise<DataSource> {
@@ -50,14 +64,16 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
 
     // other specs leave their tables in the shared database
     async function foreignTables(dataSource: DataSource) : Promise<string[]> {
-        const sql = driver === 'mysql' || driver === 'mariadb' ?
-            'SELECT table_name AS name FROM information_schema.tables WHERE table_schema = DATABASE()' :
-            'SELECT tablename AS name FROM pg_catalog.pg_tables WHERE schemaname = current_schema()';
-        const rows : { name?: string, NAME?: string }[] = await dataSource.query(sql);
+        const queryRunner = dataSource.createQueryRunner();
 
-        return rows
-            .map((row) => (row.name ?? row.NAME) as string)
-            .filter((name) => name !== GADGET_TABLE && name !== PROBE && name !== 'migrations');
+        try {
+            const own = [GADGET_TABLE, PROBE, 'migrations'];
+
+            return (await listUserTableNames(queryRunner))
+                .filter((name) => !own.includes(name.toLowerCase()));
+        } finally {
+            await queryRunner.release();
+        }
     }
 
     async function snapshot(dataSource: DataSource) : Promise<SchemaSnapshot> {
@@ -69,7 +85,13 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
         const queryRunner = dataSource.createQueryRunner();
 
         try {
-            await queryRunner.dropTable(PROBE, true);
+            try {
+                // unquoted, as the probe DDL creates it
+                await queryRunner.query(`DROP TABLE ${PROBE}`);
+            } catch {
+                // not there
+            }
+
             await queryRunner.dropTable(GADGET_TABLE, true);
             await queryRunner.dropTable('migrations', true);
         } finally {
@@ -86,7 +108,10 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
     }
 
     async function names(dataSource: DataSource) : Promise<string[]> {
-        const rows : { name: string }[] = await dataSource.query('SELECT name FROM migrations ORDER BY id');
+        const escape = (name: string) => dataSource.driver.escape(name);
+        const rows : { name: string }[] = await dataSource.query(
+            `SELECT ${escape('name')} AS ${escape('name')} FROM ${escape('migrations')} ORDER BY ${escape('id')}`,
+        );
 
         return rows.map((row) => row.name);
     }
@@ -147,7 +172,8 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
         });
     });
 
-    it('adoption keeps the snapshot and adds one marker', async () => {
+    // the adoption runs the baseline runner, which is verified on fewer drivers than the snapshot
+    it.runIf(supportsMigrationBaseline(driver))('adoption keeps the snapshot and adds one marker', async () => {
         const expected = await chain();
 
         await drop();
@@ -193,23 +219,116 @@ describe.runIf(supportsMigrationBaseline(driver))(`src/database/schema/snapshot 
             ];
 
             expect(await differences(table('a integer NOT NULL, b integer NOT NULL', 'a, b'), table('a integer NOT NULL, b integer NOT NULL', 'b, a')))
-                .toEqual([expect.objectContaining({ path: `tables.${PROBE}.primaryKey`, kind: 'changed' })]);
+                .toEqual([expect.objectContaining({ path: probePath('primaryKey'), kind: 'changed' })]);
             expect(await differences(table('a integer NOT NULL, b integer NOT NULL', 'a, b'), table('b integer NOT NULL, a integer NOT NULL', 'a, b')))
                 .toEqual([]);
         });
 
+        it('reads unnamed constraints by their columns and reports a missing one', async () => {
+            // the server names them at random on mssql and oracle
+            const table = (unique: string) => [
+                `CREATE TABLE ${PROBE} (a integer NOT NULL, b integer, PRIMARY KEY (a)${unique}, CHECK (a > 0))`,
+            ];
+
+            expect(await differences(table(', UNIQUE (b)'), table(', UNIQUE (b)'))).toEqual([]);
+
+            // a unique key is a unique index on mysql and mariadb, and keeps a generated name where it is deterministic
+            const missing = await differences(table(', UNIQUE (b)'), table(''));
+
+            expect(missing).toEqual([expect.objectContaining({ path: expect.stringMatching(/\.(uniques|indices)\./), kind: 'missing' })]);
+            expect((missing[0].expected as { columns: string[] }).columns.map((name) => name.toLowerCase())).toEqual(['b']);
+        });
+
+        it('reports a different index key order and direction', async () => {
+            const table = (index: string) => [
+                `CREATE TABLE ${PROBE} (a integer NOT NULL, b integer NOT NULL)`,
+                `CREATE INDEX ix_probe ON ${PROBE} (${index})`,
+            ];
+
+            for (const index of ['b, a', 'a, b DESC']) {
+                expect(await differences(table('a, b'), table(index)))
+                    .toEqual([expect.objectContaining({ path: probePath('indices.ix_probe'), kind: 'changed' })]);
+            }
+        });
+
+        it('reports an index expression or filter typeorm does not model', async () => {
+            // what each dialect has: an expression, a filter (mssql), a prefix (mariadb)
+            const index = (variant: 0 | 1) => {
+                switch (driver) {
+                    case 'mssql':
+                        return `CREATE INDEX ix_probe ON ${PROBE} (c) WHERE c IS ${variant ? '' : 'NOT '}NULL`;
+                    case 'mariadb':
+                        return `CREATE INDEX ix_probe ON ${PROBE} (c(${5 + variant}))`;
+                    case 'oracle':
+                        return `CREATE INDEX ix_probe ON ${PROBE} (${variant ? 'UPPER' : 'LOWER'}(c))`;
+                    default:
+                        return `CREATE INDEX ix_probe ON ${PROBE} ((${variant ? 'upper' : 'lower'}(c)))`;
+                }
+            };
+            const table = (variant: 0 | 1) => [`CREATE TABLE ${PROBE} (c varchar(20))`, index(variant)];
+
+            expect(await differences(table(0), table(0))).toEqual([]);
+            expect(await differences(table(0), table(1)))
+                .toEqual([expect.objectContaining({ path: probePath('indices.ix_probe'), kind: 'changed' })]);
+        });
+
+        it('reads the expression of a generated column from the server', async () => {
+            // typeorm reads the expression from its metadata table, where raw DDL records none
+            const column = (expression: string) => {
+                switch (driver) {
+                    case 'mssql':
+                        return `b AS (${expression})`;
+                    case 'oracle':
+                        return `b integer GENERATED ALWAYS AS (${expression}) VIRTUAL`;
+                    default:
+                        return `b integer GENERATED ALWAYS AS (${expression}) STORED`;
+                }
+            };
+            const table = (expression: string) => [`CREATE TABLE ${PROBE} (a integer, ${column(expression)})`];
+
+            const dataSource = await open([]);
+            const queryRunner = dataSource.createQueryRunner();
+            const created = !await queryRunner.hasTable('typeorm_metadata');
+
+            if (created) {
+                await (new RdbmsSchemaBuilder(dataSource) as any).createTypeormMetadataTable(queryRunner);
+            }
+
+            try {
+                expect(await differences(table('a + 1'), table('a + 2')))
+                    .toEqual([expect.objectContaining({ path: probePath('columns.b.asExpression'), kind: 'changed' })]);
+            } finally {
+                await drop();
+
+                if (created) {
+                    await queryRunner.dropTable('typeorm_metadata', true);
+                }
+
+                await queryRunner.release();
+            }
+        });
+
         it('reports a column and a table comment', async () => {
-            const commented = FAMILY === 'postgres' ?
-                [
-                    `CREATE TABLE ${PROBE} (a integer)`,
-                    `COMMENT ON COLUMN ${PROBE}.a IS 'the a'`,
-                    `COMMENT ON TABLE ${PROBE} IS 'the probe'`,
-                ] :
-                [`CREATE TABLE ${PROBE} (a integer COMMENT 'the a') COMMENT = 'the probe'`];
+            let commented = [
+                `CREATE TABLE ${PROBE} (a integer)`,
+                `COMMENT ON COLUMN ${PROBE}.a IS 'the a'`,
+                `COMMENT ON TABLE ${PROBE} IS 'the probe'`,
+            ];
+
+            if (FAMILY === 'mysql') {
+                commented = [`CREATE TABLE ${PROBE} (a integer COMMENT 'the a') COMMENT = 'the probe'`];
+            } else if (FAMILY === 'mssql') {
+                // mssql has no comment: MS_Description is the conventional extended property
+                const describe = (value: string, column?: string) => 'DECLARE @s sysname = SCHEMA_NAME(); ' +
+                    `EXEC sp_addextendedproperty N'MS_Description', N'${value}', N'SCHEMA', @s, N'TABLE', N'${PROBE}'${
+                        column ? `, N'COLUMN', N'${column}'` : ''}`;
+
+                commented = [`CREATE TABLE ${PROBE} (a integer)`, describe('the a', 'a'), describe('the probe')];
+            }
 
             expect((await differences(commented, [`CREATE TABLE ${PROBE} (a integer)`])).map((d) => d.path)).toEqual([
-                `tables.${PROBE}.columns.a.comment`,
-                `tables.${PROBE}.comment`,
+                probePath('columns.a.comment'),
+                probePath('comment'),
             ]);
         });
 
