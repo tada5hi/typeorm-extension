@@ -10,6 +10,7 @@ import { DriverError } from '../../../errors/driver';
 import { SchemaSnapshotError } from '../../../errors/schema-snapshot';
 import { useInitializedDataSource } from '../utils';
 import { buildUserTablesStatement, readUserTableNames } from '../migration/tables';
+import { readNativeGenerated, readsGeneratedIdentity } from './columns';
 import { readNativeComments } from './comments';
 import { readNativeConstraints } from './constraints';
 import { readNativeIndices } from './indices';
@@ -31,6 +32,8 @@ type ReaderValue<T extends Reader> = NonNullable<Awaited<ReturnType<T>>> extends
 type NativeConstraints = ReaderValue<typeof readNativeConstraints>;
 
 type NativeComments = ReaderValue<typeof readNativeComments>;
+
+type NativeGenerated = ReaderValue<typeof readNativeGenerated> extends Map<string, infer V> ? V : never;
 
 function unqualify(name: string): string {
     const index = name.lastIndexOf('.');
@@ -132,6 +135,7 @@ function toTable(
     keys?: TableKeys,
     constraints?: NativeConstraints,
     comments?: NativeComments,
+    generated?: Map<string, NativeGenerated>,
 ): SchemaSnapshotTable {
     const primary = table.columns.filter((column) => column.isPrimary);
     const primaryName = primary.find((column) => column.primaryKeyConstraintName)?.primaryKeyConstraintName;
@@ -181,6 +185,19 @@ function toTable(
         })).sort(byNameThenColumns),
     };
 
+    if (generated) {
+        snapshot.columns = snapshot.columns.map((column) => {
+            const native = generated.get(column.name);
+
+            return {
+                ...column,
+                asExpression: native?.expression ?? null,
+                generatedType: native?.generatedType ?? null,
+                ...(native && native.identity !== undefined ? { generatedIdentity: native.identity } : {}),
+            };
+        });
+    }
+
     if (comments) {
         snapshot.comment = comments.comment;
         snapshot.columns = snapshot.columns.map((column) => ({ ...column, comment: comments.columns.get(column.name) ?? null }));
@@ -194,6 +211,34 @@ function toTable(
     }
 
     return snapshot;
+}
+
+/**
+ * Mark every column the generated reader has no row for as plain, where it reads the identity:
+ * no row means no identity there.
+ */
+function withIdentity(
+    generated: Map<string, NativeGenerated>,
+    table: Table,
+    identity: boolean,
+): Map<string, NativeGenerated> {
+    if (!identity) {
+        return generated;
+    }
+
+    const result = new Map(generated);
+
+    for (const column of table.columns) {
+        if (!result.has(column.name)) {
+            result.set(column.name, {
+                expression: null,
+                generatedType: null,
+                identity: null,
+            });
+        }
+    }
+
+    return result;
 }
 
 async function readSnapshot(
@@ -228,6 +273,10 @@ async function readSnapshot(
     // typeorm reads no table comment on cockroachdb and none at all on mssql and oracle
     const comments = await readNativeComments(queryRunner, names);
 
+    // typeorm takes a generated column's expression from its metadata table: the server's replaces it
+    const generated = await readNativeGenerated(queryRunner, names);
+    const identity = readsGeneratedIdentity(dataSource.options.type);
+
     // typeorm records views in the metadata table only, and may fail reading a missing one (mysql).
     const views = listed.includes(metadataTable) ? await queryRunner.getViews() : [];
 
@@ -248,6 +297,7 @@ async function readSnapshot(
                         foreignKeys: [],
                     } : undefined,
                     comments ? comments.get(name) ?? { comment: null, columns: new Map() } : undefined,
+                    generated ? withIdentity(generated.get(name) ?? new Map(), table, identity) : undefined,
                 );
             })
             .sort((a, b) => compare(a.name, b.name)),
