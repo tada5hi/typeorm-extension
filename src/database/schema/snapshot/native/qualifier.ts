@@ -1,5 +1,6 @@
 import type { QueryRunner } from 'typeorm';
 import { useSource } from './catalogue';
+import { tokenize } from './tokens';
 import type { SchemaSnapshotTable } from '../types';
 
 /**
@@ -41,23 +42,29 @@ export async function readOwnSchema(queryRunner: QueryRunner): Promise<string | 
     return row?.schema ?? undefined;
 }
 
-// RegExp.escape needs node 24, the package supports node 22: escape every non-word character
-function escape(value: string): string {
-    return [...value].map((char) => (/\w/.test(char) ? char : `\\${char}`)).join('');
-}
-
 /**
- * Remove the qualifier of the own schema (`app.`, `"app".`, `[app].`) from a definition,
- * outside string literals.
+ * Remove the qualifier of the own schema (`app.`, `"app".`, `[app].`) from a definition: a
+ * word or quoted identifier naming the schema, followed by a dot and a name, and not itself
+ * after a dot. Literals and identifiers are tokens, so their content is never touched. Text
+ * whose quoting `tokenize` can not read for sure is returned unchanged (fail closed: a
+ * spurious difference across schemas, never a literal changed).
  */
 export function stripOwnQualifier(text: string, schema: string): string {
-    const name = escape(schema);
-    const qualifier = new RegExp(`(?<![\\w$#@."\\]])(?:"${name}"|\\[${name}\\]|${name})\\.(?=["\\[\\w])`, 'g');
+    const tokens = tokenize(text);
 
-    return text
-        .split(/('(?:[^']|'')*')/)
-        .map((part, i) => (i % 2 === 0 ? part.replace(qualifier, '') : part))
-        .join('');
+    if (!tokens) {
+        return text;
+    }
+
+    const forms = new Set([schema, `"${schema}"`, `[${schema}]`]);
+    const isName = (index: number) => tokens[index]?.kind === 'word' || tokens[index]?.kind === 'identifier';
+
+    return tokens.filter((token, i) => {
+        const qualifier = isName(i) && forms.has(token.text) && tokens[i + 1]?.text === '.' && isName(i + 2) && tokens[i - 1]?.text !== '.';
+        const dot = token.text === '.' && i > 0 && isName(i - 1) && forms.has(tokens[i - 1].text) && isName(i + 1) && tokens[i - 2]?.text !== '.';
+
+        return !qualifier && !dot;
+    }).map((token) => token.text).join('');
 }
 
 /**
