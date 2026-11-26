@@ -117,3 +117,19 @@ console.warn('write failed', { code: readDatabaseErrorCode(error) });
   may quote stored values, is never returned.
 
 See [readDatabaseErrorCode](./database-api-reference#readdatabaseerrorcode).
+
+## Migration plan errors
+
+The [migration runner](./migrations) refuses an inconsistent state with a `MigrationPlanError` before it runs a
+statement. Its `names` property lists the tables or migrations the refusal is about, and the message carries the
+`upgradeHint` of the baseline where an upgrade path is the fix.
+
+## Schema snapshot errors
+
+`assertSchemaSnapshotsEqual` throws a `SchemaSnapshotError` when two [schema snapshots](./migrations#proving-a-baseline)
+differ. Its `differences` property holds the list `compareSchemaSnapshots` returns (`path`, `kind` and, for a change,
+`expected` and `actual`), and the message lists one line per difference. The class is experimental.
+`getSchemaSnapshot` throws one too, with no differences, for a table whose name contains a dot.
+
+`getSchemaSnapshot` throws a `DriverError` for a driver it has no catalogue reader for (mongodb, for instance), before
+it connects.

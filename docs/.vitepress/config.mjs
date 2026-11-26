@@ -83,6 +83,7 @@ export default defineConfig({
                         { text: 'CLI', link: '/guide/cli' },
                         { text: 'Database', link: '/guide/database' },
                         { text: 'Schema', link: '/guide/schema' },
+                        { text: 'Migrations', link: '/guide/migrations' },
                         { text: 'Locks', link: '/guide/locks' },
                         { text: 'Errors', link: '/guide/errors' },
                         { text: 'Seeding', link: '/guide/seeding' },

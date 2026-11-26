@@ -119,7 +119,7 @@ Settings (`release-please-config.json`):
 - `include-component-in-tag: false` — tags look like `v4.0.0`
 - `bump-minor-pre-major: true`, `bump-patch-for-minor-pre-major: true` — pre-1.0 only: `feat:` ⇒ minor, `fix:` ⇒ patch. Inert on a 4.x line, kept for a future 0.x package.
 
-Versions are plain semver: `feat!:` / a `BREAKING CHANGE:` footer bumps the major, `feat:` the minor, `fix:` the patch. The `versioning: prerelease` + `prerelease: true` + `prerelease-type: beta` trio was removed when `4.0.0` was cut. During the v4 beta it kept every commit (breaking ones included) on the prerelease counter (`4.0.0-beta.0` → `4.0.0-beta.1`), which is why the GA commit carried an explicit `Release-As: 4.0.0` footer: without it release-please would have computed `5.0.0` from the breaking commits since the last beta. Put those three keys back to open a new prerelease line.
+Versions are plain semver: `feat!:` / a `BREAKING CHANGE:` footer bumps the major, `feat:` the minor, `fix:` the patch. To open a prerelease line, set `versioning: prerelease`, `prerelease: true` and `prerelease-type: beta` in the config.
 
 The manifest at `.release-please-manifest.json` tracks the current version.
 

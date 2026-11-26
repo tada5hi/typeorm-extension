@@ -30,19 +30,25 @@ Covers what sqlite and the fakes structurally can not: dialect-asymmetric DDL, t
 
 Not every driver can do everything, so `test/data/typeorm/integration.ts` exposes capability predicates instead of hard-coding driver names in the specs — extend those rather than adding `if (driver === …)` to a spec:
 
-| Predicate                        | False for                | Because                                                                                  |
-|----------------------------------|--------------------------|------------------------------------------------------------------------------------------|
-| `supportsSchemaAlter`            | mssql, oracle, mongodb   | the rename helpers have no statements for them (they assert a `DriverError` instead)       |
-| `supportsForeignKeyChecks`       | everything but mysql/mariadb | no session-level switch                                                                |
-| `supportsForeignKeyColumnAlter`  | everything but mysql     | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
-| `supportsSchemaMetadata`         | mongodb                  | no relational schema to compare, and the fixtures use relations                            |
-| `supportsDatabaseDrop`           | oracle                   | `OracleDialect.drop` is a documented no-op                                                 |
-| `supportsDatabaseExistenceCheck` | mongodb                  | mongodb creates a database lazily, so `checkDatabase` does not report a dropped one as missing |
-| `supportsDatabaseCharset`        | everything but mysql/mariadb | only the mysql dialect turns `charset` into a `CHARACTER SET` (and `COLLATE`) clause |
-| `supportsDatabaseLock`           | everything but postgres/mysql/mariadb | `withDatabaseLock` refuses them with a `DriverError` (cockroachdb's advisory locks are no-ops) |
-| `supportsRowLock`                | mongodb                  | `withLockedEntity` refuses it with a `DriverError` (typeorm emits no row lock there)        |
+| Predicate | False for | Because |
+|---|---|---|
+| `supportsSchemaAlter` | mssql, oracle, mongodb | the rename helpers have no statements for them (they assert a `DriverError` instead) |
+| `supportsForeignKeyChecks` | everything but mysql/mariadb | no session-level switch |
+| `supportsForeignKeyColumnAlter` | everything but mysql | mariadb refuses to alter either end of a constraint (error 1832/1833), whatever the checks or the algorithm |
+| `supportsSchemaMetadata` | mongodb | no relational schema to compare, and the fixtures use relations |
+| `supportsDatabaseDrop` | oracle | `OracleDialect.drop` is a documented no-op |
+| `supportsDatabaseExistenceCheck` | mongodb | mongodb creates a database lazily, so `checkDatabase` does not report a dropped one as missing |
+| `supportsDatabaseCharset` | everything but mysql/mariadb | only the mysql dialect turns `charset` into a `CHARACTER SET` (and `COLLATE`) clause |
+| `supportsDatabaseLock` | everything but postgres/mysql/mariadb | `withDatabaseLock` refuses them with a `DriverError` (cockroachdb's advisory locks are no-ops) |
+| `supportsRowLock` | mongodb | `withLockedEntity` refuses it with a `DriverError` (typeorm emits no row lock there) |
 | `supportsSearchSchema` | all but postgres/cockroachdb/mssql | no `driver.searchSchema` |
 | `supportsSearchPathOption` | all but postgres | no `search_path` option |
+| `supportsSnapshotSchemas` | all but postgres | two schemas compare equal (verified on postgres only) |
+| `supportsSchemaSnapshot` | mongodb | no relational schema |
+| `supportsInvisibleColumns` | all but mysql/mariadb/oracle | no `INVISIBLE` |
+| `supportsNotVisibleColumns` | all but cockroachdb | snapshot refuses `NOT VISIBLE` |
+| `supportsSystemVersioning` | all but mariadb | no system versioning |
+| `supportsMigrationBaseline` | all but postgres/mysql/mariadb | the baseline runner (and the snapshot adoption case) is verified there only |
 
 ```bash
 docker run -d --name tex-pg -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=test -p 55432:5432 postgres:18-alpine
@@ -52,11 +58,13 @@ TYPEORM_USERNAME=test TYPEORM_PASSWORD=test TYPEORM_DATABASE=test \
 npm run test:integration
 ```
 
-| Suite                                    | Covers                                                                                     |
-|------------------------------------------|--------------------------------------------------------------------------------------------|
+| Suite | Covers |
+|---|---|
 | `test/integration/database/drift.spec.ts`   | `getSchemaDrift` / `assertSchemaMatchesMetadata` against a real schema, including a deliberately diverged column |
 | `test/integration/database/schema.spec.ts`  | `renameIndex` / `renameForeignKey` / `changeColumnType` round-trips incl. idempotence and "drift appears → repair → drift gone"; that a column keeps its values and its foreign key across an alteration; nesting-safe `withForeignKeyChecksDisabled` |
 | `test/integration/database/methods.spec.ts` | `createDatabase` / `dropDatabase` / `checkDatabase` — the only coverage `src/database/adapters/**` gets, since it is excluded from the coverage gate |
+| `test/integration/database/migration-baseline.spec.ts` | the runner's baseline states on a real server (fresh, populated refused, adoption marker-only, unknown rows, resume), the caller-held lock, undo refusing the baseline |
+| `test/integration/database/snapshot.spec.ts` | the baseline recipe: a chain ending in a raw-DDL index typeorm does not model and its baseline snapshot equal, a baseline without it gives one `missing`, adoption adds one marker. Probe cases diff two raw-DDL tables |
 | `test/integration/database/lock.spec.ts`    | `withDatabaseLock` against a real server: a second session is refused while the lock is held and gets it once released, waiting with a timeout, release after a throwing callback, a failed release ending the session (a new session gets the lock), reentrant nested calls, per-database scope on mysql/mariadb, and the `DriverError` of an unsupported driver |
 | `test/integration/database/locked-entity.spec.ts` | `withLockedEntity` against a real server: two concurrent callers pass a status guard one at a time (the first is held inside `fn` by a deferred while the second starts; removing the lock makes both pass), a throw rolls back, a declining `fn` writes nothing, subscribers fire, a nested call locks a second row in the same transaction, an eager nullable relation (`LockOwner`) loads without breaking the locked read (a join would put `FOR UPDATE` in a derived table postgres refuses), `onLocked: 'nowait'` fails fast with an error `isDatabaseLockConflictError` recognizes (a `DriverError` on mssql), and the `DriverError` on mongodb. `test/unit/database/lock/entity.spec.ts` covers the rest on better-sqlite3 |
 | `test/integration/database/error.spec.ts`   | the three driver error classifiers against the errors a real server raises: a duplicate unique column and primary key, a missing referenced row, the delete of a referenced row, and the victim of a deadlock between two sessions (each rolls the victim back, and swallows the rollback error, since mssql has already aborted it). On cockroachdb the suite sets `maxTransactionRetries: 0`: typeorm's query runner otherwise replays the victim on `40001`, the victim wins after its restart and the other session waits on it, so no error surfaces and the test hangs. mongodb runs only the duplicate key. `test/unit/database/error.spec.ts` holds every code shape and a real better-sqlite3 run |
@@ -85,7 +93,7 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 
 `test/unit/database/migration.spec.ts` is the one suite which writes files: `generateMigration` emits into `writable/migrations` (removed again in `afterEach`), and the generated file is then imported and its `up()` / `down()` run against a fresh sqlite data source. Asserting the file content alone would not notice a template which does not parse. The package is ESM, so the CommonJS variant only loads when the same content is written a second time under a `.cjs` extension, and `module.exports = class` arrives as the class itself rather than as a module namespace.
 
-One of those round trips runs against `[User, Role]` rather than a single entity, because `generateMigration` reverses the down statements and a single-table migration cannot tell the two orders apart: its `down()` is one `DROP TABLE`. The foreign key makes sqlite rebuild the table, so the down statements depend on each other and running them in the order typeorm collected them fails with `no such table: temporary_user`. Keep an entity pair in that suite; assertions on statement strings alone leave the reversal effectively untested.
+One of those round trips runs against `[User, Role]`, because `generateMigration` reverses the down statements and a single-table `down()` (one `DROP TABLE`) cannot show the order. The foreign key makes sqlite rebuild the table, so the down statements in typeorm's order fail with `no such table: temporary_user`. Keep an entity pair in that suite.
 
 | `test/unit/database/schema/` | `synchronizeDatabaseSchema`, drift detection, the guarded alter helpers (pure statement builders + `FakeQueryRunner`) |
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |

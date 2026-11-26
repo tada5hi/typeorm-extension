@@ -88,6 +88,41 @@ export function supportsDatabaseLock(driver?: IntegrationDriver) : boolean {
 }
 
 /**
+ * Whether the baseline spec runs on the driver: the drivers its runner was verified against.
+ */
+export function supportsMigrationBaseline(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres' || driver === 'mysql' || driver === 'mariadb';
+}
+
+/**
+ * Whether getSchemaSnapshot reads the driver: every relational driver of the suite.
+ */
+export function supportsSchemaSnapshot(driver?: IntegrationDriver) : boolean {
+    return !!driver && driver !== 'mongodb';
+}
+
+/**
+ * Whether a column can be INVISIBLE, which the snapshot reports as a column option.
+ */
+export function supportsInvisibleColumns(driver?: IntegrationDriver) : boolean {
+    return driver === 'mysql' || driver === 'mariadb' || driver === 'oracle';
+}
+
+/**
+ * Whether a column can be NOT VISIBLE (cockroachdb), which typeorm's reader skips: the snapshot refuses the table.
+ */
+export function supportsNotVisibleColumns(driver?: IntegrationDriver) : boolean {
+    return driver === 'cockroachdb';
+}
+
+/**
+ * Whether a table can be created WITH SYSTEM VERSIONING (mariadb).
+ */
+export function supportsSystemVersioning(driver?: IntegrationDriver) : boolean {
+    return driver === 'mariadb';
+}
+
+/**
  * Whether withLockedEntity can lock a row on the driver
  * (typeorm emits FOR UPDATE, or an UPDLOCK hint on mssql).
  */
@@ -140,6 +175,14 @@ export function supportsSearchSchema(driver?: IntegrationDriver) : boolean {
  * through a connection option (postgres: -c search_path=...).
  */
 export function supportsSearchPathOption(driver?: IntegrationDriver) : boolean {
+    return driver === 'postgres';
+}
+
+/**
+ * Whether getSchemaSnapshot is verified to read the same DDL in two schemas of one database
+ * as equal (schema-local types and functions included).
+ */
+export function supportsSnapshotSchemas(driver?: IntegrationDriver) : boolean {
     return driver === 'postgres';
 }
 
