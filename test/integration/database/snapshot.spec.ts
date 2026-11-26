@@ -1,6 +1,5 @@
 import type { DataSource } from 'typeorm';
-import { DataSource as TypeORMDataSource } from 'typeorm';
-import { RdbmsSchemaBuilder } from 'typeorm/schema-builder/RdbmsSchemaBuilder';
+import { Table, DataSource as TypeORMDataSource } from 'typeorm';
 import {
     afterEach,
     beforeEach,
@@ -10,6 +9,7 @@ import {
 } from 'vitest';
 import type { SchemaSnapshot } from '../../../src';
 import {
+    SchemaSnapshotError,
     assertSchemaSnapshotsEqual,
     compareSchemaSnapshots,
     getSchemaSnapshot,
@@ -23,7 +23,9 @@ import { CreateGadget1710000000001 } from '../../data/typeorm/migration-baseline
 import { GADGET_LABEL_INDEX, GADGET_TABLE } from '../../data/typeorm/migration-baseline/snapshot/schema';
 import {
     createIntegrationDataSourceOptions,
+    supportsInvisibleColumns,
     supportsMigrationBaseline,
+    supportsNotVisibleColumns,
     supportsSchemaSnapshot,
     supportsSnapshotSchemas,
     useIntegrationDriver,
@@ -291,7 +293,16 @@ describe.runIf(supportsSchemaSnapshot(driver))(`src/database/schema/snapshot (${
             const created = !await queryRunner.hasTable('typeorm_metadata');
 
             if (created) {
-                await (new RdbmsSchemaBuilder(dataSource) as any).createTypeormMetadataTable(queryRunner);
+                // the shape typeorm creates on a schema sync
+                await queryRunner.createTable(new Table({
+                    name: 'typeorm_metadata',
+                    columns: ['type', 'database', 'schema', 'table', 'name', 'value'].map((name) => ({
+                        name,
+                        type: 'varchar',
+                        length: name === 'value' ? '2000' : '255',
+                        isNullable: name !== 'type',
+                    })),
+                }));
             }
 
             try {
@@ -306,6 +317,25 @@ describe.runIf(supportsSchemaSnapshot(driver))(`src/database/schema/snapshot (${
 
                 await queryRunner.release();
             }
+        });
+
+        it('reports a changed check', async () => {
+            // typeorm reads no checks on mysql and mariadb
+            const table = (check: string) => [`CREATE TABLE ${PROBE} (a integer, CONSTRAINT ck_probe CHECK (${check}))`];
+
+            expect(await differences(table('a > 0'), table('a > 0'))).toEqual([]);
+            expect(await differences(table('a > 0'), table('a > 1')))
+                .toEqual([expect.objectContaining({ path: probePath('checks.ck_probe'), kind: 'changed' })]);
+        });
+
+        it.runIf(supportsInvisibleColumns(driver))('reports an invisible column', async () => {
+            expect(await differences([`CREATE TABLE ${PROBE} (a integer, b integer INVISIBLE)`], [`CREATE TABLE ${PROBE} (a integer, b integer)`]))
+                .toEqual([expect.objectContaining({ path: probePath('columns.b.options'), kind: 'changed' })]);
+        });
+
+        it.runIf(supportsNotVisibleColumns(driver))('refuses a column typeorm does not read', async () => {
+            await expect(probe([`CREATE TABLE ${PROBE} (a integer PRIMARY KEY, b integer NOT VISIBLE)`]))
+                .rejects.toThrow(SchemaSnapshotError);
         });
 
         it('reports a column and a table comment', async () => {

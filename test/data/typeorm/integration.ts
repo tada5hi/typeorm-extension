@@ -102,6 +102,20 @@ export function supportsSchemaSnapshot(driver?: IntegrationDriver) : boolean {
 }
 
 /**
+ * Whether a column can be INVISIBLE, which the snapshot reports as a column option.
+ */
+export function supportsInvisibleColumns(driver?: IntegrationDriver) : boolean {
+    return driver === 'mysql' || driver === 'mariadb' || driver === 'oracle';
+}
+
+/**
+ * Whether a column can be NOT VISIBLE (cockroachdb), which typeorm's reader skips: the snapshot refuses the table.
+ */
+export function supportsNotVisibleColumns(driver?: IntegrationDriver) : boolean {
+    return driver === 'cockroachdb';
+}
+
+/**
  * Whether withLockedEntity can lock a row on the driver
  * (typeorm emits FOR UPDATE, or an UPDLOCK hint on mssql).
  */
