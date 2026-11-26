@@ -10,7 +10,7 @@ describe('database/schema/snapshot/indices', () => {
     it('binds the schema of a postgres statement', () => {
         const bound = buildIndexStatement('postgres', 'app');
 
-        expect(bound?.sql).toContain('schemaname = $1');
+        expect(bound?.sql).toContain('n.nspname = $1');
         expect(bound?.sql).not.toContain('app');
         expect(bound?.parameters).toEqual(['app']);
 
@@ -24,6 +24,7 @@ describe('database/schema/snapshot/indices', () => {
         const { sql } = buildIndexStatement('postgres') as { sql: string };
 
         expect(sql).toContain('pg_constraint');
+        expect(sql).toContain('c.conindid = ci.oid');
         // a foreign key also sets conindid (to the index it references): that index must stay listed
         expect(sql).toContain('c.contype IN (\'p\', \'u\', \'x\')');
     });
@@ -276,5 +277,167 @@ describe('database/schema/snapshot/indices', () => {
         expect(prefixed?.definition).toBe('a(10), b USING BTREE');
         expect(prefixed?.columns).toEqual(['a', 'b']);
         expect(shorter?.definition).not.toEqual(prefixed?.definition);
+    });
+
+    it('strips the database and schema qualifier of a cockroachdb definition', () => {
+        const result = normalizeIndexRows('cockroachdb', [
+            {
+                table: 't',
+                name: 'ix',
+                definition: 'CREATE INDEX ix ON defaultdb.public.t USING btree (lower(a) ASC)',
+            },
+        ]);
+
+        expect(result.get('t')?.[0]).toEqual({
+            name: 'ix',
+            columns: [],
+            isUnique: false,
+            where: null,
+            kind: null,
+            definition: 'CREATE INDEX ix ON t USING btree (lower(a) ASC)',
+        });
+    });
+
+    it('reads mssql indexes that back no key constraint, keys before included columns', () => {
+        const bound = buildIndexStatement('mssql', 'app');
+
+        expect(bound?.sql).toContain('SCHEMA_ID(@0)');
+        expect(bound?.sql).toContain('i.is_primary_key = 0 AND i.is_unique_constraint = 0');
+        expect(bound?.sql).toContain('i.filter_definition AS [where]');
+        expect(bound?.sql).toContain('ORDER BY t.name, i.name, ic.is_included_column, ic.key_ordinal');
+        expect(bound?.parameters).toEqual(['app']);
+        expect(buildIndexStatement('mssql')?.sql).toContain('SCHEMA_ID()');
+    });
+
+    it('reads oracle indexes with their expressions and leaves out constraint and LOB indexes', () => {
+        const { sql, parameters } = buildIndexStatement('oracle') as { sql: string, parameters: string[] };
+
+        expect(sql).toContain('LEFT JOIN user_ind_expressions e');
+        expect(sql).toContain('c.constraint_type IN (\'P\', \'U\')');
+        expect(sql).toContain('i.index_type <> \'LOB\'');
+        expect(sql).toContain('ORDER BY i.table_name, i.index_name, ic.column_position');
+        expect(parameters).toEqual([]);
+    });
+
+    it('folds mssql index parts with direction, included columns, filter and disabled state', () => {
+        const result = normalizeIndexRows('mssql', [
+            {
+                table: 't',
+                name: 'ix',
+                column: 'b',
+                descending: 0,
+                included: 0,
+                unique: 1,
+                type: 'NONCLUSTERED',
+                where: '([a] IS NOT NULL)',
+                invisible: 0,
+            },
+            {
+                table: 't',
+                name: 'ix',
+                column: 'a',
+                descending: 1,
+                included: 0,
+                unique: 1,
+                type: 'NONCLUSTERED',
+                where: '([a] IS NOT NULL)',
+                invisible: 0,
+            },
+            {
+                table: 't',
+                name: 'ix',
+                column: 'c',
+                descending: 0,
+                included: 1,
+                unique: 1,
+                type: 'NONCLUSTERED',
+                where: '([a] IS NOT NULL)',
+                invisible: 0,
+            },
+            {
+                table: 't',
+                name: 'off',
+                column: 'a',
+                descending: false,
+                included: false,
+                unique: false,
+                type: 'CLUSTERED',
+                where: null,
+                invisible: true,
+            },
+        ]);
+
+        expect(result.get('t')).toEqual([
+            {
+                name: 'ix',
+                columns: ['b', 'a'],
+                isUnique: true,
+                where: '([a] IS NOT NULL)',
+                kind: null,
+                definition: 'NONCLUSTERED (b, a DESC) INCLUDE (c)',
+            },
+            {
+                name: 'off',
+                columns: ['a'],
+                isUnique: false,
+                where: null,
+                kind: null,
+                definition: 'CLUSTERED (a) DISABLED',
+            },
+        ]);
+    });
+
+    it('folds oracle index parts: an expression part has no column, a descending part keeps it', () => {
+        const result = normalizeIndexRows('oracle', [
+            {
+                table: 'T',
+                name: 'IX_F',
+                column: 'SYS_NC00005$',
+                expression: 'UPPER("LABEL") ',
+                descending: 0,
+                unique: 1,
+                type: 'FUNCTION-BASED NORMAL',
+                invisible: 0,
+            },
+            {
+                table: 'T',
+                name: 'IX_D',
+                column: 'A',
+                expression: null,
+                descending: 0,
+                unique: 0,
+                type: 'FUNCTION-BASED NORMAL',
+                invisible: 1,
+            },
+            {
+                table: 'T',
+                name: 'IX_D',
+                column: 'SYS_NC00006$',
+                expression: '"B"',
+                descending: 1,
+                unique: 0,
+                type: 'FUNCTION-BASED NORMAL',
+                invisible: 1,
+            },
+        ]);
+
+        expect(result.get('T')).toEqual([
+            {
+                name: 'IX_F',
+                columns: [],
+                isUnique: true,
+                where: null,
+                kind: null,
+                definition: 'FUNCTION-BASED NORMAL ((UPPER("LABEL")))',
+            },
+            {
+                name: 'IX_D',
+                columns: ['A', 'B'],
+                isUnique: false,
+                where: null,
+                kind: null,
+                definition: 'FUNCTION-BASED NORMAL (A, B DESC) INVISIBLE',
+            },
+        ]);
     });
 });

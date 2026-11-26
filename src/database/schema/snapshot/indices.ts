@@ -15,7 +15,10 @@ type IndexRow = {
     unique?: number | string | boolean,
     type?: string | null,
     collation?: string | null,
-    invisible?: number | string | null,
+    invisible?: number | string | boolean | null,
+    descending?: number | string | boolean | null,
+    included?: number | string | boolean | null,
+    where?: string | null,
 };
 
 /**
@@ -36,6 +39,9 @@ function defaultStatisticsColumns(type: DataSourceOptions['type']): Set<string> 
  * Mysql has no such split: a unique constraint is a unique index, and typeorm reports it as one too,
  * so every index but `PRIMARY` is listed. `statistics` names the (upper-case) columns of
  * `information_schema.statistics` the server has; a column it lacks is selected as NULL.
+ * Mssql and oracle list the indexes that back no primary key or unique constraint, which the
+ * constraint reader reports: typeorm loses their key order, direction, included columns and
+ * (oracle) the expression of a function-based index.
  */
 export function buildIndexStatement(
     type: DataSourceOptions['type'],
@@ -46,11 +52,15 @@ export function buildIndexStatement(
         case 'postgres':
         case 'cockroachdb': {
             return {
-                sql: 'SELECT i.tablename AS "table", i.indexname AS "name", i.indexdef AS "definition" ' +
-                    'FROM pg_catalog.pg_indexes i ' +
-                    `WHERE i.schemaname = ${schema ? '$1' : 'current_schema()'} ` +
+                // pg_index, not pg_indexes: cockroachdb names every primary index `primary`, which no regclass cast resolves
+                sql: 'SELECT t.relname AS "table", ci.relname AS "name", pg_catalog.pg_get_indexdef(ci.oid) AS "definition" ' +
+                    'FROM pg_catalog.pg_index x ' +
+                    'JOIN pg_catalog.pg_class ci ON ci.oid = x.indexrelid ' +
+                    'JOIN pg_catalog.pg_class t ON t.oid = x.indrelid ' +
+                    'JOIN pg_catalog.pg_namespace n ON n.oid = t.relnamespace ' +
+                    `WHERE n.nspname = ${schema ? '$1' : 'current_schema()'} ` +
                     'AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint c ' +
-                    'WHERE c.contype IN (\'p\', \'u\', \'x\') AND c.conindid = (quote_ident(i.schemaname) || \'.\' || quote_ident(i.indexname))::regclass)',
+                    'WHERE c.contype IN (\'p\', \'u\', \'x\') AND c.conindid = ci.oid)',
                 parameters: schema ? [schema] : [],
             };
         }
@@ -78,10 +88,49 @@ export function buildIndexStatement(
                 parameters: [],
             };
         }
+        case 'mssql': {
+            return {
+                // the key columns in key order, included columns after them by name; heaps and hypothetical indexes have no definition
+                sql: [
+                    'SELECT t.name AS [table], i.name AS [name], c.name AS [column], CAST(ic.is_descending_key AS int) AS [descending],',
+                    'CAST(ic.is_included_column AS int) AS [included], CAST(i.is_unique AS int) AS [unique], i.type_desc AS [type],',
+                    'i.filter_definition AS [where], CAST(i.is_disabled AS int) AS [invisible]',
+                    'FROM sys.indexes i',
+                    'JOIN sys.tables t ON t.object_id = i.object_id',
+                    'JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id',
+                    'JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id',
+                    `WHERE t.schema_id = SCHEMA_ID(${schema ? '@0' : ''}) AND i.type > 0 AND i.is_hypothetical = 0`,
+                    'AND i.is_primary_key = 0 AND i.is_unique_constraint = 0',
+                    'ORDER BY t.name, i.name, ic.is_included_column, ic.key_ordinal, ic.index_column_id',
+                ].join(' '),
+                parameters: schema ? [schema] : [],
+            };
+        }
+        case 'oracle': {
+            return {
+                // an expression part (a descending part too) is a hidden column whose expression user_ind_expressions holds
+                sql: [
+                    'SELECT i.table_name AS "table", i.index_name AS "name", ic.column_name AS "column", e.column_expression AS "expression",',
+                    'CASE WHEN ic.descend = \'DESC\' THEN 1 ELSE 0 END AS "descending", CASE WHEN i.uniqueness = \'UNIQUE\' THEN 1 ELSE 0 END AS "unique",',
+                    'i.index_type AS "type", CASE WHEN i.visibility = \'INVISIBLE\' THEN 1 ELSE 0 END AS "invisible"',
+                    'FROM user_indexes i',
+                    'JOIN user_ind_columns ic ON ic.index_name = i.index_name',
+                    'LEFT JOIN user_ind_expressions e ON e.index_name = ic.index_name AND e.column_position = ic.column_position',
+                    'WHERE i.index_type <> \'LOB\'',
+                    'AND NOT EXISTS (SELECT 1 FROM user_constraints c WHERE c.index_name = i.index_name AND c.constraint_type IN (\'P\', \'U\'))',
+                    'ORDER BY i.table_name, i.index_name, ic.column_position',
+                ].join(' '),
+                parameters: [],
+            };
+        }
         default: {
             return undefined;
         }
     }
+}
+
+function flag(value: number | string | boolean | null | undefined): boolean {
+    return value === true || Number(value) === 1;
 }
 
 /**
@@ -127,9 +176,13 @@ function readPostgresColumns(definition: string): string[] {
 
 /**
  * Normalize the rows of a native index statement into snapshot indexes per table.
- * A postgres definition loses its `ON <schema>.` qualifier and `isUnique` / `where` come from it;
+ * A postgres definition loses its `ON <schema>.` qualifier (cockroachdb: `ON <database>.<schema>.`) and `isUnique` / `where` come from it;
  * mysql parts are folded per index in `seq_in_index` order (row order), a prefix part keeps its length (`a(10)`),
  * a descending part gets `DESC`, and the index type and an invisible (mysql) or ignored (mariadb) index follow.
+ * Mssql and oracle rows are folded the same way: the definition is the index type, the key parts (an
+ * oracle expression part in parentheses, a descending part with `DESC`), the included columns (mssql)
+ * and a disabled (mssql) or invisible (oracle) index; `where` is the mssql filter. An expression part
+ * contributes no column name.
  */
 export function normalizeIndexRows(
     type: DataSourceOptions['type'],
@@ -145,7 +198,7 @@ export function normalizeIndexRows(
 
     if (type === 'postgres' || type === 'cockroachdb') {
         for (const row of rows) {
-            const definition = (row.definition as string).replace(/^(CREATE (?:UNIQUE )?INDEX (?:"[^"]*"|\S+) ON )(?:ONLY )?(?:"[^"]+"|[\w$]+)\./, '$1');
+            const definition = (row.definition as string).replace(/^(CREATE (?:UNIQUE )?INDEX (?:"[^"]*"|\S+) ON )(?:ONLY )?(?:(?:"[^"]+"|[\w$]+)\.){1,2}/, '$1');
             const where = /\sWHERE\s(.*)$/s.exec(definition);
 
             push(row.table, {
@@ -167,6 +220,41 @@ export function normalizeIndexRows(
         const key = `${row.table}\0${row.name}`;
 
         grouped.set(key, [...(grouped.get(key) ?? []), row]);
+    }
+
+    if (type === 'mssql' || type === 'oracle') {
+        for (const parts of grouped.values()) {
+            const [first] = parts;
+            const keys = parts.filter((part) => !flag(part.included));
+            const included = parts.filter((part) => flag(part.included)).map((part) => part.column as string);
+            // oracle keeps a descending part as the expression "COLUMN"
+            const columnOf = (part: IndexRow) => {
+                if (!part.expression) {
+                    return part.column as string;
+                }
+
+                const match = /^"([^"]+)"$/.exec(part.expression.trim());
+
+                return match ? match[1] : undefined;
+            };
+
+            push(first.table, {
+                name: first.name,
+                columns: keys.map(columnOf).filter((column): column is string => !!column),
+                isUnique: flag(first.unique),
+                where: first.where || null,
+                kind: null,
+                definition: `${first.type} (${keys.map((part) => {
+                    const value = columnOf(part) ?? `(${(part.expression as string).trim()})`;
+
+                    return flag(part.descending) ? `${value} DESC` : value;
+                }).join(', ')})${
+                    included.length > 0 ? ` INCLUDE (${included.join(', ')})` : ''
+                }${flag(first.invisible) ? ` ${type === 'mssql' ? 'DISABLED' : 'INVISIBLE'}` : ''}`,
+            });
+        }
+
+        return result;
     }
 
     for (const parts of grouped.values()) {

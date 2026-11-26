@@ -10,6 +10,8 @@ import { DriverError } from '../../../errors/driver';
 import { SchemaSnapshotError } from '../../../errors/schema-snapshot';
 import { useInitializedDataSource } from '../utils';
 import { buildUserTablesStatement, readUserTableNames } from '../migration/tables';
+import { readNativeComments } from './comments';
+import { readNativeConstraints } from './constraints';
 import { readNativeIndices } from './indices';
 import { readNativeKeys } from './keys';
 import { withSchemaSearchPath } from './search-path';
@@ -21,6 +23,14 @@ import type {
     SchemaSnapshotTable,
     SchemaSnapshotView,
 } from './types';
+
+type Reader = (...args: any[]) => Promise<Map<string, unknown> | undefined>;
+
+type ReaderValue<T extends Reader> = NonNullable<Awaited<ReturnType<T>>> extends Map<string, infer V> ? V : never;
+
+type NativeConstraints = ReaderValue<typeof readNativeConstraints>;
+
+type NativeComments = ReaderValue<typeof readNativeComments>;
 
 function unqualify(name: string): string {
     const index = name.lastIndexOf('.');
@@ -120,12 +130,14 @@ function toTable(
     listed: string[],
     native?: SchemaSnapshotIndex[],
     keys?: TableKeys,
+    constraints?: NativeConstraints,
+    comments?: NativeComments,
 ): SchemaSnapshotTable {
     const primary = table.columns.filter((column) => column.isPrimary);
     const primaryName = primary.find((column) => column.primaryKeyConstraintName)?.primaryKeyConstraintName;
     const definition = (name?: string) => (name ? keys?.definitions.get(name) ?? null : null);
 
-    return {
+    const snapshot: SchemaSnapshotTable = {
         name: resolveName(table.name, listed),
         comment: table.comment || null,
         columns: table.columns.map(toColumn).sort((a, b) => compare(a.name, b.name)),
@@ -168,6 +180,20 @@ function toTable(
             definition: definition(foreignKey.name),
         })).sort(byNameThenColumns),
     };
+
+    if (comments) {
+        snapshot.comment = comments.comment;
+        snapshot.columns = snapshot.columns.map((column) => ({ ...column, comment: comments.columns.get(column.name) ?? null }));
+    }
+
+    if (constraints) {
+        snapshot.primaryKey = constraints.primaryKey;
+        snapshot.uniques = [...constraints.uniques].sort(byNameThenColumns);
+        snapshot.foreignKeys = [...constraints.foreignKeys].sort(byNameThenColumns);
+        snapshot.checks = [...constraints.checks].sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression));
+    }
+
+    return snapshot;
 }
 
 async function readSnapshot(
@@ -196,6 +222,12 @@ async function readSnapshot(
     // typeorm reports key columns in table column order: a native reader keeps the key order
     const keys = await readNativeKeys(queryRunner, names);
 
+    // typeorm drops unnamed constraints (oracle) and loses the key order (mssql, oracle): a native reader replaces them
+    const constraints = await readNativeConstraints(queryRunner, names);
+
+    // typeorm reads no table comment on cockroachdb and none at all on mssql and oracle
+    const comments = await readNativeComments(queryRunner, names);
+
     // typeorm records views in the metadata table only, and may fail reading a missing one (mysql).
     const views = listed.includes(metadataTable) ? await queryRunner.getViews() : [];
 
@@ -209,6 +241,13 @@ async function readSnapshot(
                     listed,
                     native ? native.get(name) ?? [] : undefined,
                     keys ? keys.get(name) ?? { uniques: new Map(), definitions: new Map() } : undefined,
+                    constraints ? constraints.get(name) ?? {
+                        primaryKey: null,
+                        uniques: [],
+                        checks: [],
+                        foreignKeys: [],
+                    } : undefined,
+                    comments ? comments.get(name) ?? { comment: null, columns: new Map() } : undefined,
                 );
             })
             .sort((a, b) => compare(a.name, b.name)),

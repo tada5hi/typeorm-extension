@@ -24,7 +24,7 @@ type NativeKeys = {
     primary?: NativeKey,
     uniques: Map<string, NativeKey>,
     /**
-     * The catalogue definition of each constraint by name (postgres only).
+     * The catalogue definition of each constraint by name (postgres, cockroachdb).
      */
     definitions: Map<string, string>,
 };
@@ -35,7 +35,9 @@ type NativeKeys = {
  * native reader.
  *
  * Postgres lists every primary key, unique, foreign key, check and exclusion constraint with its
- * `pg_get_constraintdef` text and its columns in `pg_constraint.conkey` order. Mysql and mariadb
+ * `pg_get_constraintdef` text and its columns in `pg_constraint.conkey` order. Cockroachdb lists
+ * every unique index as a unique constraint, an expression part as a dropped column, which is left
+ * out (its definition keeps the expression). Mysql and mariadb
  * list the `PRIMARY` index in `seq_in_index` order: a unique constraint there is a unique index,
  * which the index reader keeps in order.
  */
@@ -44,12 +46,13 @@ export function buildKeyStatement(
     schema?: string,
 ): { sql: string, parameters: string[] } | undefined {
     switch (type) {
-        case 'postgres': {
+        case 'postgres':
+        case 'cockroachdb': {
             return {
                 sql: [
                     'SELECT cl.relname AS "table", c.conname AS "name", c.contype::text AS "kind",',
                     'ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)',
-                    'JOIN pg_catalog.pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum ORDER BY k.ord) AS "columns",',
+                    'JOIN pg_catalog.pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum AND NOT a.attisdropped ORDER BY k.ord) AS "columns",',
                     'pg_catalog.pg_get_constraintdef(c.oid) AS "definition",',
                     'CASE WHEN NOT c.condeferrable THEN NULL WHEN c.condeferred THEN \'INITIALLY DEFERRED\' ELSE \'INITIALLY IMMEDIATE\' END AS "deferrable"',
                     'FROM pg_catalog.pg_constraint c',

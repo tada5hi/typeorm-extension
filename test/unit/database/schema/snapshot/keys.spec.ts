@@ -19,6 +19,13 @@ describe('database/schema/snapshot/keys', () => {
         expect(buildKeyStatement('postgres')?.sql).toContain('current_schema()');
     });
 
+    it('reads cockroachdb keys like postgres and leaves out the dropped column of an expression part', () => {
+        const { sql } = buildKeyStatement('cockroachdb') as { sql: string };
+
+        expect(sql).toBe(buildKeyStatement('postgres')?.sql);
+        expect(sql).toContain('AND NOT a.attisdropped');
+    });
+
     it('reads the mysql and mariadb primary key in seq_in_index order', () => {
         for (const type of ['mysql', 'mariadb'] as const) {
             const statement = buildKeyStatement(type);
@@ -30,7 +37,7 @@ describe('database/schema/snapshot/keys', () => {
 
     it('returns undefined for a driver without a key reader', async () => {
         expect(buildKeyStatement('better-sqlite3')).toBeUndefined();
-        expect(buildKeyStatement('cockroachdb')).toBeUndefined();
+        expect(buildKeyStatement('mssql')).toBeUndefined();
 
         const dataSource = createDataSource();
 
