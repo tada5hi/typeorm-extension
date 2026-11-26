@@ -32,6 +32,11 @@ export type NativeColumn = {
      * The cockroachdb `ON UPDATE` expression; undefined elsewhere.
      */
     onUpdate?: string | null,
+    /**
+     * A column the server adds on its own (cockroachdb implicit key, hash shard column) or an
+     * unused oracle column: not part of the schema, typeorm may or may not read it.
+     */
+    system?: boolean,
 };
 
 export type NativeComments = {

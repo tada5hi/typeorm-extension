@@ -1,4 +1,5 @@
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
+import { SchemaSnapshotError } from '../../../../errors/schema-snapshot';
 import type { CatalogueStatement, ConstraintPart, NativeConstraints } from './types';
 import {
     flag,
@@ -292,6 +293,12 @@ export async function readNativeConstraints(
     const checkColumns = type === 'mysql' || type === 'mariadb' ?
         await readInformationSchemaColumns(queryRunner, 'CHECK_CONSTRAINTS') :
         undefined;
+
+    // mariadb enforces checks since 10.2.1 but lists them with their table only since 10.2.22:
+    // comparing none would be a false equal (mysql before 8.0.16 has no checks at all)
+    if (type === 'mariadb' && !buildConstraintStatement(type, schema, checkColumns)) {
+        throw SchemaSnapshotError.checksNotReadable(type);
+    }
 
     return readCatalogue(queryRunner, tables, buildConstraintStatement(type, schema, checkColumns), normalizeConstraintRows);
 }

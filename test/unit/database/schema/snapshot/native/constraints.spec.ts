@@ -1,4 +1,6 @@
+import type { QueryRunner } from 'typeorm';
 import { describe, expect, it } from 'vitest';
+import { SchemaSnapshotError } from '../../../../../../src';
 import {
     buildConstraintStatement,
     normalizeConstraintRows,
@@ -21,6 +23,15 @@ describe('database/schema/snapshot/native/constraints', () => {
         expect(buildConstraintStatement('mariadb', undefined, new Set(['CHECK_CLAUSE']))).toBeUndefined();
         expect(buildConstraintStatement('mariadb', undefined, new Set(['CHECK_CLAUSE', 'TABLE_NAME']))).toBeDefined();
         expect(buildConstraintStatement('mysql', undefined, new Set(['CHECK_CLAUSE']))).toBeDefined();
+    });
+
+    it('refuses a mariadb server which does not list its checks with their table', async () => {
+        const queryRunner = {
+            connection: { options: { type: 'mariadb' } },
+            query: async () => [{ name: 'CONSTRAINT_NAME' }, { name: 'CHECK_CLAUSE' }],
+        } as unknown as QueryRunner;
+
+        await expect(readNativeConstraints(queryRunner, ['t'])).rejects.toThrow(SchemaSnapshotError);
     });
 
     it('binds the mssql schema and returns undefined for a driver without a reader', async () => {

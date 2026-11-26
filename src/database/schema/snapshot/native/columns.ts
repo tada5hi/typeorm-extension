@@ -1,6 +1,8 @@
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
 import type { CatalogueStatement, NativeColumn } from './types';
+import { SchemaSnapshotError } from '../../../../errors/schema-snapshot';
 import { flag, readCatalogue, useSource } from './catalogue';
+import { tokenize } from './tokens';
 
 /**
  * One catalogue row: one column of a table, with what typeorm misreads or leaves out.
@@ -55,9 +57,12 @@ export function buildColumnStatement(
                     'CASE a.attgenerated WHEN \'s\' THEN \'STORED\' WHEN \'v\' THEN \'VIRTUAL\' END AS "generated",',
                     'CASE a.attidentity WHEN \'a\' THEN \'ALWAYS\' WHEN \'d\' THEN \'BY DEFAULT\' END AS "identity",',
                     cockroach ?
-                        // the implicit primary key and the column of a hash sharded index are hidden too
+                        // the implicit primary key (rowid, rowid_1, ...: the sole key column, defaulting to
+                        // unique_rowid()) and the column of a hash sharded index are hidden too
                         'CASE WHEN ic.is_hidden = \'YES\' THEN \'NOT VISIBLE\' END AS "options", ' +
-                        'CASE WHEN ic.is_hidden = \'YES\' AND ((a.attname = \'rowid\' AND ic.column_default = \'unique_rowid()\') ' +
+                        'CASE WHEN ic.is_hidden = \'YES\' AND ((ic.column_default = \'unique_rowid()\' AND EXISTS (' +
+                        'SELECT 1 FROM pg_catalog.pg_constraint pk WHERE pk.conrelid = t.oid AND pk.contype = \'p\' ' +
+                        'AND array_length(pk.conkey, 1) = 1 AND pk.conkey[1] = a.attnum)) ' +
                         'OR (a.attname LIKE \'crdb_internal_%_shard_%\' AND a.attgenerated <> \'\')) THEN 1 ELSE 0 END AS "system"' :
                         'NULL AS "options", 0 AS "system"',
                     'FROM pg_catalog.pg_attribute a',
@@ -109,10 +114,12 @@ export function buildColumnStatement(
                     'SELECT c.table_name AS "table", c.column_name AS "column",',
                     'CASE WHEN c.virtual_column = \'YES\' THEN \'VIRTUAL\' END AS "generated", c.data_default AS "expression",',
                     'i.generation_type AS "identity", CASE WHEN c.default_on_null = \'YES\' THEN 1 ELSE 0 END AS "defaultOnNull",',
-                    'CASE WHEN c.hidden_column = \'YES\' THEN \'INVISIBLE\' END AS "options"',
+                    'CASE WHEN c.hidden_column = \'YES\' THEN \'INVISIBLE\' END AS "options",',
+                    // an unused column (SET UNUSED) has no column id, typeorm still reads it
+                    'CASE WHEN c.user_generated = \'NO\' THEN 1 ELSE 0 END AS "system"',
                     'FROM user_tab_cols c',
                     'LEFT JOIN user_tab_identity_cols i ON i.table_name = c.table_name AND i.column_name = c.column_name',
-                    'WHERE c.user_generated = \'YES\'',
+                    'WHERE c.user_generated = \'YES\' OR (c.hidden_column = \'YES\' AND c.virtual_column = \'NO\' AND c.column_id IS NULL)',
                 ].join(' '),
                 parameters: [],
             };
@@ -137,7 +144,7 @@ export function buildColumnStatement(
 }
 
 /**
- * Fold column rows per table and column, leaving out the columns the server adds on its own.
+ * Fold column rows per table and column; a column the server adds on its own is marked `system`.
  * An expression is trimmed (oracle pads it), an oracle `DEFAULT ON NULL` identity reads
  * `BY DEFAULT ON NULL`, and the identity is kept only where it is read.
  */
@@ -154,6 +161,14 @@ export function normalizeColumnRows(
         result.set(row.table, columns);
 
         if (flag(row.system)) {
+            columns.set(row.column, {
+                expression: null,
+                generatedType: null,
+                defaultOnNull: false,
+                options: null,
+                system: true,
+            });
+
             continue;
         }
 
@@ -173,21 +188,56 @@ export function normalizeColumnRows(
     return result;
 }
 
+const CLAUSES = new Set(['CONSTRAINT', 'INDEX', 'UNIQUE', 'INVERTED', 'VECTOR', 'FAMILY', 'CHECK', 'PRIMARY', 'FOREIGN']);
+
 /**
  * The `ON UPDATE` expression of each column of a cockroachdb `CREATE TABLE` statement, which
- * prints one column per line and the clause last.
+ * prints one column per line and the clause last. The keywords are found outside literals and
+ * quoted names; a column line which can not be read for sure throws (fail closed): an unreadable
+ * quoting, a missing name, or `ON UPDATE` twice.
+ *
+ * @throws SchemaSnapshotError
  */
-export function readOnUpdateClauses(statement: string): Map<string, string> {
+export function readOnUpdateClauses(table: string, statement: string): Map<string, string> {
     const result = new Map<string, string>();
 
-    for (const line of statement.split('\n')) {
-        const match = /^\s+("(?:[^"]|"")+"|[^\s"]+)\s.*\sON UPDATE\s(.+?),?$/.exec(line);
+    for (const line of statement.split('\n').filter((part) => /^\s/.test(part))) {
+        const text = line.trim().replace(/,$/, '');
+        const tokens = tokenize(text);
 
-        if (match && !/^(CONSTRAINT|INDEX|UNIQUE|INVERTED|FAMILY|CHECK)$/i.test(match[1])) {
-            const name = match[1].startsWith('"') ? match[1].slice(1, -1).replace(/""/g, '"') : match[1];
+        if (!tokens) {
+            if (/\bON\s+UPDATE\b/i.test(text)) {
+                throw SchemaSnapshotError.onUpdateNotReadable(table, text);
+            }
 
-            result.set(name, match[2]);
+            continue;
         }
+
+        const [first] = tokens;
+
+        if (first?.kind === 'word' && CLAUSES.has(first.text.toUpperCase())) {
+            continue;
+        }
+
+        // ON and UPDATE as words, apart from whitespace
+        const words = tokens.map((token, i) => ({ token, i })).filter(({ token }) => token.text.trim() !== '');
+        const clauses = words
+            .filter(({ token }, j) => token.kind === 'word' && /^ON$/i.test(token.text) &&
+                words[j + 1]?.token.kind === 'word' && /^UPDATE$/i.test(words[j + 1].token.text))
+            .map(({ i }) => i);
+
+        if (clauses.length === 0) {
+            continue;
+        }
+
+        if (clauses.length > 1 || (first.kind !== 'word' && first.kind !== 'identifier')) {
+            throw SchemaSnapshotError.onUpdateNotReadable(table, text);
+        }
+
+        const update = tokens.findIndex((token, i) => i > clauses[0] && /^UPDATE$/i.test(token.text));
+        const name = first.kind === 'identifier' ? first.text.slice(1, -1).replace(/""/g, '"') : first.text;
+
+        result.set(name, tokens.slice(update + 1).map((token) => token.text).join('').trim());
     }
 
     return result;
@@ -220,7 +270,7 @@ export async function readNativeColumns(
     ) as { table: string, statement: string }[];
 
     for (const { table, statement } of statements) {
-        const clauses = readOnUpdateClauses(statement);
+        const clauses = readOnUpdateClauses(table, statement);
 
         for (const [name, column] of result.get(table) ?? []) {
             column.onUpdate = clauses.get(name) ?? null;

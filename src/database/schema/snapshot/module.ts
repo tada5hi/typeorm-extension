@@ -151,11 +151,11 @@ function assertColumnsRead(type: DataSourceOptions['type'], name: string, column
         }
     }
 
-    const missing = native.keys().toArray().filter((column) => !columns.includes(column));
+    const missing = native.keys().toArray().filter((column) => !native.get(column)?.system && !columns.includes(column));
     const extra = columns.filter((column) => !native.has(column));
 
     if (missing.length > 0 || extra.length > 0) {
-        throw SchemaSnapshotError.columnsNotRead(name, missing, extra);
+        throw SchemaSnapshotError.columnsNotRead(type, name, missing, extra);
     }
 }
 
@@ -222,7 +222,9 @@ function toTable(
     if (native.columns) {
         const { columns } = native;
 
-        snapshot.columns = snapshot.columns.map((column) => withNativeColumn(column, columns.get(column.name) as NativeColumn));
+        snapshot.columns = snapshot.columns
+            .filter((column) => !columns.get(column.name)?.system)
+            .map((column) => withNativeColumn(column, columns.get(column.name) as NativeColumn));
     }
 
     if (native.options !== undefined) {

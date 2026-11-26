@@ -5,6 +5,7 @@ import {
     readNativeColumns,
     readOnUpdateClauses,
 } from '../../../../../../src/database/schema/snapshot/native/columns';
+import { SchemaSnapshotError } from '../../../../../../src';
 import { createDataSource } from '../../../../../data/typeorm/factory';
 
 describe('database/schema/snapshot/native/columns', () => {
@@ -68,7 +69,7 @@ describe('database/schema/snapshot/native/columns', () => {
         });
     });
 
-    it('leaves out the columns the server adds and the identity where it is not read', () => {
+    it('marks the columns the server adds and leaves out the identity where it is not read', () => {
         const cockroach = normalizeColumnRows('cockroachdb', [
             {
                 table: 't',
@@ -84,7 +85,8 @@ describe('database/schema/snapshot/native/columns', () => {
             },
         ]);
 
-        expect([...(cockroach.get('t')?.keys() ?? [])]).toEqual(['a']);
+        expect(cockroach.get('t')?.get('a')?.system).toBeUndefined();
+        expect(cockroach.get('t')?.get('rowid')?.system).toBe(true);
 
         const mssql = normalizeColumnRows('mssql', [{
             table: 't',
@@ -103,7 +105,7 @@ describe('database/schema/snapshot/native/columns', () => {
     });
 
     it('reads the ON UPDATE clause of each column of a cockroachdb statement', () => {
-        const clauses = readOnUpdateClauses([
+        const clauses = readOnUpdateClauses('rvy', [
             'CREATE TABLE public.rvy (',
             '\tid INT8 NOT NULL,',
             '\ta INT8 NOT VISIBLE NULL DEFAULT 1:::INT8 ON UPDATE 2:::INT8,',
@@ -113,6 +115,17 @@ describe('database/schema/snapshot/native/columns', () => {
         ].join('\n'));
 
         expect(clauses).toEqual(new Map([['a', '2:::INT8'], ['b c', '\'x, y\':::STRING']]));
+    });
+
+    it('finds ON UPDATE outside literals and throws where a line can not be read for sure', () => {
+        const read = (line: string) => readOnUpdateClauses('t', `CREATE TABLE t (\n\t${line}\n)`);
+
+        expect(read('a STRING NULL ON UPDATE \'x ON UPDATE y\':::STRING')).toEqual(new Map([['a', '\'x ON UPDATE y\':::STRING']]));
+        expect(read('a STRING NULL DEFAULT \'d ON UPDATE\':::STRING')).toEqual(new Map());
+        expect(read('a STRING NULL ON UPDATE e\'it\\\'s\':::STRING')).toEqual(new Map([['a', 'e\'it\\\'s\':::STRING']]));
+        expect(() => read('a INT8 NULL DEFAULT 1 ON UPDATE 2 ON UPDATE 3')).toThrow(SchemaSnapshotError);
+        expect(() => read('a STRING NULL ON UPDATE \'unterminated')).toThrow(SchemaSnapshotError);
+        expect(() => read('(a) STRING ON UPDATE \'x\'')).toThrow(SchemaSnapshotError);
     });
 
     it('lists every better-sqlite3 column and marks a generated one', async () => {
