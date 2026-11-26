@@ -35,6 +35,27 @@ export class SchemaSnapshotError extends TypeormExtensionError {
         return new SchemaSnapshotError(differences);
     }
 
+    static columnsNotRead(table: string, missing: string[], extra: string[]) {
+        const parts = [
+            missing.length > 0 ? `typeorm did not read the column(s) ${missing.join(', ')}` : '',
+            extra.length > 0 ? `typeorm read the column(s) ${extra.join(', ')}, which the catalogue does not list` : '',
+        ].filter((part) => part);
+
+        return new SchemaSnapshotError(
+            [],
+            `The table ${table} can not be snapshot: ${parts.join('; ')} ` +
+            '(cockroachdb: a NOT VISIBLE column). List it in ignoreTables to snapshot the other tables.',
+        );
+    }
+
+    static generatedColumnsNotSupported(table: string, columns: string[]) {
+        return new SchemaSnapshotError(
+            [],
+            `The table ${table} has the generated column(s) ${columns.join(', ')}, whose expression ` +
+            'better-sqlite3 does not report: the snapshot could not compare it. List the table in ignoreTables to snapshot the other tables.',
+        );
+    }
+
     static tableNamesNotSupported(names: string[]) {
         return new SchemaSnapshotError(
             [],

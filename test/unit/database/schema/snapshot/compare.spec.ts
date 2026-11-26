@@ -30,6 +30,7 @@ function column(name: string, overrides: Partial<SchemaSnapshotColumn> = {}): Sc
         onUpdate: null,
         spatialFeatureType: null,
         srid: null,
+        options: null,
         ...overrides,
     };
 }

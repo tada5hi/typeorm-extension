@@ -3,10 +3,10 @@ import {
     buildCommentStatement,
     normalizeCommentRows,
     readNativeComments,
-} from '../../../../../src/database/schema/snapshot/comments';
-import { createDataSource } from '../../../../data/typeorm/factory';
+} from '../../../../../../src/database/schema/snapshot/native/comments';
+import { createDataSource } from '../../../../../data/typeorm/factory';
 
-describe('database/schema/snapshot/comments', () => {
+describe('database/schema/snapshot/native/comments', () => {
     it('reads the comments of cockroachdb, mssql and oracle and binds the schema', () => {
         const cockroach = buildCommentStatement('cockroachdb', 'app');
 

@@ -29,6 +29,11 @@ export type SchemaSnapshotColumn = {
     onUpdate: string | null,
     spatialFeatureType: string | null,
     srid: number | null,
+    /**
+     * Column options typeorm does not model, read from the catalogue: `INVISIBLE` (mysql,
+     * mariadb, oracle), `SPARSE` or `COLUMN_SET` (mssql); null otherwise.
+     */
+    options: string | null,
 };
 
 /**

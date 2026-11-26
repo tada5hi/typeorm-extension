@@ -3,10 +3,10 @@ import {
     buildIndexStatement,
     normalizeIndexRows,
     readNativeIndices,
-} from '../../../../../src/database/schema/snapshot/indices';
-import { createDataSource } from '../../../../data/typeorm/factory';
+} from '../../../../../../src/database/schema/snapshot/native/indices';
+import { createDataSource } from '../../../../../data/typeorm/factory';
 
-describe('database/schema/snapshot/indices', () => {
+describe('database/schema/snapshot/native/indices', () => {
     it('binds the schema of a postgres statement', () => {
         const bound = buildIndexStatement('postgres', 'app');
 
@@ -304,7 +304,8 @@ describe('database/schema/snapshot/indices', () => {
         expect(bound?.sql).toContain('SCHEMA_ID(@0)');
         expect(bound?.sql).toContain('i.is_primary_key = 0 AND i.is_unique_constraint = 0');
         expect(bound?.sql).toContain('i.filter_definition AS [where]');
-        expect(bound?.sql).toContain('ORDER BY t.name, i.name, ic.is_included_column, ic.key_ordinal');
+        // included columns by name: their order means nothing
+        expect(bound?.sql).toContain('ORDER BY t.name, i.name, ic.is_included_column, ic.key_ordinal, c.name');
         expect(bound?.parameters).toEqual(['app']);
         expect(buildIndexStatement('mssql')?.sql).toContain('SCHEMA_ID()');
     });
@@ -364,6 +365,7 @@ describe('database/schema/snapshot/indices', () => {
                 type: 'CLUSTERED',
                 where: null,
                 invisible: true,
+                ignoreDuplicates: true,
             },
         ]);
 
@@ -382,7 +384,7 @@ describe('database/schema/snapshot/indices', () => {
                 isUnique: false,
                 where: null,
                 kind: null,
-                definition: 'CLUSTERED (a) DISABLED',
+                definition: 'CLUSTERED (a) DISABLED IGNORE_DUP_KEY',
             },
         ]);
     });

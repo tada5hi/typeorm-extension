@@ -1,4 +1,6 @@
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
+import type { CatalogueStatement, NativeComments } from './types';
+import { readCatalogue, useSource } from './catalogue';
 
 /**
  * One catalogue row: the comment of a table (`column` null) or of one of its columns.
@@ -7,11 +9,6 @@ type CommentRow = {
     table: string,
     column?: string | null,
     comment?: string | null,
-};
-
-type NativeComments = {
-    comment: string | null,
-    columns: Map<string, string>,
 };
 
 /**
@@ -24,7 +21,7 @@ type NativeComments = {
 export function buildCommentStatement(
     type: DataSourceOptions['type'],
     schema?: string,
-): { sql: string, parameters: string[] } | undefined {
+): CatalogueStatement | undefined {
     switch (type) {
         case 'cockroachdb': {
             return {
@@ -105,15 +102,7 @@ export async function readNativeComments(
     queryRunner: QueryRunner,
     tables: string[],
 ): Promise<Map<string, NativeComments> | undefined> {
-    const { options } = queryRunner.connection;
-    const statement = buildCommentStatement(options.type, (options as { schema?: string }).schema);
+    const { type, schema } = useSource(queryRunner);
 
-    if (!statement) {
-        return undefined;
-    }
-
-    const rows = await queryRunner.query(statement.sql, statement.parameters) as CommentRow[];
-    const wanted = new Set(tables);
-
-    return normalizeCommentRows(rows.filter((row) => wanted.has(row.table)));
+    return readCatalogue(queryRunner, tables, buildCommentStatement(type, schema), normalizeCommentRows);
 }

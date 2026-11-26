@@ -3,34 +3,31 @@ import {
     buildConstraintStatement,
     normalizeConstraintRows,
     readNativeConstraints,
-} from '../../../../../src/database/schema/snapshot/constraints';
-import { createDataSource } from '../../../../data/typeorm/factory';
+    readsConstraintParts,
+} from '../../../../../../src/database/schema/snapshot/native/constraints';
+import { createDataSource } from '../../../../../data/typeorm/factory';
 
-describe('database/schema/snapshot/constraints', () => {
-    it('reads every mssql key, foreign key and check constraint with its key order and binds the schema', () => {
-        const bound = buildConstraintStatement('mssql', 'app');
-
-        expect(bound?.sql).toContain('FROM sys.key_constraints kc');
-        expect(bound?.sql).toContain('FROM sys.foreign_keys fk');
-        expect(bound?.sql).toContain('FROM sys.check_constraints cc');
-        expect(bound?.sql).toContain('is_system_named');
-        expect(bound?.sql).toContain('ORDER BY [table], [name], [position]');
-        expect(bound?.sql.match(/SCHEMA_ID\(@0\)/g)).toHaveLength(3);
-        expect(bound?.parameters).toEqual(['app']);
-        expect(buildConstraintStatement('mssql')?.sql).toContain('SCHEMA_ID()');
+describe('database/schema/snapshot/native/constraints', () => {
+    it('names the parts each driver reader replaces', () => {
+        expect(readsConstraintParts('mssql')).toEqual(['primaryKey', 'uniques', 'checks', 'foreignKeys']);
+        expect(readsConstraintParts('oracle')).toEqual(['primaryKey', 'uniques', 'checks', 'foreignKeys']);
+        expect(readsConstraintParts('mysql')).toEqual(['checks']);
+        expect(readsConstraintParts('mariadb')).toEqual(['checks']);
+        expect(readsConstraintParts('postgres')).toEqual([]);
     });
 
-    it('reads oracle constraints with generated names and leaves out generated NOT NULL checks', () => {
-        const { sql, parameters } = buildConstraintStatement('oracle') as { sql: string, parameters: string[] };
-
-        expect(sql).toContain('c.generated = \'GENERATED NAME\'');
-        expect(sql).toContain('JOIN all_cons_columns rc ON rc.owner = c.r_owner');
-        expect(sql).toContain('NOT (c.generated = \'GENERATED NAME\' AND REGEXP_LIKE(c.search_condition_vc');
-        expect(parameters).toEqual([]);
+    it('reads mysql and mariadb checks only where the server has them', () => {
+        expect(buildConstraintStatement('mysql', undefined, new Set())).toBeUndefined();
+        expect(buildConstraintStatement('mariadb', undefined, new Set(['CHECK_CLAUSE']))).toBeUndefined();
+        expect(buildConstraintStatement('mariadb', undefined, new Set(['CHECK_CLAUSE', 'TABLE_NAME']))).toBeDefined();
+        expect(buildConstraintStatement('mysql', undefined, new Set(['CHECK_CLAUSE']))).toBeDefined();
     });
 
-    it('returns undefined for a driver without a constraint reader', async () => {
-        for (const type of ['postgres', 'cockroachdb', 'mysql', 'mariadb', 'better-sqlite3'] as const) {
+    it('binds the mssql schema and returns undefined for a driver without a reader', async () => {
+        expect(buildConstraintStatement('mssql', 'app')?.parameters).toEqual(['app']);
+        expect(buildConstraintStatement('mssql')?.parameters).toEqual([]);
+
+        for (const type of ['postgres', 'cockroachdb', 'better-sqlite3'] as const) {
             expect(buildConstraintStatement(type)).toBeUndefined();
         }
 
@@ -46,6 +43,38 @@ describe('database/schema/snapshot/constraints', () => {
             await queryRunner.release();
             await dataSource.destroy();
         }
+    });
+
+    it('folds a mysql check with its enforcement and an oracle key with its index and RELY', () => {
+        const result = normalizeConstraintRows([
+            {
+                table: 't',
+                name: 'ck',
+                kind: 'c',
+                expression: '(`a` > 0)',
+                options: 'NOT ENFORCED',
+            },
+            {
+                table: 'T',
+                name: 'UQ',
+                kind: 'u',
+                system: 0,
+                column: 'A',
+                options: 'USING INDEX IX NONUNIQUE RELY',
+            },
+        ]);
+
+        expect(result.get('t')?.checks).toEqual([{
+            name: 'ck',
+            expression: '(`a` > 0)',
+            definition: 'CHECK ((`a` > 0)) NOT ENFORCED',
+        }]);
+        expect(result.get('T')?.uniques).toEqual([{
+            name: 'UQ',
+            columns: ['A'],
+            deferrable: null,
+            definition: 'UNIQUE (A) USING INDEX IX NONUNIQUE RELY',
+        }]);
     });
 
     it('folds key rows in key order and leaves out a generated name', () => {

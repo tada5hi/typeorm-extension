@@ -86,6 +86,7 @@ describe('database/schema/snapshot', () => {
             onUpdate: null,
             spatialFeatureType: null,
             srid: null,
+            options: null,
         });
         expect(member.comment).toBeNull();
         expect(member.exclusions).toEqual([]);
@@ -165,6 +166,25 @@ describe('database/schema/snapshot', () => {
 
         expect(snapshot.tables.map((table) => table.name)).toEqual(['item']);
         expect(snapshot.tables[0].foreignKeys[0].referencedTable).toBe('a.item');
+    });
+
+    it('refuses a better-sqlite3 table with a generated column, whose expression it can not read', async () => {
+        const database = databaseFile();
+
+        await exec(database, [
+            // typeorm reads the expression from its metadata table, where raw DDL records none
+            'CREATE TABLE "typeorm_metadata" ("type" varchar NOT NULL, "database" varchar, "schema" varchar, "table" varchar, "name" varchar, "value" text)',
+            'CREATE TABLE "gen" ("a" integer, "b" integer GENERATED ALWAYS AS ("a" + 1) VIRTUAL)',
+            'CREATE TABLE "plain" ("a" integer)',
+        ]);
+
+        await expect(getSchemaSnapshot(optionsOf(database))).rejects.toThrow(SchemaSnapshotError);
+        await expect(getSchemaSnapshot(optionsOf(database))).rejects.toThrow('generated column(s) b');
+
+        const snapshot = await getSchemaSnapshot(optionsOf(database), { ignoreTables: ['gen'] });
+
+        expect(snapshot.tables.map((table) => table.name)).toEqual(['plain']);
+        expect(snapshot.tables[0].columns[0].options).toBeNull();
     });
 
     it('omits schema and database qualifiers', async () => {

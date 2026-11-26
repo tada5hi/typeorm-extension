@@ -3,10 +3,10 @@ import {
     buildKeyStatement,
     normalizeKeyRows,
     readNativeKeys,
-} from '../../../../../src/database/schema/snapshot/keys';
-import { createDataSource } from '../../../../data/typeorm/factory';
+} from '../../../../../../src/database/schema/snapshot/native/keys';
+import { createDataSource } from '../../../../../data/typeorm/factory';
 
-describe('database/schema/snapshot/keys', () => {
+describe('database/schema/snapshot/native/keys', () => {
     it('reads postgres keys in conkey order and binds the schema', () => {
         const bound = buildKeyStatement('postgres', 'app');
 
@@ -19,11 +19,21 @@ describe('database/schema/snapshot/keys', () => {
         expect(buildKeyStatement('postgres')?.sql).toContain('current_schema()');
     });
 
-    it('reads cockroachdb keys like postgres and leaves out the dropped column of an expression part', () => {
-        const { sql } = buildKeyStatement('cockroachdb') as { sql: string };
+    it('takes the index definition of a cockroachdb unique, without its qualifier', () => {
+        expect(buildKeyStatement('cockroachdb')?.sql).toContain('pg_get_indexdef(c.conindid)');
+        expect(buildKeyStatement('postgres')?.sql).not.toContain('pg_get_indexdef');
 
-        expect(sql).toBe(buildKeyStatement('postgres')?.sql);
-        expect(sql).toContain('AND NOT a.attisdropped');
+        const keys = normalizeKeyRows([{
+            table: 't',
+            name: 'u',
+            kind: 'u',
+            columns: [],
+            definition: 'CREATE UNIQUE INDEX u ON defaultdb.public.t USING btree (lower(a) ASC) STORING (b) NOT VISIBLE',
+            deferrable: null,
+        }]);
+
+        expect(keys.get('t')?.definitions.get('u')).toBe('CREATE UNIQUE INDEX u ON t USING btree (lower(a) ASC) STORING (b) NOT VISIBLE');
+        expect(keys.get('t')?.uniques.get('u')?.columns).toEqual([]);
     });
 
     it('reads the mysql and mariadb primary key in seq_in_index order', () => {

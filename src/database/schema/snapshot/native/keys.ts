@@ -1,4 +1,7 @@
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
+import type { CatalogueStatement, NativeKey, NativeKeys } from './types';
+import { readCatalogue, useSource } from './catalogue';
+import { stripIndexQualifier } from './indices';
 
 /**
  * One catalogue row: a constraint with its key columns in key order (postgres), or one
@@ -14,21 +17,6 @@ type KeyRow = {
     deferrable?: string | null,
 };
 
-type NativeKey = {
-    name: string,
-    columns: string[],
-    deferrable: string | null,
-};
-
-type NativeKeys = {
-    primary?: NativeKey,
-    uniques: Map<string, NativeKey>,
-    /**
-     * The catalogue definition of each constraint by name (postgres, cockroachdb).
-     */
-    definitions: Map<string, string>,
-};
-
 /**
  * The statement listing the constraints of the current schema (database for mysql), with the
  * primary key and unique constraint columns in key order, or undefined for a driver without a
@@ -37,14 +25,15 @@ type NativeKeys = {
  * Postgres lists every primary key, unique, foreign key, check and exclusion constraint with its
  * `pg_get_constraintdef` text and its columns in `pg_constraint.conkey` order. Cockroachdb lists
  * every unique index as a unique constraint, an expression part as a dropped column, which is left
- * out (its definition keeps the expression). Mysql and mariadb
+ * out; its definition is the index definition, which keeps the expression, `STORING` and
+ * `NOT VISIBLE` (`pg_get_constraintdef` drops them). Mysql and mariadb
  * list the `PRIMARY` index in `seq_in_index` order: a unique constraint there is a unique index,
  * which the index reader keeps in order.
  */
 export function buildKeyStatement(
     type: DataSourceOptions['type'],
     schema?: string,
-): { sql: string, parameters: string[] } | undefined {
+): CatalogueStatement | undefined {
     switch (type) {
         case 'postgres':
         case 'cockroachdb': {
@@ -53,7 +42,10 @@ export function buildKeyStatement(
                     'SELECT cl.relname AS "table", c.conname AS "name", c.contype::text AS "kind",',
                     'ARRAY(SELECT a.attname::text FROM unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord)',
                     'JOIN pg_catalog.pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum AND NOT a.attisdropped ORDER BY k.ord) AS "columns",',
-                    'pg_catalog.pg_get_constraintdef(c.oid) AS "definition",',
+                    type === 'cockroachdb' ?
+                        'CASE WHEN c.contype = \'u\' AND c.conindid <> 0 THEN pg_catalog.pg_get_indexdef(c.conindid) ' +
+                        'ELSE pg_catalog.pg_get_constraintdef(c.oid) END AS "definition",' :
+                        'pg_catalog.pg_get_constraintdef(c.oid) AS "definition",',
                     'CASE WHEN NOT c.condeferrable THEN NULL WHEN c.condeferred THEN \'INITIALLY DEFERRED\' ELSE \'INITIALLY IMMEDIATE\' END AS "deferrable"',
                     'FROM pg_catalog.pg_constraint c',
                     'JOIN pg_catalog.pg_class cl ON cl.oid = c.conrelid',
@@ -95,7 +87,7 @@ export function normalizeKeyRows(rows: KeyRow[]): Map<string, NativeKeys> {
         result.set(row.table, keys);
 
         if (typeof row.definition === 'string') {
-            keys.definitions.set(row.name, row.definition);
+            keys.definitions.set(row.name, stripIndexQualifier(row.definition));
         }
 
         if (row.kind !== 'p' && row.kind !== 'u') {
@@ -136,15 +128,7 @@ export async function readNativeKeys(
     queryRunner: QueryRunner,
     tables: string[],
 ): Promise<Map<string, NativeKeys> | undefined> {
-    const { options } = queryRunner.connection;
-    const statement = buildKeyStatement(options.type, (options as { schema?: string }).schema);
+    const { type, schema } = useSource(queryRunner);
 
-    if (!statement) {
-        return undefined;
-    }
-
-    const rows = await queryRunner.query(statement.sql, statement.parameters) as KeyRow[];
-    const wanted = new Set(tables);
-
-    return normalizeKeyRows(rows.filter((row) => wanted.has(row.table)));
+    return readCatalogue(queryRunner, tables, buildKeyStatement(type, schema), normalizeKeyRows);
 }

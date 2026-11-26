@@ -1,5 +1,14 @@
 import type { DataSourceOptions, QueryRunner } from 'typeorm';
-import type { SchemaSnapshotIndex } from './types';
+import {
+    flag,
+    groupByName,
+    push,
+    readCatalogue,
+    readInformationSchemaColumns,
+    useSource,
+} from './catalogue';
+import type { CatalogueStatement } from './types';
+import type { SchemaSnapshotIndex } from '../types';
 
 /**
  * One catalogue row: an index of a table, one row per index (postgres)
@@ -19,6 +28,7 @@ type IndexRow = {
     descending?: number | string | boolean | null,
     included?: number | string | boolean | null,
     where?: string | null,
+    ignoreDuplicates?: number | string | boolean | null,
 };
 
 /**
@@ -47,7 +57,7 @@ export function buildIndexStatement(
     type: DataSourceOptions['type'],
     schema?: string,
     statistics: Set<string> = defaultStatisticsColumns(type),
-): { sql: string, parameters: string[] } | undefined {
+): CatalogueStatement | undefined {
     switch (type) {
         case 'postgres':
         case 'cockroachdb': {
@@ -90,18 +100,18 @@ export function buildIndexStatement(
         }
         case 'mssql': {
             return {
-                // the key columns in key order, included columns after them by name; heaps and hypothetical indexes have no definition
+                // key columns in key order, then included (and columnstore) columns by name; heaps and hypothetical indexes have no definition
                 sql: [
                     'SELECT t.name AS [table], i.name AS [name], c.name AS [column], CAST(ic.is_descending_key AS int) AS [descending],',
                     'CAST(ic.is_included_column AS int) AS [included], CAST(i.is_unique AS int) AS [unique], i.type_desc AS [type],',
-                    'i.filter_definition AS [where], CAST(i.is_disabled AS int) AS [invisible]',
+                    'i.filter_definition AS [where], CAST(i.is_disabled AS int) AS [invisible], CAST(i.ignore_dup_key AS int) AS [ignoreDuplicates]',
                     'FROM sys.indexes i',
                     'JOIN sys.tables t ON t.object_id = i.object_id',
                     'JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id',
                     'JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id',
                     `WHERE t.schema_id = SCHEMA_ID(${schema ? '@0' : ''}) AND i.type > 0 AND i.is_hypothetical = 0`,
                     'AND i.is_primary_key = 0 AND i.is_unique_constraint = 0',
-                    'ORDER BY t.name, i.name, ic.is_included_column, ic.key_ordinal, ic.index_column_id',
+                    'ORDER BY t.name, i.name, ic.is_included_column, ic.key_ordinal, c.name',
                 ].join(' '),
                 parameters: schema ? [schema] : [],
             };
@@ -129,8 +139,12 @@ export function buildIndexStatement(
     }
 }
 
-function flag(value: number | string | boolean | null | undefined): boolean {
-    return value === true || Number(value) === 1;
+/**
+ * A postgres or cockroachdb index definition without the qualifier of its table
+ * (`ON <schema>.`, cockroachdb `ON <database>.<schema>.`).
+ */
+export function stripIndexQualifier(definition: string): string {
+    return definition.replace(/^(CREATE (?:UNIQUE )?INDEX (?:"[^"]*"|\S+) ON )(?:ONLY )?(?:(?:"[^"]+"|[\w$]+)\.){1,2}/, '$1');
 }
 
 /**
@@ -181,7 +195,7 @@ function readPostgresColumns(definition: string): string[] {
  * a descending part gets `DESC`, and the index type and an invisible (mysql) or ignored (mariadb) index follow.
  * Mssql and oracle rows are folded the same way: the definition is the index type, the key parts (an
  * oracle expression part in parentheses, a descending part with `DESC`), the included columns (mssql)
- * and a disabled (mssql) or invisible (oracle) index; `where` is the mssql filter. An expression part
+ * a disabled (mssql) or invisible (oracle) index and IGNORE_DUP_KEY (mssql); `where` is the mssql filter. An expression part
  * contributes no column name.
  */
 export function normalizeIndexRows(
@@ -189,19 +203,13 @@ export function normalizeIndexRows(
     rows: IndexRow[],
 ): Map<string, SchemaSnapshotIndex[]> {
     const result = new Map<string, SchemaSnapshotIndex[]>();
-    const push = (table: string, index: SchemaSnapshotIndex) => {
-        const list = result.get(table) ?? [];
-
-        list.push(index);
-        result.set(table, list);
-    };
 
     if (type === 'postgres' || type === 'cockroachdb') {
         for (const row of rows) {
-            const definition = (row.definition as string).replace(/^(CREATE (?:UNIQUE )?INDEX (?:"[^"]*"|\S+) ON )(?:ONLY )?(?:(?:"[^"]+"|[\w$]+)\.){1,2}/, '$1');
+            const definition = stripIndexQualifier(row.definition as string);
             const where = /\sWHERE\s(.*)$/s.exec(definition);
 
-            push(row.table, {
+            push(result, row.table, {
                 name: row.name,
                 columns: readPostgresColumns(definition),
                 isUnique: /^CREATE UNIQUE INDEX /i.test(definition),
@@ -214,16 +222,10 @@ export function normalizeIndexRows(
         return result;
     }
 
-    const grouped = new Map<string, IndexRow[]>();
-
-    for (const row of rows) {
-        const key = `${row.table}\0${row.name}`;
-
-        grouped.set(key, [...(grouped.get(key) ?? []), row]);
-    }
+    const grouped = groupByName(rows);
 
     if (type === 'mssql' || type === 'oracle') {
-        for (const parts of grouped.values()) {
+        for (const parts of grouped) {
             const [first] = parts;
             const keys = parts.filter((part) => !flag(part.included));
             const included = parts.filter((part) => flag(part.included)).map((part) => part.column as string);
@@ -238,7 +240,7 @@ export function normalizeIndexRows(
                 return match ? match[1] : undefined;
             };
 
-            push(first.table, {
+            push(result, first.table, {
                 name: first.name,
                 columns: keys.map(columnOf).filter((column): column is string => !!column),
                 isUnique: flag(first.unique),
@@ -250,19 +252,20 @@ export function normalizeIndexRows(
                     return flag(part.descending) ? `${value} DESC` : value;
                 }).join(', ')})${
                     included.length > 0 ? ` INCLUDE (${included.join(', ')})` : ''
-                }${flag(first.invisible) ? ` ${type === 'mssql' ? 'DISABLED' : 'INVISIBLE'}` : ''}`,
+                }${flag(first.invisible) ? ` ${type === 'mssql' ? 'DISABLED' : 'INVISIBLE'}` : ''}${
+                    flag(first.ignoreDuplicates) ? ' IGNORE_DUP_KEY' : ''}`,
             });
         }
 
         return result;
     }
 
-    for (const parts of grouped.values()) {
+    for (const parts of grouped) {
         const [first] = parts;
         const kinds: Record<string, 'spatial' | 'fulltext'> = { SPATIAL: 'spatial', FULLTEXT: 'fulltext' };
         const kind = kinds[first.type ?? ''] ?? null;
 
-        push(first.table, {
+        push(result, first.table, {
             name: first.name,
             columns: parts.filter((part) => part.column).map((part) => part.column as string),
             isUnique: Number(first.unique) === 0,
@@ -295,27 +298,10 @@ export async function readNativeIndices(
     queryRunner: QueryRunner,
     tables: string[],
 ): Promise<Map<string, SchemaSnapshotIndex[]> | undefined> {
-    const { options } = queryRunner.connection;
-    let statistics: Set<string> | undefined;
+    const { type, schema } = useSource(queryRunner);
+    const statistics = type === 'mysql' || type === 'mariadb' ?
+        await readInformationSchemaColumns(queryRunner, 'STATISTICS') :
+        undefined;
 
-    if (options.type === 'mysql' || options.type === 'mariadb') {
-        // the optional columns differ by server and version
-        const columns = await queryRunner.query(
-            'SELECT column_name AS `name` FROM information_schema.columns ' +
-            'WHERE table_schema = \'information_schema\' AND table_name = \'STATISTICS\'',
-        ) as { name: string }[];
-
-        statistics = new Set(columns.map((column) => String(column.name).toUpperCase()));
-    }
-
-    const statement = buildIndexStatement(options.type, (options as { schema?: string }).schema, statistics);
-
-    if (!statement) {
-        return undefined;
-    }
-
-    const rows = await queryRunner.query(statement.sql, statement.parameters) as IndexRow[];
-    const wanted = new Set(tables);
-
-    return normalizeIndexRows(options.type, rows.filter((row) => wanted.has(row.table)));
+    return readCatalogue(queryRunner, tables, buildIndexStatement(type, schema, statistics), (rows: IndexRow[]) => normalizeIndexRows(type, rows));
 }

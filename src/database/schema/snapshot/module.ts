@@ -10,11 +10,19 @@ import { DriverError } from '../../../errors/driver';
 import { SchemaSnapshotError } from '../../../errors/schema-snapshot';
 import { useInitializedDataSource } from '../utils';
 import { buildUserTablesStatement, readUserTableNames } from '../migration/tables';
-import { readNativeGenerated, readsGeneratedIdentity } from './columns';
-import { readNativeComments } from './comments';
-import { readNativeConstraints } from './constraints';
-import { readNativeIndices } from './indices';
-import { readNativeKeys } from './keys';
+import { named } from './native/catalogue';
+import { readNativeColumns } from './native/columns';
+import { readNativeComments } from './native/comments';
+import { readNativeConstraints, readsConstraintParts } from './native/constraints';
+import { readNativeIndices } from './native/indices';
+import { readNativeKeys } from './native/keys';
+import { readOwnSchema, unqualifyTable } from './native/qualifier';
+import type {
+    NativeColumn,
+    NativeComments,
+    NativeConstraints,
+    NativeKeys,
+} from './native/types';
 import { withSchemaSearchPath } from './search-path';
 import type {
     SchemaSnapshot,
@@ -24,16 +32,6 @@ import type {
     SchemaSnapshotTable,
     SchemaSnapshotView,
 } from './types';
-
-type Reader = (...args: any[]) => Promise<Map<string, unknown> | undefined>;
-
-type ReaderValue<T extends Reader> = NonNullable<Awaited<ReturnType<T>>> extends Map<string, infer V> ? V : never;
-
-type NativeConstraints = ReaderValue<typeof readNativeConstraints>;
-
-type NativeComments = ReaderValue<typeof readNativeComments>;
-
-type NativeGenerated = ReaderValue<typeof readNativeGenerated> extends Map<string, infer V> ? V : never;
 
 function unqualify(name: string): string {
     const index = name.lastIndexOf('.');
@@ -76,10 +74,6 @@ function byNameThenColumns<T extends { name?: string, columns: string[] }>(a: T,
     return compare(a.name, b.name) || compare(a.columns.join(','), b.columns.join(','));
 }
 
-function named<T extends object>(name: string | undefined, value: T): T & { name?: string } {
-    return name ? { name, ...value } : value;
-}
-
 function toColumn(column: TableColumn): SchemaSnapshotColumn {
     return {
         name: column.name,
@@ -105,20 +99,9 @@ function toColumn(column: TableColumn): SchemaSnapshotColumn {
         onUpdate: column.onUpdate || null,
         spatialFeatureType: column.spatialFeatureType || null,
         srid: column.srid ?? null,
+        options: null,
     };
 }
-
-type TableKey = {
-    name: string,
-    columns: string[],
-    deferrable: string | null
-};
-
-type TableKeys = {
-    primary?: TableKey,
-    uniques: Map<string, TableKey>,
-    definitions: Map<string, string>
-};
 
 /**
  * Key columns in key order where the driver has a native key reader, sorted otherwise:
@@ -128,15 +111,63 @@ function keyColumns(columns: string[], native?: { columns: string[] }): string[]
     return native ? [...native.columns] : [...columns].sort();
 }
 
+type NativeTable = {
+    indices?: SchemaSnapshotIndex[],
+    keys?: NativeKeys,
+    constraints?: NativeConstraints,
+    constraintParts: (keyof NativeConstraints)[],
+    comments?: NativeComments,
+    columns?: Map<string, NativeColumn>,
+};
+
+/**
+ * The column with what the catalogue reads in place of typeorm's values.
+ */
+function withNativeColumn(column: SchemaSnapshotColumn, native: NativeColumn): SchemaSnapshotColumn {
+    return {
+        ...column,
+        asExpression: native.expression,
+        generatedType: native.generatedType,
+        ...(native.identity !== undefined ? { generatedIdentity: native.identity } : {}),
+        ...(native.onUpdate !== undefined ? { onUpdate: native.onUpdate } : {}),
+        default: native.defaultOnNull && column.default !== null ? `ON NULL ${column.default}` : column.default,
+        options: native.options,
+    };
+}
+
+/**
+ * Throw unless typeorm read the columns the catalogue lists: a column typeorm skips (a cockroachdb
+ * NOT VISIBLE column) would otherwise go unnoticed. Better-sqlite3 has no catalogue expression of a
+ * generated column (typeorm reads it from its metadata table), so such a table is refused.
+ */
+function assertColumnsRead(type: DataSourceOptions['type'], name: string, columns: string[], native: Map<string, NativeColumn>) {
+    if (type === 'better-sqlite3') {
+        const generated = [...native].filter(([, column]) => column.generatedType).map(([column]) => column);
+
+        if (generated.length > 0) {
+            throw SchemaSnapshotError.generatedColumnsNotSupported(name, generated);
+        }
+    }
+
+    const missing = native.keys().toArray().filter((column) => !columns.includes(column));
+    const extra = columns.filter((column) => !native.has(column));
+
+    if (missing.length > 0 || extra.length > 0) {
+        throw SchemaSnapshotError.columnsNotRead(name, missing, extra);
+    }
+}
+
 function toTable(
     table: Table,
     listed: string[],
-    native?: SchemaSnapshotIndex[],
-    keys?: TableKeys,
-    constraints?: NativeConstraints,
-    comments?: NativeComments,
-    generated?: Map<string, NativeGenerated>,
+    native: NativeTable,
 ): SchemaSnapshotTable {
+    const {
+        indices: nativeIndices,
+        keys,
+        constraints,
+        comments,
+    } = native;
     const primary = table.columns.filter((column) => column.isPrimary);
     const primaryName = primary.find((column) => column.primaryKeyConstraintName)?.primaryKeyConstraintName;
     const definition = (name?: string) => (name ? keys?.definitions.get(name) ?? null : null);
@@ -152,7 +183,7 @@ function toTable(
                 definition: definition(primaryName ?? keys?.primary?.name),
             }) :
             null,
-        indices: native ? [...native].sort(byNameThenColumns) : table.indices.map((index) => named(index.name, {
+        indices: nativeIndices ? [...nativeIndices].sort(byNameThenColumns) : table.indices.map((index) => named(index.name, {
             columns: [...index.columnNames],
             isUnique: !!index.isUnique,
             where: index.where || null,
@@ -185,17 +216,10 @@ function toTable(
         })).sort(byNameThenColumns),
     };
 
-    if (generated) {
-        snapshot.columns = snapshot.columns.map((column) => {
-            const native = generated.get(column.name);
+    if (native.columns) {
+        const { columns } = native;
 
-            return {
-                ...column,
-                asExpression: native?.expression ?? null,
-                generatedType: native?.generatedType ?? null,
-                ...(native && native.identity !== undefined ? { generatedIdentity: native.identity } : {}),
-            };
-        });
+        snapshot.columns = snapshot.columns.map((column) => withNativeColumn(column, columns.get(column.name) as NativeColumn));
     }
 
     if (comments) {
@@ -204,41 +228,26 @@ function toTable(
     }
 
     if (constraints) {
-        snapshot.primaryKey = constraints.primaryKey;
-        snapshot.uniques = [...constraints.uniques].sort(byNameThenColumns);
-        snapshot.foreignKeys = [...constraints.foreignKeys].sort(byNameThenColumns);
-        snapshot.checks = [...constraints.checks].sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression));
-    }
+        const parts = native.constraintParts;
 
-    return snapshot;
-}
+        if (parts.includes('primaryKey')) {
+            snapshot.primaryKey = constraints.primaryKey;
+        }
 
-/**
- * Mark every column the generated reader has no row for as plain, where it reads the identity:
- * no row means no identity there.
- */
-function withIdentity(
-    generated: Map<string, NativeGenerated>,
-    table: Table,
-    identity: boolean,
-): Map<string, NativeGenerated> {
-    if (!identity) {
-        return generated;
-    }
+        if (parts.includes('uniques')) {
+            snapshot.uniques = [...constraints.uniques].sort(byNameThenColumns);
+        }
 
-    const result = new Map(generated);
+        if (parts.includes('foreignKeys')) {
+            snapshot.foreignKeys = [...constraints.foreignKeys].sort(byNameThenColumns);
+        }
 
-    for (const column of table.columns) {
-        if (!result.has(column.name)) {
-            result.set(column.name, {
-                expression: null,
-                generatedType: null,
-                identity: null,
-            });
+        if (parts.includes('checks')) {
+            snapshot.checks = [...constraints.checks].sort((a, b) => compare(a.name, b.name) || compare(a.expression, b.expression));
         }
     }
 
-    return result;
+    return snapshot;
 }
 
 async function readSnapshot(
@@ -261,21 +270,25 @@ async function readSnapshot(
 
     const tables = names.length > 0 ? await queryRunner.getTables(names) : [];
 
+    const { type } = dataSource.options;
+
     // typeorm does not read expression and partial indexes reliably: a native reader replaces its indices
-    const native = await readNativeIndices(queryRunner, names);
+    const indices = await readNativeIndices(queryRunner, names);
 
     // typeorm reports key columns in table column order: a native reader keeps the key order
     const keys = await readNativeKeys(queryRunner, names);
 
-    // typeorm drops unnamed constraints (oracle) and loses the key order (mssql, oracle): a native reader replaces them
+    // typeorm drops unnamed constraints (oracle), loses the key order (mssql, oracle) and reads no mysql checks
     const constraints = await readNativeConstraints(queryRunner, names);
 
     // typeorm reads no table comment on cockroachdb and none at all on mssql and oracle
     const comments = await readNativeComments(queryRunner, names);
 
-    // typeorm takes a generated column's expression from its metadata table: the server's replaces it
-    const generated = await readNativeGenerated(queryRunner, names);
-    const identity = readsGeneratedIdentity(dataSource.options.type);
+    // typeorm takes a generated column's expression from its metadata table and skips some columns
+    const columns = await readNativeColumns(queryRunner, names);
+
+    // cockroachdb, mssql and oracle qualify own types and functions even within the schema
+    const schema = await readOwnSchema(queryRunner);
 
     // typeorm records views in the metadata table only, and may fail reading a missing one (mysql).
     const views = listed.includes(metadataTable) ? await queryRunner.getViews() : [];
@@ -284,21 +297,27 @@ async function readSnapshot(
         tables: tables
             .map((table) => {
                 const name = resolveName(table.name, listed);
+                const nativeColumns = columns ? columns.get(name) ?? new Map<string, NativeColumn>() : undefined;
 
-                return toTable(
-                    table,
-                    listed,
-                    native ? native.get(name) ?? [] : undefined,
-                    keys ? keys.get(name) ?? { uniques: new Map(), definitions: new Map() } : undefined,
-                    constraints ? constraints.get(name) ?? {
+                if (nativeColumns) {
+                    assertColumnsRead(type, name, table.columns.map((column) => column.name), nativeColumns);
+                }
+
+                const snapshot = toTable(table, listed, {
+                    indices: indices ? indices.get(name) ?? [] : undefined,
+                    keys: keys ? keys.get(name) ?? { uniques: new Map(), definitions: new Map() } : undefined,
+                    constraints: constraints ? constraints.get(name) ?? {
                         primaryKey: null,
                         uniques: [],
                         checks: [],
                         foreignKeys: [],
                     } : undefined,
-                    comments ? comments.get(name) ?? { comment: null, columns: new Map() } : undefined,
-                    generated ? withIdentity(generated.get(name) ?? new Map(), table, identity) : undefined,
-                );
+                    constraintParts: readsConstraintParts(type),
+                    comments: comments ? comments.get(name) ?? { comment: null, columns: new Map() } : undefined,
+                    columns: nativeColumns,
+                });
+
+                return schema ? unqualifyTable(snapshot, schema) : snapshot;
             })
             .sort((a, b) => compare(a.name, b.name)),
         views: views.map((view) : SchemaSnapshotView => ({
