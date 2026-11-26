@@ -17,6 +17,7 @@ import { readNativeConstraints, readsConstraintParts } from './native/constraint
 import { readNativeIndices } from './native/indices';
 import { readNativeKeys } from './native/keys';
 import { readOwnSchema, unqualifyTable } from './native/qualifier';
+import { readNativeTables } from './native/tables';
 import type {
     NativeColumn,
     NativeComments,
@@ -118,6 +119,7 @@ type NativeTable = {
     constraintParts: (keyof NativeConstraints)[],
     comments?: NativeComments,
     columns?: Map<string, NativeColumn>,
+    options?: string | null,
 };
 
 /**
@@ -175,6 +177,7 @@ function toTable(
     const snapshot: SchemaSnapshotTable = {
         name: resolveName(table.name, listed),
         comment: table.comment || null,
+        options: null,
         columns: table.columns.map(toColumn).sort((a, b) => compare(a.name, b.name)),
         primaryKey: primary.length > 0 ?
             named(primaryName, {
@@ -220,6 +223,10 @@ function toTable(
         const { columns } = native;
 
         snapshot.columns = snapshot.columns.map((column) => withNativeColumn(column, columns.get(column.name) as NativeColumn));
+    }
+
+    if (native.options !== undefined) {
+        snapshot.options = native.options;
     }
 
     if (comments) {
@@ -287,6 +294,9 @@ async function readSnapshot(
     // typeorm takes a generated column's expression from its metadata table and skips some columns
     const columns = await readNativeColumns(queryRunner, names);
 
+    // mariadb system versioning and mssql temporal tables
+    const options = await readNativeTables(queryRunner, names);
+
     // cockroachdb, mssql and oracle qualify own types and functions even within the schema
     const schema = await readOwnSchema(queryRunner);
 
@@ -315,6 +325,7 @@ async function readSnapshot(
                     constraintParts: readsConstraintParts(type),
                     comments: comments ? comments.get(name) ?? { comment: null, columns: new Map() } : undefined,
                     columns: nativeColumns,
+                    options: options ? options.get(name) ?? null : undefined,
                 });
 
                 return schema ? unqualifyTable(snapshot, schema) : snapshot;

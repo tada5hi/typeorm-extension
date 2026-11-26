@@ -28,6 +28,7 @@ import {
     supportsNotVisibleColumns,
     supportsSchemaSnapshot,
     supportsSnapshotSchemas,
+    supportsSystemVersioning,
     useIntegrationDriver,
 } from '../../data/typeorm/integration';
 
@@ -331,6 +332,15 @@ describe.runIf(supportsSchemaSnapshot(driver))(`src/database/schema/snapshot (${
         it.runIf(supportsInvisibleColumns(driver))('reports an invisible column', async () => {
             expect(await differences([`CREATE TABLE ${PROBE} (a integer, b integer INVISIBLE)`], [`CREATE TABLE ${PROBE} (a integer, b integer)`]))
                 .toEqual([expect.objectContaining({ path: probePath('columns.b.options'), kind: 'changed' })]);
+        });
+
+        it.runIf(supportsSystemVersioning(driver))('reads a system versioned table and reports its versioning', async () => {
+            const versioned = [`CREATE TABLE ${PROBE} (a integer) WITH SYSTEM VERSIONING`];
+
+            expect((await probe(versioned)).tables.map((table) => table.name)).toEqual([PROBE]);
+            expect(await differences(versioned, versioned)).toEqual([]);
+            expect(await differences(versioned, [`CREATE TABLE ${PROBE} (a integer)`]))
+                .toEqual([expect.objectContaining({ path: probePath('options'), kind: 'changed' })]);
         });
 
         it.runIf(supportsNotVisibleColumns(driver))('refuses a column typeorm does not read', async () => {

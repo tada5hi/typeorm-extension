@@ -116,6 +116,13 @@ export function supportsNotVisibleColumns(driver?: IntegrationDriver) : boolean 
 }
 
 /**
+ * Whether a table can be created WITH SYSTEM VERSIONING (mariadb).
+ */
+export function supportsSystemVersioning(driver?: IntegrationDriver) : boolean {
+    return driver === 'mariadb';
+}
+
+/**
  * Whether withLockedEntity can lock a row on the driver
  * (typeorm emits FOR UPDATE, or an UPDLOCK hint on mssql).
  */

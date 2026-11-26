@@ -39,6 +39,7 @@ function table(name: string, overrides: Partial<SchemaSnapshotTable> = {}): Sche
     return {
         name,
         comment: null,
+        options: null,
         columns: [column('id'), column('name', { type: 'varchar' })],
         primaryKey: {
             columns: ['id'],
@@ -491,5 +492,17 @@ describe('database/schema/snapshot/compare', () => {
         expect(message).toContain('tables.a');
         expect(message).toContain('tables.b.columns.name');
         expect(message.split('\n')).toHaveLength(3);
+    });
+
+    it('reports changed table options', () => {
+        expect(compareSchemaSnapshots(
+            { tables: [table('t', { options: 'SYSTEM VERSIONED' })], views: [] },
+            { tables: [table('t')], views: [] },
+        )).toEqual([{
+            path: 'tables.t.options',
+            kind: 'changed',
+            expected: 'SYSTEM VERSIONED',
+            actual: null,
+        }]);
     });
 });

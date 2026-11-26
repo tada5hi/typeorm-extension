@@ -17,6 +17,8 @@ describe('src/database/schema/migration/tables', () => {
     it('should scope mysql to the database', () => {
         expect(buildUserTablesStatement('mariadb')?.sql).toContain('table_schema = DATABASE()');
         expect(buildUserTablesStatement('mysql')?.sql).toContain('BASE TABLE');
+        // a mariadb table WITH SYSTEM VERSIONING is a user table too
+        expect(buildUserTablesStatement('mariadb')?.sql).toContain('table_type IN (\'BASE TABLE\', \'SYSTEM VERSIONED\')');
     });
 
     it('should skip internal sqlite tables', () => {

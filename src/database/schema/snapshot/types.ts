@@ -121,6 +121,11 @@ export type SchemaSnapshotCheck = {
 export type SchemaSnapshotTable = {
     name: string,
     comment: string | null,
+    /**
+     * Table options typeorm does not model, read from the catalogue: mariadb `SYSTEM VERSIONED`,
+     * mssql `SYSTEM_VERSIONED_TEMPORAL_TABLE` or `HISTORY_TABLE`; null otherwise.
+     */
+    options: string | null,
     columns: SchemaSnapshotColumn[],
     /**
      * The key columns are in key order where a native reader exists (postgres, mysql, mariadb),

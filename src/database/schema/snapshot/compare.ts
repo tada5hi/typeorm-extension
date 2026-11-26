@@ -113,6 +113,15 @@ function compareTable(
     actual: SchemaSnapshotTable,
     out: SchemaSnapshotDifference[],
 ) {
+    if (!isEqual(expected.options, actual.options)) {
+        out.push({
+            path: `${path}.options`,
+            kind: 'changed',
+            expected: expected.options,
+            actual: actual.options,
+        });
+    }
+
     if (!isEqual(expected.comment, actual.comment)) {
         out.push({
             path: `${path}.comment`,

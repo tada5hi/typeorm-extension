@@ -22,7 +22,9 @@ export function buildUserTablesStatement(
         case 'mariadb': {
             // information_schema only shows tables the user holds a privilege on
             return {
-                sql: 'SELECT table_name AS name FROM information_schema.tables WHERE table_schema = DATABASE() AND table_type = \'BASE TABLE\'',
+                // mariadb reports a table WITH SYSTEM VERSIONING as SYSTEM VERSIONED
+                sql: 'SELECT table_name AS name FROM information_schema.tables WHERE table_schema = DATABASE() ' +
+                    'AND table_type IN (\'BASE TABLE\', \'SYSTEM VERSIONED\')',
                 parameters: [],
             };
         }
