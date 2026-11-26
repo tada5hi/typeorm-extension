@@ -238,44 +238,61 @@ What a snapshot covers:
 
 - The current schema only. The migrations and metadata tables are left out, and `ignoreTables` lists further ones
   (unqualified names), for a database other projects share.
-- No schema or database qualifier is recorded, so two schemas compare equal. On postgres and cockroachdb the read
-  sets `search_path` to the target schema alone, so a type or function of that schema prints unqualified, and puts
-  the previous value back afterwards.
+- No schema or database qualifier is recorded. On postgres the read sets `search_path` to the target schema alone
+  (and puts the previous value back), so a type or function of that schema prints unqualified. Cockroachdb, mssql and
+  oracle still qualify one (`'b'::app.status`, `[app].[f]`, `"APP"."F"`), so the qualifier of the own schema is
+  removed from every expression and definition, outside string literals. The same DDL in two schemas (oracle: two
+  users) compares equal on postgres, cockroachdb, mssql and oracle; mysql and mariadb were not checked across
+  databases.
 - Constraint and index names are compared. A readable name against a hashed one is a difference.
 - Views are the typeorm view entities, which typeorm records in its metadata table.
 - Column properties compared: type, length, precision, scale, nullability, default, generation (strategy, type,
-  expression, identity `ALWAYS` or `BY DEFAULT`), charset, collation, unsigned, enum values and enum type name, array,
-  comment, `ON UPDATE`, spatial type and SRID. Also compared: table comments, postgres exclusion constraints, and
+  expression, identity `ALWAYS`, `BY DEFAULT` or oracle `BY DEFAULT ON NULL`), charset, collation, unsigned, enum
+  values and enum type name, array, comment, `ON UPDATE` (mysql, mariadb, cockroachdb), spatial type and SRID, and
+  `options`: `INVISIBLE` (mysql, mariadb, oracle), `SPARSE` or `COLUMN_SET` (mssql). An oracle `DEFAULT ON NULL`
+  reads as the default `ON NULL <value>`. Also compared: table comments, postgres exclusion constraints, and
   deferrable primary keys, unique constraints and foreign keys (postgres, oracle).
+- Every column comes from the catalogue, which lists the columns typeorm must have read. A column typeorm skips
+  (a cockroachdb `NOT VISIBLE` column) makes the snapshot throw a `SchemaSnapshotError` instead of leaving it out.
 - The expression and kind of a generated column are read from the server, not from typeorm's metadata table, so a
-  column created or changed by raw DDL is compared too (better-sqlite3 excepted, see the limits).
+  column created or changed by raw DDL is compared too.
 - On postgres and cockroachdb every primary key, unique, foreign key, check and exclusion constraint also carries its
   catalogue `definition` (`pg_get_constraintdef`), so options typeorm does not model differ too: `NULLS NOT DISTINCT`,
-  `INCLUDE`, `NOT VALID`, `MATCH FULL`, `NO INHERIT`, index parameters. Mysql, mariadb and better-sqlite3 record
-  `null`.
+  `INCLUDE`, `NOT VALID`, `MATCH FULL`, `NO INHERIT`, index parameters. A cockroachdb unique carries its index
+  definition, with `STORING`, `NOT VISIBLE` and a partial `WHERE`.
 - On mssql and oracle the constraints come from the catalogue, not from typeorm, whose reader loses the key order and
   (oracle) every constraint with a generated name. A name the server generated (`PK__gadget__3213E83F`,
   `SYS_C008123`) is left out, so an unnamed constraint is matched by its columns or expression. The definition holds
-  what typeorm does not model: a descending key part and a clustered key (mssql), a deferrable, disabled or not
-  validated constraint (oracle), a disabled or untrusted foreign key or check (mssql).
+  what typeorm does not model: a descending key part, a clustered key and `IGNORE_DUP_KEY` (mssql), a disabled or
+  untrusted foreign key or check (mssql), a deferrable, disabled, not validated or `RELY` constraint and the backing
+  index of a key when it is named otherwise or not unique (oracle). Oracle's own NOT NULL checks are left out where
+  the column reports itself NOT NULL.
+- Checks of mysql and mariadb come from `information_schema.check_constraints` (typeorm reads none), with
+  `NOT ENFORCED` on mysql.
 - Indexes of postgres and cockroachdb come from `pg_index`, without the ones which own a primary key, unique or
   exclusion constraint (those appear as the primary key, as uniques or as exclusions). Cockroachdb reports every
   unique index as a unique constraint, so a `CREATE UNIQUE INDEX` appears under `uniques` there. Indexes of mysql and
   mariadb come from `information_schema.statistics`, with prefix length and direction per part, the index type and
   whether the index is invisible (mysql) or ignored (mariadb). Mssql indexes come from `sys.indexes`, with key order,
-  direction, included columns, the filter and the clustered or disabled state. Oracle indexes come from
-  `user_indexes`, with key order, direction, the expression of a function-based index, the index type and whether it
-  is invisible. Expression, filtered and partial indexes are compared by their definition. Better-sqlite3 uses the
-  indices typeorm reads.
+  direction, included columns (by name), the filter, `IGNORE_DUP_KEY` and the clustered, columnstore or disabled
+  state. Oracle indexes come from `user_indexes`, with key order, direction, the expression of a function-based
+  index, the index type and whether it is invisible. Expression, filtered and partial indexes are compared by their
+  definition. Better-sqlite3 uses the indices typeorm reads.
 - Comments come from the catalogue on cockroachdb, oracle and mssql (the `MS_Description` extended property).
 - The column order of a primary key or unique constraint is compared on every driver but better-sqlite3, read from
   the catalogue. There the key columns are sorted, so `(a, b)` and `(b, a)` compare equal.
 
-What it does not compare: the column order of a table, mysql `zerofill` and display width, table options (engine,
-row format, collation), the `parser` and `isNullFiltered` of an index, sequences and identity seeds (mssql
-`IDENTITY(1, 1)` against `IDENTITY(5, 1)`), index storage options (fill factor, compression, tablespace), the values of
-an enum type beyond the enum of a column, and anything typeorm does not model (triggers, hand-made views,
-extensions).
+What it does not compare:
+
+- the column order of a table, mysql `zerofill` and display width, cockroachdb column families;
+- table options (engine, row format, collation, partitioning, compression, tablespace);
+- sequences and identity seeds (mssql `IDENTITY(1, 1)` against `IDENTITY(5, 1)`, postgres sequence options);
+- index storage options (fill factor, compression, tablespace, mssql data compression), the `parser` and
+  `isNullFiltered` of an index;
+- oracle 23 `DEFAULT ON NULL FOR INSERT AND UPDATE` against `DEFAULT ON NULL`, and an explicit unnamed oracle check
+  `"A" IS NOT NULL` on a column which is NOT NULL as well;
+- comments on indexes and constraints, the values of an enum type beyond the enum of a column;
+- anything typeorm does not model (triggers, hand-made views, extensions, grants).
 
 Limits:
 
@@ -284,12 +301,14 @@ Limits:
 - typeorm reads a table name with a dot (`a.b`) as a qualified name, so such a table would be read wrong. The snapshot
   throws a `SchemaSnapshotError` naming it instead; list it in `ignoreTables` to snapshot the rest. A foreign key may
   still reference it, and keeps the full name.
-- Verified on postgres, cockroachdb, mysql, mariadb, mssql and oracle (integration suite) and better-sqlite3 (unit
-  suite). Mssql needs SQL Server 2017 or later, oracle 12.2 or later (`search_condition_vc`).
+- Verified on postgres 18, cockroachdb v24.3, mysql 9, mariadb 11, SQL Server 2022 and oracle 23 (integration
+  suite) and better-sqlite3 (unit suite). Other versions are untested. The readers need postgres 12 or later
+  (`attgenerated`), oracle 12.2 or later (`search_condition_vc`), and read checks on mysql 8.0.16 or later and
+  mariadb 10.2.22 or later.
 - A generated column created by raw DDL, with no `typeorm_metadata` table, makes typeorm's table reader throw, so the
   snapshot throws too. Create the table (typeorm does so on its first schema sync) to snapshot such a schema.
-- On better-sqlite3 the expression of a generated column comes from typeorm's metadata table, which raw DDL does not
-  fill: two expressions compare equal there.
+- better-sqlite3 does not report the expression of a generated column, so a table with one throws a
+  `SchemaSnapshotError`; list it in `ignoreTables` to snapshot the rest.
 - The snapshot API is experimental and may change in a minor release.
 
 ### States
