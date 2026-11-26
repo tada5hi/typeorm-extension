@@ -45,8 +45,9 @@ Not every driver can do everything, so `test/data/typeorm/integration.ts` expose
 | `supportsSearchPathOption` | all but postgres | no `search_path` option |
 | `supportsSnapshotSchemas` | all but postgres | two schemas compare equal (verified on postgres only) |
 | `supportsSchemaSnapshot` | mongodb | no relational schema |
-| `supportsInvisibleColumns` | all but mysql/mariadb/oracle | no `INVISIBLE` column |
-| `supportsNotVisibleColumns` | all but cockroachdb | the snapshot refuses a `NOT VISIBLE` column |
+| `supportsInvisibleColumns` | all but mysql/mariadb/oracle | no `INVISIBLE` |
+| `supportsNotVisibleColumns` | all but cockroachdb | snapshot refuses `NOT VISIBLE` |
+| `supportsSystemVersioning` | all but mariadb | no system versioning |
 | `supportsMigrationBaseline` | all but postgres/mysql/mariadb | the baseline runner (and the snapshot adoption case) is verified there only |
 
 ```bash
@@ -92,7 +93,7 @@ The default suite under `test/unit/` doesn't separate unit from integration test
 
 `test/unit/database/migration.spec.ts` is the one suite which writes files: `generateMigration` emits into `writable/migrations` (removed again in `afterEach`), and the generated file is then imported and its `up()` / `down()` run against a fresh sqlite data source. Asserting the file content alone would not notice a template which does not parse. The package is ESM, so the CommonJS variant only loads when the same content is written a second time under a `.cjs` extension, and `module.exports = class` arrives as the class itself rather than as a module namespace.
 
-One of those round trips runs against `[User, Role]`, because `generateMigration` reverses the down statements and a single-table `down()` (one `DROP TABLE`) cannot show the order. The foreign key makes sqlite rebuild the table, so the down statements depend on each other and running them in the order typeorm collected them fails with `no such table: temporary_user`. Keep an entity pair in that suite.
+One of those round trips runs against `[User, Role]`, because `generateMigration` reverses the down statements and a single-table `down()` (one `DROP TABLE`) cannot show the order. The foreign key makes sqlite rebuild the table, so the down statements in typeorm's order fail with `no such table: temporary_user`. Keep an entity pair in that suite.
 
 | `test/unit/database/schema/` | `synchronizeDatabaseSchema`, drift detection, the guarded alter helpers (pure statement builders + `FakeQueryRunner`) |
 | `test/unit/env/`         | `useEnv()` env-var reading + `resetEnv()` cache invalidation         |

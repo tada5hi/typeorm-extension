@@ -241,7 +241,9 @@ What a snapshot covers:
 - No schema or database qualifier is recorded. On postgres the read sets `search_path` to the target schema alone
   (and puts the previous value back), so a type or function of that schema prints unqualified. Cockroachdb, mssql and
   oracle still qualify one (`'b'::app.status`, `[app].[f]`, `"APP"."F"`), so the qualifier of the own schema is
-  removed from every expression and definition, outside string literals. The same DDL in two schemas (oracle: two
+  removed from every expression and definition, outside literals and quoted names. An expression whose quoting can not
+  be read for sure (a comment, an oracle q-quote, an `N'...'` literal, a quote inside a quoted name) is left as it is:
+  the same DDL in two schemas may then differ, but a literal never changes. The same DDL in two schemas (oracle: two
   users) compares equal on postgres, cockroachdb, mssql and oracle; mysql and mariadb were not checked across
   databases.
 - Constraint and index names are compared. A readable name against a hashed one is a difference.
@@ -252,7 +254,9 @@ What a snapshot covers:
   `options`: `INVISIBLE` (mysql, mariadb, oracle), `SPARSE` or `COLUMN_SET` (mssql). An oracle `DEFAULT ON NULL`
   reads as the default `ON NULL <value>`. Also compared: table comments, postgres exclusion constraints, and
   deferrable primary keys, unique constraints and foreign keys (postgres, oracle).
-- Every column comes from the catalogue, which lists the columns typeorm must have read. A column typeorm skips
+- Table `options`: mariadb `SYSTEM VERSIONED`, mssql `SYSTEM_VERSIONED_TEMPORAL_TABLE` or `HISTORY_TABLE`.
+- Every column comes from the catalogue, which lists the columns typeorm must have read (columns the server adds,
+  such as the cockroachdb implicit key or an unused oracle column, are left out). A column typeorm skips
   (a cockroachdb `NOT VISIBLE` column) makes the snapshot throw a `SchemaSnapshotError` instead of leaving it out.
 - The expression and kind of a generated column are read from the server, not from typeorm's metadata table, so a
   column created or changed by raw DDL is compared too.
@@ -303,10 +307,11 @@ Limits:
   still reference it, and keeps the full name.
 - Verified on postgres 18, cockroachdb v24.3, mysql 9, mariadb 11, SQL Server 2022 and oracle 23 (integration
   suite) and better-sqlite3 (unit suite). Other versions are untested. The readers need postgres 12 or later
-  (`attgenerated`), oracle 12.2 or later (`search_condition_vc`), and read checks on mysql 8.0.16 or later and
-  mariadb 10.2.22 or later.
+  (`attgenerated`), oracle 12.2 or later (`search_condition_vc`), and read checks on mysql 8.0.16 or later.
 - A generated column created by raw DDL, with no `typeorm_metadata` table, makes typeorm's table reader throw, so the
   snapshot throws too. Create the table (typeorm does so on its first schema sync) to snapshot such a schema.
+- A cockroachdb column line whose `ON UPDATE` can not be read for sure, and a mariadb server whose
+  `check_constraints` lacks `TABLE_NAME` (before 10.2.22), throw a `SchemaSnapshotError` rather than compare less.
 - better-sqlite3 does not report the expression of a generated column, so a table with one throws a
   `SchemaSnapshotError`; list it in `ignoreTables` to snapshot the rest.
 - The snapshot API is experimental and may change in a minor release.
